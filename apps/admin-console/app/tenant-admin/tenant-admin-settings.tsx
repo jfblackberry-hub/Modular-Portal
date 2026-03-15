@@ -2,6 +2,7 @@
 
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import { SectionCard } from '../../components/section-card';
 import { apiBaseUrl, getAdminAuthHeaders, getStoredAdminUserId } from '../../lib/api-auth';
@@ -132,6 +133,12 @@ function resolveBrandingAssetUrl(assetUrl: string) {
 }
 
 export function TenantAdminSettings() {
+  const searchParams = useSearchParams();
+  const queryTenantId = searchParams.get('tenantId') ?? searchParams.get('tenant_id');
+  const tenantQuery = queryTenantId
+    ? `?tenant_id=${encodeURIComponent(queryTenantId)}`
+    : '';
+
   const [settings, setSettings] = useState<SettingsPayload | null>(null);
   const [brandingForm, setBrandingForm] = useState({
     displayName: '',
@@ -191,7 +198,7 @@ export function TenantAdminSettings() {
     setError('');
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/tenant-admin/settings`, {
+      const response = await fetch(`${apiBaseUrl}/api/tenant-admin/settings${tenantQuery}`, {
         cache: 'no-store',
         headers: getAdminAuthHeaders()
       });
@@ -274,7 +281,7 @@ export function TenantAdminSettings() {
 
   useEffect(() => {
     void loadSettings();
-  }, []);
+  }, [tenantQuery]);
 
   async function handleBrandingSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -283,7 +290,7 @@ export function TenantAdminSettings() {
     setIsSavingBranding(true);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/tenant-admin/branding`, {
+      const response = await fetch(`${apiBaseUrl}/api/tenant-admin/branding${tenantQuery}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -336,7 +343,7 @@ export function TenantAdminSettings() {
 
     try {
       const response = await fetch(
-        `${apiBaseUrl}/api/tenant-admin/notification-settings`,
+        `${apiBaseUrl}/api/tenant-admin/notification-settings${tenantQuery}`,
         {
           method: 'PUT',
           headers: {
@@ -419,7 +426,7 @@ export function TenantAdminSettings() {
 
     try {
       const response = await fetch(
-        `${apiBaseUrl}/api/tenant-admin/purchased-modules`,
+        `${apiBaseUrl}/api/tenant-admin/purchased-modules${tenantQuery}`,
         {
           method: 'PUT',
           headers: {
@@ -516,7 +523,7 @@ export function TenantAdminSettings() {
 
     try {
       const response = await fetch(
-        `${apiBaseUrl}/api/tenant-admin/users/${selectedUserId}/roles`,
+        `${apiBaseUrl}/api/tenant-admin/users/${selectedUserId}/roles${tenantQuery}`,
         {
           method: 'POST',
           headers: {

@@ -567,7 +567,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             </div>
             <div className="mt-4">
               <Link
-                href="/admin/tenant/configuration"
+                href={`/admin/tenant/configuration?tenantId=${tenant.id}`}
                 className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-accent underline-offset-4 hover:underline"
               >
                 Open configuration workspace

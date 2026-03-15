@@ -151,3 +151,80 @@ Health check example:
 ```bash
 curl http://localhost:3002/health
 ```
+
+## Tenant + Portal Catalog SQL Integration
+
+To onboard a tenant that reads claims, member profile, and provider data from a Docker-hosted SQL catalog:
+
+1. Set the catalog connection string:
+
+```bash
+PORTAL_CATALOG_DATABASE_URL="mysql://portal_user:portal_pass@127.0.0.1:3306/portal_catalog"
+```
+
+2. Create the tenant from the admin console or `POST /platform-admin/tenants` and include this `brandingConfig` block:
+
+```json
+{
+  "primaryColor": "#0f6cbd",
+  "secondaryColor": "#ffffff",
+  "logoUrl": "/logos/example.svg",
+  "portalCatalog": {
+    "enabled": true,
+    "driver": "mysql",
+    "databaseUrlEnv": "PORTAL_CATALOG_DATABASE_URL",
+    "schema": "public",
+    "memberLookup": {
+      "mode": "memberNumber",
+      "fixedMemberNumber": "M0000001"
+    },
+    "tables": {
+      "users": "members",
+      "claims": "claims",
+      "providers": "providers"
+    },
+    "columns": {
+      "tenant": "tenantId",
+      "userId": "id",
+      "userEmail": "email",
+      "userFirstName": "firstName",
+      "userLastName": "lastName",
+      "userDob": "dob",
+      "userMemberNumber": "memberNumber",
+      "userCreatedAt": "createdAt",
+      "userUpdatedAt": "updatedAt",
+      "claimMemberEmail": "memberEmail",
+      "claimMemberId": "member_id",
+      "claimNumber": "claimNumber",
+      "claimDate": "claimDate",
+      "claimStatus": "status",
+      "claimTotalAmount": "totalAmount",
+      "claimCreatedAt": "createdAt",
+      "claimUpdatedAt": "updatedAt",
+      "providerId": "id",
+      "providerName": "name",
+      "providerNumber": "providerNumber",
+      "providerSpecialty": "specialty",
+      "providerStatus": "status",
+      "providerCreatedAt": "createdAt"
+    },
+    "joins": {
+      "memberPartyTable": "parties",
+      "memberPartyIdColumn": "party_id",
+      "partyIdColumn": "id",
+      "partyFirstNameColumn": "first_name",
+      "partyLastNameColumn": "last_name",
+      "partyDobColumn": "date_of_birth"
+    }
+  }
+}
+```
+
+3. For shared source databases, set `columns.tenant` and optional `tenantValue`. For dedicated per-tenant databases, omit `columns.tenant`.
+
+When enabled, these routes read dynamically from the configured SQL catalog and fall back to local portal DB data if not configured:
+
+- `GET /api/v1/me`
+- `GET /api/v1/member/profile`
+- `GET /api/v1/member/claims`
+- `GET /api/v1/member/providers`

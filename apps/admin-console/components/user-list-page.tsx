@@ -2,6 +2,7 @@
 
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import { UserDetailDrawer } from './user-detail-drawer';
 import { SectionCard } from './section-card';
@@ -78,6 +79,12 @@ function hydrateUsers(users: ApiUserRecord[]): UserRecord[] {
 }
 
 export function UserListPage({ scope }: { scope: Scope }) {
+  const searchParams = useSearchParams();
+  const queryTenantId = searchParams.get('tenantId') ?? searchParams.get('tenant_id');
+  const tenantQuery = queryTenantId
+    ? `?tenant_id=${encodeURIComponent(queryTenantId)}`
+    : '';
+
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [tenants, setTenants] = useState<TenantOption[]>([]);
   const [roles, setRoles] = useState<RoleOption[]>([]);
@@ -131,7 +138,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
           tenantId: current.tenantId || tenantsPayload[0]?.id || ''
         }));
       } else {
-        const response = await fetch(`${apiBaseUrl}/api/tenant-admin/settings`, {
+        const response = await fetch(`${apiBaseUrl}/api/tenant-admin/settings${tenantQuery}`, {
           cache: 'no-store',
           headers: getAdminAuthHeaders()
         });
@@ -161,7 +168,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
 
   useEffect(() => {
     void loadData();
-  }, [scope]);
+  }, [scope, tenantQuery]);
 
   function closeDrawer() {
     setIsDrawerOpen(false);
@@ -210,9 +217,13 @@ export function UserListPage({ scope }: { scope: Scope }) {
       const basePath =
         scope === 'platform'
           ? `${apiBaseUrl}/platform-admin/users`
-          : `${apiBaseUrl}/api/tenant-admin/users`;
+          : `${apiBaseUrl}/api/tenant-admin/users${tenantQuery}`;
       const targetPath =
-        drawerMode === 'edit' && selectedUser ? `${basePath}/${selectedUser.id}` : basePath;
+        drawerMode === 'edit' && selectedUser
+          ? scope === 'platform'
+            ? `${basePath}/${selectedUser.id}`
+            : `${apiBaseUrl}/api/tenant-admin/users/${selectedUser.id}${tenantQuery}`
+          : basePath;
       const method = drawerMode === 'edit' ? 'PATCH' : 'POST';
       const body =
         scope === 'platform'
@@ -257,7 +268,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
       const basePath =
         scope === 'platform'
           ? `${apiBaseUrl}/platform-admin/users/${user.id}`
-          : `${apiBaseUrl}/api/tenant-admin/users/${user.id}`;
+          : `${apiBaseUrl}/api/tenant-admin/users/${user.id}${tenantQuery}`;
       const response = await fetch(basePath, {
         method: 'PATCH',
         headers: {
@@ -298,7 +309,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
       const basePath =
         scope === 'platform'
           ? `${apiBaseUrl}/platform-admin/users/${selectedUser.id}/roles`
-          : `${apiBaseUrl}/api/tenant-admin/users/${selectedUser.id}/roles`;
+          : `${apiBaseUrl}/api/tenant-admin/users/${selectedUser.id}/roles${tenantQuery}`;
 
       const response = await fetch(basePath, {
         method: 'POST',

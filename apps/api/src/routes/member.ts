@@ -2,6 +2,12 @@ import { apiRoutes, openApiSpecification } from '@payer-portal/api-contracts';
 import { prisma } from '@payer-portal/database';
 import { readFile } from '@payer-portal/server';
 import type { FastifyInstance } from 'fastify';
+import type { IncomingHttpHeaders } from 'node:http';
+import {
+  getCatalogClaims,
+  getCatalogMemberProfile,
+  getCatalogProviders
+} from '../services/portal-catalog-service';
 
 const mockPermissions = ['member.view', 'tenant.view'];
 const DEFAULT_MEMBER_EMAIL = 'maria';
@@ -18,6 +24,18 @@ function getDocumentTags(tags: unknown) {
   return tags && typeof tags === 'object' && !Array.isArray(tags)
     ? (tags as Record<string, unknown>)
     : {};
+}
+
+function getPortalCatalogContext(user: {
+  tenant: {
+    slug: string;
+    brandingConfig: unknown;
+  };
+}) {
+  return {
+    tenantSlug: user.tenant.slug,
+    brandingConfig: user.tenant.brandingConfig
+  };
 }
 
 async function getDefaultMemberUser() {
@@ -67,9 +85,58 @@ async function getDefaultMemberUser() {
   });
 }
 
+function getRequestedUserId(headers: IncomingHttpHeaders) {
+  const value = headers['x-user-id'];
+  if (Array.isArray(value)) {
+    return value[0]?.trim() ?? '';
+  }
+
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+async function getMemberUser(headers: IncomingHttpHeaders) {
+  const include = {
+    tenant: {
+      include: {
+        branding: true
+      }
+    },
+    roles: {
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        }
+      }
+    }
+  } as const;
+
+  const requestedUserId = getRequestedUserId(headers);
+
+  if (requestedUserId) {
+    const requestedUser = await prisma.user.findUnique({
+      where: {
+        id: requestedUserId
+      },
+      include
+    });
+
+    if (requestedUser) {
+      return requestedUser;
+    }
+  }
+
+  return getDefaultMemberUser();
+}
+
 export async function memberRoutes(app: FastifyInstance) {
-  app.get(apiRoutes.me, async (_, reply) => {
-    const user = await getDefaultMemberUser();
+  app.get(apiRoutes.me, async (request, reply) => {
+    const user = await getMemberUser(request.headers);
 
     if (!user) {
       return reply.status(503).send({
@@ -77,17 +144,23 @@ export async function memberRoutes(app: FastifyInstance) {
       });
     }
 
+    const portalCatalogContext = getPortalCatalogContext(user);
+    const catalogProfile = await getCatalogMemberProfile(
+      portalCatalogContext,
+      user.email
+    );
+
     return {
       member: {
         id: user.id,
-        sourceSystem: 'local-portal-db',
-        sourceRecordId: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        dob: '1989-06-15',
-        memberNumber: 'M00012345',
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString()
+        sourceSystem: catalogProfile ? 'portal-catalog-sql' : 'local-portal-db',
+        sourceRecordId: catalogProfile?.id ?? user.id,
+        firstName: catalogProfile?.firstName ?? user.firstName,
+        lastName: catalogProfile?.lastName ?? user.lastName,
+        dob: catalogProfile?.dob ?? '1989-06-15',
+        memberNumber: catalogProfile?.memberNumber ?? 'M00012345',
+        createdAt: catalogProfile?.createdAt ?? user.createdAt.toISOString(),
+        updatedAt: catalogProfile?.updatedAt ?? user.updatedAt.toISOString()
       },
       permissions:
         user.roles.flatMap(({ role }) =>
@@ -96,8 +169,8 @@ export async function memberRoutes(app: FastifyInstance) {
     };
   });
 
-  app.get(apiRoutes.memberProfile, async (_, reply) => {
-    const user = await getDefaultMemberUser();
+  app.get(apiRoutes.memberProfile, async (request, reply) => {
+    const user = await getMemberUser(request.headers);
 
     if (!user) {
       return reply.status(503).send({
@@ -105,21 +178,27 @@ export async function memberRoutes(app: FastifyInstance) {
       });
     }
 
+    const portalCatalogContext = getPortalCatalogContext(user);
+    const catalogProfile = await getCatalogMemberProfile(
+      portalCatalogContext,
+      user.email
+    );
+
     return {
       id: user.id,
-      sourceSystem: 'local-portal-db',
-      sourceRecordId: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      dob: '1989-06-15',
-      memberNumber: 'M00012345',
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString()
+      sourceSystem: catalogProfile ? 'portal-catalog-sql' : 'local-portal-db',
+      sourceRecordId: catalogProfile?.id ?? user.id,
+      firstName: catalogProfile?.firstName ?? user.firstName,
+      lastName: catalogProfile?.lastName ?? user.lastName,
+      dob: catalogProfile?.dob ?? '1989-06-15',
+      memberNumber: catalogProfile?.memberNumber ?? 'M00012345',
+      createdAt: catalogProfile?.createdAt ?? user.createdAt.toISOString(),
+      updatedAt: catalogProfile?.updatedAt ?? user.updatedAt.toISOString()
     };
   });
 
-  app.get(apiRoutes.memberCoverage, async (_, reply) => {
-    const user = await getDefaultMemberUser();
+  app.get(apiRoutes.memberCoverage, async (request, reply) => {
+    const user = await getMemberUser(request.headers);
 
     if (!user) {
       return reply.status(503).send({
@@ -144,8 +223,8 @@ export async function memberRoutes(app: FastifyInstance) {
     };
   });
 
-  app.get(apiRoutes.memberClaims, async (_, reply) => {
-    const user = await getDefaultMemberUser();
+  app.get(apiRoutes.memberClaims, async (request, reply) => {
+    const user = await getMemberUser(request.headers);
 
     if (!user) {
       return reply.status(503).send({
@@ -153,12 +232,96 @@ export async function memberRoutes(app: FastifyInstance) {
       });
     }
 
+    const portalCatalogContext = getPortalCatalogContext(user);
+    const catalogClaims = await getCatalogClaims(portalCatalogContext, user.email);
+
+    if (catalogClaims) {
+      return {
+        items: catalogClaims.map((claim) => ({
+          id: claim.id,
+          sourceSystem: 'portal-catalog-sql',
+          sourceRecordId: claim.id,
+          memberId: user.id,
+          coverageId: `coverage-${user.tenantId}`,
+          claimNumber: claim.claimNumber,
+          claimDate: claim.claimDate,
+          status: claim.status,
+          totalAmount: claim.totalAmount,
+          createdAt: claim.createdAt,
+          updatedAt: claim.updatedAt
+        }))
+      };
+    }
+
     const claimDocuments = await prisma.document.findMany({
       where: {
+        tenantId: user.tenantId
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return {
+      items: claimDocuments
+        .map((document) => {
+          const tags = getDocumentTags(document.tags);
+
+          return {
+            id: document.id,
+            sourceSystem: 'local-portal-db',
+            sourceRecordId: document.id,
+            memberId: user.id,
+            coverageId: `coverage-${user.tenantId}`,
+            claimNumber:
+              getString(tags.claimNumber) ?? `CLM-${document.id.slice(0, 8)}`,
+            claimDate: getString(tags.claimDate) ?? document.createdAt.toISOString(),
+            status: getString(tags.claimStatus) ?? 'processing',
+            totalAmount: getNumber(tags.totalAmount) ?? 0,
+            createdAt: document.createdAt.toISOString(),
+            updatedAt: document.updatedAt.toISOString()
+          };
+        })
+        .filter((claim) => claim.claimNumber.length > 0)
+    };
+  });
+
+  app.get('/api/v1/member/providers', async (request, reply) => {
+    const user = await getMemberUser(request.headers);
+
+    if (!user) {
+      return reply.status(503).send({
+        message: 'Seeded portal user not found. Run the database seed.'
+      });
+    }
+
+    const portalCatalogContext = getPortalCatalogContext(user);
+    const catalogProviders = await getCatalogProviders(portalCatalogContext);
+
+    if (catalogProviders) {
+      return {
+        items: catalogProviders.map((provider) => ({
+          id: provider.id,
+          sourceSystem: 'portal-catalog-sql',
+          sourceRecordId: provider.id,
+          name: provider.name,
+          providerNumber: provider.providerNumber,
+          npi: provider.providerNumber,
+          specialty: provider.specialty,
+          status: provider.status
+        }))
+      };
+    }
+
+    const providerUsers = await prisma.user.findMany({
+      where: {
         tenantId: user.tenantId,
-        tags: {
-          path: ['claimNumber'],
-          not: undefined
+        roles: {
+          some: {
+            role: {
+              code: 'provider'
+            }
+          }
         }
       },
       orderBy: {
@@ -167,28 +330,20 @@ export async function memberRoutes(app: FastifyInstance) {
     });
 
     return {
-      items: claimDocuments.map((document) => {
-        const tags = getDocumentTags(document.tags);
-
-        return {
-          id: document.id,
-          sourceSystem: 'local-portal-db',
-          sourceRecordId: document.id,
-          memberId: user.id,
-          coverageId: `coverage-${user.tenantId}`,
-          claimNumber: getString(tags.claimNumber) ?? `CLM-${document.id.slice(0, 8)}`,
-          claimDate: getString(tags.claimDate) ?? document.createdAt.toISOString(),
-          status: getString(tags.claimStatus) ?? 'processing',
-          totalAmount: getNumber(tags.totalAmount) ?? 0,
-          createdAt: document.createdAt.toISOString(),
-          updatedAt: document.updatedAt.toISOString()
-        };
-      })
+      items: providerUsers.map((providerUser) => ({
+        id: providerUser.id,
+        sourceSystem: 'local-portal-db',
+        sourceRecordId: providerUser.id,
+        name: `${providerUser.firstName} ${providerUser.lastName}`,
+        npi: null,
+        specialty: null,
+        status: providerUser.isActive ? 'active' : 'inactive'
+      }))
     };
   });
 
-  app.get(apiRoutes.memberDocuments, async (_, reply) => {
-    const user = await getDefaultMemberUser();
+  app.get(apiRoutes.memberDocuments, async (request, reply) => {
+    const user = await getMemberUser(request.headers);
 
     if (!user) {
       return reply.status(503).send({
@@ -225,8 +380,8 @@ export async function memberRoutes(app: FastifyInstance) {
     };
   });
 
-  app.get(apiRoutes.memberMessages, async (_, reply) => {
-    const user = await getDefaultMemberUser();
+  app.get(apiRoutes.memberMessages, async (request, reply) => {
+    const user = await getMemberUser(request.headers);
 
     if (!user) {
       return reply.status(503).send({
@@ -257,8 +412,8 @@ export async function memberRoutes(app: FastifyInstance) {
     };
   });
 
-  app.get(apiRoutes.memberAuthorizations, async (_, reply) => {
-    const user = await getDefaultMemberUser();
+  app.get(apiRoutes.memberAuthorizations, async (request, reply) => {
+    const user = await getMemberUser(request.headers);
 
     if (!user) {
       return reply.status(503).send({
@@ -295,7 +450,7 @@ export async function memberRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>(
     '/api/v1/member/documents/:id/download',
     async (request, reply) => {
-      const user = await getDefaultMemberUser();
+      const user = await getMemberUser(request.headers);
 
       if (!user) {
         return reply.status(503).send({

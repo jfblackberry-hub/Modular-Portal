@@ -6,6 +6,14 @@ STATE_DIR="$ROOT_DIR/.local/services"
 LOG_DIR="$STATE_DIR/logs"
 PID_DIR="$STATE_DIR/pids"
 
+# Load local environment overrides (for example, catalog adapter URLs).
+if [ -f "$ROOT_DIR/.env" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$ROOT_DIR/.env"
+  set +a
+fi
+
 mkdir -p "$LOG_DIR" "$PID_DIR"
 
 PORTAL_PORT=3000
@@ -14,6 +22,7 @@ ADMIN_PORT=3003
 POSTGRES_PORT=5432
 
 export DATABASE_URL="${DATABASE_URL:-postgresql://dev:dev@127.0.0.1:5432/payer_portal}"
+export PORTAL_CATALOG_DATABASE_URL="${PORTAL_CATALOG_DATABASE_URL:-postgresql://dev:dev@127.0.0.1:5432/portal_catalog}"
 export NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3002}"
 export NEXT_PUBLIC_ADMIN_USER_ID="${NEXT_PUBLIC_ADMIN_USER_ID:-}"
 
@@ -171,7 +180,7 @@ if [ -z "$NEXT_PUBLIC_ADMIN_USER_ID" ]; then
   fi
 fi
 
-start_service 'api' "DATABASE_URL='$DATABASE_URL' pnpm dev:api"
+start_service 'api' "DATABASE_URL='$DATABASE_URL' PORTAL_CATALOG_DATABASE_URL='$PORTAL_CATALOG_DATABASE_URL' pnpm dev:api"
 start_service 'portal-web' "NEXT_PUBLIC_API_BASE_URL='$NEXT_PUBLIC_API_BASE_URL' pnpm dev:portal"
 start_service 'admin-console' "NEXT_PUBLIC_API_BASE_URL='$NEXT_PUBLIC_API_BASE_URL' NEXT_PUBLIC_ADMIN_USER_ID='$NEXT_PUBLIC_ADMIN_USER_ID' pnpm dev:admin"
 
