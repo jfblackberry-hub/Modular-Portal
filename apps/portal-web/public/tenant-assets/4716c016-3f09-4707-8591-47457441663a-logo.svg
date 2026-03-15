@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 160" width="520" height="160">
+  <defs>
+    <!-- Sky gradient for the horizon arc -->
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a4f8c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2ab6e8;stop-opacity:1" />
+    </linearGradient>
+    <!-- Sun gradient -->
+    <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#c8eaf7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2ab6e8;stop-opacity:0" />
+    </radialGradient>
+    <!-- Cross gradient -->
+    <linearGradient id="crossGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d0eeff;stop-opacity:1" />
+    </linearGradient>
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0a4f8c" flood-opacity="0.25"/>
+    </filter>
+    <!-- Clip circle for emblem -->
+    <clipPath id="circleClip">
+      <circle cx="78" cy="80" r="66"/>
+    </clipPath>
+  </defs>
+
+  <!-- ── EMBLEM ── -->
+  <!-- Outer ring -->
+  <circle cx="78" cy="80" r="70" fill="#0a4f8c" filter="url(#shadow)"/>
+  <!-- Inner fill: sky gradient -->
+  <circle cx="78" cy="80" r="66" fill="url(#skyGrad)"/>
+
+  <!-- Horizon water band -->
+  <rect x="12" y="96" width="132" height="50" fill="#0d6faa" clip-path="url(#circleClip)"/>
+  <!-- Gentle wave on horizon -->
+  <path d="M12 96 Q30 89 48 96 Q66 103 84 96 Q102 89 120 96 Q138 103 144 96 L144 99 Q126 106 108 99 Q90 92 72 99 Q54 106 36 99 Q18 92 12 99 Z"
+        fill="#0d8fcf" clip-path="url(#circleClip)"/>
+  <!-- Second softer wave -->
+  <path d="M12 104 Q35 97 58 104 Q81 111 104 104 Q120 97 144 104 L144 107 Q120 114 96 107 Q72 100 48 107 Q24 114 12 107 Z"
+        fill="#1aa3d4" opacity="0.5" clip-path="url(#circleClip)"/>
+
+  <!-- Sun glow -->
+  <circle cx="78" cy="94" r="30" fill="url(#sunGrad)" opacity="0.7"/>
+  <!-- Sun rays (thin lines emanating upward) -->
+  <g stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.55" clip-path="url(#circleClip)">
+    <line x1="78" y1="63" x2="78" y2="52"/>
+    <line x1="92" y1="67" x2="100" y2="59"/>
+    <line x1="64" y1="67" x2="56" y2="59"/>
+    <line x1="98" y1="78" x2="109" y2="76"/>
+    <line x1="58" y1="78" x2="47" y2="76"/>
+  </g>
+
+  <!-- Health cross (centered, bright white) -->
+  <rect x="71" y="75" width="14" height="38" rx="3" ry="3" fill="url(#crossGrad)" clip-path="url(#circleClip)"/>
+  <rect x="59" y="87" width="38" height="14" rx="3" ry="3" fill="url(#crossGrad)" clip-path="url(#circleClip)"/>
+
+  <!-- Thin white ring accent -->
+  <circle cx="78" cy="80" r="66" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- ── WORDMARK ── -->
+  <!-- Company name: Blue Horizon -->
+  <text x="165" y="74"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="34"
+        font-weight="700"
+        letter-spacing="-0.5"
+        fill="#0a4f8c">Blue Horizon</text>
+
+  <!-- Tagline word: Health -->
+  <text x="167" y="108"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="28"
+        font-weight="300"
+        letter-spacing="6"
+        fill="#2ab6e8">HEALTH</text>
+
+  <!-- Decorative separator line -->
+  <line x1="165" y1="116" x2="500" y2="116" stroke="#2ab6e8" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Tagline / descriptor -->
+  <text x="167" y="132"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="11"
+        font-weight="400"
+        letter-spacing="2.5"
+        fill="#5a8ab0">CARING FOR YOUR TOMORROW</text>
+</svg>

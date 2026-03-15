@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Family healthcare illustration</title>
+  <desc id="desc">A family standing together with healthcare symbols in the background.</desc>
+  <defs>
+    <linearGradient id="family" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EEF8FF"/>
+      <stop offset="100%" stop-color="#F7FCFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#family)"/>
+  <circle cx="340" cy="280" r="76" fill="#BDD9FF"/>
+  <rect x="278" y="360" width="126" height="210" rx="20" fill="#2F6FED"/>
+  <circle cx="600" cy="250" r="86" fill="#CAE2FF"/>
+  <rect x="522" y="350" width="156" height="240" rx="24" fill="#4DA3FF"/>
+  <circle cx="860" cy="300" r="66" fill="#D8EAFF"/>
+  <rect x="806" y="370" width="110" height="180" rx="20" fill="#1F5ED0"/>
+  <rect x="100" y="620" width="1000" height="80" rx="24" fill="#FFFFFF" stroke="#D5E5F4"/>
+  <rect x="555" y="120" width="90" height="24" rx="12" fill="#4DA3FF"/>
+  <rect x="588" y="88" width="24" height="90" rx="12" fill="#4DA3FF"/>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Hospital hallway illustration</title>
+  <desc id="desc">A clean hospital hallway with lighting and signage.</desc>
+  <defs>
+    <linearGradient id="hall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EDF6FF"/>
+      <stop offset="100%" stop-color="#DCEEFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#hall)"/>
+  <polygon points="600,120 1150,760 50,760" fill="#F9FCFF"/>
+  <rect x="210" y="220" width="150" height="370" rx="14" fill="#FFFFFF" stroke="#D4E3F2"/>
+  <rect x="840" y="220" width="150" height="370" rx="14" fill="#FFFFFF" stroke="#D4E3F2"/>
+  <rect x="525" y="170" width="150" height="260" rx="14" fill="#FFFFFF" stroke="#C9DDF3"/>
+  <circle cx="600" cy="560" r="34" fill="#2F6FED"/>
+  <rect x="582" y="534" width="36" height="52" rx="8" fill="#FFFFFF"/>
+</svg>

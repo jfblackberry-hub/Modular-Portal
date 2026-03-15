@@ -1,0 +1,72 @@
+# Billing & Enrollment Route Map
+
+## App Routes (Portal Web)
+
+- `/dashboard/billing-enrollment`
+- `/dashboard/billing-enrollment/enrollment`
+- `/dashboard/billing-enrollment/enrollment/start`
+- `/dashboard/billing-enrollment/enrollment/household`
+- `/dashboard/billing-enrollment/enrollment/status`
+- `/dashboard/billing-enrollment/plans`
+- `/dashboard/billing-enrollment/plans/compare`
+- `/dashboard/billing-enrollment/rules`
+- `/dashboard/billing-enrollment/rules/verify`
+- `/dashboard/billing-enrollment/invoices`
+- `/dashboard/billing-enrollment/payments`
+- `/dashboard/billing-enrollment/payments/current-balance`
+- `/dashboard/billing-enrollment/payments/next-invoice`
+- `/dashboard/billing-enrollment/payments/invoice/[invoiceId]`
+- `/dashboard/billing-enrollment/payments/history`
+- `/dashboard/billing-enrollment/payments/make`
+- `/dashboard/billing-enrollment/payments/methods`
+- `/dashboard/billing-enrollment/payments/autopay`
+- `/dashboard/billing-enrollment/payments/statements`
+- `/dashboard/billing-enrollment/documents`
+- `/dashboard/billing-enrollment/documents/upload`
+- `/dashboard/billing-enrollment/notices`
+- `/dashboard/billing-enrollment/renewals`
+- `/dashboard/billing-enrollment/renewals/life-event`
+- `/dashboard/billing-enrollment/support`
+
+## API Routes (Billing & Enrollment)
+
+- `GET /api/v1/billing-enrollment/module-config`
+- `GET /api/v1/billing-enrollment/overview`
+- `GET /api/v1/billing-enrollment/plans`
+- `POST /api/v1/billing-enrollment/plans/compare`
+- `POST /api/v1/billing-enrollment/enrollments/draft`
+- `PATCH /api/v1/billing-enrollment/enrollments/:enrollmentId/steps/:stepKey`
+- `POST /api/v1/billing-enrollment/enrollments/:enrollmentId/submit`
+- `POST /api/v1/billing-enrollment/enrollments/:enrollmentId/complete`
+- `GET /api/v1/billing-enrollment/enrollments/:enrollmentId/status`
+- `POST /api/v1/billing-enrollment/enrollments/start`
+- `POST /api/v1/billing-enrollment/life-events/submit`
+- `POST /api/v1/billing-enrollment/life-events/report`
+- `POST /api/v1/billing-enrollment/renewals/start`
+- `POST /api/v1/billing-enrollment/eligibility/verify`
+- `GET /api/v1/billing-enrollment/dependents`
+- `POST /api/v1/billing-enrollment/dependents`
+- `PATCH /api/v1/billing-enrollment/dependents/:dependentId`
+- `DELETE /api/v1/billing-enrollment/dependents/:dependentId`
+- `GET /api/v1/billing-enrollment/documents`
+- `GET /api/v1/billing-enrollment/documents/requirements`
+- `POST /api/v1/billing-enrollment/documents/upload`
+- `POST /api/v1/billing-enrollment/documents/upload-hook`
+- `GET /api/v1/billing-enrollment/notices/correspondence`
+- `GET /api/v1/billing-enrollment/notices/correspondence/:noticeId`
+- `POST /api/v1/billing-enrollment/notices/correspondence/:noticeId/read`
+- `POST /api/v1/billing-enrollment/notices/send`
+- `GET /api/v1/billing-enrollment/support`
+- `GET /api/v1/billing-enrollment/billing/summary`
+- `GET /api/v1/billing-enrollment/billing/current-balance`
+- `GET /api/v1/billing-enrollment/billing/invoices`
+- `GET /api/v1/billing-enrollment/billing/invoices/next`
+- `GET /api/v1/billing-enrollment/billing/invoices/:invoiceId`
+- `GET /api/v1/billing-enrollment/billing/payments/history`
+- `POST /api/v1/billing-enrollment/billing/payments/make`
+- `GET /api/v1/billing-enrollment/billing/payment-methods`
+- `POST /api/v1/billing-enrollment/billing/payment-methods`
+- `PUT /api/v1/billing-enrollment/billing/autopay`
+- `GET /api/v1/billing-enrollment/billing/statements`
+- `GET /api/v1/billing-enrollment/billing/delinquency`
+- `GET /api/v1/billing-enrollment/billing/reconciliation-hooks`

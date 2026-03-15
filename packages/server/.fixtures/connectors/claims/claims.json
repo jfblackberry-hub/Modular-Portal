@@ -1,0 +1,12 @@
+[
+  {
+    "claimId": "C-100",
+    "memberId": "1001",
+    "amount": 125.5
+  },
+  {
+    "claimId": "C-101",
+    "memberId": "1002",
+    "amount": 89.0
+  }
+]

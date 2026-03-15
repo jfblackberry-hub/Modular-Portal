@@ -1,0 +1,36 @@
+{
+  "name": "@payer-portal/api-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/packages/api-gateway/src/index.js",
+  "types": "./dist/packages/api-gateway/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/packages/api-gateway/src/index.d.ts",
+      "default": "./dist/packages/api-gateway/src/index.js"
+    }
+  },
+  "scripts": {
+    "predev": "pnpm --filter api build && pnpm --filter @payer-portal/database build",
+    "dev": "tsx watch src/server.ts",
+    "prebuild": "pnpm --filter api build && pnpm --filter @payer-portal/database build",
+    "build": "tsc -p tsconfig.json",
+    "prestart": "pnpm --filter api build && pnpm --filter @payer-portal/database build",
+    "start": "node dist/packages/api-gateway/src/server.js",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "pretest": "pnpm --filter api build && pnpm --filter @payer-portal/database build",
+    "test": "node --import tsx --test test/**/*.test.ts"
+  },
+  "dependencies": {
+    "@fastify/multipart": "^9.0.3",
+    "@payer-portal/database": "workspace:*",
+    "@payer-portal/server": "workspace:*",
+    "fastify": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsx": "^4.19.3"
+  }
+}

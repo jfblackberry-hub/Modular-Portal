@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Doctor consultation illustration</title>
+  <desc id="desc">A doctor speaking with a patient in a healthcare consultation room.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E9F4FF"/>
+      <stop offset="100%" stop-color="#F8FBFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <rect x="80" y="120" width="1040" height="560" rx="32" fill="#FFFFFF" stroke="#D6E4F3"/>
+  <circle cx="360" cy="320" r="90" fill="#CFE5FF"/>
+  <rect x="280" y="420" width="170" height="180" rx="24" fill="#2F6FED"/>
+  <rect x="650" y="280" width="260" height="220" rx="26" fill="#EAF3FF"/>
+  <circle cx="790" cy="240" r="76" fill="#BCD8FF"/>
+  <rect x="730" y="520" width="160" height="70" rx="18" fill="#4DA3FF"/>
+  <rect x="490" y="200" width="90" height="20" rx="10" fill="#4DA3FF"/>
+  <rect x="525" y="165" width="20" height="90" rx="10" fill="#4DA3FF"/>
+</svg>

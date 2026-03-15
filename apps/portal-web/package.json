@@ -1,0 +1,34 @@
+{
+  "name": "portal-web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "node -e \"console.log('No tests configured for portal-web')\""
+  },
+  "dependencies": {
+    "@payer-portal/api-contracts": "workspace:*",
+    "@payer-portal/plugin-broker": "workspace:*",
+    "@payer-portal/plugin-enrollment": "workspace:*",
+    "@payer-portal/plugin-member": "workspace:*",
+    "@payer-portal/plugin-provider": "workspace:*",
+    "@payer-portal/plugin-sdk": "workspace:*",
+    "@payer-portal/ui": "workspace:*",
+    "lucide-react": "^0.542.0",
+    "next": "^15.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17"
+  }
+}

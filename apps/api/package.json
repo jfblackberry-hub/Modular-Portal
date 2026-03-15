@@ -1,0 +1,31 @@
+{
+  "name": "api",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "predev": "pnpm --filter @payer-portal/server build",
+    "dev": "tsx watch src/server.ts",
+    "prebuild": "pnpm --filter @payer-portal/server build",
+    "build": "tsc -p tsconfig.json",
+    "prestart": "pnpm --filter @payer-portal/server build",
+    "start": "node dist/server.js",
+    "prelint": "pnpm --filter @payer-portal/server build",
+    "lint": "tsc --noEmit",
+    "pretypecheck": "pnpm --filter @payer-portal/server build",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test test/**/*.test.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.1.0",
+    "@fastify/multipart": "^9.0.3",
+    "@payer-portal/api-contracts": "workspace:*",
+    "@payer-portal/canonical-model": "workspace:*",
+    "@payer-portal/database": "workspace:*",
+    "@payer-portal/server": "workspace:*",
+    "fastify": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsx": "^4.19.3"
+  }
+}
