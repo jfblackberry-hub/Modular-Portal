@@ -1,9 +1,10 @@
 import type { IncomingHttpHeaders } from 'node:http';
 
 import { prisma } from '@payer-portal/database';
+import { verifyAccessToken } from './access-token-service';
 
 export class AuthenticationError extends Error {
-  constructor(message = 'Authenticated user required. Provide x-user-id header.') {
+  constructor(message = 'Authenticated user required. Provide bearer token.') {
     super(message);
     this.name = 'AuthenticationError';
   }
@@ -28,27 +29,42 @@ export const PLATFORM_ADMIN_ROLE_CODE = 'platform_admin';
 export const TENANT_ADMIN_ROLE_CODE = 'tenant_admin';
 const LEGACY_PLATFORM_ADMIN_ROLE_CODE = 'platform-admin';
 
-function getUserIdHeader(headers: IncomingHttpHeaders) {
-  const userIdHeader = headers['x-user-id'];
+function getAuthorizationHeader(headers: IncomingHttpHeaders) {
+  const authorizationHeader = headers.authorization;
+  if (Array.isArray(authorizationHeader)) {
+    return authorizationHeader[0];
+  }
+  return authorizationHeader;
+}
 
-  if (Array.isArray(userIdHeader)) {
-    return userIdHeader[0];
+function getBearerToken(headers: IncomingHttpHeaders) {
+  const authorizationHeader = getAuthorizationHeader(headers)?.trim();
+  if (!authorizationHeader) {
+    return null;
   }
 
-  return userIdHeader;
+  const [scheme, token] = authorizationHeader.split(/\s+/, 2);
+  if (!scheme || !token || scheme.toLowerCase() !== 'bearer') {
+    return null;
+  }
+
+  return token.trim();
 }
 
 export async function getCurrentUserFromHeaders(
   headers: IncomingHttpHeaders
 ): Promise<CurrentUser> {
-  const userId = getUserIdHeader(headers)?.trim();
-
-  if (!userId) {
+  const bearerToken = getBearerToken(headers);
+  if (!bearerToken) {
     throw new AuthenticationError();
+  }
+  const tokenPayload = verifyAccessToken(bearerToken);
+  if (!tokenPayload) {
+    throw new AuthenticationError('Invalid or expired access token.');
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: userId },
+    where: { id: tokenPayload.sub },
     include: {
       roles: {
         include: {
@@ -68,6 +84,9 @@ export async function getCurrentUserFromHeaders(
 
   if (!user) {
     throw new AuthenticationError('Authenticated user not found.');
+  }
+  if (user.tenantId !== tokenPayload.tenantId || user.email !== tokenPayload.email) {
+    throw new AuthenticationError('Access token subject mismatch.');
   }
 
   return {
@@ -134,5 +153,23 @@ export function resolveTenantScope(
 
   throw new AuthorizationError(
     'You do not have permission to access another tenant.'
+  );
+}
+
+export function assertTenantMatch(
+  user: CurrentUser,
+  resourceTenantId: string,
+  context: {
+    action?: string;
+    requestedTenantId?: string;
+  } = {}
+) {
+  if (resourceTenantId === user.tenantId || isPlatformAdmin(user)) {
+    return;
+  }
+
+  const actionSuffix = context.action ? ` for ${context.action}` : '';
+  throw new AuthorizationError(
+    `Tenant scope mismatch${actionSuffix}. Authenticated tenant cannot access requested resource tenant.`
   );
 }

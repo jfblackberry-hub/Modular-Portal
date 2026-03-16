@@ -183,37 +183,97 @@ export function EmployerDocumentCenterLibrary({
       </section>
 
       <section className="portal-card p-5">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <label className="xl:col-span-2">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="min-w-[260px] flex-[2_1_320px]">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">Search</span>
-            <input type="search" value={filters.query} onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))} className="mt-1 h-11 w-full rounded-xl border border-[var(--border-subtle)] px-3 text-sm" placeholder="Search documents" />
+            <input
+              type="search"
+              value={filters.query}
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, query: event.target.value }))
+              }
+              className="mt-1 h-11 w-full appearance-none rounded-xl border border-[var(--border-subtle)] bg-white px-3 text-sm"
+              placeholder="Search documents"
+            />
           </label>
-          <label>
+          <label className="min-w-[180px] flex-[1_1_180px]">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">Document Category</span>
-            <select value={filters.category} onChange={(event) => setFilters((current) => ({ ...current, category: event.target.value as Filters['category'] }))} className="mt-1 h-11 w-full rounded-xl border border-[var(--border-subtle)] px-3 text-sm">
+            <select
+              value={filters.category}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  category: event.target.value as Filters['category']
+                }))
+              }
+              className="mt-1 h-11 w-full appearance-none rounded-xl border border-[var(--border-subtle)] bg-white px-3 text-sm"
+            >
               <option value="all">All categories</option>
               {categories.map((category) => <option key={category} value={category}>{category}</option>)}
             </select>
           </label>
-          <label>
+          <label className="min-w-[160px] flex-[1_1_160px]">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">Document Type</span>
-            <select value={filters.type} onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value as Filters['type'] }))} className="mt-1 h-11 w-full rounded-xl border border-[var(--border-subtle)] px-3 text-sm">
+            <select
+              value={filters.type}
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, type: event.target.value as Filters['type'] }))
+              }
+              className="mt-1 h-11 w-full appearance-none rounded-xl border border-[var(--border-subtle)] bg-white px-3 text-sm"
+            >
               <option value="all">All types</option>
               {types.map((type) => <option key={type} value={type}>{type}</option>)}
             </select>
           </label>
-          <label>
+          <label className="min-w-[150px] flex-[1_1_150px]">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">Upload Date</span>
-            <input type="date" value={filters.uploadDate} onChange={(event) => setFilters((current) => ({ ...current, uploadDate: event.target.value }))} className="mt-1 h-11 w-full rounded-xl border border-[var(--border-subtle)] px-3 text-sm" />
+            <input
+              type="date"
+              value={filters.uploadDate}
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, uploadDate: event.target.value }))
+              }
+              className="mt-1 h-11 w-full appearance-none rounded-xl border border-[var(--border-subtle)] bg-white px-3 text-sm"
+            />
           </label>
-          <label>
+          <label className="min-w-[150px] flex-[1_1_150px]">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">Effective Date</span>
-            <input type="date" value={filters.effectiveDate} onChange={(event) => setFilters((current) => ({ ...current, effectiveDate: event.target.value }))} className="mt-1 h-11 w-full rounded-xl border border-[var(--border-subtle)] px-3 text-sm" />
+            <input
+              type="date"
+              value={filters.effectiveDate}
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, effectiveDate: event.target.value }))
+              }
+              className="mt-1 h-11 w-full appearance-none rounded-xl border border-[var(--border-subtle)] bg-white px-3 text-sm"
+            />
           </label>
-          <label>
+          <label className="min-w-[150px] flex-[1_1_150px]">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">Expiration Date</span>
-            <input type="date" value={filters.expirationDate} onChange={(event) => setFilters((current) => ({ ...current, expirationDate: event.target.value }))} className="mt-1 h-11 w-full rounded-xl border border-[var(--border-subtle)] px-3 text-sm" />
+            <input
+              type="date"
+              value={filters.expirationDate}
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, expirationDate: event.target.value }))
+              }
+              className="mt-1 h-11 w-full appearance-none rounded-xl border border-[var(--border-subtle)] bg-white px-3 text-sm"
+            />
           </label>
+          <button
+            type="button"
+            onClick={() =>
+              setFilters({
+                query: '',
+                category: 'all',
+                type: 'all',
+                uploadDate: '',
+                effectiveDate: '',
+                expirationDate: ''
+              })
+            }
+            className="h-11 rounded-full border border-[var(--border-subtle)] px-4 text-sm font-semibold text-[var(--text-secondary)]"
+          >
+            Clear filters
+          </button>
         </div>
       </section>
 

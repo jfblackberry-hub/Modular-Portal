@@ -8,7 +8,9 @@ export default async function ProviderLayout({
   children
 }: Readonly<{ children: React.ReactNode }>) {
   const { user, variant } = await getProviderPortalSessionContext();
-  const branding = await getTenantBranding(user.tenant, user.id);
+  const branding = await getTenantBranding(user.tenant, user.id, {
+    experience: 'provider'
+  });
   const config = getProviderPortalConfig(variant);
 
   return (

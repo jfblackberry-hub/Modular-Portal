@@ -1,6 +1,10 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import {
+  getPortalSessionCookieName,
+  readPortalSessionEnvelopeFromCookie
+} from './lib/portal-session-cookie';
 import { hasBillingEnrollmentRoleAccess } from './lib/billing-enrollment-access';
 import { isTenantModuleEnabled, type TenantPortalModuleId } from './lib/tenant-modules';
 
@@ -39,19 +43,14 @@ const routeModuleMap: Array<{ prefix: string; moduleId: TenantPortalModuleId; fa
   { prefix: '/dashboard', moduleId: 'member_home', fallback: '/login' }
 ];
 
-function parsePortalUserCookie(raw: string | undefined) {
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(decodeURIComponent(raw)) as PortalUserCookie;
-  } catch {
-    return null;
-  }
+function toLoginRedirect(request: NextRequest) {
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = '/login';
+  redirectUrl.search = '';
+  return NextResponse.redirect(redirectUrl);
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const route = routeModuleMap.find((item) => pathname === item.prefix || pathname.startsWith(`${item.prefix}/`));
 
@@ -59,7 +58,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const portalUser = parsePortalUserCookie(request.cookies.get('portal-user')?.value);
+  const portalSession = await readPortalSessionEnvelopeFromCookie(
+    request.cookies.get(getPortalSessionCookieName())?.value
+  );
+  const portalUser = portalSession?.user as PortalUserCookie | null;
+
+  if (!portalUser || !portalSession?.accessToken) {
+    return toLoginRedirect(request);
+  }
+
   const brandingConfig = portalUser?.tenant?.brandingConfig;
 
   if (

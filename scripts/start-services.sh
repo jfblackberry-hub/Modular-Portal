@@ -30,6 +30,8 @@ if [ -n "$CLI_NEXT_PUBLIC_API_BASE_URL" ]; then
   export NEXT_PUBLIC_API_BASE_URL="$CLI_NEXT_PUBLIC_API_BASE_URL"
 fi
 
+bash "$ROOT_DIR/scripts/verify-env-consistency.sh"
+
 mkdir -p "$LOG_DIR" "$PID_DIR"
 
 PORTAL_PORT=3000

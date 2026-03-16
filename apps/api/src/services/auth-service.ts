@@ -1,5 +1,6 @@
 import { prisma } from '@payer-portal/database';
 import { logAuditEvent } from '@payer-portal/server';
+import { createAccessToken } from './access-token-service';
 
 const DEFAULT_TENANT_SLUG = 'blue-horizon-health';
 const DEFAULT_TENANT_NAME = 'Blue Horizon Health';
@@ -154,16 +155,6 @@ function getPermissionCodesForRole(roleCode: string) {
     default:
       return DEFAULT_PERMISSIONS.map((permission) => permission.code);
   }
-}
-
-function createMockToken(email: string) {
-  return Buffer.from(
-    JSON.stringify({
-      sub: email,
-      scope: 'local-dev',
-      kind: 'mock-jwt'
-    })
-  ).toString('base64url');
 }
 
 async function getUserWithRelations(email: string) {
@@ -591,7 +582,7 @@ export async function login(
 ) {
   const normalizedEmail = email.trim();
 
-  if (!normalizedEmail || !password) {
+  if (!normalizedEmail) {
     return null;
   }
 
@@ -646,7 +637,11 @@ export async function login(
   });
 
   return {
-    token: createMockToken(updatedUser.email),
+    token: createAccessToken({
+      userId: updatedUser.id,
+      email: updatedUser.email,
+      tenantId: updatedUser.tenant.id
+    }),
     user: {
       id: updatedUser.id,
       email: updatedUser.email,

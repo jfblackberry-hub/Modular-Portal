@@ -1,12 +1,20 @@
-import { loadTenantTheme } from '../theme/loadTenantTheme';
+import type { PortalExperience } from './portal-experience';
+import { getPortalSessionAccessToken } from './portal-session';
 import {
   getTenantImageOverrides,
   type TenantImageOverrides
 } from './portal-image-registry';
+import { loadTenantTheme } from '../theme/loadTenantTheme';
 
 const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3002';
 const DEFAULT_PRIMARY_COLOR = '#2A6FA8';
 const DEFAULT_SECONDARY_COLOR = '#EAF4FB';
+const DEFAULT_PAYER_BRANDING = {
+  displayName: 'Blue Horizon Health',
+  logoUrl: '/tenant-assets/4716c016-3f09-4707-8591-47457441663a-logo.svg',
+  primaryColor: '#2A6FA8',
+  secondaryColor: '#EAF4FB'
+};
 
 export interface TenantBranding {
   faviconUrl?: string;
@@ -24,6 +32,9 @@ export interface TenantBranding {
   welcomeText?: string;
   supportLabel: string;
   imageOverrides?: TenantImageOverrides;
+  experience: PortalExperience;
+  employerGroupName?: string;
+  planName?: string;
 }
 
 type TenantContext = {
@@ -50,6 +61,20 @@ function getStringValue(
 ) {
   const value = config?.[key];
   return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function getStringValueFromKeys(
+  config: Record<string, unknown> | undefined,
+  keys: string[]
+) {
+  for (const key of keys) {
+    const value = getStringValue(config, key);
+    if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
 }
 
 function createAccentSoft(accent: string) {
@@ -79,79 +104,143 @@ function withCacheBuster(url: string | null | undefined, version: string | null 
 
 function buildBranding(
   tenant: TenantContext,
-  brandingOverride?: BrandingApiResponse
+  brandingOverride?: BrandingApiResponse,
+  options: {
+    experience: PortalExperience;
+  } = {
+    experience: 'member'
+  }
 ) {
   const tenantTheme = loadTenantTheme({
     tenantId: tenant.id,
     brandingConfig: tenant.brandingConfig
   });
+  const config = tenant.brandingConfig;
+  const experience = options.experience;
 
-  const primaryColor =
+  const basePrimaryColor =
     brandingOverride?.primaryColor ??
-    getStringValue(tenant.brandingConfig, 'primaryColor') ??
+    getStringValue(config, 'primaryColor') ??
     tenantTheme.primaryColor ??
     DEFAULT_PRIMARY_COLOR;
-  const secondaryColor =
+  const baseSecondaryColor =
     brandingOverride?.secondaryColor ??
-    getStringValue(tenant.brandingConfig, 'secondaryColor') ??
+    getStringValue(config, 'secondaryColor') ??
     tenantTheme.secondaryColor ??
     DEFAULT_SECONDARY_COLOR;
 
+  const memberPayerDisplayName =
+    getStringValueFromKeys(config, [
+      'memberPayerDisplayName',
+      'memberPortalDisplayName',
+      'payerDisplayName',
+      'payerName',
+      'healthPlanName'
+    ]) ?? DEFAULT_PAYER_BRANDING.displayName;
+  const memberPayerLogoUrl =
+    getStringValueFromKeys(config, [
+      'memberPayerLogoUrl',
+      'memberPortalLogoUrl',
+      'payerLogoUrl',
+      'healthPlanLogoUrl'
+    ]) ?? DEFAULT_PAYER_BRANDING.logoUrl;
+  const memberPayerPrimaryColor =
+    getStringValueFromKeys(config, ['memberPayerPrimaryColor', 'payerPrimaryColor']) ??
+    DEFAULT_PAYER_BRANDING.primaryColor;
+  const memberPayerSecondaryColor =
+    getStringValueFromKeys(config, ['memberPayerSecondaryColor', 'payerSecondaryColor']) ??
+    DEFAULT_PAYER_BRANDING.secondaryColor;
+
+  const employerGroupName =
+    getStringValueFromKeys(config, [
+      'employerGroupName',
+      'employerName',
+      'groupName'
+    ]) ?? tenant.name;
+  const planName = getStringValueFromKeys(config, ['memberPlanName', 'planName']);
+
+  const primaryColor = experience === 'member' ? memberPayerPrimaryColor : basePrimaryColor;
+  const secondaryColor =
+    experience === 'member' ? memberPayerSecondaryColor : baseSecondaryColor;
+  const displayName =
+    experience === 'member'
+      ? memberPayerDisplayName
+      : experience === 'provider'
+        ? getStringValueFromKeys(config, ['providerNetworkName', 'networkName']) ??
+          brandingOverride?.displayName ??
+          getStringValue(config, 'displayName') ??
+          tenant.name
+        : brandingOverride?.displayName ??
+          getStringValue(config, 'displayName') ??
+          tenant.name;
+  const logoUrl =
+    experience === 'member'
+      ? withCacheBuster(memberPayerLogoUrl, brandingOverride?.updatedAt)
+      : withCacheBuster(
+          brandingOverride?.logoUrl ??
+            getStringValue(config, 'logoUrl') ??
+            getStringValue(config, 'logo') ??
+            tenantTheme.logo,
+          brandingOverride?.updatedAt
+        );
+
   return {
     faviconUrl: withCacheBuster(
-      brandingOverride?.faviconUrl ??
-        getStringValue(tenant.brandingConfig, 'faviconUrl'),
+      brandingOverride?.faviconUrl ?? getStringValue(config, 'faviconUrl'),
       brandingOverride?.updatedAt
     ),
     heroImageUrl:
       brandingOverride?.heroImageUrl ??
-      getStringValue(tenant.brandingConfig, 'heroImageUrl') ??
-      getStringValue(tenant.brandingConfig, 'heroImage') ??
+      getStringValue(config, 'heroImageUrl') ??
+      getStringValue(config, 'heroImage') ??
       tenantTheme.heroImage,
-    fontFamily:
-      getStringValue(tenant.brandingConfig, 'font') ?? tenantTheme.font,
+    fontFamily: getStringValue(config, 'font') ?? tenantTheme.font,
     primaryColor,
     primarySoftColor: createAccentSoft(primaryColor),
     secondaryColor,
     secondarySoftColor: createAccentSoft(secondaryColor),
     badgeLabel:
-      getStringValue(tenant.brandingConfig, 'badgeLabel') ?? 'Tenant',
-    displayName:
-      brandingOverride?.displayName ??
-      getStringValue(tenant.brandingConfig, 'displayName') ??
-      tenant.name,
-    logoUrl: withCacheBuster(
-      brandingOverride?.logoUrl ??
-        getStringValue(tenant.brandingConfig, 'logoUrl') ??
-        getStringValue(tenant.brandingConfig, 'logo') ??
-        tenantTheme.logo,
-      brandingOverride?.updatedAt
-    ),
-    supportEmail: getStringValue(tenant.brandingConfig, 'supportEmail'),
-    supportPhone: getStringValue(tenant.brandingConfig, 'supportPhone'),
-    welcomeText: getStringValue(tenant.brandingConfig, 'welcomeText'),
+      experience === 'member'
+        ? 'Health Plan'
+        : getStringValue(config, 'badgeLabel') ?? 'Tenant',
+    displayName,
+    logoUrl,
+    supportEmail: getStringValue(config, 'supportEmail'),
+    supportPhone: getStringValue(config, 'supportPhone'),
+    welcomeText: getStringValue(config, 'welcomeText'),
     supportLabel:
-      getStringValue(tenant.brandingConfig, 'supportLabel') ??
+      getStringValue(config, 'supportLabel') ??
       'Member support available Monday through Friday',
     imageOverrides: {
-      ...getTenantImageOverrides(tenant.brandingConfig),
+      ...getTenantImageOverrides(config),
       ...(brandingOverride?.imageOverrides
         ? getTenantImageOverrides(brandingOverride.imageOverrides)
         : {})
-    }
+    },
+    experience,
+    employerGroupName,
+    planName
   };
 }
 
 export async function getTenantBranding(
   tenant: TenantContext,
-  userId?: string
+  accessToken?: string,
+  options: {
+    experience: PortalExperience;
+  } = {
+    experience: 'member'
+  }
 ) {
   try {
-    if (userId) {
+    const sessionAccessToken = await getPortalSessionAccessToken();
+    const resolvedAccessToken = sessionAccessToken ?? accessToken;
+
+    if (resolvedAccessToken) {
       const response = await fetch(`${apiBaseUrl}/api/branding`, {
         cache: 'no-store',
         headers: {
-          'x-user-id': userId
+          Authorization: `Bearer ${resolvedAccessToken}`
         }
       });
 
@@ -161,15 +250,15 @@ export async function getTenantBranding(
           latestBranding.tenantId &&
           latestBranding.tenantId !== tenant.id
         ) {
-          return buildBranding(tenant);
+          return buildBranding(tenant, undefined, options);
         }
 
-        return buildBranding(tenant, latestBranding);
+        return buildBranding(tenant, latestBranding, options);
       }
     }
   } catch {
     // Fall back to the session payload when the API is unavailable.
   }
 
-  return buildBranding(tenant);
+  return buildBranding(tenant, undefined, options);
 }

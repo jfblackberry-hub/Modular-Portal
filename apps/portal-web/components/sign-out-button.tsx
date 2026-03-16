@@ -1,16 +1,17 @@
 'use client';
 
-import {
-  PORTAL_TOKEN_COOKIE,
-  PORTAL_USER_COOKIE
-} from '../lib/session-constants';
-
 export function SignOutButton() {
-  function handleSignOut() {
+  async function handleSignOut() {
     localStorage.removeItem('portal-token');
     localStorage.removeItem('portal-user');
-    document.cookie = `${PORTAL_TOKEN_COOKIE}=; path=/; max-age=0; samesite=lax`;
-    document.cookie = `${PORTAL_USER_COOKIE}=; path=/; max-age=0; samesite=lax`;
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        cache: 'no-store'
+      });
+    } catch {
+      // Ignore logout endpoint errors and continue redirect.
+    }
     window.location.assign('/login');
   }
 

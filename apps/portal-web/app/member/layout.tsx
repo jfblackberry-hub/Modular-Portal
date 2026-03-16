@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { PortalLayout } from '../../components/layout/portal-layout';
+import { resolvePortalExperience } from '../../lib/portal-experience';
 import { TenantTheme } from '../../components/tenant-theme';
 import { getPortalSessionUser } from '../../lib/portal-session';
 import { getTenantBranding } from '../../lib/tenant-branding';
@@ -14,7 +15,9 @@ export default async function MemberLayout({
     redirect('/login');
   }
 
-  const branding = await getTenantBranding(user.tenant, user.id);
+  const branding = await getTenantBranding(user.tenant, user.id, {
+    experience: resolvePortalExperience(user)
+  });
 
   return (
     <>

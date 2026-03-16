@@ -1,37 +1,32 @@
 import type { FastifyInstance } from 'fastify';
 
+import {
+  AuthenticationError,
+  getCurrentUserFromHeaders
+} from '../services/current-user-service';
 import { searchTenantData } from '../services/search-service';
 
 type SearchQuery = {
   q?: string;
 };
 
-function getUserIdHeader(headers: Record<string, unknown>) {
-  const userIdHeader = headers['x-user-id'];
-
-  return typeof userIdHeader === 'string'
-    ? userIdHeader
-    : Array.isArray(userIdHeader)
-      ? userIdHeader[0]
-      : '';
-}
-
 export async function searchRoutes(app: FastifyInstance) {
   app.get<{ Querystring: SearchQuery }>('/api/search', async (request, reply) => {
-    const userId = getUserIdHeader(request.headers);
-
-    if (!userId) {
-      return reply.status(401).send({
-        message: 'Authenticated user required. Provide x-user-id header.'
-      });
-    }
-
     try {
+      const currentUser = await getCurrentUserFromHeaders(request.headers);
       return await searchTenantData({
         query: request.query.q ?? '',
-        userId
+        userId: currentUser.id
       });
     } catch (error) {
+      if (error instanceof AuthenticationError) {
+        request.log.warn(
+          { event: 'search.route.access_denied', path: request.url, reason: error.message },
+          'Search route access denied'
+        );
+        return reply.status(401).send({ message: error.message });
+      }
+
       if (error instanceof Error) {
         const status =
           error.message === 'Authenticated user not found' ? 401 : 400;

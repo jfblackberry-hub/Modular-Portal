@@ -48,20 +48,17 @@ export function SideNavigation({
       </nav>
 
       <aside className="hidden lg:block">
-        <div className="portal-card sticky top-6 p-6">
-          <div className="mb-6 border-b border-[var(--border-subtle)] pb-5">
-            <p
-              className="text-base font-semibold"
-              style={{ color: branding.primaryColor }}
-            >
+        <div className="sticky top-6 rounded-2xl border border-[var(--border-subtle)] bg-white p-4">
+          <div className="mb-4 border-b border-[var(--border-subtle)] pb-4">
+            <p className="text-sm font-semibold" style={{ color: branding.primaryColor }}>
               {primarySectionTitle}
             </p>
-            <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+            <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">
               {primarySectionDescription}
             </p>
           </div>
 
-          <nav className="space-y-7" aria-label="Primary desktop navigation">
+          <nav className="space-y-5" aria-label="Primary desktop navigation">
             {sections.map((section) => (
               <div key={section.title}>
                 <p className="text-[12px] font-semibold text-[var(--text-muted)]">
@@ -72,7 +69,7 @@ export function SideNavigation({
                     const active = !item.external && isActive(item.href.split('#')[0] ?? item.href);
                     const className = active
                       ? 'border-[var(--tenant-primary-color)] bg-[var(--tenant-primary-soft-color)] text-[var(--tenant-primary-color)]'
-                      : 'border-transparent text-[var(--text-secondary)] hover:border-[var(--border-subtle)] hover:bg-slate-50 hover:text-[var(--text-primary)]';
+                      : 'border-transparent text-[var(--text-secondary)] hover:border-[var(--border-subtle)] hover:bg-slate-50/70 hover:text-[var(--text-primary)]';
 
                     if (item.external) {
                       return (
@@ -81,7 +78,7 @@ export function SideNavigation({
                           href={item.href}
                           target="_blank"
                           rel="noreferrer"
-                          className={`block rounded-2xl border px-4 py-4 transition ${className}`}
+                          className={`block rounded-xl border px-3 py-3 transition ${className}`}
                         >
                           <p className="text-sm font-semibold">{item.label}</p>
                           <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
@@ -95,7 +92,7 @@ export function SideNavigation({
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`block rounded-2xl border px-4 py-4 transition ${className}`}
+                        className={`block rounded-xl border px-3 py-3 transition ${className}`}
                       >
                         <p className="text-sm font-semibold">{item.label}</p>
                         <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">

@@ -54,6 +54,19 @@ export function PortalHeader({
                   {branding.welcomeText ??
                     'Use your health plan benefits, claims, ID card, and support resources in one secure portal.'}
                 </p>
+                {branding.experience === 'member' ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-[var(--text-secondary)]">
+                    <p>
+                      <span className="font-semibold text-[var(--text-primary)]">Employer / Group:</span>{' '}
+                      {branding.employerGroupName ?? user.tenant.name}
+                    </p>
+                    <span className="hidden text-[var(--text-muted)] sm:inline">•</span>
+                    <p>
+                      <span className="font-semibold text-[var(--text-primary)]">Plan:</span>{' '}
+                      {branding.planName ?? `${branding.employerGroupName ?? user.tenant.name} Gold PPO`}
+                    </p>
+                  </div>
+                ) : null}
                 <p className="mt-2 text-sm font-medium text-[var(--text-secondary)]">
                   {branding.supportLabel}
                 </p>

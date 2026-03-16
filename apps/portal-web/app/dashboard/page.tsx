@@ -1,11 +1,9 @@
 import { redirect } from 'next/navigation';
 
-import { HeroBanner } from '../../components/dashboard/hero-banner';
-import { MyPlanSection } from '../../components/dashboard/my-plan-section';
-import { RecentActivitySection } from '../../components/dashboard/recent-activity-section';
-import { SupportSection } from '../../components/dashboard/support-section';
+import { MemberCommandCenter } from '../../components/dashboard/member-command-center';
 import {
   getMe,
+  getMemberAuthorizations,
   getMemberClaims,
   getMemberCoverage,
   getMemberDocuments,
@@ -24,58 +22,42 @@ export default async function DashboardPage() {
   }
 
   const sessionUserId = sessionUser?.id;
-  const [me, coverage, claims, documents, messages] = await Promise.all([
+  const [me, coverage, claims, documents, messages, authorizations] = await Promise.all([
     getMe(sessionUserId),
     getMemberCoverage(sessionUserId),
     getMemberClaims(sessionUserId),
     getMemberDocuments(sessionUserId),
-    getMemberMessages(sessionUserId)
+    getMemberMessages(sessionUserId),
+    getMemberAuthorizations(sessionUserId)
   ]);
 
   const member = me?.member;
   const activeCoverage = coverage?.items[0];
-  const recentClaim = claims?.items[0];
-  const recentClaimStatus = recentClaim
-    ? `${recentClaim.claimNumber} - ${recentClaim.status}`
-    : 'No recent claims';
-  const hasIdCard = Boolean(member?.memberNumber);
-  const nextAction = hasIdCard ? 'Review latest claim details' : 'View your ID card';
+  const planName =
+    activeCoverage?.planName ??
+    `${sessionUser?.tenant.name ?? 'Member'} Gold PPO`;
 
   return (
-    <div className="space-y-8">
-      <HeroBanner
-        memberName={member?.firstName ?? sessionUser?.firstName ?? 'Member'}
-        planName={activeCoverage?.planName ?? 'Blue Horizon Gold PPO'}
-        coverageStatus={activeCoverage ? 'Active' : 'Status unavailable'}
-        memberNumber={member?.memberNumber ?? 'Unavailable'}
-        pcpName="Dr. Maya Thompson"
-        deductibleCurrent={750}
-        deductibleTotal={2000}
-        recentClaimStatus={recentClaimStatus}
-        nextAction={nextAction}
-      />
-
-      <MyPlanSection
-        planName={activeCoverage?.planName ?? 'Blue Horizon Gold PPO'}
-        coverageStatus={activeCoverage ? 'Active' : 'Status unavailable'}
-        memberName={
-          member ? `${member.firstName} ${member.lastName}` : `${sessionUser?.firstName ?? ''} ${sessionUser?.lastName ?? ''}`.trim() || 'Member'
-        }
-        memberId={member?.memberNumber ?? 'Unavailable'}
-        groupNumber="GRP-20418"
-        deductibleCurrent={750}
-        deductibleTotal={2000}
-        outOfPocketCurrent={1250}
-        outOfPocketTotal={4500}
-      />
-
-      <RecentActivitySection
-        claims={claims?.items.slice(0, 3) ?? []}
-        messages={messages?.items.slice(0, 3) ?? []}
-        documents={documents?.items.slice(0, 3) ?? []}
-      />
-
-      <SupportSection />
-    </div>
+    <MemberCommandCenter
+      memberName={
+        member
+          ? `${member.firstName} ${member.lastName}`
+          : `${sessionUser?.firstName ?? ''} ${sessionUser?.lastName ?? ''}`.trim() || 'Member'
+      }
+      memberId={member?.memberNumber ?? 'Unavailable'}
+      employerGroupName={sessionUser?.tenant.name ?? 'Employer'}
+      planName={planName}
+      claims={claims?.items ?? []}
+      messages={messages?.items ?? []}
+      documents={documents?.items ?? []}
+      pendingAuthorizations={authorizations?.items ?? []}
+      pcpName="Dr. Maya Thompson"
+      deductibleCurrent={750}
+      deductibleTotal={2000}
+      outOfPocketCurrent={1250}
+      outOfPocketTotal={4500}
+      coverageStatus={activeCoverage ? 'Active' : 'Status unavailable'}
+      searchBasePath="/dashboard/search"
+    />
   );
 }

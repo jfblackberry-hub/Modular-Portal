@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 
-import { getPortalSessionUser } from '../../../../lib/portal-session';
+import {
+  getPortalSessionAccessToken,
+  getPortalSessionUser
+} from '../../../../lib/portal-session';
 
 const apiBaseUrl =
   process.env.API_BASE_URL ??
@@ -9,8 +12,9 @@ const apiBaseUrl =
 
 export async function GET() {
   const user = await getPortalSessionUser();
+  const accessToken = await getPortalSessionAccessToken();
 
-  if (!user) {
+  if (!user || !accessToken) {
     return NextResponse.json({ message: 'Authentication required.' }, { status: 401 });
   }
 
@@ -18,7 +22,7 @@ export async function GET() {
     const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/dashboard`, {
       cache: 'no-store',
       headers: {
-        'x-user-id': user.id
+        Authorization: `Bearer ${accessToken}`
       }
     });
 

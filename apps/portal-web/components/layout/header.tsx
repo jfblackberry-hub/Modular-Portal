@@ -31,25 +31,36 @@ export function Header({
           <Menu size={18} />
         </button>
 
-        <a href="/member" className="flex items-center gap-3">
-          {branding.logoUrl ? (
-            <img
-              src={branding.logoUrl}
-              alt={`${branding.displayName} logo`}
-              className="h-9 w-auto max-w-[140px] object-contain"
-            />
-          ) : (
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-white"
-              style={{ backgroundColor: branding.primaryColor }}
-            >
-              {branding.displayName
-                .split(' ')
-                .map((word) => word[0])
-                .join('')
-                .slice(0, 2)}
-            </div>
-          )}
+        <a href="/member" className="min-w-0">
+          <div className="flex items-center gap-3">
+            {branding.logoUrl ? (
+              <img
+                src={branding.logoUrl}
+                alt={`${branding.displayName} logo`}
+                className="h-9 w-auto max-w-[140px] object-contain"
+              />
+            ) : (
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-white"
+                style={{ backgroundColor: branding.primaryColor }}
+              >
+                {branding.displayName
+                  .split(' ')
+                  .map((word) => word[0])
+                  .join('')
+                  .slice(0, 2)}
+              </div>
+            )}
+            <p className="hidden text-sm font-semibold text-[var(--text-primary)] xl:block">
+              {branding.displayName}
+            </p>
+          </div>
+          {branding.experience === 'member' ? (
+            <p className="mt-1 hidden truncate text-xs text-[var(--text-muted)] xl:block">
+              Employer / Group: {branding.employerGroupName ?? user.tenant.name} • Plan:{' '}
+              {branding.planName ?? `${branding.employerGroupName ?? user.tenant.name} Gold PPO`}
+            </p>
+          ) : null}
         </a>
 
         <form

@@ -2,13 +2,9 @@
 
 import { useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { buildAdminHandoffUrl } from '../../lib/admin-redirect';
-import {
-  PORTAL_TOKEN_COOKIE,
-  PORTAL_USER_COOKIE
-} from '../../lib/session-constants';
 
 export function LoginForm({
   defaultUsername = '',
@@ -28,13 +24,11 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authPhase, setAuthPhase] = useState<'idle' | 'authenticating' | 'finalizing'>('idle');
+  const submitLockRef = useRef(false);
 
   useEffect(() => {
-    localStorage.removeItem('portal-token');
-    localStorage.removeItem('portal-user');
-    document.cookie = `${PORTAL_TOKEN_COOKIE}=; path=/; max-age=0; samesite=lax`;
-    document.cookie = `${PORTAL_USER_COOKIE}=; path=/; max-age=0; samesite=lax`;
+    void clearAuthStorage();
   }, []);
 
   useEffect(() => {
@@ -45,16 +39,33 @@ export function LoginForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (submitLockRef.current) {
+      console.info('[portal-auth] submit ignored (already authenticating)');
+      return;
+    }
+
+    submitLockRef.current = true;
     setError('');
-    setIsSubmitting(true);
+    setAuthPhase('authenticating');
+    console.info('[portal-auth] submit click', { loginPath, email, rememberMe });
+    let navigating = false;
 
     try {
+      await clearAuthStorage();
+      const resolvedPassword = password.trim() || 'demo';
+      console.info('[portal-auth] auth request start', { loginPath });
       const response = await fetch(loginPath, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password: resolvedPassword, rememberMe })
+      });
+      console.info('[portal-auth] auth request end', {
+        loginPath,
+        ok: response.ok,
+        status: response.status
       });
 
       if (!response.ok) {
@@ -63,7 +74,7 @@ export function LoginForm({
       }
 
       const payload = (await response.json()) as {
-        token: string;
+        sessionEstablished?: boolean;
         user: {
           id: string;
           firstName: string;
@@ -85,24 +96,36 @@ export function LoginForm({
         };
       };
 
-      localStorage.setItem('portal-token', payload.token);
-      localStorage.setItem('portal-user', JSON.stringify(payload.user));
-      const maxAge = rememberMe ? 60 * 60 * 8 : 60 * 60;
-      document.cookie = `${PORTAL_TOKEN_COOKIE}=${payload.token}; path=/; max-age=${maxAge}; samesite=lax`;
-      document.cookie = `${PORTAL_USER_COOKIE}=${encodeURIComponent(JSON.stringify(payload.user))}; path=/; max-age=${maxAge}; samesite=lax`;
+      console.info('[portal-auth] token write', {
+        sessionEstablished: payload.sessionEstablished === true
+      });
+
+      if (payload.sessionEstablished !== true) {
+        setError('Sign-in state could not be established. Please try again.');
+        return;
+      }
+
+      setAuthPhase('finalizing');
+      console.info('[portal-auth] auth state change', { state: 'authenticated' });
       const adminRedirectUrl = buildAdminHandoffUrl(payload.user);
 
       if (adminRedirectUrl) {
+        console.info('[portal-auth] redirect/navigation', { to: adminRedirectUrl });
+        navigating = true;
         window.location.assign(adminRedirectUrl);
         return;
       }
 
       if (payload.user.landingContext === 'provider') {
+        console.info('[portal-auth] redirect/navigation', { to: '/provider/dashboard' });
+        navigating = true;
         window.location.assign('/provider/dashboard');
         return;
       }
 
       if (payload.user.landingContext === 'employer') {
+        console.info('[portal-auth] redirect/navigation', { to: '/dashboard/billing-enrollment' });
+        navigating = true;
         window.location.assign('/dashboard/billing-enrollment');
         return;
       }
@@ -115,15 +138,35 @@ export function LoginForm({
       ]);
 
       if (payload.user.roles.some((role) => ebRoleSet.has(role))) {
+        console.info('[portal-auth] redirect/navigation', { to: '/dashboard/billing-enrollment' });
+        navigating = true;
         window.location.assign('/dashboard/billing-enrollment');
         return;
       }
 
+      console.info('[portal-auth] redirect/navigation', { to: successPath });
+      navigating = true;
       window.location.assign(successPath);
     } catch {
       setError('Sign-in is temporarily unavailable. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      submitLockRef.current = false;
+      if (!navigating) {
+        setAuthPhase('idle');
+      }
+    }
+  }
+
+  async function clearAuthStorage() {
+    localStorage.removeItem('portal-token');
+    localStorage.removeItem('portal-user');
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        cache: 'no-store'
+      });
+    } catch {
+      // Ignore cleanup errors and continue login flow.
     }
   }
 
@@ -159,6 +202,9 @@ export function LoginForm({
               {helperText}
             </p>
           ) : null}
+          <p className="mt-1 text-[12px] text-[var(--text-muted)]">
+            Demo default password is <span className="font-medium">demo</span> if left blank.
+          </p>
         </label>
 
         <label className="block">
@@ -179,8 +225,7 @@ export function LoginForm({
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="Enter password"
-            required
+            placeholder="Enter password (optional for demo)"
             autoComplete="current-password"
             aria-label="Password"
           />
@@ -212,9 +257,9 @@ export function LoginForm({
         <button
           type="submit"
           className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
-          disabled={isSubmitting}
+          disabled={authPhase !== 'idle'}
         >
-          {isSubmitting ? 'Signing In...' : 'Sign In'}
+          {authPhase === 'authenticating' ? 'Signing in...' : authPhase === 'finalizing' ? 'Finishing sign in...' : 'Sign In'}
         </button>
       </form>
 

@@ -1,6 +1,8 @@
-import type { IncomingHttpHeaders } from 'node:http';
-
 import type { FastifyInstance } from 'fastify';
+import {
+  AuthenticationError,
+  getCurrentUserFromHeaders
+} from '../services/current-user-service';
 
 import {
   DocumentFileNotFoundError,
@@ -24,29 +26,20 @@ function parseTags(rawValue: string | undefined) {
   }
 }
 
-function getUserIdFromHeaders(headers: IncomingHttpHeaders) {
-  const userIdHeader = headers['x-user-id'];
-
-  return typeof userIdHeader === 'string'
-    ? userIdHeader
-    : Array.isArray(userIdHeader)
-      ? userIdHeader[0]
-      : '';
-}
-
 export async function documentRoutes(app: FastifyInstance) {
   app.get('/api/documents', async (request, reply) => {
-    const userId = getUserIdFromHeaders(request.headers);
-
-    if (!userId) {
-      return reply.status(401).send({
-        message: 'Authenticated user required. Provide x-user-id header.'
-      });
-    }
-
     try {
-      return await listDocuments({ userId });
+      const currentUser = await getCurrentUserFromHeaders(request.headers);
+      return await listDocuments({ userId: currentUser.id });
     } catch (error) {
+      if (error instanceof AuthenticationError) {
+        request.log.warn(
+          { event: 'documents.route.access_denied', path: request.url, reason: error.message },
+          'Documents route access denied'
+        );
+        return reply.status(401).send({ message: error.message });
+      }
+
       if (error instanceof Error) {
         const status = error.message === 'Authenticated user not found' ? 401 : 400;
         return reply.status(status).send({ message: error.message });
@@ -62,18 +55,11 @@ export async function documentRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>(
     '/api/documents/:id/download',
     async (request, reply) => {
-      const userId = getUserIdFromHeaders(request.headers);
-
-      if (!userId) {
-        return reply.status(401).send({
-          message: 'Authenticated user required. Provide x-user-id header.'
-        });
-      }
-
       try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
         const result = await downloadDocument({
           documentId: request.params.id,
-          userId,
+          userId: currentUser.id,
           ipAddress: request.ip,
           userAgent: request.headers['user-agent']
         });
@@ -86,6 +72,14 @@ export async function documentRoutes(app: FastifyInstance) {
           )
           .send(result.fileBuffer);
       } catch (error) {
+        if (error instanceof AuthenticationError) {
+          request.log.warn(
+            { event: 'documents.route.access_denied', path: request.url, reason: error.message },
+            'Documents route access denied'
+          );
+          return reply.status(401).send({ message: error.message });
+        }
+
         if (
           error instanceof DocumentFileNotFoundError ||
           (error instanceof Error && error.message === 'Document not found')
@@ -109,15 +103,8 @@ export async function documentRoutes(app: FastifyInstance) {
   );
 
   app.post('/api/documents/upload', async (request, reply) => {
-    const userId = getUserIdFromHeaders(request.headers);
-
-    if (!userId) {
-      return reply.status(401).send({
-        message: 'Authenticated user required. Provide x-user-id header.'
-      });
-    }
-
     try {
+      const currentUser = await getCurrentUserFromHeaders(request.headers);
       const file = await request.file();
 
       if (!file) {
@@ -131,7 +118,7 @@ export async function documentRoutes(app: FastifyInstance) {
 
       const document = await uploadDocument({
         file,
-        userId,
+        userId: currentUser.id,
         status:
           statusField && 'value' in statusField && typeof statusField.value === 'string'
             ? statusField.value
@@ -146,6 +133,14 @@ export async function documentRoutes(app: FastifyInstance) {
 
       return reply.status(201).send(document);
     } catch (error) {
+      if (error instanceof AuthenticationError) {
+        request.log.warn(
+          { event: 'documents.route.access_denied', path: request.url, reason: error.message },
+          'Documents route access denied'
+        );
+        return reply.status(401).send({ message: error.message });
+      }
+
       if (error instanceof Error) {
         const status = error.message === 'Authenticated user not found' ? 401 : 400;
         return reply.status(status).send({ message: error.message });

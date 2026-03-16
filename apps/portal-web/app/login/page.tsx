@@ -21,7 +21,8 @@ const quickSignInGroups = [
     title: 'Other',
     users: [
       { label: 'Provider user', username: 'Provider1' },
-      { label: 'E&B employer admin', username: 'blue-horizon-health' },
+      { label: 'E&B Northstar employer', username: 'EMP-0316043829906172-001' },
+      { label: 'E&B Lakeside employer', username: 'EMP-0316043829906172-002' },
       { label: 'E&B broker', username: 'broker' },
       { label: 'E&B internal operations', username: 'ops' }
     ]
@@ -88,7 +89,7 @@ export default async function LoginPage() {
           </section>
 
           <div className="flex flex-col items-center gap-4 lg:items-end">
-            <LoginForm helperText="Use your username/email. Employers can also use Employer Key (tenant slug), for example `blue-horizon-health`." />
+            <LoginForm helperText="Use your username/email. Employers can also use Employer Key, for example `EMP-0316043829906172-001` or `EMP-0316043829906172-002`." />
           </div>
         </div>
       </section>

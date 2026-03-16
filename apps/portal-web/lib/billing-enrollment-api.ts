@@ -1,3 +1,7 @@
+import 'server-only';
+
+import { getPortalSessionAccessToken } from './portal-session';
+
 export type BillingEnrollmentOverview = {
   enrollmentCases: Array<Record<string, unknown>>;
   planCatalog: Array<Record<string, unknown>>;
@@ -88,11 +92,24 @@ export type BillingSummaryResponse = {
 
 const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3002';
 
+async function resolveAccessToken(accessToken?: string) {
+  const sessionAccessToken = await getPortalSessionAccessToken();
+  const resolvedAccessToken = sessionAccessToken ?? accessToken;
+
+  if (!resolvedAccessToken) {
+    throw new Error('Missing portal access token.');
+  }
+
+  return resolvedAccessToken;
+}
+
 export async function getBillingEnrollmentOverview(userId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/overview`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -104,11 +121,13 @@ export async function getBillingEnrollmentOverview(userId: string) {
 }
 
 export async function startBillingEnrollment(userId: string, input: { householdId: string; planId: string; effectiveDate: string }) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/enrollments/start`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(input)
   });
@@ -121,10 +140,12 @@ export async function startBillingEnrollment(userId: string, input: { householdI
 }
 
 export async function getBillingEnrollmentPlans(userId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/plans`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -136,11 +157,13 @@ export async function getBillingEnrollmentPlans(userId: string) {
 }
 
 export async function compareBillingEnrollmentPlans(userId: string, input: { planIds: string[] }) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/plans/compare`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(input)
   });
@@ -153,10 +176,12 @@ export async function compareBillingEnrollmentPlans(userId: string, input: { pla
 }
 
 export async function getBillingSummary(userId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/billing/summary`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -168,10 +193,12 @@ export async function getBillingSummary(userId: string) {
 }
 
 export async function getInvoiceDetail(userId: string, invoiceId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/billing/invoices/${invoiceId}`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -186,11 +213,13 @@ export async function makeBillingPayment(
   userId: string,
   input: { billingAccountId: string; invoiceId: string; paymentMethodTokenId: string; amount: number }
 ) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/billing/payments/make`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(input)
   });
@@ -206,11 +235,13 @@ export async function updateBillingAutopay(
   userId: string,
   input: { enabled: boolean; paymentMethodTokenId?: string }
 ) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/billing/autopay`, {
     method: 'PUT',
     headers: {
       'content-type': 'application/json',
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(input)
   });
@@ -223,10 +254,12 @@ export async function updateBillingAutopay(
 }
 
 export async function getDependentsExperience(userId: string, householdId = 'hh-8843') {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/dependents?householdId=${encodeURIComponent(householdId)}`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -248,11 +281,13 @@ export async function addDependent(
     relationshipDetail: string;
   }
 ) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/dependents`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(input)
   });
@@ -276,11 +311,13 @@ export async function updateDependent(
     relationshipDetail: string;
   }
 ) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/dependents/${dependentId}`, {
     method: 'PATCH',
     headers: {
       'content-type': 'application/json',
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(input)
   });
@@ -293,12 +330,14 @@ export async function updateDependent(
 }
 
 export async function removeDependent(userId: string, dependentId: string, householdId = 'hh-8843') {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(
     `${apiBaseUrl}/api/v1/billing-enrollment/dependents/${dependentId}?householdId=${encodeURIComponent(householdId)}`,
     {
       method: 'DELETE',
       headers: {
-        'x-user-id': userId
+        Authorization: `Bearer ${accessToken}`
       }
     }
   );
@@ -311,10 +350,12 @@ export async function removeDependent(userId: string, dependentId: string, house
 }
 
 export async function getDocumentCenter(userId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/documents`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -329,11 +370,13 @@ export async function uploadDocument(
   userId: string,
   input: { requestId: string; documentName: string }
 ) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/documents/upload`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(input)
   });
@@ -346,12 +389,14 @@ export async function uploadDocument(
 }
 
 export async function getCorrespondenceCenter(userId: string, unreadOnly = false) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(
     `${apiBaseUrl}/api/v1/billing-enrollment/notices/correspondence?unreadOnly=${String(unreadOnly)}`,
     {
       cache: 'no-store',
       headers: {
-        'x-user-id': userId
+        Authorization: `Bearer ${accessToken}`
       }
     }
   );
@@ -364,10 +409,12 @@ export async function getCorrespondenceCenter(userId: string, unreadOnly = false
 }
 
 export async function getNoticeDetail(userId: string, noticeId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/notices/correspondence/${noticeId}`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -379,10 +426,12 @@ export async function getNoticeDetail(userId: string, noticeId: string) {
 }
 
 export async function markNoticeRead(userId: string, noticeId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/notices/correspondence/${noticeId}/read`, {
     method: 'POST',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -394,10 +443,12 @@ export async function markNoticeRead(userId: string, noticeId: string) {
 }
 
 export async function getSupportCenter(userId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/support`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -409,10 +460,12 @@ export async function getSupportCenter(userId: string) {
 }
 
 export async function getBillingEnrollmentModuleConfig(userId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/module-config`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -449,10 +502,12 @@ export type EmployerDashboardResponse = {
 };
 
 export async function getEmployerDashboard(userId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/dashboard`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -499,10 +554,12 @@ export type EmployerNotificationsResponse = {
 };
 
 export async function getEmployerEmployees(userId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/employees`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -514,12 +571,14 @@ export async function getEmployerEmployees(userId: string) {
 }
 
 export async function getEmployerEmployeeById(userId: string, employeeId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(
     `${apiBaseUrl}/api/v1/billing-enrollment/employer/employees/${encodeURIComponent(employeeId)}`,
     {
       cache: 'no-store',
       headers: {
-        'x-user-id': userId
+        Authorization: `Bearer ${accessToken}`
       }
     }
   );
@@ -537,10 +596,12 @@ export async function getEmployerEmployeeById(userId: string, employeeId: string
 }
 
 export async function getEmployerEnrollmentActivity(userId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/enrollment-activity`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -552,12 +613,14 @@ export async function getEmployerEnrollmentActivity(userId: string) {
 }
 
 export async function getEmployerEnrollmentActivityById(userId: string, requestId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(
     `${apiBaseUrl}/api/v1/billing-enrollment/employer/enrollment-activity/${encodeURIComponent(requestId)}`,
     {
       cache: 'no-store',
       headers: {
-        'x-user-id': userId
+        Authorization: `Bearer ${accessToken}`
       }
     }
   );
@@ -575,10 +638,12 @@ export async function getEmployerEnrollmentActivityById(userId: string, requestI
 }
 
 export async function getEmployerTasks(userId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/tasks`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -590,12 +655,14 @@ export async function getEmployerTasks(userId: string) {
 }
 
 export async function getEmployerTaskById(userId: string, taskId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(
     `${apiBaseUrl}/api/v1/billing-enrollment/employer/tasks/${encodeURIComponent(taskId)}`,
     {
       cache: 'no-store',
       headers: {
-        'x-user-id': userId
+        Authorization: `Bearer ${accessToken}`
       }
     }
   );
@@ -613,10 +680,12 @@ export async function getEmployerTaskById(userId: string, taskId: string) {
 }
 
 export async function getEmployerNotifications(userId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/notifications`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 
@@ -628,10 +697,12 @@ export async function getEmployerNotifications(userId: string) {
 }
 
 export async function getEmployerNotificationPreferences(userId: string) {
+  const accessToken = await resolveAccessToken(userId);
+
   const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/notification-preferences`, {
     cache: 'no-store',
     headers: {
-      'x-user-id': userId
+      Authorization: `Bearer ${accessToken}`
     }
   });
 

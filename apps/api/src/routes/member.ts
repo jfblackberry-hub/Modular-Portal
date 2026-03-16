@@ -1,8 +1,13 @@
 import { apiRoutes, openApiSpecification } from '@payer-portal/api-contracts';
 import { prisma } from '@payer-portal/database';
 import { readFile } from '@payer-portal/server';
-import type { FastifyInstance } from 'fastify';
-import type { IncomingHttpHeaders } from 'node:http';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import {
+  assertTenantMatch,
+  AuthenticationError,
+  AuthorizationError,
+  getCurrentUserFromHeaders
+} from '../services/current-user-service';
 import {
   getCatalogClaims,
   getCatalogMemberProfile,
@@ -10,7 +15,6 @@ import {
 } from '../services/portal-catalog-service';
 
 const mockPermissions = ['member.view', 'tenant.view'];
-const DEFAULT_MEMBER_EMAIL = 'maria';
 
 function getString(value: unknown) {
   return typeof value === 'string' ? value : undefined;
@@ -38,111 +42,81 @@ function getPortalCatalogContext(user: {
   };
 }
 
-async function getDefaultMemberUser() {
-  const include = {
-    tenant: {
-      include: {
-        branding: true
-      }
-    },
-    roles: {
-      include: {
-        role: {
-          include: {
-            permissions: {
-              include: {
-                permission: true
-              }
+const memberUserInclude = {
+  tenant: {
+    include: {
+      branding: true
+    }
+  },
+  roles: {
+    include: {
+      role: {
+        include: {
+          permissions: {
+            include: {
+              permission: true
             }
           }
         }
       }
     }
-  } as const;
-
-  const defaultMember = await prisma.user.findUnique({
-    where: {
-      email: DEFAULT_MEMBER_EMAIL
-    },
-    include
-  });
-
-  if (defaultMember) {
-    return defaultMember;
   }
+} as const;
 
-  return prisma.user.findFirst({
-    where: {
-      roles: {
-        some: {
-          role: {
-            code: 'member'
-          }
-        }
-      }
-    },
-    include
-  });
-}
-
-function getRequestedUserId(headers: IncomingHttpHeaders) {
-  const value = headers['x-user-id'];
-  if (Array.isArray(value)) {
-    return value[0]?.trim() ?? '';
-  }
-
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-async function getMemberUser(headers: IncomingHttpHeaders) {
-  const include = {
-    tenant: {
-      include: {
-        branding: true
-      }
-    },
-    roles: {
-      include: {
-        role: {
-          include: {
-            permissions: {
-              include: {
-                permission: true
-              }
-            }
-          }
-        }
-      }
-    }
-  } as const;
-
-  const requestedUserId = getRequestedUserId(headers);
-
-  if (requestedUserId) {
-    const requestedUser = await prisma.user.findUnique({
+async function getMemberUser(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    const currentUser = await getCurrentUserFromHeaders(request.headers);
+    const user = await prisma.user.findUnique({
       where: {
-        id: requestedUserId
+        id: currentUser.id
       },
-      include
+      include: memberUserInclude
     });
 
-    if (requestedUser) {
-      return requestedUser;
+    if (!user) {
+      throw new AuthenticationError('Authenticated user not found.');
     }
-  }
 
-  return getDefaultMemberUser();
+    assertTenantMatch(currentUser, user.tenantId, {
+      action: request.url
+    });
+
+    return user;
+  } catch (error) {
+    if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
+      request.log.warn(
+        {
+          event: 'member.route.access_denied',
+          path: request.url,
+          reason: error.message
+        },
+        'Member route access denied'
+      );
+      reply.status(error instanceof AuthenticationError ? 401 : 403).send({
+        message: error.message
+      });
+      return null;
+    }
+
+    request.log.error(
+      { event: 'member.route.auth_resolution_error', path: request.url, error },
+      'Member route auth resolution failed'
+    );
+    reply.status(503).send({
+      message:
+        'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+    });
+    return null;
+  }
 }
 
 export async function memberRoutes(app: FastifyInstance) {
   app.get(apiRoutes.me, async (request, reply) => {
-    const user = await getMemberUser(request.headers);
-
-    if (!user) {
-      return reply.status(503).send({
-        message: 'Seeded portal user not found. Run the database seed.'
-      });
-    }
+    const user = await getMemberUser(request, reply);
+    if (!user) return;
 
     const portalCatalogContext = getPortalCatalogContext(user);
     const catalogProfile = await getCatalogMemberProfile(
@@ -170,13 +144,8 @@ export async function memberRoutes(app: FastifyInstance) {
   });
 
   app.get(apiRoutes.memberProfile, async (request, reply) => {
-    const user = await getMemberUser(request.headers);
-
-    if (!user) {
-      return reply.status(503).send({
-        message: 'Seeded portal user not found. Run the database seed.'
-      });
-    }
+    const user = await getMemberUser(request, reply);
+    if (!user) return;
 
     const portalCatalogContext = getPortalCatalogContext(user);
     const catalogProfile = await getCatalogMemberProfile(
@@ -198,13 +167,8 @@ export async function memberRoutes(app: FastifyInstance) {
   });
 
   app.get(apiRoutes.memberCoverage, async (request, reply) => {
-    const user = await getMemberUser(request.headers);
-
-    if (!user) {
-      return reply.status(503).send({
-        message: 'Seeded portal user not found. Run the database seed.'
-      });
-    }
+    const user = await getMemberUser(request, reply);
+    if (!user) return;
 
     return {
       items: [
@@ -224,13 +188,8 @@ export async function memberRoutes(app: FastifyInstance) {
   });
 
   app.get(apiRoutes.memberClaims, async (request, reply) => {
-    const user = await getMemberUser(request.headers);
-
-    if (!user) {
-      return reply.status(503).send({
-        message: 'Seeded portal user not found. Run the database seed.'
-      });
-    }
+    const user = await getMemberUser(request, reply);
+    if (!user) return;
 
     const portalCatalogContext = getPortalCatalogContext(user);
     const catalogClaims = await getCatalogClaims(portalCatalogContext, user.email);
@@ -287,13 +246,8 @@ export async function memberRoutes(app: FastifyInstance) {
   });
 
   app.get('/api/v1/member/providers', async (request, reply) => {
-    const user = await getMemberUser(request.headers);
-
-    if (!user) {
-      return reply.status(503).send({
-        message: 'Seeded portal user not found. Run the database seed.'
-      });
-    }
+    const user = await getMemberUser(request, reply);
+    if (!user) return;
 
     const portalCatalogContext = getPortalCatalogContext(user);
     const catalogProviders = await getCatalogProviders(portalCatalogContext);
@@ -343,13 +297,8 @@ export async function memberRoutes(app: FastifyInstance) {
   });
 
   app.get(apiRoutes.memberDocuments, async (request, reply) => {
-    const user = await getMemberUser(request.headers);
-
-    if (!user) {
-      return reply.status(503).send({
-        message: 'Seeded portal user not found. Run the database seed.'
-      });
-    }
+    const user = await getMemberUser(request, reply);
+    if (!user) return;
 
     const documents = await prisma.document.findMany({
       where: {
@@ -381,13 +330,8 @@ export async function memberRoutes(app: FastifyInstance) {
   });
 
   app.get(apiRoutes.memberMessages, async (request, reply) => {
-    const user = await getMemberUser(request.headers);
-
-    if (!user) {
-      return reply.status(503).send({
-        message: 'Seeded portal user not found. Run the database seed.'
-      });
-    }
+    const user = await getMemberUser(request, reply);
+    if (!user) return;
 
     const notifications = await prisma.notification.findMany({
       where: {
@@ -413,13 +357,8 @@ export async function memberRoutes(app: FastifyInstance) {
   });
 
   app.get(apiRoutes.memberAuthorizations, async (request, reply) => {
-    const user = await getMemberUser(request.headers);
-
-    if (!user) {
-      return reply.status(503).send({
-        message: 'Seeded portal user not found. Run the database seed.'
-      });
-    }
+    const user = await getMemberUser(request, reply);
+    if (!user) return;
 
     const authorizations = await prisma.job.findMany({
       where: {
@@ -450,13 +389,8 @@ export async function memberRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>(
     '/api/v1/member/documents/:id/download',
     async (request, reply) => {
-      const user = await getMemberUser(request.headers);
-
-      if (!user) {
-        return reply.status(503).send({
-          message: 'Seeded portal user not found. Run the database seed.'
-        });
-      }
+      const user = await getMemberUser(request, reply);
+      if (!user) return;
 
       const document = await prisma.document.findFirst({
         where: {

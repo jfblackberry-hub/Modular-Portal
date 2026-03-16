@@ -1,3 +1,7 @@
+import 'server-only';
+
+import { getPortalSessionAccessToken } from './portal-session';
+
 const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3002';
 const adminConsoleBaseUrl =
   process.env.NEXT_PUBLIC_ADMIN_CONSOLE_URL ?? 'http://localhost:3003';
@@ -36,7 +40,7 @@ export type PlatformSearchResponse = {
   };
 };
 
-export async function searchPlatformContent(userId: string, query: string) {
+export async function searchPlatformContent(accessToken: string, query: string) {
   const normalizedQuery = query.trim();
 
   if (!normalizedQuery) {
@@ -44,13 +48,17 @@ export async function searchPlatformContent(userId: string, query: string) {
   }
 
   try {
+    const sessionAccessToken = await getPortalSessionAccessToken();
+    const resolvedAccessToken = sessionAccessToken ?? accessToken;
     const response = await fetch(
       `${apiBaseUrl}/api/search?q=${encodeURIComponent(normalizedQuery)}`,
       {
         cache: 'no-store',
-        headers: {
-          'x-user-id': userId
-        }
+        headers: resolvedAccessToken
+          ? {
+              Authorization: `Bearer ${resolvedAccessToken}`
+            }
+          : undefined
       }
     );
 

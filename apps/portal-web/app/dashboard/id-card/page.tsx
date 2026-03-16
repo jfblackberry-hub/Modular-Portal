@@ -16,7 +16,9 @@ export default async function IdCardPage() {
   const member = profile ?? me?.member;
   const plan = coverage?.items[0];
   const tenantBranding = sessionUser
-    ? await getTenantBranding(sessionUser.tenant, sessionUser.id)
+    ? await getTenantBranding(sessionUser.tenant, sessionUser.id, {
+      experience: 'member'
+    })
     : undefined;
   const memberName = member
     ? `${member.firstName} ${member.lastName}`
