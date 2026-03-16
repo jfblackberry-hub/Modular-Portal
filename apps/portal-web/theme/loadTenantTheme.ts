@@ -1,4 +1,5 @@
 import tenantConfigJson from '../../../tenant-config.json';
+import { REAL_HEALTH_DEFAULT_IMAGE_REGISTRY } from '../lib/portal-image-registry';
 
 export interface TenantThemeConfig {
   font: string;
@@ -19,7 +20,7 @@ const platformDefaultTheme: TenantThemeConfig = {
   logo: '/tenant-assets/4716c016-3f09-4707-8591-47457441663a-logo.svg',
   primaryColor: '#2F6FED',
   secondaryColor: '#4DA3FF',
-  heroImage: '/assets/portal-images/doctor-consultation.svg',
+  heroImage: REAL_HEALTH_DEFAULT_IMAGE_REGISTRY.memberHero,
   font: "Inter, Aptos, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
 };
 

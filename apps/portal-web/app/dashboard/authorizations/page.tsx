@@ -2,10 +2,12 @@ import type { MemberAuthorization } from '@payer-portal/api-contracts';
 
 import { EmptyState, PageHeader, StatusBadge, SurfaceCard } from '../../../components/portal-ui';
 import { getMemberAuthorizations } from '../../../lib/member-api';
+import { getPortalSessionUser } from '../../../lib/portal-session';
 import { formatDate } from '../../../lib/portal-format';
 
 export default async function AuthorizationsPage() {
-  const authorizations = await getMemberAuthorizations();
+  const sessionUser = await getPortalSessionUser();
+  const authorizations = await getMemberAuthorizations(sessionUser?.id);
   const items = authorizations?.items ?? [];
 
   return (

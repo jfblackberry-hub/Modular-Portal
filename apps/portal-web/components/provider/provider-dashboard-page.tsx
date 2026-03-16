@@ -1,17 +1,23 @@
-import { PageHeader, QuickActionCard, StatCard, SurfaceCard } from '../portal-ui';
-
 import {
   getProviderPortalConfig,
   getProviderQuickActionsByIds,
   type ProviderPortalVariant
 } from '../../config/providerPortalConfig';
+import { QuickActionCard, StatCard, SurfaceCard } from '../portal-ui';
+import { PortalHeroBanner } from '../shared/portal-hero-banner';
 import { MedicalProviderDashboard } from './dashboard/MedicalProviderDashboard';
 
-export function ProviderDashboardPage({ variant }: { variant: ProviderPortalVariant }) {
+export function ProviderDashboardPage({
+  imageSrc,
+  variant
+}: {
+  imageSrc: string;
+  variant: ProviderPortalVariant;
+}) {
   const config = getProviderPortalConfig(variant);
 
   if (variant === 'medical' && config.featureFlags.medicalProviderDashboard) {
-    return <MedicalProviderDashboard config={config} />;
+    return <MedicalProviderDashboard config={config} imageSrc={imageSrc} />;
   }
 
   const route = config.routeContent.dashboard;
@@ -22,10 +28,13 @@ export function ProviderDashboardPage({ variant }: { variant: ProviderPortalVari
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PortalHeroBanner
         eyebrow={`${variant[0].toUpperCase()}${variant.slice(1)} provider`}
         title={route.title}
         description={route.description}
+        imageSrc={imageSrc}
+        imageDecorative
+        priority
       />
 
       {config.dashboardSections.map((section) => (

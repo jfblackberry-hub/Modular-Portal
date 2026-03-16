@@ -422,3 +422,222 @@ export async function getBillingEnrollmentModuleConfig(userId: string) {
 
   return response.json();
 }
+
+export type EmployerDashboardResponse = {
+  billingSummary?: {
+    currentInvoiceAmount: number;
+    invoiceDueDate: string | null;
+    outstandingBalance: number;
+    lastPaymentAmount: number;
+    lastPaymentDate: string | null;
+    billingStatus: string;
+  };
+  documentCenter?: {
+    recentDocumentsCount: number;
+    planDocuments: number;
+    billingStatements: number;
+    complianceNotices: number;
+    secureFileExchange: number;
+  };
+  hrisImport?: {
+    lastImportDate: string | null;
+    lastImportStatus: string;
+    employeesAdded: number;
+    employeesUpdated: number;
+    importErrors: number;
+  };
+};
+
+export async function getEmployerDashboard(userId: string) {
+  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/dashboard`, {
+    cache: 'no-store',
+    headers: {
+      'x-user-id': userId
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Unable to load employer dashboard.');
+  }
+
+  return (await response.json()) as EmployerDashboardResponse;
+}
+
+export type EmployerEmployeesResponse = {
+  employees: import('./employer-census-data').EmployeeCensusRecord[];
+  summary: import('./employer-census-data').WorkforceCoverageSummary;
+  filters: {
+    coverageTypes: string[];
+    plans: string[];
+    departments: string[];
+  };
+};
+
+export type EmployerEnrollmentActivityResponse = {
+  requests: import('./enrollment-activity-data').EnrollmentRequestRecord[];
+  pending: import('./enrollment-activity-data').EnrollmentRequestRecord[];
+  history: import('./enrollment-activity-data').EnrollmentRequestRecord[];
+  filters: {
+    requestTypes: import('./enrollment-activity-data').EnrollmentRequestType[];
+    plans: string[];
+    departments: string[];
+  };
+};
+
+export type EmployerTasksResponse = {
+  tasks: import('./employer-notifications-tasks-data').EmployerTaskRecord[];
+  filters: {
+    taskTypes: import('./employer-notifications-tasks-data').EmployerTaskType[];
+    priorities: import('./employer-notifications-tasks-data').EmployerTaskPriority[];
+    statuses: import('./employer-notifications-tasks-data').EmployerTaskStatus[];
+    modules: import('./employer-notifications-tasks-data').AssociatedModule[];
+  };
+};
+
+export type EmployerNotificationsResponse = {
+  notifications: import('./employer-notifications-tasks-data').EmployerNotificationRecord[];
+};
+
+export async function getEmployerEmployees(userId: string) {
+  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/employees`, {
+    cache: 'no-store',
+    headers: {
+      'x-user-id': userId
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Unable to load employer employees.');
+  }
+
+  return (await response.json()) as EmployerEmployeesResponse;
+}
+
+export async function getEmployerEmployeeById(userId: string, employeeId: string) {
+  const response = await fetch(
+    `${apiBaseUrl}/api/v1/billing-enrollment/employer/employees/${encodeURIComponent(employeeId)}`,
+    {
+      cache: 'no-store',
+      headers: {
+        'x-user-id': userId
+      }
+    }
+  );
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error('Unable to load employee details.');
+  }
+
+  const payload = (await response.json()) as { employee: import('./employer-census-data').EmployeeCensusRecord };
+  return payload.employee;
+}
+
+export async function getEmployerEnrollmentActivity(userId: string) {
+  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/enrollment-activity`, {
+    cache: 'no-store',
+    headers: {
+      'x-user-id': userId
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Unable to load enrollment activity.');
+  }
+
+  return (await response.json()) as EmployerEnrollmentActivityResponse;
+}
+
+export async function getEmployerEnrollmentActivityById(userId: string, requestId: string) {
+  const response = await fetch(
+    `${apiBaseUrl}/api/v1/billing-enrollment/employer/enrollment-activity/${encodeURIComponent(requestId)}`,
+    {
+      cache: 'no-store',
+      headers: {
+        'x-user-id': userId
+      }
+    }
+  );
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error('Unable to load enrollment request details.');
+  }
+
+  const payload = (await response.json()) as { request: import('./enrollment-activity-data').EnrollmentRequestRecord };
+  return payload.request;
+}
+
+export async function getEmployerTasks(userId: string) {
+  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/tasks`, {
+    cache: 'no-store',
+    headers: {
+      'x-user-id': userId
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Unable to load employer tasks.');
+  }
+
+  return (await response.json()) as EmployerTasksResponse;
+}
+
+export async function getEmployerTaskById(userId: string, taskId: string) {
+  const response = await fetch(
+    `${apiBaseUrl}/api/v1/billing-enrollment/employer/tasks/${encodeURIComponent(taskId)}`,
+    {
+      cache: 'no-store',
+      headers: {
+        'x-user-id': userId
+      }
+    }
+  );
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error('Unable to load task details.');
+  }
+
+  const payload = (await response.json()) as { task: import('./employer-notifications-tasks-data').EmployerTaskRecord };
+  return payload.task;
+}
+
+export async function getEmployerNotifications(userId: string) {
+  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/notifications`, {
+    cache: 'no-store',
+    headers: {
+      'x-user-id': userId
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Unable to load employer notifications.');
+  }
+
+  return (await response.json()) as EmployerNotificationsResponse;
+}
+
+export async function getEmployerNotificationPreferences(userId: string) {
+  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/notification-preferences`, {
+    cache: 'no-store',
+    headers: {
+      'x-user-id': userId
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Unable to load employer notification preferences.');
+  }
+
+  return (await response.json()) as import('./employer-notifications-tasks-data').EmployerNotificationPreferences;
+}

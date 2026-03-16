@@ -6,8 +6,10 @@ import {
   AuthenticationError,
   AuthorizationError,
   getCurrentUserFromHeaders,
+  isPlatformAdmin,
   resolveTenantScope
 } from '../services/current-user-service';
+import { prisma } from '@payer-portal/database';
 import {
   assignRoleToTenantUser,
   createTenantScopedUser,
@@ -19,6 +21,7 @@ import {
   saveTenantNotificationSettings,
   updateTenantScopedUser
 } from '../services/tenant-admin-service';
+import { uploadBrandingLogoForTenant } from '../services/branding-service';
 
 type NotificationSettingsBody = {
   emailEnabled?: boolean;
@@ -99,6 +102,37 @@ type TenantAdminJobsQuery = TenantAdminQuery & {
   status?: string;
   type?: string;
 };
+
+async function resolveTenantScopeForUserAction(
+  currentUser: Awaited<ReturnType<typeof getCurrentUserFromHeaders>>,
+  requestedTenantId: string | undefined,
+  userId: string
+) {
+  const normalizedRequestedTenantId = requestedTenantId?.trim();
+
+  if (normalizedRequestedTenantId) {
+    return resolveTenantScope(currentUser, normalizedRequestedTenantId);
+  }
+
+  if (!isPlatformAdmin(currentUser)) {
+    return resolveTenantScope(currentUser, normalizedRequestedTenantId);
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: {
+      id: userId
+    },
+    select: {
+      tenantId: true
+    }
+  });
+
+  if (!targetUser) {
+    throw new Error('User not found');
+  }
+
+  return targetUser.tenantId;
+}
 
 function handleRouteError(
   error: unknown,
@@ -216,6 +250,38 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
     }
   );
 
+  app.post<{ Querystring: TenantAdminQuery }>(
+    '/api/tenant-admin/branding/logo',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertTenantAdmin(currentUser);
+        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
+        const file = await request.file();
+
+        if (!file) {
+          return reply.status(400).send({
+            message: 'Logo file is required'
+          });
+        }
+
+        const branding = await uploadBrandingLogoForTenant(
+          tenantId,
+          file,
+          {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          }
+        );
+
+        return reply.status(201).send(branding);
+      } catch (error) {
+        return handleRouteError(error, reply);
+      }
+    }
+  );
+
   app.put<{ Body: PurchasedModulesBody; Querystring: TenantAdminQuery }>(
     '/api/tenant-admin/purchased-modules',
     async (request, reply) => {
@@ -276,7 +342,11 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
       try {
         const currentUser = await getCurrentUserFromHeaders(request.headers);
         assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
+        const tenantId = await resolveTenantScopeForUserAction(
+          currentUser,
+          request.query.tenant_id,
+          request.params.userId
+        );
 
         const assignment = await assignRoleToTenantUser(
           tenantId,
@@ -318,7 +388,11 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
       try {
         const currentUser = await getCurrentUserFromHeaders(request.headers);
         assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
+        const tenantId = await resolveTenantScopeForUserAction(
+          currentUser,
+          request.query.tenant_id,
+          request.params.userId
+        );
 
         const user = await updateTenantScopedUser(
           tenantId,
@@ -339,7 +413,11 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
       try {
         const currentUser = await getCurrentUserFromHeaders(request.headers);
         assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
+        const tenantId = await resolveTenantScopeForUserAction(
+          currentUser,
+          request.query.tenant_id,
+          request.params.userId
+        );
 
         const deletedUser = await deleteTenantScopedUser(
           tenantId,

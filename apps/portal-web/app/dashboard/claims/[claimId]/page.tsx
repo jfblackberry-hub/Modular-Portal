@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { getMemberClaims } from '../../../../lib/member-api';
+import { getPortalSessionUser } from '../../../../lib/portal-session';
 import { formatCurrency, formatDate } from '../../../../lib/portal-format';
 import {
   EmptyState,
@@ -16,7 +17,8 @@ export default async function ClaimDetailPage({
   params: Promise<{ claimId: string }>;
 }) {
   const { claimId } = await params;
-  const claims = await getMemberClaims();
+  const sessionUser = await getPortalSessionUser();
+  const claims = await getMemberClaims(sessionUser?.id);
   const claim = claims?.items.find((item) => item.id === claimId) ?? claims?.items[0];
 
   if (!claim) {

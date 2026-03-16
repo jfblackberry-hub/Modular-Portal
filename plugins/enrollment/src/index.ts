@@ -66,6 +66,110 @@ export const manifest: PluginManifest = {
       label: 'Enrollment Status Tracker'
     },
     {
+      path: '/dashboard/billing-enrollment/employees',
+      label: 'Employee Census'
+    },
+    {
+      path: '/dashboard/billing-enrollment/enrollment-activity',
+      label: 'Enrollment Activity Queue'
+    },
+    {
+      path: '/dashboard/billing-enrollment/enrollment-activity/history',
+      label: 'Enrollment Activity History'
+    },
+    {
+      path: '/dashboard/billing-enrollment/open-enrollment',
+      label: 'Open Enrollment Overview'
+    },
+    {
+      path: '/dashboard/billing-enrollment/open-enrollment/[recordId]',
+      label: 'Open Enrollment Employee Detail'
+    },
+    {
+      path: '/dashboard/billing-enrollment/census-import',
+      label: 'Census Import'
+    },
+    {
+      path: '/dashboard/billing-enrollment/census-import/history',
+      label: 'Census Import History'
+    },
+    {
+      path: '/dashboard/billing-enrollment/census-import/history/[importId]',
+      label: 'Census Import Detail'
+    },
+    {
+      path: '/dashboard/billing-enrollment/census-import/errors',
+      label: 'Census Import Error Resolution'
+    },
+    {
+      path: '/dashboard/billing-enrollment/census-import/integrations',
+      label: 'HRIS Integration Configuration'
+    },
+    {
+      path: '/dashboard/billing-enrollment/tasks',
+      label: 'Employer Tasks Dashboard'
+    },
+    {
+      path: '/dashboard/billing-enrollment/tasks/[taskId]',
+      label: 'Employer Task Detail'
+    },
+    {
+      path: '/dashboard/billing-enrollment/notifications',
+      label: 'Employer Notifications Center'
+    },
+    {
+      path: '/dashboard/billing-enrollment/notifications/settings',
+      label: 'Employer Notification Settings'
+    },
+    {
+      path: '/dashboard/billing-enrollment/administration',
+      label: 'Employer Administration'
+    },
+    {
+      path: '/dashboard/billing-enrollment/administration/profile',
+      label: 'Employer Profile Settings'
+    },
+    {
+      path: '/dashboard/billing-enrollment/administration/users',
+      label: 'Employer Administrator Users'
+    },
+    {
+      path: '/dashboard/billing-enrollment/administration/billing-preferences',
+      label: 'Employer Billing Preferences'
+    },
+    {
+      path: '/dashboard/billing-enrollment/administration/notification-settings',
+      label: 'Employer Administration Notification Settings'
+    },
+    {
+      path: '/dashboard/billing-enrollment/administration/integrations',
+      label: 'Employer Administration Integration Settings'
+    },
+    {
+      path: '/dashboard/billing-enrollment/billing-overview',
+      label: 'Employer Billing Overview'
+    },
+    {
+      path: '/dashboard/billing-enrollment/billing-invoices/history',
+      label: 'Employer Invoice History'
+    },
+    {
+      path: '/dashboard/billing-enrollment/billing-payments',
+      label: 'Employer Payment Management'
+    },
+    {
+      path: '/dashboard/billing-enrollment/document-center',
+      label: 'Employer Document Center'
+    },
+    {
+      path: '/dashboard/billing-enrollment/reports/analytics',
+      label: 'Reports Analytics Dashboard'
+    },
+    {
+      path: '/dashboard/billing-enrollment/reports/schedule',
+      label: 'Reports Schedule Manager'
+    },
+    {
       path: '/dashboard/billing-enrollment/notices',
       label: 'Notices'
     },

@@ -1,5 +1,7 @@
-import { PageHeader, StatusBadge, SurfaceCard } from '../../../components/portal-ui';
-import { ImageBlock } from '../../../components/ui/image-block';
+import { StatusBadge, SurfaceCard } from '../../../components/portal-ui';
+import { PortalHeroBanner } from '../../../components/shared/portal-hero-banner';
+import { getPortalImageSrc } from '../../../lib/portal-image-registry';
+import { getPortalSessionUser } from '../../../lib/portal-session';
 
 const providers = [
   {
@@ -25,28 +27,22 @@ const providers = [
   }
 ];
 
-export default function ProvidersPage() {
+export default async function ProvidersPage() {
+  const sessionUser = await getPortalSessionUser();
+  const providerHeroImage = getPortalImageSrc('providerHero', {
+    tenantBrandingConfig: sessionUser?.tenant.brandingConfig
+  });
+
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PortalHeroBanner
         eyebrow="Find care"
         title="Find a provider"
         description="Search common care options, compare network status, and start the next step in a guided provider experience."
+        imageSrc={providerHeroImage}
+        imageDecorative
+        priority
       />
-
-      <section aria-label="Find care imagery" className="grid gap-4 md:grid-cols-2">
-        <ImageBlock
-          src="/assets/portal-images/hospital-hallway.svg"
-          alt="Hospital hallway with clinic rooms"
-          className="aspect-[16/7]"
-          priority
-        />
-        <ImageBlock
-          src="/assets/portal-images/telehealth-session.svg"
-          alt="Telehealth session on a digital screen"
-          className="aspect-[16/7]"
-        />
-      </section>
 
       <SurfaceCard
         title="Provider search"

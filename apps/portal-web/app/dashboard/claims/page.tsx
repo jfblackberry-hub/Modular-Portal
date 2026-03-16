@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { getMemberClaims } from '../../../lib/member-api';
+import { getPortalSessionUser } from '../../../lib/portal-session';
 import { formatCurrency, formatDate } from '../../../lib/portal-format';
 import {
   EmptyState,
@@ -12,7 +13,8 @@ import {
 } from '../../../components/portal-ui';
 
 export default async function ClaimsPage() {
-  const claims = await getMemberClaims();
+  const sessionUser = await getPortalSessionUser();
+  const claims = await getMemberClaims(sessionUser?.id);
   const items = claims?.items ?? [];
 
   return (

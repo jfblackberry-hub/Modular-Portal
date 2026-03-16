@@ -22,7 +22,7 @@ const routeModuleMap: Array<{ prefix: string; moduleId: TenantPortalModuleId; fa
   { prefix: '/provider/claims', moduleId: 'provider_claims', fallback: '/provider/dashboard' },
   { prefix: '/provider/authorizations', moduleId: 'provider_authorizations', fallback: '/provider/dashboard' },
   { prefix: '/provider/eligibility', moduleId: 'provider_eligibility', fallback: '/provider/dashboard' },
-  { prefix: '/provider/dashboard', moduleId: 'provider_dashboard', fallback: '/provider-login' },
+  { prefix: '/provider/dashboard', moduleId: 'provider_dashboard', fallback: '/login' },
   { prefix: '/member/documents', moduleId: 'member_documents', fallback: '/member' },
   { prefix: '/member/claims', moduleId: 'member_claims', fallback: '/member' },
   { prefix: '/member', moduleId: 'member_home', fallback: '/login' },

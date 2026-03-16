@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation';
 
 import type { AdminSession } from './admin-session-provider';
 
+const portalBaseUrl =
+  process.env.NEXT_PUBLIC_PORTAL_BASE_URL ?? 'http://localhost:3000';
+
 type TopHeaderProps = {
   session: AdminSession | null;
   signOut: () => void;
@@ -34,7 +37,7 @@ export function TopHeader({ session, signOut }: TopHeaderProps) {
               type="button"
               onClick={() => {
                 signOut();
-                router.replace('/login');
+                window.location.assign(`${portalBaseUrl}/login`);
               }}
               className="rounded-full border border-admin-border bg-white px-4 py-2 text-sm font-medium text-admin-muted transition hover:border-admin-accent hover:text-admin-text"
             >

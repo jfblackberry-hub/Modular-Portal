@@ -6,12 +6,28 @@ STATE_DIR="$ROOT_DIR/.local/services"
 LOG_DIR="$STATE_DIR/logs"
 PID_DIR="$STATE_DIR/pids"
 
+CLI_DATABASE_URL="${DATABASE_URL:-}"
+CLI_PORTAL_CATALOG_DATABASE_URL="${PORTAL_CATALOG_DATABASE_URL:-}"
+CLI_NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL:-}"
+
 # Load local environment overrides (for example, catalog adapter URLs).
 if [ -f "$ROOT_DIR/.env" ]; then
   set -a
   # shellcheck disable=SC1090
   source "$ROOT_DIR/.env"
   set +a
+fi
+
+if [ -n "$CLI_DATABASE_URL" ]; then
+  export DATABASE_URL="$CLI_DATABASE_URL"
+fi
+
+if [ -n "$CLI_PORTAL_CATALOG_DATABASE_URL" ]; then
+  export PORTAL_CATALOG_DATABASE_URL="$CLI_PORTAL_CATALOG_DATABASE_URL"
+fi
+
+if [ -n "$CLI_NEXT_PUBLIC_API_BASE_URL" ]; then
+  export NEXT_PUBLIC_API_BASE_URL="$CLI_NEXT_PUBLIC_API_BASE_URL"
 fi
 
 mkdir -p "$LOG_DIR" "$PID_DIR"
@@ -25,6 +41,10 @@ export DATABASE_URL="${DATABASE_URL:-postgresql://dev:dev@127.0.0.1:5432/payer_p
 export PORTAL_CATALOG_DATABASE_URL="${PORTAL_CATALOG_DATABASE_URL:-postgresql://dev:dev@127.0.0.1:5432/portal_catalog}"
 export NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3002}"
 export NEXT_PUBLIC_ADMIN_USER_ID="${NEXT_PUBLIC_ADMIN_USER_ID:-}"
+export WATCHPACK_POLLING="${WATCHPACK_POLLING:-true}"
+export WATCHPACK_POLLING_INTERVAL="${WATCHPACK_POLLING_INTERVAL:-1000}"
+export CHOKIDAR_USEPOLLING="${CHOKIDAR_USEPOLLING:-1}"
+export CHOKIDAR_INTERVAL="${CHOKIDAR_INTERVAL:-1000}"
 
 service_label_for_port() {
   case "$1" in
@@ -141,12 +161,21 @@ start_service() {
   local label="$1"
   local command="$2"
   local log_file="$LOG_DIR/$label.log"
+  local launcher_pid
 
   rm -f "$log_file"
   echo "Starting $label"
   (
     cd "$ROOT_DIR"
-    nohup bash -lc "$command" >"$log_file" 2>&1 &
+    set -m
+    if command -v setsid >/dev/null 2>&1; then
+      nohup setsid bash -lc "$command" >"$log_file" 2>&1 < /dev/null &
+    else
+      nohup bash -lc "$command" >"$log_file" 2>&1 < /dev/null &
+    fi
+
+    launcher_pid=$!
+    disown "$launcher_pid" >/dev/null 2>&1 || true
   )
 }
 
@@ -180,18 +209,18 @@ if [ -z "$NEXT_PUBLIC_ADMIN_USER_ID" ]; then
   fi
 fi
 
-start_service 'api' "DATABASE_URL='$DATABASE_URL' PORTAL_CATALOG_DATABASE_URL='$PORTAL_CATALOG_DATABASE_URL' pnpm dev:api"
-start_service 'portal-web' "NEXT_PUBLIC_API_BASE_URL='$NEXT_PUBLIC_API_BASE_URL' pnpm dev:portal"
-start_service 'admin-console' "NEXT_PUBLIC_API_BASE_URL='$NEXT_PUBLIC_API_BASE_URL' NEXT_PUBLIC_ADMIN_USER_ID='$NEXT_PUBLIC_ADMIN_USER_ID' pnpm dev:admin"
+start_service 'api' "DATABASE_URL='$DATABASE_URL' PORTAL_CATALOG_DATABASE_URL='$PORTAL_CATALOG_DATABASE_URL' CHOKIDAR_USEPOLLING='$CHOKIDAR_USEPOLLING' CHOKIDAR_INTERVAL='$CHOKIDAR_INTERVAL' pnpm dev:api"
+start_service 'portal-web' "NEXT_PUBLIC_API_BASE_URL='$NEXT_PUBLIC_API_BASE_URL' WATCHPACK_POLLING='$WATCHPACK_POLLING' WATCHPACK_POLLING_INTERVAL='$WATCHPACK_POLLING_INTERVAL' CHOKIDAR_USEPOLLING='$CHOKIDAR_USEPOLLING' CHOKIDAR_INTERVAL='$CHOKIDAR_INTERVAL' pnpm dev:portal"
+start_service 'admin-console' "NEXT_PUBLIC_API_BASE_URL='$NEXT_PUBLIC_API_BASE_URL' NEXT_PUBLIC_ADMIN_USER_ID='$NEXT_PUBLIC_ADMIN_USER_ID' WATCHPACK_POLLING='$WATCHPACK_POLLING' WATCHPACK_POLLING_INTERVAL='$WATCHPACK_POLLING_INTERVAL' CHOKIDAR_USEPOLLING='$CHOKIDAR_USEPOLLING' CHOKIDAR_INTERVAL='$CHOKIDAR_INTERVAL' pnpm dev:admin"
 
 wait_for_http "http://127.0.0.1:$API_PORT/health" 'api health endpoint'
-wait_for_http "http://127.0.0.1:$PORTAL_PORT" 'portal homepage'
 wait_for_http "http://127.0.0.1:$ADMIN_PORT" 'admin console homepage'
 
+wait_for_portal_path "/login" 'portal login page'
 wait_for_portal_path "/provider-login" 'provider login page'
 wait_for_portal_path "/provider/dashboard" 'provider dashboard route'
 wait_for_portal_path "/provider/documents" 'provider resources route'
-wait_for_portal_path "/assets/portal-images/doctor-consultation.svg" 'provider hero image asset'
+wait_for_portal_path "/assets/portal-images/real-health-api/provider-portal-hero-care-team.svg" 'provider hero image asset'
 
 record_listener_pid "$API_PORT"
 record_listener_pid "$PORTAL_PORT"

@@ -1,0 +1,45 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Virtual Care Anywhere</title>
+  <desc id="desc">Healthcare portal illustration for Virtual Care Anywhere.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#22C55E"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="120" y1="140" x2="760" y2="660" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1360" cy="124" r="180" fill="#FFFFFF" fill-opacity="0.08"/>
+  <circle cx="1288" cy="764" r="220" fill="#FFFFFF" fill-opacity="0.06"/>
+  <circle cx="178" cy="760" r="240" fill="#FFFFFF" fill-opacity="0.05"/>
+  <rect x="96" y="128" width="1408" height="644" rx="40" fill="url(#glass)" stroke="#FFFFFF" stroke-opacity="0.24"/>
+  <g opacity="0.72">
+    <rect x="124" y="158" width="260" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.18"/>
+    <rect x="124" y="192" width="176" height="10" rx="5" fill="#FFFFFF" fill-opacity="0.12"/>
+  </g>
+  <text x="124" y="320" font-family="Inter, Arial, Helvetica, sans-serif" font-size="76" font-weight="800" fill="#FFFFFF">Virtual Care Anywhere</text>
+  <text x="124" y="382" font-family="Inter, Arial, Helvetica, sans-serif" font-size="30" font-weight="500" fill="#E0F2FE">Works for telehealth, care management, and digital-first service pages.</text>
+  <rect x="124" y="442" width="242" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="171" y="483" font-family="Inter, Arial, Helvetica, sans-serif" font-size="26" font-weight="800" fill="#0F172A">Explore module</text>
+  <rect x="390" y="442" width="198" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.14" stroke="#FFFFFF" stroke-opacity="0.28"/>
+  <text x="447" y="483" font-family="Inter, Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">Learn more</text>
+  <rect x="124" y="560" width="156" height="40" rx="20" fill="#FFFFFF" fill-opacity="0.14" stroke="#FFFFFF" stroke-opacity="0.22"/>
+  <text x="154" y="586" font-family="Inter, Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">Telehealth</text>
+
+    <g transform="translate(818,48)">
+      <rect x="22" y="28" width="230" height="150" rx="24" fill="#F8FAFC" fill-opacity="0.96"/>
+      <rect x="46" y="52" width="182" height="102" rx="18" fill="#DBEAFE"/>
+      <circle cx="104" cy="101" r="24" fill="#F8FAFC"/>
+      <rect x="82" y="128" width="44" height="22" rx="11" fill="#F8FAFC"/>
+      <circle cx="184" cy="96" r="18" fill="#CCFBF1"/>
+      <rect x="164" y="118" width="40" height="20" rx="10" fill="#CCFBF1"/>
+      <path d="M276 80h60a18 18 0 0 1 18 18v70a18 18 0 0 1-18 18h-60a18 18 0 0 1-18-18V98a18 18 0 0 1 18-18Z" fill="#F8FAFC" fill-opacity="0.96"/>
+      <circle cx="306" cy="116" r="14" fill="#DCFCE7"/>
+      <path d="M300 116l4 4 8-9" stroke="#16A34A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="288" y="142" width="38" height="7" rx="3.5" fill="#CBD5E1"/>
+      <rect x="280" y="156" width="54" height="7" rx="3.5" fill="#CBD5E1"/>
+    </g>
+</svg>

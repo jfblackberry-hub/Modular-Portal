@@ -17,6 +17,7 @@ type Branding = {
   secondaryColor: string;
   logoUrl: string | null;
   faviconUrl: string | null;
+  updatedAt?: string | null;
 };
 
 type NotificationSettings = {
@@ -124,12 +125,25 @@ type SettingsPayload = {
   users: User[];
 };
 
-function resolveBrandingAssetUrl(assetUrl: string) {
-  if (assetUrl.startsWith('/')) {
-    return `${portalBaseUrl}${assetUrl}`;
+function resolveBrandingAssetUrl(assetUrl: string, version?: string | null) {
+  const normalized = assetUrl.startsWith('/')
+    ? `${portalBaseUrl}${assetUrl}`
+    : assetUrl;
+
+  if (!version) {
+    return normalized;
   }
 
-  return assetUrl;
+  const separator = normalized.includes('?') ? '&' : '?';
+  return `${normalized}${separator}v=${encodeURIComponent(version)}`;
+}
+
+function resolveBrandingAssetVersion(settings: SettingsPayload | null) {
+  return settings?.branding.updatedAt ?? null;
+}
+
+function resolveBrandingLogoPreviewUrl(settings: SettingsPayload | null, logoUrl: string) {
+  return resolveBrandingAssetUrl(logoUrl, resolveBrandingAssetVersion(settings));
 }
 
 export function TenantAdminSettings() {
@@ -254,7 +268,7 @@ export function TenantAdminSettings() {
       const formData = new FormData();
       formData.append('file', selectedLogoFile);
 
-      const response = await fetch(`${apiBaseUrl}/api/branding/logo`, {
+      const response = await fetch(`${apiBaseUrl}/api/tenant-admin/branding/logo${tenantQuery}`, {
         method: 'POST',
         headers: {
           ...getAdminAuthHeaders()
@@ -625,7 +639,7 @@ export function TenantAdminSettings() {
                       {brandingForm.logoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={resolveBrandingAssetUrl(brandingForm.logoUrl)}
+                          src={resolveBrandingLogoPreviewUrl(settings, brandingForm.logoUrl)}
                           alt={`${brandingForm.displayName || settings.tenant.name} logo`}
                           className="max-h-full max-w-full object-contain"
                         />

@@ -11,9 +11,20 @@ import {
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3002';
 
-async function requestJson<T>(path: string): Promise<T | null> {
+function buildRequestHeaders(userId?: string) {
+  if (!userId) {
+    return undefined;
+  }
+
+  return {
+    'x-user-id': userId
+  };
+}
+
+async function requestJson<T>(path: string, userId?: string): Promise<T | null> {
   try {
     const response = await fetch(`${apiBaseUrl}${path}`, {
+      headers: buildRequestHeaders(userId),
       cache: 'no-store'
     });
 
@@ -27,30 +38,30 @@ async function requestJson<T>(path: string): Promise<T | null> {
   }
 }
 
-export function getMe() {
-  return requestJson<MeResponse>(apiRoutes.me);
+export function getMe(userId?: string) {
+  return requestJson<MeResponse>(apiRoutes.me, userId);
 }
 
-export function getMemberProfile() {
-  return requestJson<MemberProfileResponse>(apiRoutes.memberProfile);
+export function getMemberProfile(userId?: string) {
+  return requestJson<MemberProfileResponse>(apiRoutes.memberProfile, userId);
 }
 
-export function getMemberCoverage() {
-  return requestJson<MemberCoverageResponse>(apiRoutes.memberCoverage);
+export function getMemberCoverage(userId?: string) {
+  return requestJson<MemberCoverageResponse>(apiRoutes.memberCoverage, userId);
 }
 
-export function getMemberClaims() {
-  return requestJson<MemberClaimsResponse>(apiRoutes.memberClaims);
+export function getMemberClaims(userId?: string) {
+  return requestJson<MemberClaimsResponse>(apiRoutes.memberClaims, userId);
 }
 
-export function getMemberDocuments() {
-  return requestJson<MemberDocumentsResponse>(apiRoutes.memberDocuments);
+export function getMemberDocuments(userId?: string) {
+  return requestJson<MemberDocumentsResponse>(apiRoutes.memberDocuments, userId);
 }
 
-export function getMemberMessages() {
-  return requestJson<MemberMessagesResponse>(apiRoutes.memberMessages);
+export function getMemberMessages(userId?: string) {
+  return requestJson<MemberMessagesResponse>(apiRoutes.memberMessages, userId);
 }
 
-export function getMemberAuthorizations() {
-  return requestJson<MemberAuthorizationsResponse>(apiRoutes.memberAuthorizations);
+export function getMemberAuthorizations(userId?: string) {
+  return requestJson<MemberAuthorizationsResponse>(apiRoutes.memberAuthorizations, userId);
 }

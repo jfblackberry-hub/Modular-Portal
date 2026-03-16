@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import type { ProviderPortalConfig, ProviderResourceItem } from '../../../config/providerPortalConfig';
-import { PageHeader, SurfaceCard } from '../../portal-ui';
+import { SurfaceCard } from '../../portal-ui';
+import { PortalHeroBanner } from '../../shared/portal-hero-banner';
 
 const resourceCategories: ProviderResourceItem['category'][] = [
   'Forms',
@@ -56,7 +57,13 @@ function ResourceLink({ resource }: { resource: ProviderResourceItem }) {
   );
 }
 
-export function ProviderResourcesLibraryPage({ config }: { config: ProviderPortalConfig }) {
+export function ProviderResourcesLibraryPage({
+  config,
+  imageSrc
+}: {
+  config: ProviderPortalConfig;
+  imageSrc: string;
+}) {
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'All' | ProviderResourceItem['category']>('All');
 
@@ -91,10 +98,13 @@ export function ProviderResourcesLibraryPage({ config }: { config: ProviderPorta
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PortalHeroBanner
         eyebrow={config.displayName}
         title="Provider Resources Library"
         description="Find forms, manuals, policies, training, and operational references in one searchable library."
+        imageSrc={imageSrc}
+        imageDecorative
+        priority
       />
 
       <SurfaceCard title="Search and Filters" description="Search by title, type, tags, line of business, or target.">

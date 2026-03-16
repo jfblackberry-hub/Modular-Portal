@@ -395,10 +395,11 @@ async function getMemberRow(
       `LOWER(${memberAlias}.${quoteIdentifier(config.driver, config.userEmailColumn)}) = LOWER(${sqlParam(config.driver, values.length)})`
     );
   } else if (config.memberLookupMode === 'memberNumber') {
-    if (!config.fixedMemberNumber) {
+    const memberNumberLookup = config.fixedMemberNumber ?? userEmail;
+    if (!memberNumberLookup.trim()) {
       return null;
     }
-    values.push(config.fixedMemberNumber);
+    values.push(memberNumberLookup);
     where.push(
       `${memberAlias}.${quoteIdentifier(config.driver, config.userMemberNumberColumn)} = ${sqlParam(config.driver, values.length)}`
     );

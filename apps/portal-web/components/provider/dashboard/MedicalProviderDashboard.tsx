@@ -1,4 +1,5 @@
 import type { ProviderPortalConfig } from '../../../config/providerPortalConfig';
+import { PortalHeroBanner } from '../../shared/portal-hero-banner';
 import { AuthorizationQueue } from './AuthorizationQueue';
 import { ClaimsFollowUpQueue } from './ClaimsFollowUpQueue';
 import { ProviderAlertsList } from './ProviderAlertsList';
@@ -12,7 +13,13 @@ function getQuickActionHref(config: ProviderPortalConfig, label: string, fallbac
   return action?.href ?? fallback;
 }
 
-export function MedicalProviderDashboard({ config }: { config: ProviderPortalConfig }) {
+export function MedicalProviderDashboard({
+  config,
+  imageSrc
+}: {
+  config: ProviderPortalConfig;
+  imageSrc: string;
+}) {
   const quickActions = [
     {
       label: 'Verify Eligibility',
@@ -181,6 +188,14 @@ export function MedicalProviderDashboard({ config }: { config: ProviderPortalCon
 
   return (
     <div className="mx-auto w-full max-w-[1080px] space-y-3 pb-2">
+      <PortalHeroBanner
+        eyebrow={config.displayName}
+        title="Provider operations dashboard"
+        description="Verify eligibility, track authorizations and claims, and keep operational queues moving in one workspace."
+        imageSrc={imageSrc}
+        imageDecorative
+        priority
+      />
       <ProviderContextBar config={config} />
       <ProviderQuickActions actions={quickActions} />
       <ProviderMetricsRow metrics={metrics} />

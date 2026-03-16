@@ -1,0 +1,48 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Member Coverage Simplified</title>
+  <desc id="desc">Healthcare portal illustration for Member Coverage Simplified.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0F4C81"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="120" y1="140" x2="760" y2="660" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1360" cy="124" r="180" fill="#FFFFFF" fill-opacity="0.08"/>
+  <circle cx="1288" cy="764" r="220" fill="#FFFFFF" fill-opacity="0.06"/>
+  <circle cx="178" cy="760" r="240" fill="#FFFFFF" fill-opacity="0.05"/>
+  <rect x="96" y="128" width="1408" height="644" rx="40" fill="url(#glass)" stroke="#FFFFFF" stroke-opacity="0.24"/>
+  <g opacity="0.72">
+    <rect x="124" y="158" width="260" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.18"/>
+    <rect x="124" y="192" width="176" height="10" rx="5" fill="#FFFFFF" fill-opacity="0.12"/>
+  </g>
+  <text x="124" y="320" font-family="Inter, Arial, Helvetica, sans-serif" font-size="76" font-weight="800" fill="#FFFFFF">Member Coverage Simplified</text>
+  <text x="124" y="382" font-family="Inter, Arial, Helvetica, sans-serif" font-size="30" font-weight="500" fill="#E0F2FE">A modern, calm hero for member landing pages and benefit overview sections.</text>
+  <rect x="124" y="442" width="242" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="171" y="483" font-family="Inter, Arial, Helvetica, sans-serif" font-size="26" font-weight="800" fill="#0F172A">Explore module</text>
+  <rect x="390" y="442" width="198" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.14" stroke="#FFFFFF" stroke-opacity="0.28"/>
+  <text x="447" y="483" font-family="Inter, Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">Learn more</text>
+  <rect x="124" y="560" width="156" height="40" rx="20" fill="#FFFFFF" fill-opacity="0.14" stroke="#FFFFFF" stroke-opacity="0.22"/>
+  <text x="154" y="586" font-family="Inter, Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">Member portal</text>
+
+    <g transform="translate(820,58)">
+      <circle cx="120" cy="56" r="30" fill="#F8FAFC" fill-opacity="0.9"/>
+      <circle cx="64" cy="82" r="24" fill="#E2E8F0" fill-opacity="0.95"/>
+      <circle cx="174" cy="84" r="24" fill="#E2E8F0" fill-opacity="0.95"/>
+      <rect x="84" y="94" width="74" height="94" rx="34" fill="#F8FAFC" fill-opacity="0.92"/>
+      <rect x="34" y="108" width="58" height="76" rx="26" fill="#DBEAFE" fill-opacity="0.95"/>
+      <rect x="148" y="108" width="58" height="76" rx="26" fill="#CCFBF1" fill-opacity="0.95"/>
+      <rect x="10" y="184" width="220" height="20" rx="10" fill="#FFFFFF" fill-opacity="0.3"/>
+      <path d="M245 68h110a18 18 0 0 1 18 18v78a18 18 0 0 1-18 18H245a18 18 0 0 1-18-18V86a18 18 0 0 1 18-18Z" fill="#F8FAFC" fill-opacity="0.95"/>
+      <rect x="259" y="82" width="82" height="9" rx="4.5" fill="#93C5FD"/>
+      <rect x="259" y="100" width="58" height="8" rx="4" fill="#CBD5E1"/>
+      <rect x="259" y="118" width="94" height="8" rx="4" fill="#CBD5E1"/>
+      <rect x="259" y="136" width="66" height="8" rx="4" fill="#CBD5E1"/>
+      <circle cx="342" cy="142" r="20" fill="#DCFCE7"/>
+      <path d="M334 142l6 6 11-13" stroke="#16A34A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+</svg>

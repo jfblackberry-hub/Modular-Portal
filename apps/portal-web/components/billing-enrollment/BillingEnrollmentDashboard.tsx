@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { EmptyState, StatusBadge } from '../portal-ui';
+import { PortalHeroBanner } from '../shared/portal-hero-banner';
 
 type DashboardMode = 'live' | 'mock' | 'empty' | 'error';
 
@@ -166,7 +167,13 @@ function LoadingCards() {
   );
 }
 
-export function BillingEnrollmentDashboard({ mode = 'live' }: { mode?: DashboardMode }) {
+export function BillingEnrollmentDashboard({
+  heroImageSrc,
+  mode = 'live'
+}: {
+  heroImageSrc: string;
+  mode?: DashboardMode;
+}) {
   const [isLoading, setIsLoading] = useState(mode === 'live');
   const [error, setError] = useState('');
   const [data, setData] = useState<BillingEnrollmentDashboardData | null>(
@@ -257,29 +264,30 @@ export function BillingEnrollmentDashboard({ mode = 'live' }: { mode?: Dashboard
   return (
     <div className="space-y-5" aria-busy={isLoading}>
       <section className="portal-card overflow-hidden p-0">
-        <div className="bg-gradient-to-r from-[var(--tenant-primary-soft-color)] to-white px-5 py-6 sm:px-7">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--tenant-primary-color)]">Billing & Enrollment</p>
-          <h1 className="mt-3 text-3xl font-semibold leading-tight text-[var(--text-primary)]">
-            Manage your coverage, enrollment, and payments in one place
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-secondary)]">
-            Complete enrollment tasks, review premium obligations, and manage correspondence without leaving your tenant experience.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Link
-              href="/dashboard/billing-enrollment/enrollment"
-              className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110"
-            >
-              Continue Enrollment
-            </Link>
-            <Link
-              href="/dashboard/billing-enrollment/payments"
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)] transition hover:bg-sky-50"
-            >
-              Pay My Bill
-            </Link>
-          </div>
-        </div>
+        <PortalHeroBanner
+          eyebrow="Billing & Enrollment"
+          title="Manage your coverage, enrollment, and payments in one place"
+          description="Complete enrollment tasks, review premium obligations, and manage correspondence without leaving your tenant experience."
+          imageSrc={heroImageSrc}
+          imageDecorative
+          priority
+          actions={
+            <>
+              <Link
+                href="/dashboard/billing-enrollment/enrollment"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+              >
+                Continue Enrollment
+              </Link>
+              <Link
+                href="/dashboard/billing-enrollment/payments"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)] transition hover:bg-sky-50"
+              >
+                Pay My Bill
+              </Link>
+            </>
+          }
+        />
       </section>
 
       {error ? (

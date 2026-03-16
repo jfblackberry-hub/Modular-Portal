@@ -10,7 +10,7 @@ API_PORT=3002
 ADMIN_PORT=3003
 
 listening_pid_for_port() {
-  lsof -tiTCP:"$1" -sTCP:LISTEN | head -n 1
+  lsof -tiTCP:"$1" -sTCP:LISTEN 2>/dev/null | head -n 1 || true
 }
 
 command_for_pid() {
@@ -60,7 +60,7 @@ print_postgres_status() {
 echo 'Modular Portal service status'
 echo
 print_postgres_status
-print_http_service_status 'portal-web' "$PORTAL_PORT" "http://127.0.0.1:$PORTAL_PORT"
+print_http_service_status 'portal-web' "$PORTAL_PORT" "http://127.0.0.1:$PORTAL_PORT/login"
 print_http_service_status 'api' "$API_PORT" "http://127.0.0.1:$API_PORT/health"
 print_http_service_status 'admin-console' "$ADMIN_PORT" "http://127.0.0.1:$ADMIN_PORT"
 echo

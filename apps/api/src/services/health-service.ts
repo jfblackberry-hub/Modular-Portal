@@ -165,24 +165,58 @@ async function checkIntegrationServices(): Promise<HealthCheckResult> {
         status: 'ACTIVE'
       }
     });
+    const missingAdapters: string[] = [];
+    const invalidConnectors: string[] = [];
 
     for (const connector of activeConnectors) {
       const adapter = get(connector.adapterKey);
 
       if (!adapter) {
-        throw new Error(`Adapter '${connector.adapterKey}' is not registered`);
+        missingAdapters.push(connector.adapterKey);
+        continue;
       }
 
       const config = toConfigRecord(connector.config as Prisma.JsonValue);
 
       if (!config) {
-        throw new Error(`Connector '${connector.id}' config must be an object`);
+        invalidConnectors.push(connector.id);
+        continue;
       }
 
-      await adapter.validateConfig({
-        ...config,
-        tenantId: connector.tenantId
-      });
+      try {
+        await adapter.validateConfig({
+          ...config,
+          tenantId: connector.tenantId
+        });
+      } catch {
+        invalidConnectors.push(connector.id);
+      }
+    }
+
+    if (missingAdapters.length > 0) {
+      return {
+        details: {
+          activeConnectorCount: activeConnectors.length,
+          adapterCount: adapters.length,
+          missingAdapters: Array.from(new Set(missingAdapters))
+        },
+        error: 'One or more connector adapters are not registered',
+        latencyMs: Date.now() - startedAt,
+        status: 'fail'
+      };
+    }
+
+    if (invalidConnectors.length > 0) {
+      return {
+        details: {
+          activeConnectorCount: activeConnectors.length,
+          adapterCount: adapters.length,
+          invalidConnectorCount: invalidConnectors.length,
+          invalidConnectorIds: invalidConnectors.slice(0, 10)
+        },
+        latencyMs: Date.now() - startedAt,
+        status: 'not_configured'
+      };
     }
 
     return {

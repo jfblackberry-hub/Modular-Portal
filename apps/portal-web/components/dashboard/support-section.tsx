@@ -1,6 +1,5 @@
-import Link from 'next/link';
 import { FileUp, Headset, LifeBuoy } from 'lucide-react';
-import { ImageBlock } from '../ui/image-block';
+import Link from 'next/link';
 
 const supportItems = [
   {
@@ -27,28 +26,26 @@ export function SupportSection() {
   return (
     <section className="rounded-2xl bg-white p-6 shadow-sm" aria-label="Support">
       <h2 className="text-2xl font-bold text-[var(--text-primary)]">Support</h2>
-      <ImageBlock
-        src="/assets/portal-images/family-healthcare.svg"
-        alt="Family receiving healthcare support"
-        className="mt-4 aspect-[21/8]"
-      />
 
-      <ul className="mt-6 flex flex-wrap gap-3">
+      <ul className="mt-4 grid gap-3 md:grid-cols-3">
         {supportItems.map((item) => {
           const Icon = item.icon;
 
           return (
-            <li key={item.label}>
+            <li key={item.label} className="rounded-xl border border-[var(--border-subtle)] bg-slate-50/70 p-4">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[var(--tenant-primary-color)]">
+                  <Icon size={16} />
+                </span>
+                <h3 className="text-sm font-semibold text-[var(--text-primary)]">{item.label}</h3>
+              </div>
+              <p className="mt-2 text-sm text-[var(--text-muted)]">{item.description}</p>
               <Link
                 href={item.href}
-                className="inline-flex items-center gap-2 rounded-xl bg-[var(--tenant-primary-soft-color)] px-4 py-3 text-sm font-semibold text-[var(--tenant-primary-color)] transition duration-150 hover:-translate-y-0.5 hover:brightness-95 active:scale-[0.98]"
+                className="mt-3 inline-flex text-sm font-semibold text-[var(--tenant-primary-color)] hover:underline"
               >
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-[var(--tenant-primary-color)]">
-                  <Icon size={15} />
-                </span>
-                <span>{item.label}</span>
+                Open
               </Link>
-              <p className="mt-2 max-w-[260px] text-sm text-[var(--text-muted)]">{item.description}</p>
             </li>
           );
         })}

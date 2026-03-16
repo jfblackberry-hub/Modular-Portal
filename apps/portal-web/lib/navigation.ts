@@ -17,7 +17,7 @@ export interface PortalNavigationSection {
   title: string;
 }
 
-const coreNavigationSections: PortalNavigationSection[] = [
+const memberNavigationSections: PortalNavigationSection[] = [
   {
     title: 'Member portal',
     items: [
@@ -94,6 +94,105 @@ const coreNavigationSections: PortalNavigationSection[] = [
   },
 ];
 
+const employerNavigationSections: PortalNavigationSection[] = [
+  {
+    title: 'Employer portal',
+    items: [
+      {
+        label: 'Command Center',
+        href: '/dashboard/billing-enrollment',
+        description: 'Employer overview, alerts, and primary actions.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      },
+      {
+        label: 'Enrollment',
+        href: '/dashboard/billing-enrollment/enrollment',
+        description: 'Manage employee enrollments and status tracking.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      },
+      {
+        label: 'Enrollment Activity',
+        href: '/dashboard/billing-enrollment/enrollment-activity',
+        description: 'Review pending enrollments, approvals, and errors.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      },
+      {
+        label: 'Open Enrollment',
+        href: '/dashboard/billing-enrollment/open-enrollment',
+        description: 'Track enrollment completion and send reminders.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      },
+      {
+        label: 'Employees',
+        href: '/dashboard/billing-enrollment/employees',
+        description: 'Search and manage employee census records.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      },
+      {
+        label: 'Census Imports',
+        href: '/dashboard/billing-enrollment/census-import',
+        description: 'Upload census files and monitor HRIS sync imports.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      },
+      {
+        label: 'Tasks',
+        href: '/dashboard/billing-enrollment/tasks',
+        description: 'Track and complete enrollment, billing, and compliance tasks.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      },
+      {
+        label: 'Notifications',
+        href: '/dashboard/billing-enrollment/notifications',
+        description: 'View system alerts, activity events, and reminders.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      },
+      {
+        label: 'Administration',
+        href: '/dashboard/billing-enrollment/administration',
+        description: 'Manage employer profile, administrators, and configuration settings.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      },
+      {
+        label: 'Billing',
+        href: '/dashboard/billing-enrollment/billing-overview',
+        description: 'Review invoices, payments, and premium activity.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      },
+      {
+        label: 'Documents',
+        href: '/dashboard/billing-enrollment/document-center',
+        description: 'Upload and track census and enrollment documents.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      },
+      {
+        label: 'Reports',
+        href: '/dashboard/billing-enrollment/reports',
+        description: 'Run employer enrollment and billing reporting.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      },
+      {
+        label: 'Support',
+        href: '/dashboard/billing-enrollment/support',
+        description: 'Get enrollment and billing support resources.',
+        moduleId: 'billing_enrollment',
+        requiredPermissions: ['billing_enrollment.view']
+      }
+    ]
+  }
+];
+
 const pluginModuleMap: Record<string, TenantPortalModuleId> = {
   'billing-enrollment': 'billing_enrollment'
 };
@@ -130,7 +229,14 @@ export function buildPortalNavigation(
   user: PortalSessionUser,
   plugins: PluginManifest[]
 ) {
-  const coreSections = coreNavigationSections
+  const isEmployerUser =
+    user.landingContext === 'employer' ||
+    user.roles.includes('employer_group_admin');
+  const baseNavigationSections = isEmployerUser
+    ? employerNavigationSections
+    : memberNavigationSections;
+
+  const coreSections = baseNavigationSections
     .map((section) => ({
       title: section.title,
       items: filterNavigationItems(section.items, user)

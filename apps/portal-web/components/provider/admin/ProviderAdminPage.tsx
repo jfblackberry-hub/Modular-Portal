@@ -2,23 +2,29 @@ import type {
   ProviderPortalConfig,
   ProviderPortalVariant
 } from '../../../config/providerPortalConfig';
-import { PageHeader, StatusBadge, SurfaceCard } from '../../portal-ui';
+import { StatusBadge, SurfaceCard } from '../../portal-ui';
+import { PortalHeroBanner } from '../../shared/portal-hero-banner';
 
 export function ProviderAdminPage({
   config,
+  imageSrc,
   variant
 }: {
   config: ProviderPortalConfig;
+  imageSrc: string;
   variant: ProviderPortalVariant;
 }) {
   const admin = config.adminModule;
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PortalHeroBanner
         eyebrow={config.displayName}
         title={variant === 'medical' ? 'Provider Admin and Practice Management' : admin.title}
         description={admin.description}
+        imageSrc={imageSrc}
+        imageDecorative
+        priority
       />
 
       {admin.enabledSections.includes('User Access') ? (

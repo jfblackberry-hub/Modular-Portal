@@ -1,0 +1,47 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Billing and Enrollment Made Easy</title>
+  <desc id="desc">Healthcare portal illustration for Billing and Enrollment Made Easy.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="120" y1="140" x2="760" y2="660" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1360" cy="124" r="180" fill="#FFFFFF" fill-opacity="0.08"/>
+  <circle cx="1288" cy="764" r="220" fill="#FFFFFF" fill-opacity="0.06"/>
+  <circle cx="178" cy="760" r="240" fill="#FFFFFF" fill-opacity="0.05"/>
+  <rect x="96" y="128" width="1408" height="644" rx="40" fill="url(#glass)" stroke="#FFFFFF" stroke-opacity="0.24"/>
+  <g opacity="0.72">
+    <rect x="124" y="158" width="260" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.18"/>
+    <rect x="124" y="192" width="176" height="10" rx="5" fill="#FFFFFF" fill-opacity="0.12"/>
+  </g>
+  <text x="124" y="320" font-family="Inter, Arial, Helvetica, sans-serif" font-size="76" font-weight="800" fill="#FFFFFF">Billing and Enrollment Made Easy</text>
+  <text x="124" y="382" font-family="Inter, Arial, Helvetica, sans-serif" font-size="30" font-weight="500" fill="#E0F2FE">Use for premium billing, first payment, enrollment, and renewal experiences.</text>
+  <rect x="124" y="442" width="242" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="171" y="483" font-family="Inter, Arial, Helvetica, sans-serif" font-size="26" font-weight="800" fill="#0F172A">Explore module</text>
+  <rect x="390" y="442" width="198" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.14" stroke="#FFFFFF" stroke-opacity="0.28"/>
+  <text x="447" y="483" font-family="Inter, Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">Learn more</text>
+  <rect x="124" y="560" width="156" height="40" rx="20" fill="#FFFFFF" fill-opacity="0.14" stroke="#FFFFFF" stroke-opacity="0.22"/>
+  <text x="154" y="586" font-family="Inter, Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">Billing & enrollment</text>
+
+    <g transform="translate(820,50)">
+      <rect x="12" y="30" width="188" height="150" rx="24" fill="#F8FAFC" fill-opacity="0.96"/>
+      <rect x="34" y="56" width="96" height="12" rx="6" fill="#93C5FD"/>
+      <rect x="34" y="80" width="54" height="8" rx="4" fill="#CBD5E1"/>
+      <rect x="34" y="98" width="132" height="8" rx="4" fill="#CBD5E1"/>
+      <rect x="34" y="124" width="108" height="32" rx="16" fill="#DCFCE7"/>
+      <text x="54" y="145" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800" fill="#166534">PAID</text>
+      <circle cx="232" cy="72" r="36" fill="#E0F2FE"/>
+      <path d="M218 73h28M232 59v28" stroke="#0284C7" stroke-width="8" stroke-linecap="round"/>
+      <rect x="226" y="126" width="144" height="88" rx="20" fill="#F8FAFC" fill-opacity="0.96"/>
+      <rect x="242" y="144" width="70" height="10" rx="5" fill="#99F6E4"/>
+      <rect x="242" y="164" width="108" height="8" rx="4" fill="#CBD5E1"/>
+      <rect x="242" y="182" width="82" height="8" rx="4" fill="#CBD5E1"/>
+      <rect x="242" y="198" width="96" height="8" rx="4" fill="#CBD5E1"/>
+    </g>
+</svg>

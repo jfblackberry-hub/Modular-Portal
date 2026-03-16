@@ -7,7 +7,7 @@ export async function getProviderPortalSessionContext() {
   const user = await getPortalSessionUser();
 
   if (!user) {
-    redirect('/provider-login');
+    redirect('/login');
   }
 
   const isProviderUser =
@@ -16,7 +16,7 @@ export async function getProviderPortalSessionContext() {
     user.permissions.includes('provider.view');
 
   if (!isProviderUser) {
-    redirect('/provider-login');
+    redirect('/login');
   }
 
   return {

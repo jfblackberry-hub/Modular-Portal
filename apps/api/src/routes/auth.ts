@@ -102,4 +102,39 @@ export async function authRoutes(app: FastifyInstance) {
       }
     }
   );
+
+  app.post<{ Body: LoginBody }>(
+    '/auth/login/employer',
+    async (request, reply) => {
+      try {
+        const { email, password } = request.body;
+        const result = await login(
+          { email, password },
+          {
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          },
+          {
+            requiredLandingContext: 'employer'
+          }
+        );
+
+        if (!result) {
+          return reply.status(401).send({
+            message: 'Invalid employer login for local development'
+          });
+        }
+
+        return {
+          token: result.token,
+          user: result.user
+        };
+      } catch {
+        return reply.status(503).send({
+          message:
+            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+        });
+      }
+    }
+  );
 }

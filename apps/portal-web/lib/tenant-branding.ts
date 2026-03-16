@@ -1,4 +1,8 @@
 import { loadTenantTheme } from '../theme/loadTenantTheme';
+import {
+  getTenantImageOverrides,
+  type TenantImageOverrides
+} from './portal-image-registry';
 
 const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3002';
 const DEFAULT_PRIMARY_COLOR = '#2A6FA8';
@@ -19,6 +23,7 @@ export interface TenantBranding {
   supportPhone?: string;
   welcomeText?: string;
   supportLabel: string;
+  imageOverrides?: TenantImageOverrides;
 }
 
 type TenantContext = {
@@ -28,12 +33,14 @@ type TenantContext = {
 };
 
 type BrandingApiResponse = {
+  tenantId?: string;
   displayName?: string;
   heroImageUrl?: string | null;
   primaryColor?: string;
   secondaryColor?: string;
   logoUrl?: string | null;
   faviconUrl?: string | null;
+  imageOverrides?: Record<string, unknown> | null;
   updatedAt?: string | null;
 };
 
@@ -125,7 +132,13 @@ function buildBranding(
     welcomeText: getStringValue(tenant.brandingConfig, 'welcomeText'),
     supportLabel:
       getStringValue(tenant.brandingConfig, 'supportLabel') ??
-      'Member support available Monday through Friday'
+      'Member support available Monday through Friday',
+    imageOverrides: {
+      ...getTenantImageOverrides(tenant.brandingConfig),
+      ...(brandingOverride?.imageOverrides
+        ? getTenantImageOverrides(brandingOverride.imageOverrides)
+        : {})
+    }
   };
 }
 
@@ -144,6 +157,13 @@ export async function getTenantBranding(
 
       if (response.ok) {
         const latestBranding = (await response.json()) as BrandingApiResponse;
+        if (
+          latestBranding.tenantId &&
+          latestBranding.tenantId !== tenant.id
+        ) {
+          return buildBranding(tenant);
+        }
+
         return buildBranding(tenant, latestBranding);
       }
     }

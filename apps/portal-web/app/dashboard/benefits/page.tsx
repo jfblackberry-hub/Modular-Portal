@@ -1,4 +1,5 @@
 import { getMemberCoverage } from '../../../lib/member-api';
+import { getPortalSessionUser } from '../../../lib/portal-session';
 import { formatDate } from '../../../lib/portal-format';
 import {
   InlineButton,
@@ -8,7 +9,8 @@ import {
 } from '../../../components/portal-ui';
 
 export default async function BenefitsPage() {
-  const coverage = await getMemberCoverage();
+  const sessionUser = await getPortalSessionUser();
+  const coverage = await getMemberCoverage(sessionUser?.id);
   const plan = coverage?.items[0];
 
   return (

@@ -1,0 +1,43 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Connected Health Data Platform</title>
+  <desc id="desc">Healthcare portal illustration for Connected Health Data Platform.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1D4ED8"/>
+      <stop offset="1" stop-color="#0891B2"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="120" y1="140" x2="760" y2="660" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1360" cy="124" r="180" fill="#FFFFFF" fill-opacity="0.08"/>
+  <circle cx="1288" cy="764" r="220" fill="#FFFFFF" fill-opacity="0.06"/>
+  <circle cx="178" cy="760" r="240" fill="#FFFFFF" fill-opacity="0.05"/>
+  <rect x="96" y="128" width="1408" height="644" rx="40" fill="url(#glass)" stroke="#FFFFFF" stroke-opacity="0.24"/>
+  <g opacity="0.72">
+    <rect x="124" y="158" width="260" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.18"/>
+    <rect x="124" y="192" width="176" height="10" rx="5" fill="#FFFFFF" fill-opacity="0.12"/>
+  </g>
+  <text x="124" y="320" font-family="Inter, Arial, Helvetica, sans-serif" font-size="76" font-weight="800" fill="#FFFFFF">Connected Health Data Platform</text>
+  <text x="124" y="382" font-family="Inter, Arial, Helvetica, sans-serif" font-size="30" font-weight="500" fill="#E0F2FE">Best for API, integration, interoperability, and platform admin pages.</text>
+  <rect x="124" y="442" width="242" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.96"/>
+  <text x="171" y="483" font-family="Inter, Arial, Helvetica, sans-serif" font-size="26" font-weight="800" fill="#0F172A">Explore module</text>
+  <rect x="390" y="442" width="198" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.14" stroke="#FFFFFF" stroke-opacity="0.28"/>
+  <text x="447" y="483" font-family="Inter, Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">Learn more</text>
+  <rect x="124" y="560" width="156" height="40" rx="20" fill="#FFFFFF" fill-opacity="0.14" stroke="#FFFFFF" stroke-opacity="0.22"/>
+  <text x="154" y="586" font-family="Inter, Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">API / platform</text>
+
+    <g transform="translate(812,44)">
+      <circle cx="74" cy="90" r="24" fill="#F8FAFC" fill-opacity="0.96"/>
+      <circle cx="206" cy="52" r="24" fill="#F8FAFC" fill-opacity="0.96"/>
+      <circle cx="254" cy="156" r="24" fill="#F8FAFC" fill-opacity="0.96"/>
+      <circle cx="368" cy="112" r="24" fill="#F8FAFC" fill-opacity="0.96"/>
+      <path d="M98 84L182 58M218 64l26 78M278 150l66-28M96 98l136 50" stroke="#BAE6FD" stroke-width="10" stroke-linecap="round"/>
+      <rect x="130" y="82" width="112" height="76" rx="20" fill="#F8FAFC" fill-opacity="0.95"/>
+      <rect x="148" y="102" width="76" height="10" rx="5" fill="#93C5FD"/>
+      <rect x="148" y="122" width="56" height="8" rx="4" fill="#CBD5E1"/>
+      <rect x="148" y="138" width="66" height="8" rx="4" fill="#CBD5E1"/>
+    </g>
+</svg>

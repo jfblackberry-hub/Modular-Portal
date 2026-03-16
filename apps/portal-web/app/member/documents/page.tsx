@@ -1,9 +1,11 @@
 import { getMemberDocuments } from '../../../lib/member-api';
 import { formatDate, titleCase } from '../../../lib/portal-format';
+import { getPortalSessionUser } from '../../../lib/portal-session';
 import { EmptyState, PageHeader, SurfaceCard } from '../../../components/portal-ui';
 
 export default async function MemberDocumentsPage() {
-  const documents = await getMemberDocuments();
+  const sessionUser = await getPortalSessionUser();
+  const documents = await getMemberDocuments(sessionUser?.id);
 
   return (
     <div className="space-y-6">

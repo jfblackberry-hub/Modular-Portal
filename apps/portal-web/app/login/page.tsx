@@ -1,99 +1,94 @@
 import { LoginForm } from './login-form';
 
+const quickSignInGroups = [
+  {
+    title: 'Member',
+    users: [
+      { label: 'Portal member', username: 'maria' },
+      { label: 'Real Health SQL member', username: 'm0000002' },
+      { label: 'Real Health demo member', username: 'realmember' }
+    ]
+  },
+  {
+    title: 'Admin',
+    users: [
+      { label: 'Tenant admin', username: 'tenant' },
+      { label: 'Real Health tenant admin', username: 'realtenantadmin' },
+      { label: 'Platform admin', username: 'admin' }
+    ]
+  },
+  {
+    title: 'Other',
+    users: [
+      { label: 'Provider user', username: 'Provider1' },
+      { label: 'E&B employer admin', username: 'blue-horizon-health' },
+      { label: 'E&B broker', username: 'broker' },
+      { label: 'E&B internal operations', username: 'ops' }
+    ]
+  }
+] as const;
+
 export default async function LoginPage() {
   return (
     <main className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)]">
       <section className="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid w-full gap-10 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="overflow-hidden rounded-[32px] border border-[var(--border-subtle)] bg-white shadow-sm">
-            <div className="portal-shell-gradient relative overflow-hidden px-8 py-10 text-white sm:px-10">
-              <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-              <div className="absolute bottom-0 left-10 h-28 w-28 rounded-full bg-emerald-300/15 blur-2xl" />
-              <p className="text-[13px] font-medium text-sky-100">
-                Welcome to your member portal
-              </p>
-              <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight sm:text-5xl">
-                Manage your plan in one place.
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-8 text-sky-50">
-                Review benefits, view claims, access your ID card, and connect
-                with support through a single secure healthcare experience.
-              </p>
+        <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.85fr)]">
+          <section className="overflow-hidden rounded-[28px] border border-[var(--border-subtle)] bg-white shadow-sm">
+            <div className="relative px-10 py-12 sm:px-12 sm:py-16">
+              <div
+                className="absolute inset-0 bg-gradient-to-br from-[var(--tenant-primary-soft-color)] via-white to-white"
+                aria-hidden="true"
+              />
+              <div className="absolute -right-14 top-8 h-36 w-36 rounded-full bg-[var(--tenant-primary-soft-color)]/70 blur-xl" aria-hidden="true" />
+              <div className="absolute -bottom-10 left-6 h-24 w-24 rounded-full bg-sky-100/80 blur-lg" aria-hidden="true" />
+
+              <div className="relative max-w-2xl">
+                <div className="inline-flex items-center gap-3 rounded-full border border-[var(--border-subtle)] bg-white/90 px-4 py-2">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] text-xs font-bold text-white">
+                    P
+                  </span>
+                  <span className="text-sm font-semibold tracking-wide text-[var(--text-primary)]">
+                    Payer Portal
+                  </span>
+                </div>
+
+                <h1 className="mt-8 text-4xl font-semibold leading-tight text-[var(--text-primary)] sm:text-5xl">
+                  Secure access to your health plan portal
+                </h1>
+                <p className="mt-5 max-w-xl text-base leading-7 text-[var(--text-secondary)]">
+                  Sign in to review coverage, claims, ID cards, and support options in a protected healthcare environment.
+                </p>
+
+                <section className="mt-8 rounded-2xl border border-[var(--border-subtle)] bg-white/90 p-5" aria-label="Quick sign-in users">
+                  <h2 className="text-sm font-semibold text-[var(--text-primary)]">Quick sign-in users</h2>
+                  <div className="mt-3 space-y-3">
+                    {quickSignInGroups.map((group) => (
+                      <div key={group.title}>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                          {group.title}
+                        </p>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                          {group.users.map((user) => (
+                            <a
+                              key={user.username}
+                              href={`/login?user=${encodeURIComponent(user.username)}`}
+                              className="flex items-center justify-between gap-2 rounded-xl border border-[var(--border-subtle)] bg-white px-3 py-2 text-xs transition hover:border-[var(--tenant-primary-color)]"
+                            >
+                              <span className="truncate text-[var(--text-secondary)]">{user.label}</span>
+                              <span className="font-semibold text-[var(--text-primary)]">{user.username}</span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
             </div>
+          </section>
 
-            <div className="grid gap-6 px-8 py-8 sm:grid-cols-2 sm:px-10">
-              <article className="rounded-2xl bg-[var(--bg-page)] p-5">
-                <h2 className="text-base font-semibold text-[var(--text-primary)]">
-                  Top member tasks
-                </h2>
-                <ul className="mt-4 space-y-3 text-sm leading-6 text-[var(--text-secondary)]">
-                  <li>View your digital ID card</li>
-                  <li>Check recent claims and EOBs</li>
-                  <li>Search providers and care options</li>
-                  <li>Send secure messages to support</li>
-                </ul>
-              </article>
-
-              <article className="rounded-2xl bg-[var(--bg-page)] p-5">
-                <h2 className="text-base font-semibold text-[var(--text-primary)]">
-                  Local development accounts
-                </h2>
-                <dl className="mt-4 space-y-3 text-sm text-[var(--text-secondary)]">
-                  <div className="flex items-center justify-between gap-3">
-                    <dt>Portal member</dt>
-                    <dd className="font-semibold text-[var(--text-primary)]">maria</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <dt>Provider user</dt>
-                    <dd className="font-semibold text-[var(--text-primary)]">Provider1</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <dt>E&amp;B member</dt>
-                    <dd className="font-semibold text-[var(--text-primary)]">maria</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <dt>E&amp;B employer group admin</dt>
-                    <dd className="font-semibold text-[var(--text-primary)]">employer</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <dt>E&amp;B broker</dt>
-                    <dd className="font-semibold text-[var(--text-primary)]">broker</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <dt>E&amp;B internal operations</dt>
-                    <dd className="font-semibold text-[var(--text-primary)]">ops</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <dt>Tenant admin</dt>
-                    <dd className="font-semibold text-[var(--text-primary)]">tenant</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <dt>Platform admin</dt>
-                    <dd className="font-semibold text-[var(--text-primary)]">admin</dd>
-                  </div>
-                  <div className="pt-2 text-[13px] text-[var(--text-muted)]">
-                    Any non-empty password works locally.
-                  </div>
-                  <div className="pt-2 text-[13px] text-[var(--text-muted)]">
-                    Provider users can sign in here or at `/provider-login`.
-                  </div>
-                  <div className="pt-2 text-[13px] text-[var(--text-muted)]">
-                    E&amp;B role users (`employer`, `broker`, `ops`) land directly in Billing &amp; Enrollment.
-                  </div>
-                </dl>
-              </article>
-            </div>
-          </div>
-
-          <div className="max-w-xl lg:ml-auto lg:w-full">
-            <p className="text-sm font-medium text-[var(--tenant-primary-color)]">
-              Secure sign in
-            </p>
-            <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-              Accessibility, privacy, and support links are available below the
-              form to match a production-ready payer portal pattern.
-            </p>
-            <LoginForm />
+          <div className="flex flex-col items-center gap-4 lg:items-end">
+            <LoginForm helperText="Use your username/email. Employers can also use Employer Key (tenant slug), for example `blue-horizon-health`." />
           </div>
         </div>
       </section>

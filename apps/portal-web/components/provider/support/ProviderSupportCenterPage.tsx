@@ -4,23 +4,29 @@ import type {
   ProviderPortalConfig,
   ProviderPortalVariant
 } from '../../../config/providerPortalConfig';
-import { PageHeader, SurfaceCard } from '../../portal-ui';
+import { SurfaceCard } from '../../portal-ui';
+import { PortalHeroBanner } from '../../shared/portal-hero-banner';
 
 export function ProviderSupportCenterPage({
   config,
+  imageSrc,
   variant
 }: {
   config: ProviderPortalConfig;
+  imageSrc: string;
   variant: ProviderPortalVariant;
 }) {
   const support = config.supportModule;
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PortalHeroBanner
         eyebrow={config.displayName}
         title={variant === 'medical' ? 'Provider Support and Training Center' : support.title}
         description={support.description}
+        imageSrc={imageSrc}
+        imageDecorative
+        priority
       />
 
       <SurfaceCard title="Support Categories" description="Find the right support path by topic.">

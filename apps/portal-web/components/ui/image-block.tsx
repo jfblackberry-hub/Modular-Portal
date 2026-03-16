@@ -25,6 +25,7 @@ export function ImageBlock({
         src={src}
         alt={alt}
         fill
+        aria-hidden={alt ? undefined : true}
         className="object-cover"
         sizes="(max-width: 768px) 100vw, 40vw"
         priority={priority}

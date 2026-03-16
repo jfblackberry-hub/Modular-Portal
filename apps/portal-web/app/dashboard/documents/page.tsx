@@ -1,21 +1,30 @@
-import { getMemberDocuments } from '../../../lib/member-api';
-import { formatDate, titleCase } from '../../../lib/portal-format';
 import {
   EmptyState,
-  PageHeader,
   SurfaceCard
 } from '../../../components/portal-ui';
+import { PortalHeroBanner } from '../../../components/shared/portal-hero-banner';
+import { getMemberDocuments } from '../../../lib/member-api';
+import { formatDate, titleCase } from '../../../lib/portal-format';
+import { getPortalImageSrc } from '../../../lib/portal-image-registry';
+import { getPortalSessionUser } from '../../../lib/portal-session';
 
 export default async function DocumentsPage() {
-  const documents = await getMemberDocuments();
+  const sessionUser = await getPortalSessionUser();
+  const documents = await getMemberDocuments(sessionUser?.id);
   const items = documents?.items ?? [];
+  const documentsHeroImage = getPortalImageSrc('documentsHero', {
+    tenantBrandingConfig: sessionUser?.tenant.brandingConfig
+  });
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PortalHeroBanner
         eyebrow="Documents"
         title="Documents and notices"
         description="Access explanation of benefits, letters, and uploaded items from a clean document center."
+        imageSrc={documentsHeroImage}
+        imageDecorative
+        priority
       />
 
       <SurfaceCard

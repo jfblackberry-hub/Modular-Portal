@@ -19,6 +19,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
+    "db:seed:eb-demo": "node --import tsx prisma/seed-eb-demo.ts",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "node -e \"console.log('No tests configured for @payer-portal/database')\""

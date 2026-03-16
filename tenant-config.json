@@ -3,7 +3,7 @@
     "logo": "/tenant-assets/4716c016-3f09-4707-8591-47457441663a-logo.svg",
     "primaryColor": "#2F6FED",
     "secondaryColor": "#4DA3FF",
-    "heroImage": "/assets/portal-images/doctor-consultation.svg",
+    "heroImage": "/assets/portal-images/real-health-api/member-portal-hero-family-coverage.svg",
     "font": "Inter, Aptos, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
   },
   "tenants": {
@@ -11,14 +11,14 @@
       "logo": "/tenant-assets/4716c016-3f09-4707-8591-47457441663a-logo.svg",
       "primaryColor": "#2A6FA8",
       "secondaryColor": "#EAF4FB",
-      "heroImage": "/assets/portal-images/family-healthcare.svg",
+      "heroImage": "/assets/portal-images/real-health-api/member-portal-hero-family-coverage.svg",
       "font": "Inter, Aptos, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
     },
     "bh-health-plan": {
       "logo": "/tenant-assets/65d3588a-b32e-41de-b2dd-0b0ca45e913f-logo.svg",
       "primaryColor": "#1F5E95",
       "secondaryColor": "#DCEEFF",
-      "heroImage": "/assets/portal-images/telehealth-session.svg",
+      "heroImage": "/assets/portal-images/real-health-api/telehealth-hero-virtual-care.svg",
       "font": "Inter, Aptos, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
     }
   }

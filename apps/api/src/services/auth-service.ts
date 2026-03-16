@@ -53,7 +53,7 @@ const LOCAL_LOGIN_PROFILES = {
     email: 'employer',
     firstName: 'Employer',
     lastName: 'Admin',
-    landingContext: 'member',
+    landingContext: 'employer',
     roleCode: 'employer_group_admin',
     roleName: 'Employer Group Admin',
     roleDescription: 'Employer group admin role for enrollment and billing administration.'
@@ -126,7 +126,12 @@ type LoginContext = {
   userAgent?: string;
 };
 
-type LandingContext = 'member' | 'provider' | 'tenant_admin' | 'platform_admin';
+type LandingContext =
+  | 'member'
+  | 'provider'
+  | 'employer'
+  | 'tenant_admin'
+  | 'platform_admin';
 
 function getPermissionCodesForRole(roleCode: string) {
   switch (roleCode) {
@@ -380,6 +385,203 @@ async function ensureLocalLoginUser(identifier: string) {
   return getUserWithRelations(profile.email);
 }
 
+async function ensureRolePermissions(roleCode: string) {
+  for (const permission of DEFAULT_PERMISSIONS) {
+    await prisma.permission.upsert({
+      where: {
+        code: permission.code
+      },
+      update: {
+        name: permission.name,
+        description: permission.description
+      },
+      create: permission
+    });
+  }
+
+  const roleProfile =
+    roleCode === 'employer_group_admin'
+      ? {
+          roleName: 'Employer Group Admin',
+          roleDescription: 'Employer group admin role for enrollment and billing administration.'
+        }
+      : {
+          roleName: roleCode,
+          roleDescription: `Auto-provisioned role ${roleCode}.`
+        };
+
+  const role = await prisma.role.upsert({
+    where: {
+      code: roleCode
+    },
+    update: {
+      name: roleProfile.roleName,
+      description: roleProfile.roleDescription
+    },
+    create: {
+      code: roleCode,
+      name: roleProfile.roleName,
+      description: roleProfile.roleDescription
+    }
+  });
+
+  const permissionCodes = new Set(getPermissionCodesForRole(roleCode));
+
+  for (const permissionCode of permissionCodes) {
+    const permission = await prisma.permission.findUnique({
+      where: { code: permissionCode }
+    });
+
+    if (!permission) {
+      continue;
+    }
+
+    await prisma.rolePermission.upsert({
+      where: {
+        roleId_permissionId: {
+          roleId: role.id,
+          permissionId: permission.id
+        }
+      },
+      update: {},
+      create: {
+        roleId: role.id,
+        permissionId: permission.id
+      }
+    });
+  }
+
+  return role;
+}
+
+async function getEmployerUserByTenant(tenantId: string) {
+  const user = await prisma.user.findFirst({
+    where: {
+      tenantId,
+      roles: {
+        some: {
+          role: {
+            code: 'employer_group_admin'
+          }
+        }
+      }
+    },
+    select: {
+      email: true
+    }
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  return getUserWithRelations(user.email);
+}
+
+async function ensureEmployerUserForKey(employerKey: string) {
+  const normalizedKey = employerKey.trim().toLowerCase();
+  if (!normalizedKey) {
+    return null;
+  }
+
+  const directTenantMatch =
+    (await prisma.tenant.findUnique({
+      where: { slug: normalizedKey }
+    })) ??
+    (await prisma.tenant.findFirst({
+      where: {
+        name: {
+          equals: employerKey.trim(),
+          mode: 'insensitive'
+        }
+      }
+    }));
+
+  const tenant =
+    directTenantMatch ??
+    (await prisma.tenant
+      .findMany({
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          brandingConfig: true
+        }
+      })
+      .then((tenants) =>
+        tenants.find((candidate) => {
+          if (
+            typeof candidate.brandingConfig !== 'object' ||
+            candidate.brandingConfig === null ||
+            Array.isArray(candidate.brandingConfig)
+          ) {
+            return false;
+          }
+
+          const config = candidate.brandingConfig as Record<string, unknown>;
+          const possibleKeys = [
+            config.employerKey,
+            config.employer_key,
+            config.employerId,
+            config.employer_id,
+            config.groupKey,
+            config.group_key
+          ];
+
+          return possibleKeys.some(
+            (value) =>
+              typeof value === 'string' &&
+              value.trim().toLowerCase() === normalizedKey
+          );
+        }) ?? null
+      ));
+
+  if (!tenant) {
+    return null;
+  }
+
+  const role = await ensureRolePermissions('employer_group_admin');
+  const existingEmployerUser = await getEmployerUserByTenant(tenant.id);
+
+  if (existingEmployerUser) {
+    return existingEmployerUser;
+  }
+
+  const normalizedEmail = `employer+${tenant.slug}@local`;
+  const user = await prisma.user.upsert({
+    where: { email: normalizedEmail },
+    update: {
+      tenantId: tenant.id,
+      isActive: true,
+      firstName: tenant.name,
+      lastName: 'Employer Admin'
+    },
+    create: {
+      tenantId: tenant.id,
+      email: normalizedEmail,
+      firstName: tenant.name,
+      lastName: 'Employer Admin',
+      isActive: true
+    }
+  });
+
+  await prisma.userRole.upsert({
+    where: {
+      userId_roleId: {
+        userId: user.id,
+        roleId: role.id
+      }
+    },
+    update: {},
+    create: {
+      userId: user.id,
+      roleId: role.id
+    }
+  });
+
+  return getUserWithRelations(normalizedEmail);
+}
+
 export async function login(
   { email, password }: LoginInput,
   context: LoginContext = {},
@@ -395,8 +597,12 @@ export async function login(
 
   const normalizedLookup = normalizedEmail.toLowerCase();
   const user =
-    (await getUserWithRelations(normalizedEmail)) ??
-    (await ensureLocalLoginUser(normalizedLookup));
+    options.requiredLandingContext === 'employer'
+      ? (await getUserWithRelations(normalizedEmail)) ??
+        (await ensureEmployerUserForKey(normalizedLookup))
+      : (await getUserWithRelations(normalizedEmail)) ??
+        (await ensureLocalLoginUser(normalizedLookup)) ??
+        (await ensureEmployerUserForKey(normalizedLookup));
 
   if (!user) {
     return null;
@@ -408,6 +614,8 @@ export async function login(
       ? 'platform_admin'
       : updatedUser.roles.some(({ role }) => role.code === 'tenant_admin')
         ? 'tenant_admin'
+      : updatedUser.roles.some(({ role }) => role.code === 'employer_group_admin')
+        ? 'employer'
         : updatedUser.roles.some(({ role }) => role.code === 'provider')
           ? 'provider'
         : 'member';

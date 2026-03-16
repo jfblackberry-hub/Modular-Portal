@@ -16,6 +16,11 @@ export function SideNavigation({
   const pathname = usePathname();
   const flatItems = sections.flatMap((section) => section.items).filter((item) => !item.external);
   const mobileItems = flatItems.slice(0, 4);
+  const primarySectionTitle = sections[0]?.title ?? 'Portal';
+  const primarySectionDescription =
+    primarySectionTitle === 'Employer portal'
+      ? 'Quick access to enrollment, billing, document, and reporting workflows.'
+      : 'Quick access to benefits, claims, care search, and support tools.';
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -49,10 +54,10 @@ export function SideNavigation({
               className="text-base font-semibold"
               style={{ color: branding.primaryColor }}
             >
-              Member navigation
+              {primarySectionTitle}
             </p>
             <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-              Quick access to benefits, claims, care search, and support tools.
+              {primarySectionDescription}
             </p>
           </div>
 

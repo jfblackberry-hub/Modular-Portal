@@ -13,7 +13,12 @@ export interface PortalSessionUser {
   email: string;
   firstName: string;
   lastName: string;
-  landingContext?: 'member' | 'provider' | 'tenant_admin' | 'platform_admin';
+  landingContext?:
+    | 'member'
+    | 'provider'
+    | 'employer'
+    | 'tenant_admin'
+    | 'platform_admin';
   tenant: PortalTenant;
   roles: string[];
   permissions: string[];

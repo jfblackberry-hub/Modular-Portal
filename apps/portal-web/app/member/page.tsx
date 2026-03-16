@@ -7,14 +7,17 @@ import {
   getMemberProfile
 } from '../../lib/member-api';
 import { formatCurrency } from '../../lib/portal-format';
+import { getPortalSessionUser } from '../../lib/portal-session';
 import { PageHeader, QuickActionCard, SurfaceCard } from '../../components/portal-ui';
 
 export default async function MemberHomePage() {
+  const sessionUser = await getPortalSessionUser();
+  const sessionUserId = sessionUser?.id;
   const [profile, coverage, claims, documents] = await Promise.all([
-    getMemberProfile(),
-    getMemberCoverage(),
-    getMemberClaims(),
-    getMemberDocuments()
+    getMemberProfile(sessionUserId),
+    getMemberCoverage(sessionUserId),
+    getMemberClaims(sessionUserId),
+    getMemberDocuments(sessionUserId)
   ]);
 
   return (

@@ -1,9 +1,11 @@
 import { getMemberClaims } from '../../../lib/member-api';
 import { formatCurrency, formatDate, titleCase } from '../../../lib/portal-format';
+import { getPortalSessionUser } from '../../../lib/portal-session';
 import { EmptyState, PageHeader, StatusBadge, SurfaceCard } from '../../../components/portal-ui';
 
 export default async function MemberClaimsPage() {
-  const claims = await getMemberClaims();
+  const sessionUser = await getPortalSessionUser();
+  const claims = await getMemberClaims(sessionUser?.id);
 
   return (
     <div className="space-y-6">

@@ -1,12 +1,23 @@
-import { PageHeader, SurfaceCard, SupportLink } from '../../../components/portal-ui';
+import { SupportLink,SurfaceCard } from '../../../components/portal-ui';
+import { PortalHeroBanner } from '../../../components/shared/portal-hero-banner';
+import { getPortalImageSrc } from '../../../lib/portal-image-registry';
+import { getPortalSessionUser } from '../../../lib/portal-session';
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  const sessionUser = await getPortalSessionUser();
+  const supportHeroImage = getPortalImageSrc('supportHero', {
+    tenantBrandingConfig: sessionUser?.tenant.brandingConfig
+  });
+
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PortalHeroBanner
         eyebrow="Help"
         title="Help and support"
         description="Find answers, accessibility resources, language support, and the fastest path to member services."
+        imageSrc={supportHeroImage}
+        imageDecorative
+        priority
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
