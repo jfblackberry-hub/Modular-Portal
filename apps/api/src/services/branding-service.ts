@@ -56,6 +56,22 @@ function getExtension(fileName: string, mimeType: string) {
   }
 }
 
+async function writeTenantImageAsset(input: {
+  file: MultipartFile;
+  fileName: string;
+}) {
+  if (!input.file.mimetype.startsWith('image/')) {
+    throw new Error('Logo upload must be an image file');
+  }
+
+  await mkdir(tenantAssetsDirectory, { recursive: true });
+  const extension = getExtension(input.file.filename, input.file.mimetype);
+  const outputPath = path.join(tenantAssetsDirectory, `${input.fileName}${extension}`);
+  await pipeline(input.file.file, (await import('node:fs')).createWriteStream(outputPath));
+
+  return `/tenant-assets/${input.fileName}${extension}`;
+}
+
 function normalizeOptionalString(value: string | undefined) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
@@ -114,6 +130,7 @@ function buildTenantBrandingConfig(input: {
 function mapBranding(tenant: {
   id: string;
   name: string;
+  brandingConfig?: Prisma.JsonValue;
   branding: {
     id: string;
     displayName: string | null;
@@ -124,7 +141,31 @@ function mapBranding(tenant: {
     createdAt: Date;
     updatedAt: Date;
   } | null;
-}) {
+}, options: {
+  employerGroupName?: string | null;
+  employerGroupLogoUrl?: string | null;
+} = {}) {
+  const brandingConfig =
+    isRecord(tenant.brandingConfig) ? (tenant.brandingConfig as Record<string, unknown>) : {};
+  const employerGroupName =
+    typeof options.employerGroupName === 'string'
+      ? options.employerGroupName
+      : typeof brandingConfig.employerGroupName === 'string'
+      ? brandingConfig.employerGroupName
+      : typeof brandingConfig.employerName === 'string'
+        ? brandingConfig.employerName
+        : typeof brandingConfig.groupName === 'string'
+          ? brandingConfig.groupName
+          : null;
+  const employerGroupLogoUrl =
+    typeof options.employerGroupLogoUrl === 'string'
+      ? options.employerGroupLogoUrl
+      : typeof brandingConfig.employerGroupLogoUrl === 'string'
+      ? brandingConfig.employerGroupLogoUrl
+      : typeof brandingConfig.employerLogoUrl === 'string'
+        ? brandingConfig.employerLogoUrl
+        : null;
+
   return {
     id: tenant.branding?.id ?? null,
     tenantId: tenant.id,
@@ -133,12 +174,14 @@ function mapBranding(tenant: {
     secondaryColor: tenant.branding?.secondaryColor ?? DEFAULT_SECONDARY_COLOR,
     logoUrl: tenant.branding?.logoUrl ?? null,
     faviconUrl: tenant.branding?.faviconUrl ?? null,
+    employerGroupName,
+    employerGroupLogoUrl,
     createdAt: tenant.branding?.createdAt ?? null,
     updatedAt: tenant.branding?.updatedAt ?? null
   };
 }
 
-export async function getBrandingForTenant(tenantId: string) {
+export async function getBrandingForTenant(tenantId: string, userId?: string) {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
     include: {
@@ -150,7 +193,31 @@ export async function getBrandingForTenant(tenantId: string) {
     throw new Error('Tenant not found');
   }
 
-  return mapBranding(tenant);
+  if (!userId) {
+    return mapBranding(tenant);
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      tenantId: true,
+      employerGroup: {
+        select: {
+          name: true,
+          logoUrl: true
+        }
+      }
+    }
+  });
+
+  if (!user || user.tenantId !== tenant.id || !user.employerGroup) {
+    return mapBranding(tenant);
+  }
+
+  return mapBranding(tenant, {
+    employerGroupName: user.employerGroup.name,
+    employerGroupLogoUrl: user.employerGroup.logoUrl
+  });
 }
 
 export async function updateBrandingForTenant(
@@ -268,10 +335,6 @@ export async function uploadBrandingLogoForTenant(
   file: MultipartFile,
   context: AuditContext
 ) {
-  if (!file.mimetype.startsWith('image/')) {
-    throw new Error('Logo upload must be an image file');
-  }
-
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
     include: {
@@ -283,19 +346,40 @@ export async function uploadBrandingLogoForTenant(
     throw new Error('Tenant not found');
   }
 
-  await mkdir(tenantAssetsDirectory, { recursive: true });
-
-  const extension = getExtension(file.filename, file.mimetype);
-  const fileName = `${tenant.id}-logo${extension}`;
-  const outputPath = path.join(tenantAssetsDirectory, fileName);
-
-  await pipeline(file.file, (await import('node:fs')).createWriteStream(outputPath));
+  const logoUrl = await writeTenantImageAsset({
+    file,
+    fileName: `${tenant.id}-logo`
+  });
 
   return updateBrandingForTenant(
     tenantId,
     {
-      logoUrl: `/tenant-assets/${fileName}`
+      logoUrl
     },
     context
   );
+}
+
+export async function uploadEmployerGroupLogoAssetForTenant(
+  tenantId: string,
+  file: MultipartFile
+) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { id: true }
+  });
+
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+
+  const logoUrl = await writeTenantImageAsset({
+    file,
+    fileName: `${tenant.id}-employer-group-logo`
+  });
+
+  return {
+    tenantId,
+    logoUrl
+  };
 }

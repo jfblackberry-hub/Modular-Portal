@@ -117,6 +117,12 @@ type SettingsPayload = {
     status: string;
   };
   branding: Branding;
+  employerGroupBranding: {
+    employerKey?: string | null;
+    employerGroupName: string | null;
+    employerGroupLogoUrl: string | null;
+    availableEmployerKeys?: string[];
+  };
   notificationSettings: NotificationSettings;
   purchasedModules: TenantPurchasedModule[];
   integrations: Connector[];
@@ -149,9 +155,17 @@ function resolveBrandingLogoPreviewUrl(settings: SettingsPayload | null, logoUrl
 export function TenantAdminSettings() {
   const searchParams = useSearchParams();
   const queryTenantId = searchParams.get('tenantId') ?? searchParams.get('tenant_id');
-  const tenantQuery = queryTenantId
-    ? `?tenant_id=${encodeURIComponent(queryTenantId)}`
-    : '';
+  const initialEmployerKey = searchParams.get('employer_key')?.trim() ?? '';
+  const [selectedEmployerKey, setSelectedEmployerKey] = useState(initialEmployerKey);
+
+  const tenantAdminQuery = new URLSearchParams();
+  if (queryTenantId) {
+    tenantAdminQuery.set('tenant_id', queryTenantId);
+  }
+  if (selectedEmployerKey.trim()) {
+    tenantAdminQuery.set('employer_key', selectedEmployerKey.trim());
+  }
+  const tenantQuery = tenantAdminQuery.size > 0 ? `?${tenantAdminQuery.toString()}` : '';
 
   const [settings, setSettings] = useState<SettingsPayload | null>(null);
   const [brandingForm, setBrandingForm] = useState({
@@ -160,6 +174,10 @@ export function TenantAdminSettings() {
     secondaryColor: '#ffffff',
     logoUrl: '',
     faviconUrl: ''
+  });
+  const [employerGroupBrandingForm, setEmployerGroupBrandingForm] = useState({
+    employerGroupName: '',
+    employerGroupLogoUrl: ''
   });
   const [notificationForm, setNotificationForm] = useState<NotificationSettings>({
     emailEnabled: true,
@@ -188,11 +206,14 @@ export function TenantAdminSettings() {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedRoleId, setSelectedRoleId] = useState('');
   const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+  const [selectedEmployerGroupLogoFile, setSelectedEmployerGroupLogoFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingBranding, setIsSavingBranding] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isSavingEmployerGroupBranding, setIsSavingEmployerGroupBranding] = useState(false);
+  const [isUploadingEmployerGroupLogo, setIsUploadingEmployerGroupLogo] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
   const [isSavingPurchasedModules, setIsSavingPurchasedModules] = useState(false);
   const [isCreatingIntegration, setIsCreatingIntegration] = useState(false);
@@ -228,12 +249,22 @@ export function TenantAdminSettings() {
 
       const payload = (await response.json()) as SettingsPayload;
       setSettings(payload);
+      const availableEmployerKeys = payload.employerGroupBranding.availableEmployerKeys ?? [];
+      if (!selectedEmployerKey && payload.employerGroupBranding.employerKey) {
+        setSelectedEmployerKey(payload.employerGroupBranding.employerKey);
+      } else if (!selectedEmployerKey && availableEmployerKeys.length > 0) {
+        setSelectedEmployerKey(availableEmployerKeys[0]);
+      }
       setBrandingForm({
         displayName: payload.branding.displayName,
         primaryColor: payload.branding.primaryColor,
         secondaryColor: payload.branding.secondaryColor,
         logoUrl: payload.branding.logoUrl ?? '',
         faviconUrl: payload.branding.faviconUrl ?? ''
+      });
+      setEmployerGroupBrandingForm({
+        employerGroupName: payload.employerGroupBranding.employerGroupName ?? '',
+        employerGroupLogoUrl: payload.employerGroupBranding.employerGroupLogoUrl ?? ''
       });
       setNotificationForm({
         ...payload.notificationSettings,
@@ -242,6 +273,7 @@ export function TenantAdminSettings() {
       });
       setPurchasedModulesForm(payload.purchasedModules);
       setSelectedLogoFile(null);
+      setSelectedEmployerGroupLogoFile(null);
       setSelectedUserId((current) => current || payload.users[0]?.id || '');
       setSelectedRoleId((current) => current || payload.roles[0]?.id || '');
     } catch {
@@ -293,9 +325,53 @@ export function TenantAdminSettings() {
     }
   }
 
+  async function handleEmployerGroupLogoUpload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!selectedEmployerGroupLogoFile) {
+      setError('Choose an employer group logo file before uploading.');
+      return;
+    }
+
+    setIsUploadingEmployerGroupLogo(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedEmployerGroupLogoFile);
+
+      const response = await fetch(
+        `${apiBaseUrl}/api/tenant-admin/employer-group-branding/logo${tenantQuery}`,
+        {
+          method: 'POST',
+          headers: {
+            ...getAdminAuthHeaders()
+          },
+          body: formData
+        }
+      );
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setError(payload?.message ?? 'Unable to upload employer group logo.');
+        return;
+      }
+
+      setSuccess('Employer group logo uploaded.');
+      await loadSettings();
+    } catch {
+      setError('Unable to upload employer group logo.');
+    } finally {
+      setIsUploadingEmployerGroupLogo(false);
+    }
+  }
+
   useEffect(() => {
     void loadSettings();
-  }, [tenantQuery]);
+  }, [queryTenantId, selectedEmployerKey]);
 
   async function handleBrandingSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -346,6 +422,49 @@ export function TenantAdminSettings() {
       setError(error instanceof Error ? error.message : 'Unable to save branding settings.');
     } finally {
       setIsSavingBranding(false);
+    }
+  }
+
+  async function handleEmployerGroupBrandingSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+    setSuccess('');
+    setIsSavingEmployerGroupBranding(true);
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/api/tenant-admin/employer-group-branding${tenantQuery}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAdminAuthHeaders()
+          },
+          body: JSON.stringify({
+            employerGroupName: employerGroupBrandingForm.employerGroupName || null,
+            employerGroupLogoUrl: employerGroupBrandingForm.employerGroupLogoUrl || null
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setError(payload?.message ?? 'Unable to save employer group branding settings.');
+        return;
+      }
+
+      setSuccess('Employer group branding settings saved.');
+      await loadSettings();
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to save employer group branding settings.'
+      );
+    } finally {
+      setIsSavingEmployerGroupBranding(false);
     }
   }
 
@@ -603,8 +722,14 @@ export function TenantAdminSettings() {
       ) : settings ? (
         <>
           <div className="grid gap-4 md:grid-cols-4">
-            <SectionCard title={settings.tenant.name} description="Tenant">
-              <p className="text-sm text-admin-muted">{settings.tenant.slug}</p>
+            <SectionCard
+              title={settings.branding.displayName || settings.tenant.name}
+              description="Healthplan Payer"
+            >
+              <p className="text-sm text-admin-muted">
+                Employer group context:{' '}
+                {settings.employerGroupBranding.employerGroupName || settings.tenant.name}
+              </p>
             </SectionCard>
             <SectionCard
               title={`${settings.purchasedModules.length}/${moduleCatalog.length}`}
@@ -740,6 +865,107 @@ export function TenantAdminSettings() {
                   {isSavingBranding ? 'Saving branding...' : 'Save branding'}
                 </button>
                 </form>
+
+                <div className="rounded-2xl border border-admin-border bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-admin-text">Employer group branding (E&B)</p>
+                  <p className="mt-1 text-sm text-admin-muted">
+                    Configure employer-group logo and name used in Billing & Enrollment experiences.
+                  </p>
+                  <div className="mt-4">
+                    <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-admin-muted">
+                      Employer Key Scope
+                    </label>
+                    <select
+                      value={selectedEmployerKey}
+                      onChange={(event) => {
+                        setSelectedEmployerKey(event.target.value);
+                        setSelectedEmployerGroupLogoFile(null);
+                      }}
+                      className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                    >
+                      <option value="">Default employer scope</option>
+                      {(settings.employerGroupBranding.availableEmployerKeys ?? []).map((key) => (
+                        <option key={key} value={key}>
+                          {key}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-admin-border bg-white">
+                      {employerGroupBrandingForm.employerGroupLogoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={resolveBrandingLogoPreviewUrl(settings, employerGroupBrandingForm.employerGroupLogoUrl)}
+                          alt={`${employerGroupBrandingForm.employerGroupName || settings.tenant.name} employer logo`}
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      ) : (
+                        <span className="text-xs text-admin-muted">No logo</span>
+                      )}
+                    </div>
+                    <form className="flex-1 space-y-3" onSubmit={handleEmployerGroupLogoUpload}>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                        onChange={(event) =>
+                          setSelectedEmployerGroupLogoFile(event.target.files?.[0] ?? null)
+                        }
+                        className="block w-full text-sm text-admin-text file:mr-4 file:rounded-full file:border-0 file:bg-admin-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+                      />
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="submit"
+                          disabled={isUploadingEmployerGroupLogo}
+                          className="rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {isUploadingEmployerGroupLogo
+                            ? 'Uploading employer logo...'
+                            : 'Upload employer logo'}
+                        </button>
+                        {selectedEmployerGroupLogoFile ? (
+                          <p className="text-sm text-admin-muted">
+                            Selected: {selectedEmployerGroupLogoFile.name}
+                          </p>
+                        ) : null}
+                      </div>
+                    </form>
+                  </div>
+
+                  <form className="mt-4 space-y-4" onSubmit={handleEmployerGroupBrandingSave}>
+                    <input
+                      className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                      value={employerGroupBrandingForm.employerGroupName}
+                      onChange={(event) =>
+                        setEmployerGroupBrandingForm((current) => ({
+                          ...current,
+                          employerGroupName: event.target.value
+                        }))
+                      }
+                      placeholder="Employer group name"
+                    />
+                    <input
+                      className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                      value={employerGroupBrandingForm.employerGroupLogoUrl}
+                      onChange={(event) =>
+                        setEmployerGroupBrandingForm((current) => ({
+                          ...current,
+                          employerGroupLogoUrl: event.target.value
+                        }))
+                      }
+                      placeholder="/tenant-assets/employer-group-logo.png"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSavingEmployerGroupBranding}
+                      className="rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {isSavingEmployerGroupBranding
+                        ? 'Saving employer branding...'
+                        : 'Save employer branding'}
+                    </button>
+                  </form>
+                </div>
               </div>
             </SectionCard>
 

@@ -15,13 +15,17 @@ import {
   createTenantScopedUser,
   deleteTenantScopedUser,
   getTenantAdminSettings,
+  saveTenantEmployerGroupBrandingSettings,
   saveTenantBrandingSettings,
   saveTenantBillingEnrollmentModuleConfig,
   saveTenantPurchasedModules,
   saveTenantNotificationSettings,
   updateTenantScopedUser
 } from '../services/tenant-admin-service';
-import { uploadBrandingLogoForTenant } from '../services/branding-service';
+import {
+  uploadBrandingLogoForTenant,
+  uploadEmployerGroupLogoAssetForTenant
+} from '../services/branding-service';
 
 type NotificationSettingsBody = {
   emailEnabled?: boolean;
@@ -37,6 +41,11 @@ type BrandingSettingsBody = {
   secondaryColor?: string;
   logoUrl?: string | null;
   faviconUrl?: string | null;
+};
+
+type EmployerGroupBrandingSettingsBody = {
+  employerGroupName?: string | null;
+  employerGroupLogoUrl?: string | null;
 };
 
 type AssignRoleBody = {
@@ -96,6 +105,7 @@ type BillingEnrollmentModuleConfigBody = {
 
 type TenantAdminQuery = {
   tenant_id?: string;
+  employer_key?: string;
 };
 
 type TenantAdminJobsQuery = TenantAdminQuery & {
@@ -187,7 +197,9 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
       assertTenantAdmin(currentUser);
       const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
 
-      return await getTenantAdminSettings(tenantId);
+      return await getTenantAdminSettings(tenantId, {
+        employerKey: request.query.employer_key
+      });
     } catch (error) {
       return handleRouteError(error, reply);
     }
@@ -276,6 +288,76 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
         );
 
         return reply.status(201).send(branding);
+      } catch (error) {
+        return handleRouteError(error, reply);
+      }
+    }
+  );
+
+  app.put<{ Body: EmployerGroupBrandingSettingsBody; Querystring: TenantAdminQuery }>(
+    '/api/tenant-admin/employer-group-branding',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertTenantAdmin(currentUser);
+        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
+
+        const employerGroupBranding = await saveTenantEmployerGroupBrandingSettings(
+          tenantId,
+          {
+            employerGroupName: request.body?.employerGroupName ?? undefined,
+            employerGroupLogoUrl: request.body?.employerGroupLogoUrl ?? undefined
+          },
+          {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          },
+          {
+            employerKey: request.query.employer_key
+          }
+        );
+
+        return reply.send(employerGroupBranding);
+      } catch (error) {
+        return handleRouteError(error, reply);
+      }
+    }
+  );
+
+  app.post<{ Querystring: TenantAdminQuery }>(
+    '/api/tenant-admin/employer-group-branding/logo',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertTenantAdmin(currentUser);
+        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
+        const file = await request.file();
+
+        if (!file) {
+          return reply.status(400).send({
+            message: 'Employer group logo file is required'
+          });
+        }
+
+        const uploadedAsset = await uploadEmployerGroupLogoAssetForTenant(tenantId, file);
+
+        const employerGroupBranding = await saveTenantEmployerGroupBrandingSettings(
+          tenantId,
+          {
+            employerGroupLogoUrl: uploadedAsset.logoUrl ?? undefined
+          },
+          {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          },
+          {
+            employerKey: request.query.employer_key
+          }
+        );
+
+        return reply.status(201).send(employerGroupBranding);
       } catch (error) {
         return handleRouteError(error, reply);
       }

@@ -3,6 +3,7 @@ export const apiBaseUrl =
 
 export const ADMIN_USER_ID_STORAGE_KEY = 'admin-console-user-id';
 export const ADMIN_USER_EMAIL_STORAGE_KEY = 'admin-console-user-email';
+export const ADMIN_AUTH_TOKEN_STORAGE_KEY = 'admin-console-auth-token';
 export const ADMIN_SESSION_STORAGE_KEY = 'admin-console-session';
 
 export function getStoredAdminUserId() {
@@ -17,24 +18,46 @@ export function getStoredAdminUserId() {
   );
 }
 
+export function getStoredAdminEmail() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  return window.localStorage.getItem(ADMIN_USER_EMAIL_STORAGE_KEY) ?? '';
+}
+
 export function getAdminAuthHeaders() {
   const headers: Record<string, string> = {};
-  const adminUserId = getStoredAdminUserId();
+  const adminAuthToken = getStoredAdminAuthToken();
 
-  if (adminUserId) {
-    headers['x-user-id'] = adminUserId;
+  if (adminAuthToken) {
+    headers.Authorization = `Bearer ${adminAuthToken}`;
   }
 
   return headers;
 }
 
-export function storeAdminSession(user: { id: string; email: string }) {
+export function getStoredAdminAuthToken() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  return window.localStorage.getItem(ADMIN_AUTH_TOKEN_STORAGE_KEY) ?? '';
+}
+
+export function storeAdminSession(
+  user: { id: string; email: string },
+  token?: string
+) {
   if (typeof window === 'undefined') {
     return;
   }
 
   window.localStorage.setItem(ADMIN_USER_ID_STORAGE_KEY, user.id);
   window.localStorage.setItem(ADMIN_USER_EMAIL_STORAGE_KEY, user.email);
+  if (token) {
+    window.localStorage.setItem(ADMIN_AUTH_TOKEN_STORAGE_KEY, token);
+  }
 }
 
 export function storeAdminSessionSnapshot(session: unknown) {
@@ -70,5 +93,6 @@ export function clearAdminSession() {
 
   window.localStorage.removeItem(ADMIN_USER_ID_STORAGE_KEY);
   window.localStorage.removeItem(ADMIN_USER_EMAIL_STORAGE_KEY);
+  window.localStorage.removeItem(ADMIN_AUTH_TOKEN_STORAGE_KEY);
   window.localStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
 }

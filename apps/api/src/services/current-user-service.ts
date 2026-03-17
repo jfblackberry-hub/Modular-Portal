@@ -20,6 +20,7 @@ export class AuthorizationError extends Error {
 export type CurrentUser = {
   id: string;
   tenantId: string;
+  employerGroupId?: string | null;
   email: string;
   roles: string[];
   permissions: string[];
@@ -92,6 +93,7 @@ export async function getCurrentUserFromHeaders(
   return {
     id: user.id,
     tenantId: user.tenantId,
+    employerGroupId: user.employerGroupId,
     email: user.email,
     roles: user.roles.map(({ role }) => role.code),
     permissions: Array.from(

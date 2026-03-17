@@ -24,7 +24,7 @@ export async function brandingRoutes(app: FastifyInstance) {
   app.get('/api/branding', async (request, reply) => {
     try {
       const currentUser = await getCurrentUserFromHeaders(request.headers);
-      return await getBrandingForTenant(currentUser.tenantId);
+      return await getBrandingForTenant(currentUser.tenantId, currentUser.id);
     } catch (error) {
       if (error instanceof AuthenticationError) {
         return reply.status(401).send({ message: error.message });

@@ -264,9 +264,16 @@ export function TenantHealthPage() {
     : '--';
   const summaryItems = settings
     ? [
-        { label: 'Tenant Name', value: settings.tenant.name },
+        {
+          label: 'Payer',
+          value: settings.branding.displayName || settings.tenant.name
+        },
+        {
+          label: 'Employer Group',
+          value: settings.tenant.name
+        },
         { label: 'Status', value: settings.tenant.status },
-        { label: 'Slug', value: settings.tenant.slug },
+        { label: 'Scope Key', value: settings.tenant.slug },
         { label: 'Integrations', value: String(settings.integrations.length) }
       ]
     : [];
@@ -276,7 +283,7 @@ export function TenantHealthPage() {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
-            Tenant
+            Tenant Scope
           </p>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight text-admin-text">
             Tenant Health

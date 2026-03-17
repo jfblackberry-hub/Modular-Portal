@@ -454,6 +454,19 @@ export async function billingEnrollmentRoutes(app: FastifyInstance) {
               lastSyncAt: true
             },
             take: 200
+          },
+          employerGroups: {
+            where: {
+              isActive: true
+            },
+            select: {
+              id: true,
+              employerKey: true,
+              name: true
+            },
+            orderBy: {
+              employerKey: 'asc'
+            }
           }
         }
       });
@@ -558,13 +571,18 @@ export async function billingEnrollmentRoutes(app: FastifyInstance) {
       const planYearEnd = `${nowDate.getUTCFullYear()}-12-31`;
       const endOfCurrentMonth = new Date(Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth() + 1, 0));
       const priorMonthEnd = new Date(Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), 0));
+      const activeEmployerGroup =
+        tenant.employerGroups.find((group) => group.id === currentUser.employerGroupId) ??
+        tenant.employerGroups[0] ??
+        null;
       const employerKey =
-        typeof tenant.brandingConfig === 'object' &&
+        activeEmployerGroup?.employerKey ??
+        (typeof tenant.brandingConfig === 'object' &&
         tenant.brandingConfig !== null &&
         !Array.isArray(tenant.brandingConfig) &&
         typeof (tenant.brandingConfig as Record<string, unknown>).employerKey === 'string'
           ? ((tenant.brandingConfig as Record<string, unknown>).employerKey as string)
-          : tenant.slug;
+          : tenant.slug);
 
       const eligibleEmployees = activeMemberUsers.length;
       const pendingEnrollmentImpact = Math.min(
@@ -598,7 +616,7 @@ export async function billingEnrollmentRoutes(app: FastifyInstance) {
           employerKey
         },
         overview: {
-          employerName: tenant.name,
+          employerName: activeEmployerGroup?.name ?? tenant.name,
           planYear: `${planYearStart} to ${planYearEnd}`,
           eligibleEmployees,
           employeesEnrolled,

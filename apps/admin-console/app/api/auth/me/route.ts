@@ -7,12 +7,12 @@ const apiBaseUrl =
 
 export async function GET(request: Request) {
   try {
-    const userId = request.headers.get('x-user-id');
+    const authorization = request.headers.get('authorization');
     const response = await fetch(`${apiBaseUrl}/auth/me`, {
       method: 'GET',
-      headers: userId
+      headers: authorization
         ? {
-            'x-user-id': userId
+            Authorization: authorization
           }
         : {},
       cache: 'no-store'

@@ -33,7 +33,10 @@ export interface TenantBranding {
   supportLabel: string;
   imageOverrides?: TenantImageOverrides;
   experience: PortalExperience;
+  payerDisplayName?: string;
+  payerLogoUrl?: string;
   employerGroupName?: string;
+  employerGroupLogoUrl?: string;
   planName?: string;
 }
 
@@ -51,6 +54,8 @@ type BrandingApiResponse = {
   secondaryColor?: string;
   logoUrl?: string | null;
   faviconUrl?: string | null;
+  employerGroupName?: string | null;
+  employerGroupLogoUrl?: string | null;
   imageOverrides?: Record<string, unknown> | null;
   updatedAt?: string | null;
 };
@@ -156,7 +161,19 @@ function buildBranding(
       'employerGroupName',
       'employerName',
       'groupName'
-    ]) ?? tenant.name;
+    ]) ??
+    (typeof brandingOverride?.employerGroupName === 'string'
+      ? brandingOverride.employerGroupName
+      : undefined) ??
+    tenant.name;
+  const employerGroupLogoUrl = getStringValueFromKeys(config, [
+    'employerGroupLogoUrl',
+    'employerLogoUrl',
+    'groupLogoUrl'
+  ]) ??
+    (typeof brandingOverride?.employerGroupLogoUrl === 'string'
+      ? brandingOverride.employerGroupLogoUrl
+      : undefined);
   const planName = getStringValueFromKeys(config, ['memberPlanName', 'planName']);
 
   const primaryColor = experience === 'member' ? memberPayerPrimaryColor : basePrimaryColor;
@@ -165,6 +182,8 @@ function buildBranding(
   const displayName =
     experience === 'member'
       ? memberPayerDisplayName
+      : experience === 'employer'
+        ? employerGroupName
       : experience === 'provider'
         ? getStringValueFromKeys(config, ['providerNetworkName', 'networkName']) ??
           brandingOverride?.displayName ??
@@ -176,6 +195,15 @@ function buildBranding(
   const logoUrl =
     experience === 'member'
       ? withCacheBuster(memberPayerLogoUrl, brandingOverride?.updatedAt)
+      : experience === 'employer'
+        ? withCacheBuster(
+            employerGroupLogoUrl ??
+              brandingOverride?.logoUrl ??
+              getStringValue(config, 'logoUrl') ??
+              getStringValue(config, 'logo') ??
+              tenantTheme.logo,
+            brandingOverride?.updatedAt
+          )
       : withCacheBuster(
           brandingOverride?.logoUrl ??
             getStringValue(config, 'logoUrl') ??
@@ -218,7 +246,13 @@ function buildBranding(
         : {})
     },
     experience,
+    payerDisplayName: memberPayerDisplayName,
+    payerLogoUrl: withCacheBuster(memberPayerLogoUrl, brandingOverride?.updatedAt),
     employerGroupName,
+    employerGroupLogoUrl: withCacheBuster(
+      employerGroupLogoUrl,
+      brandingOverride?.updatedAt
+    ),
     planName
   };
 }

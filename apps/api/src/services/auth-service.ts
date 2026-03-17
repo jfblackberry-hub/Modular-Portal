@@ -161,6 +161,7 @@ async function getUserWithRelations(email: string) {
   return prisma.user.findUnique({
     where: { email },
     include: {
+      employerGroup: true,
       tenant: {
         include: {
           branding: true
@@ -190,6 +191,7 @@ async function recordSuccessfulLogin(userId: string) {
       lastLoginAt: new Date()
     },
     include: {
+      employerGroup: true,
       tenant: {
         include: {
           branding: true
@@ -469,10 +471,95 @@ async function getEmployerUserByTenant(tenantId: string) {
   return getUserWithRelations(user.email);
 }
 
+async function getEmployerUserByGroup(employerGroupId: string) {
+  const user = await prisma.user.findFirst({
+    where: {
+      employerGroupId,
+      roles: {
+        some: {
+          role: {
+            code: 'employer_group_admin'
+          }
+        }
+      }
+    },
+    select: {
+      email: true
+    }
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  return getUserWithRelations(user.email);
+}
+
 async function ensureEmployerUserForKey(employerKey: string) {
   const normalizedKey = employerKey.trim().toLowerCase();
   if (!normalizedKey) {
     return null;
+  }
+
+  const employerGroup = await prisma.employerGroup.findFirst({
+    where: {
+      employerKey: {
+        equals: employerKey.trim(),
+        mode: 'insensitive'
+      },
+      isActive: true
+    },
+    select: {
+      id: true,
+      tenantId: true,
+      employerKey: true,
+      name: true
+    }
+  });
+
+  if (employerGroup) {
+    const role = await ensureRolePermissions('employer_group_admin');
+    const existingEmployerUser = await getEmployerUserByGroup(employerGroup.id);
+
+    if (existingEmployerUser) {
+      return existingEmployerUser;
+    }
+
+    const normalizedEmail = `employer+${employerGroup.employerKey.toLowerCase()}@local`;
+    const user = await prisma.user.upsert({
+      where: { email: normalizedEmail },
+      update: {
+        tenantId: employerGroup.tenantId,
+        employerGroupId: employerGroup.id,
+        isActive: true,
+        firstName: employerGroup.name,
+        lastName: 'Employer Admin'
+      },
+      create: {
+        tenantId: employerGroup.tenantId,
+        employerGroupId: employerGroup.id,
+        email: normalizedEmail,
+        firstName: employerGroup.name,
+        lastName: 'Employer Admin',
+        isActive: true
+      }
+    });
+
+    await prisma.userRole.upsert({
+      where: {
+        userId_roleId: {
+          userId: user.id,
+          roleId: role.id
+        }
+      },
+      update: {},
+      create: {
+        userId: user.id,
+        roleId: role.id
+      }
+    });
+
+    return getUserWithRelations(normalizedEmail);
   }
 
   const directTenantMatch =
@@ -649,9 +736,9 @@ export async function login(
       lastName: updatedUser.lastName,
       landingContext,
       tenant: {
-        id: updatedUser.tenant.id,
-        name: updatedUser.tenant.name,
-        brandingConfig: {
+      id: updatedUser.tenant.id,
+      name: updatedUser.tenant.name,
+      brandingConfig: {
           ...(typeof updatedUser.tenant.brandingConfig === 'object' &&
           updatedUser.tenant.brandingConfig !== null &&
           !Array.isArray(updatedUser.tenant.brandingConfig)
@@ -666,6 +753,14 @@ export async function login(
                   updatedUser.tenant.branding.secondaryColor ?? undefined,
                 logoUrl: updatedUser.tenant.branding.logoUrl ?? undefined,
                 faviconUrl: updatedUser.tenant.branding.faviconUrl ?? undefined
+              }
+            : {})
+          ,
+          ...(updatedUser.employerGroup
+            ? {
+                employerKey: updatedUser.employerGroup.employerKey,
+                employerGroupName: updatedUser.employerGroup.name,
+                employerGroupLogoUrl: updatedUser.employerGroup.logoUrl ?? undefined
               }
             : {})
         }

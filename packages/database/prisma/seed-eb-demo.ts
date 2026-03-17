@@ -10,7 +10,7 @@ const PRIMARY_EMPLOYEE_COUNT = 12300;
 const SECONDARY_EMPLOYEE_COUNT = 1850;
 const BATCH_SIZE = 1000;
 
-type TenantSeed = {
+type EmployerGroupSeed = {
   name: string;
   slug: string;
   employerKey: string;
@@ -20,7 +20,15 @@ type TenantSeed = {
   employeeCount: number;
 };
 
-const tenants: TenantSeed[] = [
+const payerTenant = {
+  name: 'Blue Horizon Health',
+  slug: 'blue-horizon-health',
+  primaryColor: '#0f6cbd',
+  secondaryColor: '#ffffff',
+  logoUrl: '/tenant-assets/4716c016-3f09-4707-8591-47457441663a-logo.svg'
+} as const;
+
+const employerGroups: EmployerGroupSeed[] = [
   {
     name: 'Northstar Manufacturing',
     slug: 'northstar-manufacturing',
@@ -36,7 +44,7 @@ const tenants: TenantSeed[] = [
     employerKey: 'EMP-0316043829906172-002',
     primaryColor: '#0b7a5b',
     secondaryColor: '#ffffff',
-    logoUrl: '/tenant-assets/lakeside-retail-group-logo.svg',
+    logoUrl: '/tenant-assets/lakeside-retail-group-logo.png',
     employeeCount: SECONDARY_EMPLOYEE_COUNT
   }
 ];
@@ -115,12 +123,16 @@ async function createManyBatched<T>(rows: T[], writer: (batch: T[]) => Promise<u
   }
 }
 
-function tenantBrandingConfig(input: TenantSeed) {
+function tenantBrandingConfig(input: EmployerGroupSeed) {
   return {
-    displayName: input.name,
-    primaryColor: input.primaryColor,
-    secondaryColor: input.secondaryColor,
-    logoUrl: input.logoUrl,
+    displayName: 'Blue Horizon Health',
+    primaryColor: payerTenant.primaryColor,
+    secondaryColor: payerTenant.secondaryColor,
+    logoUrl: payerTenant.logoUrl,
+    memberPayerDisplayName: 'Blue Horizon Health',
+    memberPayerLogoUrl: payerTenant.logoUrl,
+    employerGroupName: input.name,
+    employerGroupLogoUrl: input.logoUrl,
     employerKey: input.employerKey
   };
 }
@@ -144,6 +156,7 @@ async function clearData() {
   await prisma.userRole.deleteMany();
   await prisma.rolePermission.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.employerGroup.deleteMany();
   await prisma.role.deleteMany();
   await prisma.permission.deleteMany();
   await prisma.tenantBranding.deleteMany();
@@ -194,49 +207,74 @@ async function createAccessModel() {
   );
 }
 
-async function createTenants() {
-  const created: Array<{
+async function createTenantHierarchy() {
+  const defaultEmployerGroup = employerGroups[0];
+  const tenant = await prisma.tenant.create({
+    data: {
+      name: payerTenant.name,
+      slug: payerTenant.slug,
+      status: 'ACTIVE',
+      isActive: true,
+      brandingConfig: tenantBrandingConfig(defaultEmployerGroup)
+    }
+  });
+
+  await prisma.tenantBranding.create({
+    data: {
+      tenantId: tenant.id,
+      displayName: payerTenant.name,
+      primaryColor: payerTenant.primaryColor,
+      secondaryColor: payerTenant.secondaryColor,
+      logoUrl: payerTenant.logoUrl
+    }
+  });
+
+  const createdEmployerGroups: Array<{
     id: string;
+    tenantId: string;
     slug: string;
     name: string;
     employerKey: string;
     employeeCount: number;
   }> = [];
 
-  for (const tenantSeed of tenants) {
-    const tenant = await prisma.tenant.create({
-      data: {
-        name: tenantSeed.name,
-        slug: tenantSeed.slug,
-        status: 'ACTIVE',
-        isActive: true,
-        brandingConfig: tenantBrandingConfig(tenantSeed)
-      }
-    });
-
-    await prisma.tenantBranding.create({
+  for (const employerGroupSeed of employerGroups) {
+    const employerGroup = await prisma.employerGroup.create({
       data: {
         tenantId: tenant.id,
-        displayName: tenantSeed.name,
-        primaryColor: tenantSeed.primaryColor,
-        secondaryColor: tenantSeed.secondaryColor,
-        logoUrl: tenantSeed.logoUrl
+        employerKey: employerGroupSeed.employerKey,
+        name: employerGroupSeed.name,
+        logoUrl: employerGroupSeed.logoUrl,
+        isActive: true,
+        brandingConfig: {
+          employerGroupName: employerGroupSeed.name,
+          employerGroupLogoUrl: employerGroupSeed.logoUrl
+        }
       }
     });
 
-    created.push({
-      id: tenant.id,
-      slug: tenantSeed.slug,
-      name: tenantSeed.name,
-      employerKey: tenantSeed.employerKey,
-      employeeCount: tenantSeed.employeeCount
+    createdEmployerGroups.push({
+      id: employerGroup.id,
+      tenantId: tenant.id,
+      slug: employerGroupSeed.slug,
+      name: employerGroupSeed.name,
+      employerKey: employerGroupSeed.employerKey,
+      employeeCount: employerGroupSeed.employeeCount
     });
   }
 
-  return created;
+  return {
+    tenant,
+    employerGroups: createdEmployerGroups
+  };
 }
 
-function generateEmployeeRows(tenantId: string, tenantSlug: string, employeeCount: number) {
+function generateEmployeeRows(
+  tenantId: string,
+  tenantSlug: string,
+  employeeCount: number,
+  employerGroupId: string
+) {
   const firstNames = [
     'Alex', 'Jordan', 'Taylor', 'Morgan', 'Riley', 'Casey', 'Avery', 'Parker', 'Quinn', 'Reese',
     'Skyler', 'Emerson', 'Elliot', 'Hayden', 'Rowan', 'Drew', 'Blake', 'Shawn', 'Kendall', 'Cameron'
@@ -250,6 +288,7 @@ function generateEmployeeRows(tenantId: string, tenantSlug: string, employeeCoun
     const seq = index + 1;
     return {
       tenantId,
+      employerGroupId,
       email: `emp${String(seq).padStart(5, '0')}@${tenantSlug}.local`,
       firstName: firstNames[index % firstNames.length],
       lastName: lastNames[index % lastNames.length],
@@ -261,6 +300,7 @@ function generateEmployeeRows(tenantId: string, tenantSlug: string, employeeCoun
 
 async function seedTenantUsers(
   tenantId: string,
+  employerGroupId: string,
   tenantName: string,
   tenantSlug: string,
   employeeCount: number,
@@ -277,6 +317,7 @@ async function seedTenantUsers(
         { email: 'employer', firstName: 'Employer', lastName: 'Admin', roleCode: 'employer_group_admin' }
       ]
     : [];
+  const sharedLocalAccountEmails = new Set(sharedLocalAccounts.map((account) => account.email));
 
   const tenantScopedAdmins = [
     {
@@ -304,6 +345,12 @@ async function seedTenantUsers(
 
   const baseUsers = [...sharedLocalAccounts, ...tenantScopedAdmins].map((user) => ({
     tenantId,
+    employerGroupId:
+      user.email === 'admin' ||
+      user.email === 'tenant' ||
+      user.email === 'provider1'
+        ? null
+        : employerGroupId,
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
@@ -318,7 +365,7 @@ async function seedTenantUsers(
     })
   );
 
-  const employeeRows = generateEmployeeRows(tenantId, tenantSlug, employeeCount);
+  const employeeRows = generateEmployeeRows(tenantId, tenantSlug, employeeCount, employerGroupId);
   await createManyBatched(employeeRows, (batch) =>
     prisma.user.createMany({
       data: batch,
@@ -329,7 +376,15 @@ async function seedTenantUsers(
   const [roles, tenantUsers] = await Promise.all([
     prisma.role.findMany({ select: { id: true, code: true } }),
     prisma.user.findMany({
-      where: { tenantId },
+      where: {
+        tenantId,
+        OR: [
+          { employerGroupId },
+          ...(sharedLocalAccountEmails.size > 0
+            ? [{ email: { in: Array.from(sharedLocalAccountEmails) } }]
+            : [])
+        ]
+      },
       select: { id: true, email: true }
     })
   ]);
@@ -610,44 +665,55 @@ async function seedTenantFlags(tenantId: string) {
 async function main() {
   await clearData();
   await createAccessModel();
-  const seededTenants = await createTenants();
+  const hierarchy = await createTenantHierarchy();
 
-  const summary: Array<{ tenant: string; users: number; employees: number }> = [];
+  const summary: Array<{ employerGroup: string; users: number; employees: number }> = [];
 
-  for (const [index, tenant] of seededTenants.entries()) {
+  for (const [index, employerGroup] of hierarchy.employerGroups.entries()) {
     const users = await seedTenantUsers(
-      tenant.id,
-      tenant.name,
-      tenant.slug,
-      tenant.employeeCount,
+      employerGroup.tenantId,
+      employerGroup.id,
+      employerGroup.name,
+      employerGroup.slug,
+      employerGroup.employeeCount,
       index === 0
     );
     const primaryEmployerAdmin = users.find((user) => user.email.startsWith('employer+')) ?? users[0];
 
-    await seedTenantDocuments(tenant, primaryEmployerAdmin.id);
-    await seedTenantNotifications(tenant.id, primaryEmployerAdmin.id);
-    await seedTenantConnectors(tenant.id);
-    await seedTenantFlags(tenant.id);
+    await seedTenantDocuments(
+      {
+        id: hierarchy.tenant.id,
+        slug: employerGroup.slug,
+        name: employerGroup.name
+      },
+      primaryEmployerAdmin.id
+    );
+    await seedTenantNotifications(hierarchy.tenant.id, primaryEmployerAdmin.id);
+    if (index === 0) {
+      await seedTenantConnectors(hierarchy.tenant.id);
+      await seedTenantFlags(hierarchy.tenant.id);
+    }
 
     await prisma.auditLog.create({
       data: {
-        tenantId: tenant.id,
+        tenantId: hierarchy.tenant.id,
         actorUserId: primaryEmployerAdmin.id,
         action: 'seed.eb_demo.ready',
-        entityType: 'tenant',
-        entityId: tenant.id,
+        entityType: 'employer_group',
+        entityId: employerGroup.id,
         metadata: {
-          employerKey: tenant.employerKey,
+          employerKey: employerGroup.employerKey,
+          employerGroup: employerGroup.name,
           usersSeeded: users.length,
-          employeesSeeded: tenant.employeeCount
+          employeesSeeded: employerGroup.employeeCount
         }
       }
     });
 
     summary.push({
-      tenant: tenant.name,
+      employerGroup: employerGroup.name,
       users: users.length,
-      employees: tenant.employeeCount
+      employees: employerGroup.employeeCount
     });
   }
 

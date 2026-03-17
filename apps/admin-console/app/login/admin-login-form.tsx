@@ -81,28 +81,79 @@ export function AdminLoginForm() {
       redirectPath.startsWith('/tenant-admin') ||
       redirectPath.startsWith('/admin/tenant');
 
-    storeAdminSession({
-      id: adminUserId,
-      email: adminEmail
-    });
+    void (async () => {
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: adminEmail,
+            password: 'demo'
+          })
+        });
 
-    applySession({
-      id: adminUserId,
-      email: adminEmail,
-      tenantId: '',
-      roles: isPlatformAdmin
-        ? ['platform_admin']
-        : isTenantAdmin
-          ? ['tenant_admin']
-          : [],
-      permissions: [],
-      isPlatformAdmin,
-      isTenantAdmin
-    });
+        if (response.ok) {
+          const payload = (await response.json()) as {
+            token?: string;
+            user?: {
+              id: string;
+              email: string;
+              roles: string[];
+              permissions: string[];
+            };
+          };
 
-    window.location.replace(redirectPath);
+          if (payload.token && payload.user) {
+            storeAdminSession(
+              {
+                id: payload.user.id,
+                email: payload.user.email
+              },
+              payload.token
+            );
 
-    void refreshSession().catch(() => undefined);
+            applySession({
+              id: payload.user.id,
+              email: payload.user.email,
+              tenantId: '',
+              roles: payload.user.roles,
+              permissions: payload.user.permissions,
+              isPlatformAdmin:
+                payload.user.roles.includes('platform_admin') ||
+                payload.user.roles.includes('platform-admin'),
+              isTenantAdmin:
+                payload.user.roles.includes('tenant_admin') ||
+                payload.user.roles.includes('platform_admin') ||
+                payload.user.roles.includes('platform-admin')
+            });
+          }
+        } else {
+          storeAdminSession({
+            id: adminUserId,
+            email: adminEmail
+          });
+
+          applySession({
+            id: adminUserId,
+            email: adminEmail,
+            tenantId: '',
+            roles: isPlatformAdmin
+              ? ['platform_admin']
+              : isTenantAdmin
+                ? ['tenant_admin']
+                : [],
+            permissions: [],
+            isPlatformAdmin,
+            isTenantAdmin
+          });
+        }
+      } finally {
+        window.location.replace(redirectPath);
+        void refreshSession().catch(() => undefined);
+      }
+    })();
   }, [applySession, refreshSession, searchParams]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -152,7 +203,7 @@ export function AdminLoginForm() {
         return;
       }
 
-      storeAdminSession(payload.user);
+      storeAdminSession(payload.user, payload.token);
       applySession({
         id: payload.user.id,
         email: payload.user.email,

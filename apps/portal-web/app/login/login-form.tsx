@@ -27,9 +27,33 @@ export function LoginForm({
   const [authPhase, setAuthPhase] = useState<'idle' | 'authenticating' | 'finalizing'>('idle');
   const submitLockRef = useRef(false);
 
-  useEffect(() => {
-    void clearAuthStorage();
-  }, []);
+  async function confirmSessionEstablished() {
+    const attempts = 5;
+
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      const response = await fetch('/api/auth/session', {
+        method: 'GET',
+        cache: 'no-store'
+      });
+
+      if (response.ok) {
+        const payload = (await response.json()) as { sessionEstablished?: boolean };
+        if (payload.sessionEstablished === true) {
+          console.info('[portal-auth] auth state change', {
+            state: 'session-confirmed',
+            attempt
+          });
+          return true;
+        }
+      }
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, attempt * 120);
+      });
+    }
+
+    return false;
+  }
 
   useEffect(() => {
     if (selectedUser) {
@@ -52,7 +76,7 @@ export function LoginForm({
     let navigating = false;
 
     try {
-      await clearAuthStorage();
+      clearLegacyAuthStorage();
       const resolvedPassword = password.trim() || 'demo';
       console.info('[portal-auth] auth request start', { loginPath });
       const response = await fetch(loginPath, {
@@ -106,6 +130,12 @@ export function LoginForm({
       }
 
       setAuthPhase('finalizing');
+      const sessionConfirmed = await confirmSessionEstablished();
+      if (!sessionConfirmed) {
+        setError('Sign-in state is still initializing. Please try again.');
+        return;
+      }
+
       console.info('[portal-auth] auth state change', { state: 'authenticated' });
       const adminRedirectUrl = buildAdminHandoffUrl(payload.user);
 
@@ -157,17 +187,9 @@ export function LoginForm({
     }
   }
 
-  async function clearAuthStorage() {
+  function clearLegacyAuthStorage() {
     localStorage.removeItem('portal-token');
     localStorage.removeItem('portal-user');
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        cache: 'no-store'
-      });
-    } catch {
-      // Ignore cleanup errors and continue login flow.
-    }
   }
 
   return (
