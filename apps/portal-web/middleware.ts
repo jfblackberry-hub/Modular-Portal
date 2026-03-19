@@ -6,17 +6,26 @@ import {
   readPortalSessionEnvelopeFromCookie
 } from './lib/portal-session-cookie';
 import { hasBillingEnrollmentRoleAccess } from './lib/billing-enrollment-access';
+import {
+  hasBillingPortalAudienceAccess,
+  mapLegacyBillingPortalPath,
+  resolveBillingPortalAudience
+} from './lib/billing-portal-audience';
 import { isTenantModuleEnabled, type TenantPortalModuleId } from './lib/tenant-modules';
 
 type PortalUserCookie = {
   roles?: string[];
   permissions?: string[];
+  landingContext?: string;
   tenant?: {
     brandingConfig?: Record<string, unknown>;
   };
 };
 
 const routeModuleMap: Array<{ prefix: string; moduleId: TenantPortalModuleId; fallback: string }> = [
+  { prefix: '/employer', moduleId: 'billing_enrollment', fallback: '/dashboard' },
+  { prefix: '/broker', moduleId: 'billing_enrollment', fallback: '/dashboard' },
+  { prefix: '/individual', moduleId: 'billing_enrollment', fallback: '/dashboard' },
   { prefix: '/provider/admin', moduleId: 'provider_admin', fallback: '/provider/dashboard' },
   { prefix: '/provider/support', moduleId: 'provider_support', fallback: '/provider/dashboard' },
   { prefix: '/provider/messages', moduleId: 'provider_messages', fallback: '/provider/dashboard' },
@@ -32,6 +41,7 @@ const routeModuleMap: Array<{ prefix: string; moduleId: TenantPortalModuleId; fa
   { prefix: '/member', moduleId: 'member_home', fallback: '/login' },
   { prefix: '/dashboard/billing-enrollment', moduleId: 'billing_enrollment', fallback: '/dashboard' },
   { prefix: '/dashboard/help', moduleId: 'member_support', fallback: '/dashboard' },
+  { prefix: '/dashboard/care-cost-estimator', moduleId: 'member_care_cost_estimator', fallback: '/dashboard' },
   { prefix: '/dashboard/billing', moduleId: 'member_billing', fallback: '/dashboard' },
   { prefix: '/dashboard/documents', moduleId: 'member_documents', fallback: '/dashboard' },
   { prefix: '/dashboard/messages', moduleId: 'member_messages', fallback: '/dashboard' },
@@ -69,6 +79,33 @@ export async function middleware(request: NextRequest) {
 
   const brandingConfig = portalUser?.tenant?.brandingConfig;
 
+  if (pathname === '/employer' || pathname.startsWith('/employer/')) {
+    if (!hasBillingPortalAudienceAccess(portalUser?.roles ?? [], 'employer')) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = route.fallback;
+      redirectUrl.search = '';
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
+  if (pathname === '/individual' || pathname.startsWith('/individual/')) {
+    if (!hasBillingPortalAudienceAccess(portalUser?.roles ?? [], 'individual')) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = route.fallback;
+      redirectUrl.search = '';
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
+  if (pathname === '/broker' || pathname.startsWith('/broker/')) {
+    if (!hasBillingPortalAudienceAccess(portalUser?.roles ?? [], 'broker')) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = route.fallback;
+      redirectUrl.search = '';
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
   if (
     (pathname === '/dashboard/billing-enrollment' ||
       pathname.startsWith('/dashboard/billing-enrollment/')) &&
@@ -83,6 +120,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  if (
+    pathname === '/dashboard/billing-enrollment' ||
+    pathname.startsWith('/dashboard/billing-enrollment/')
+  ) {
+    const audience = resolveBillingPortalAudience({
+      roles: portalUser?.roles ?? [],
+      landingContext:
+        portalUser?.landingContext === 'employer'
+          ? 'employer'
+          : portalUser?.landingContext === 'broker'
+            ? 'broker'
+            : undefined
+    });
+    const mappedPath = mapLegacyBillingPortalPath(pathname, audience);
+
+    if (mappedPath && mappedPath !== pathname) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = mappedPath;
+      redirectUrl.search = '';
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
   if (isTenantModuleEnabled(brandingConfig, route.moduleId)) {
     return NextResponse.next();
   }
@@ -94,5 +154,18 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/provider', '/provider/:path*', '/dashboard', '/dashboard/:path*', '/member', '/member/:path*']
+  matcher: [
+    '/provider',
+    '/provider/:path*',
+    '/dashboard',
+    '/dashboard/:path*',
+    '/member',
+    '/member/:path*',
+    '/employer',
+    '/employer/:path*',
+    '/broker',
+    '/broker/:path*',
+    '/individual',
+    '/individual/:path*'
+  ]
 };

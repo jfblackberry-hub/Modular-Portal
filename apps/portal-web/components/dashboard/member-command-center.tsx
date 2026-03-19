@@ -323,19 +323,19 @@ function RecentActivityPanel({
 }) {
   const events = [
     ...claims.slice(0, 2).map((claim) => ({
-      id: claim.id,
+      id: `claim:${claim.id}`,
       label: `Claim ${claim.claimNumber}`,
       detail: `${claim.status} • ${formatCurrency(claim.totalAmount)}`,
       timestamp: claim.claimDate
     })),
     ...messages.slice(0, 2).map((message) => ({
-      id: message.id,
+      id: `message:${message.id}`,
       label: `Message: ${message.subject}`,
       detail: message.status,
       timestamp: message.createdAt
     })),
     ...documents.slice(0, 2).map((document) => ({
-      id: document.id,
+      id: `document:${document.id}`,
       label: `Document: ${document.title}`,
       detail: document.documentType,
       timestamp: document.createdAt

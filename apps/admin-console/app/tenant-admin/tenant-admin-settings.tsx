@@ -38,6 +38,7 @@ type TenantPurchasedModule =
   | 'member_messages'
   | 'member_documents'
   | 'member_billing'
+  | 'member_care_cost_estimator'
   | 'member_support'
   | 'billing_enrollment'
   | 'provider_dashboard'
@@ -65,6 +66,7 @@ const moduleCatalog: Array<{
   { id: 'member_messages', label: 'Messages', audience: 'Member portal' },
   { id: 'member_documents', label: 'Documents', audience: 'Member portal' },
   { id: 'member_billing', label: 'Billing', audience: 'Member portal' },
+  { id: 'member_care_cost_estimator', label: 'Care Cost Estimator', audience: 'Member portal' },
   { id: 'member_support', label: 'Support', audience: 'Member portal' },
   { id: 'billing_enrollment', label: 'Billing & Enrollment Module', audience: 'Billing & Enrollment' },
   { id: 'provider_dashboard', label: 'Dashboard', audience: 'Provider portal' },

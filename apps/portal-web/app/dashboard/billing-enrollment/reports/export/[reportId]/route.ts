@@ -9,6 +9,7 @@ import {
   type ReportFormat,
   type ReportId
 } from '../../../../../../lib/reports-analytics-data';
+import { createMockPdfBuffer } from '../../../../../../lib/mock-pdf';
 import { getPortalSessionUser } from '../../../../../../lib/portal-session';
 
 const reportIdSet = new Set(reportDefinitions.map((report) => report.id));
@@ -62,8 +63,9 @@ export async function GET(
   }
 
   if (format === 'pdf') {
+    const pdfText = reportResultToPdfText(definition.name, result, user.tenant.name);
     return new NextResponse(
-      reportResultToPdfText(definition.name, result, user.tenant.name),
+      createMockPdfBuffer(definition.name, pdfText.split('\n')),
       {
         status: 200,
         headers: {

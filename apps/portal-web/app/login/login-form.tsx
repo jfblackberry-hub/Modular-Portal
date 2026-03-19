@@ -19,6 +19,8 @@ export function LoginForm({
 }) {
   const searchParams = useSearchParams();
   const selectedUser = searchParams.get('user')?.trim();
+  const requestedRedirect = searchParams.get('redirect')?.trim();
+  const autoLogin = searchParams.get('auto') === '1';
   const [email, setEmail] = useState(defaultUsername);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +28,7 @@ export function LoginForm({
   const [error, setError] = useState('');
   const [authPhase, setAuthPhase] = useState<'idle' | 'authenticating' | 'finalizing'>('idle');
   const submitLockRef = useRef(false);
+  const autoLoginHandledRef = useRef<string | null>(null);
 
   async function confirmSessionEstablished() {
     const attempts = 5;
@@ -61,18 +64,17 @@ export function LoginForm({
     }
   }, [selectedUser]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function performLogin(emailOverride?: string) {
     if (submitLockRef.current) {
       console.info('[portal-auth] submit ignored (already authenticating)');
       return;
     }
 
+    const resolvedEmail = emailOverride ?? email;
     submitLockRef.current = true;
     setError('');
     setAuthPhase('authenticating');
-    console.info('[portal-auth] submit click', { loginPath, email, rememberMe });
+    console.info('[portal-auth] submit click', { loginPath, email: resolvedEmail, rememberMe });
     let navigating = false;
 
     try {
@@ -84,7 +86,7 @@ export function LoginForm({
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password: resolvedPassword, rememberMe })
+        body: JSON.stringify({ email: resolvedEmail, password: resolvedPassword, rememberMe })
       });
       console.info('[portal-auth] auth request end', {
         loginPath,
@@ -107,6 +109,7 @@ export function LoginForm({
           landingContext?:
             | 'member'
             | 'provider'
+            | 'broker'
             | 'employer'
             | 'tenant_admin'
             | 'platform_admin';
@@ -138,11 +141,22 @@ export function LoginForm({
 
       console.info('[portal-auth] auth state change', { state: 'authenticated' });
       const adminRedirectUrl = buildAdminHandoffUrl(payload.user);
+      const redirectPath =
+        requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')
+          ? requestedRedirect
+          : successPath;
 
       if (adminRedirectUrl) {
         console.info('[portal-auth] redirect/navigation', { to: adminRedirectUrl });
         navigating = true;
         window.location.assign(adminRedirectUrl);
+        return;
+      }
+
+      if (requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')) {
+        console.info('[portal-auth] redirect/navigation', { to: requestedRedirect });
+        navigating = true;
+        window.location.assign(requestedRedirect);
         return;
       }
 
@@ -174,9 +188,9 @@ export function LoginForm({
         return;
       }
 
-      console.info('[portal-auth] redirect/navigation', { to: successPath });
+      console.info('[portal-auth] redirect/navigation', { to: redirectPath });
       navigating = true;
-      window.location.assign(successPath);
+      window.location.assign(redirectPath);
     } catch {
       setError('Sign-in is temporarily unavailable. Please try again.');
     } finally {
@@ -186,6 +200,25 @@ export function LoginForm({
       }
     }
   }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await performLogin();
+  }
+
+  useEffect(() => {
+    if (!autoLogin || !selectedUser) {
+      return;
+    }
+
+    const autoLoginKey = `${loginPath}:${selectedUser}:${requestedRedirect ?? ''}`;
+    if (autoLoginHandledRef.current === autoLoginKey) {
+      return;
+    }
+
+    autoLoginHandledRef.current = autoLoginKey;
+    void performLogin(selectedUser);
+  }, [autoLogin, loginPath, requestedRedirect, selectedUser]);
 
   function clearLegacyAuthStorage() {
     localStorage.removeItem('portal-token');

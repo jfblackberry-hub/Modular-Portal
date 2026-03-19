@@ -21,6 +21,18 @@ export default async function DashboardPage() {
     redirect('/dashboard/billing-enrollment');
   }
 
+  if (
+    sessionUser?.landingContext === 'broker' ||
+    sessionUser?.roles.includes('broker') ||
+    sessionUser?.roles.includes('broker_admin') ||
+    sessionUser?.roles.includes('broker_staff') ||
+    sessionUser?.roles.includes('broker_readonly') ||
+    sessionUser?.roles.includes('broker_read_only') ||
+    sessionUser?.roles.includes('account_executive')
+  ) {
+    redirect('/broker');
+  }
+
   const sessionUserId = sessionUser?.id;
   const [me, coverage, claims, documents, messages, authorizations] = await Promise.all([
     getMe(sessionUserId),

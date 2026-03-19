@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getEmployerDashboard } from '../../../../../../lib/billing-enrollment-api';
 import { getEmployerDocumentByIdForTenant } from '../../../../../../lib/employer-document-center-data';
+import { createMockPdfBuffer } from '../../../../../../lib/mock-pdf';
 import { getPortalSessionUser } from '../../../../../../lib/portal-session';
 
 export async function GET(
@@ -37,7 +38,7 @@ export async function GET(
     .filter(Boolean)
     .join('\n');
 
-  return new NextResponse(content, {
+  return new NextResponse(createMockPdfBuffer(document.name, content.split('\n')), {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',

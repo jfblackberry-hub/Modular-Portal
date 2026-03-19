@@ -1,16 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 import type { ReportCategory, ReportDefinition, ReportFilters, ReportId } from '../../lib/reports-analytics-data';
 import { EmptyState, StatusBadge } from '../portal-ui';
 
 type Grouped = Record<ReportCategory, ReportDefinition[]>;
-
-function reportHref(reportId: ReportId) {
-  return `/dashboard/billing-enrollment/reports/export/${reportId}`;
-}
 
 export function ReportsLibrary({
   groupedReports,
@@ -21,9 +18,14 @@ export function ReportsLibrary({
   initialFilters: ReportFilters;
   tenantName: string;
 }) {
+  const pathname = usePathname();
   const [selectedReport, setSelectedReport] = useState<ReportId>('employee-census');
   const [filters, setFilters] = useState<ReportFilters>(initialFilters);
   const [runMessage, setRunMessage] = useState('');
+  const reportsBasePath = pathname.startsWith('/employer/')
+    ? '/employer/reports'
+    : '/dashboard/billing-enrollment/reports';
+  const reportHref = `${reportsBasePath}/export/${selectedReport}`;
 
   const selectedDefinition = useMemo(() => {
     return Object.values(groupedReports)
@@ -50,13 +52,13 @@ export function ReportsLibrary({
           <button type="button" onClick={runReport} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-white">
             Run Report
           </button>
-          <Link href={`${reportHref(selectedReport)}?format=csv`} className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)]">
+          <Link href={`${reportHref}?format=csv`} className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)]">
             Export Data
           </Link>
-          <Link href="/dashboard/billing-enrollment/reports/analytics" className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)]">
+          <Link href={`${reportsBasePath}/analytics`} className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)]">
             View Analytics
           </Link>
-          <Link href="/dashboard/billing-enrollment/reports/schedule" className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)]">
+          <Link href={`${reportsBasePath}/schedule`} className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)]">
             Schedule Report
           </Link>
         </div>
@@ -164,9 +166,9 @@ export function ReportsLibrary({
             <p className="text-sm font-semibold text-[var(--text-primary)]">Selected Report</p>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">{selectedDefinition?.name ?? 'None selected'}</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Link href={`${reportHref(selectedReport)}?format=csv`} className="rounded-full border border-[var(--border-subtle)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">CSV</Link>
-              <Link href={`${reportHref(selectedReport)}?format=excel`} className="rounded-full border border-[var(--border-subtle)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">Excel</Link>
-              <Link href={`${reportHref(selectedReport)}?format=pdf`} className="rounded-full border border-[var(--border-subtle)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">PDF</Link>
+              <Link href={`${reportHref}?format=csv`} className="rounded-full border border-[var(--border-subtle)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">CSV</Link>
+              <Link href={`${reportHref}?format=excel`} className="rounded-full border border-[var(--border-subtle)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">Excel</Link>
+              <Link href={`${reportHref}?format=pdf`} className="rounded-full border border-[var(--border-subtle)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">PDF</Link>
               <StatusBadge label="Tenant Scoped" />
             </div>
           </div>

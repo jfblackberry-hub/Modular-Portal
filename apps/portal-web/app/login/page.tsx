@@ -1,6 +1,17 @@
 import { LoginForm } from './login-form';
 
-const quickSignInGroups = [
+type QuickSignInUser = {
+  label: string;
+  username: string;
+  href?: string;
+};
+
+type QuickSignInGroup = {
+  title: string;
+  users: QuickSignInUser[];
+};
+
+const quickSignInGroups: QuickSignInGroup[] = [
   {
     title: 'Member',
     users: [
@@ -10,7 +21,13 @@ const quickSignInGroups = [
     ]
   },
   {
-    title: 'Admin',
+    title: 'Provider',
+    users: [
+      { label: 'Provider portal user', username: 'Provider1', href: '/provider-login' }
+    ]
+  },
+  {
+    title: 'Administrative',
     users: [
       { label: 'Tenant admin', username: 'tenant' },
       { label: 'Real Health tenant admin', username: 'realtenantadmin' },
@@ -18,16 +35,43 @@ const quickSignInGroups = [
     ]
   },
   {
-    title: 'Other',
+    title: 'Enrollment and Benefits',
     users: [
-      { label: 'Provider user', username: 'Provider1' },
-      { label: 'E&B Northstar employer', username: 'EMP-0316043829906172-001' },
-      { label: 'E&B Lakeside employer', username: 'EMP-0316043829906172-002' },
+      {
+        label: 'Employer portal',
+        username: 'EMP-0316043829906172-001',
+        href: '/login?user=EMP-0316043829906172-001&redirect=/employer&auto=1'
+      },
+      {
+        label: 'Northstar employer admin',
+        username: 'EMP-0316043829906172-001',
+        href: '/login?user=EMP-0316043829906172-001&redirect=/employer&auto=1'
+      },
+      {
+        label: 'Lakeside employer admin',
+        username: 'EMP-0316043829906172-002',
+        href: '/login?user=EMP-0316043829906172-002&redirect=/employer&auto=1'
+      },
       { label: 'E&B broker', username: 'broker' },
       { label: 'E&B internal operations', username: 'ops' }
     ]
+  },
+  {
+    title: 'Shop and Enroll',
+    users: [
+      {
+        label: 'Individual portal',
+        username: 'chris',
+        href: '/login?user=chris&redirect=/individual'
+      },
+      {
+        label: 'Individual shopper demo',
+        username: 'chris',
+        href: '/login?user=chris&redirect=/individual'
+      }
+    ]
   }
-] as const;
+];
 
 export default async function LoginPage() {
   return (
@@ -71,8 +115,8 @@ export default async function LoginPage() {
                         <div className="mt-2 grid gap-2 sm:grid-cols-2">
                           {group.users.map((user) => (
                             <a
-                              key={user.username}
-                              href={`/login?user=${encodeURIComponent(user.username)}`}
+                              key={`${group.title}-${user.label}-${user.username}`}
+                              href={user.href ?? `/login?user=${encodeURIComponent(user.username)}`}
                               className="flex items-center justify-between gap-2 rounded-xl border border-[var(--border-subtle)] bg-white px-3 py-2 text-xs transition hover:border-[var(--tenant-primary-color)]"
                             >
                               <span className="truncate text-[var(--text-secondary)]">{user.label}</span>

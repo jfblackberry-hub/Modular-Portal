@@ -13,6 +13,7 @@ import {
   getCatalogMemberProfile,
   getCatalogProviders
 } from '../services/portal-catalog-service';
+import { createMockPdfBuffer, isPdfBuffer } from '../services/pdf-utils';
 
 const mockPermissions = ['member.view', 'tenant.view'];
 
@@ -404,9 +405,17 @@ export async function memberRoutes(app: FastifyInstance) {
       }
 
       try {
-        const buffer = await readFile(document.storageKey, {
+        let buffer = await readFile(document.storageKey, {
           storageDir: 'storage'
         });
+
+        if (document.mimeType === 'application/pdf' && !isPdfBuffer(buffer)) {
+          const placeholderLines = buffer
+            .toString('utf8')
+            .split(/\r?\n/)
+            .filter(Boolean);
+          buffer = createMockPdfBuffer(document.filename, placeholderLines);
+        }
 
         return reply
           .header('Content-Type', document.mimeType)

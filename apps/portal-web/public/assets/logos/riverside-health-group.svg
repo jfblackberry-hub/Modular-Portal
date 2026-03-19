@@ -1,0 +1,34 @@
+<svg width="640" height="220" viewBox="0 0 640 220" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Riverside Health Group Logo</title>
+  <desc id="desc">A healthcare logo featuring a blue and green medical cross icon beside the words Riverside Health Group.</desc>
+
+  <defs>
+    <linearGradient id="crossBlue" x1="60" y1="30" x2="120" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1F5FBF"></stop>
+      <stop offset="1" stop-color="#0E3F8A"></stop>
+    </linearGradient>
+    <linearGradient id="crossGreen" x1="110" y1="20" x2="170" y2="140" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#53D3B2"></stop>
+      <stop offset="1" stop-color="#27A98A"></stop>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.12"></feDropShadow>
+    </filter>
+  </defs>
+
+  <!-- Icon -->
+  <g transform="translate(28 28)" filter="url(#softShadow)">
+    <path d="M84 8H112V56H160V84H112V132H84V84H36V56H84V8Z" fill="url(#crossBlue)"></path>
+    <path d="M108 0H136V48H184V76H136V124H108V76H60V48H108V0Z" fill="url(#crossGreen)" fill-opacity="0.92"></path>
+  </g>
+
+  <!-- Wordmark -->
+  <g transform="translate(240 58)">
+    <text x="0" y="56" font-family="Inter, Arial, Helvetica, sans-serif" font-size="60" font-weight="800" letter-spacing="0.5" fill="#143E7A">
+      RIVERSIDE
+    </text>
+    <text x="2" y="102" font-family="Inter, Arial, Helvetica, sans-serif" font-size="28" font-weight="500" letter-spacing="5" fill="#6B7280">
+      HEALTH GROUP
+    </text>
+  </g>
+</svg>

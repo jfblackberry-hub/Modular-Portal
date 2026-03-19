@@ -23,6 +23,15 @@ const LOCAL_LOGIN_PROFILES = {
     roleName: 'Member',
     roleDescription: 'Default member-facing access role.'
   },
+  chris: {
+    email: 'chris',
+    firstName: 'Chris',
+    lastName: 'Gallagher',
+    landingContext: 'member',
+    roleCode: 'member',
+    roleName: 'Member',
+    roleDescription: 'Individual shopper demo access role.'
+  },
   tenant: {
     email: 'tenant',
     firstName: 'Tenant',

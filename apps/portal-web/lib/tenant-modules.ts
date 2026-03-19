@@ -10,6 +10,7 @@ export type TenantPortalModuleId =
   | 'member_messages'
   | 'member_documents'
   | 'member_billing'
+  | 'member_care_cost_estimator'
   | 'member_support'
   | 'billing_enrollment'
   | 'provider_dashboard'

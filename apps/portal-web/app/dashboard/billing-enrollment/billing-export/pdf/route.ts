@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getEmployerDashboard } from '../../../../../lib/billing-enrollment-api';
 import { getCurrentEmployerInvoiceForTenant } from '../../../../../lib/employer-billing-data';
+import { createMockPdfBuffer } from '../../../../../lib/mock-pdf';
 import { getPortalSessionUser } from '../../../../../lib/portal-session';
 
 function formatCurrency(value: number) {
@@ -38,7 +39,7 @@ export async function GET() {
     `Outstanding balance: ${formatCurrency(invoice.outstandingBalance)}`
   ].join('\n');
 
-  return new NextResponse(content, {
+  return new NextResponse(createMockPdfBuffer(invoice.invoiceNumber, content.split('\n')), {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',

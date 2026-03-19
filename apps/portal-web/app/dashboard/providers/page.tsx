@@ -1,7 +1,5 @@
 import { StatusBadge, SurfaceCard } from '../../../components/portal-ui';
 import { PortalHeroBanner } from '../../../components/shared/portal-hero-banner';
-import { getPortalImageSrc } from '../../../lib/portal-image-registry';
-import { getPortalSessionUser } from '../../../lib/portal-session';
 
 const providers = [
   {
@@ -28,10 +26,7 @@ const providers = [
 ];
 
 export default async function ProvidersPage() {
-  const sessionUser = await getPortalSessionUser();
-  const providerHeroImage = getPortalImageSrc('providerHero', {
-    tenantBrandingConfig: sessionUser?.tenant.brandingConfig
-  });
+  const providerHeroImage = '/assets/portal-images/custom/provider-dashboard-physician-hero.png';
 
   return (
     <div className="space-y-6">
@@ -40,7 +35,9 @@ export default async function ProvidersPage() {
         title="Find a provider"
         description="Search common care options, compare network status, and start the next step in a guided provider experience."
         imageSrc={providerHeroImage}
+        imageClassName="aspect-[16/6] sm:aspect-[16/5]"
         imageDecorative
+        layout="stacked"
         priority
       />
 

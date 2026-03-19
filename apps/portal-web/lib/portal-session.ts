@@ -17,6 +17,7 @@ export interface PortalSessionUser {
   landingContext?:
     | 'member'
     | 'provider'
+    | 'broker'
     | 'employer'
     | 'tenant_admin'
     | 'platform_admin';

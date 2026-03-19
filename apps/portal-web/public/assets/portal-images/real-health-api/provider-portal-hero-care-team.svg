@@ -16,29 +16,35 @@
   <circle cx="1288" cy="764" r="220" fill="#FFFFFF" fill-opacity="0.06"/>
   <circle cx="178" cy="760" r="240" fill="#FFFFFF" fill-opacity="0.05"/>
   <rect x="96" y="128" width="1408" height="644" rx="40" fill="url(#glass)" stroke="#FFFFFF" stroke-opacity="0.24"/>
-  <g opacity="0.72">
-    <rect x="124" y="158" width="260" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.18"/>
-    <rect x="124" y="192" width="176" height="10" rx="5" fill="#FFFFFF" fill-opacity="0.12"/>
-  </g>
-  <text x="124" y="320" font-family="Inter, Arial, Helvetica, sans-serif" font-size="76" font-weight="800" fill="#FFFFFF">Provider Collaboration Hub</text>
-  <text x="124" y="382" font-family="Inter, Arial, Helvetica, sans-serif" font-size="30" font-weight="500" fill="#E0F2FE">Ideal for provider landing pages, eligibility, claims, and prior auth sections.</text>
-  <rect x="124" y="442" width="242" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.96"/>
-  <text x="171" y="483" font-family="Inter, Arial, Helvetica, sans-serif" font-size="26" font-weight="800" fill="#0F172A">Explore module</text>
-  <rect x="390" y="442" width="198" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.14" stroke="#FFFFFF" stroke-opacity="0.28"/>
-  <text x="447" y="483" font-family="Inter, Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">Learn more</text>
-  <rect x="124" y="560" width="156" height="40" rx="20" fill="#FFFFFF" fill-opacity="0.14" stroke="#FFFFFF" stroke-opacity="0.22"/>
-  <text x="154" y="586" font-family="Inter, Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">Provider portal</text>
+  <rect x="124" y="186" width="360" height="22" rx="11" fill="#FFFFFF" fill-opacity="0.14"/>
+  <rect x="124" y="224" width="282" height="12" rx="6" fill="#FFFFFF" fill-opacity="0.1"/>
+  <rect x="124" y="300" width="420" height="182" rx="28" fill="#FFFFFF" fill-opacity="0.1" stroke="#FFFFFF" stroke-opacity="0.16"/>
+  <rect x="154" y="332" width="234" height="16" rx="8" fill="#FFFFFF" fill-opacity="0.16"/>
+  <rect x="154" y="364" width="162" height="10" rx="5" fill="#FFFFFF" fill-opacity="0.12"/>
+  <rect x="154" y="404" width="160" height="44" rx="22" fill="#FFFFFF" fill-opacity="0.12" stroke="#FFFFFF" stroke-opacity="0.2"/>
+  <rect x="344" y="404" width="124" height="44" rx="22" fill="#FFFFFF" fill-opacity="0.08" stroke="#FFFFFF" stroke-opacity="0.18"/>
+  <rect x="124" y="540" width="210" height="44" rx="22" fill="#FFFFFF" fill-opacity="0.08" stroke="#FFFFFF" stroke-opacity="0.16"/>
 
-    <g transform="translate(828,52)">
-      <circle cx="102" cy="56" r="30" fill="#F8FAFC" fill-opacity="0.95"/>
-      <rect x="70" y="88" width="64" height="104" rx="28" fill="#F8FAFC" fill-opacity="0.95"/>
-      <path d="M82 95c9 12 20 18 40 0" stroke="#93C5FD" stroke-width="8" stroke-linecap="round"/>
-      <circle cx="210" cy="72" r="24" fill="#E0F2FE"/>
-      <rect x="182" y="98" width="56" height="92" rx="24" fill="#DBEAFE"/>
-      <path d="M148 128h132a18 18 0 0 1 18 18v34a18 18 0 0 1-18 18H148a18 18 0 0 1-18-18v-34a18 18 0 0 1 18-18Z" fill="#F8FAFC" fill-opacity="0.95"/>
-      <rect x="164" y="144" width="84" height="8" rx="4" fill="#93C5FD"/>
-      <rect x="164" y="162" width="62" height="8" rx="4" fill="#CBD5E1"/>
-      <circle cx="258" cy="161" r="16" fill="#CCFBF1"/>
-      <path d="M251 161l5 5 9-11" stroke="#0F766E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    </g>
+  <g transform="translate(860,118)">
+    <rect x="74" y="306" width="282" height="162" rx="34" fill="#FFFFFF" fill-opacity="0.14" stroke="#FFFFFF" stroke-opacity="0.24"/>
+    <circle cx="214" cy="142" r="112" fill="#F8FAFC" fill-opacity="0.94"/>
+    <path d="M125 290c10-96 59-151 89-151 30 0 79 55 89 151" fill="#E2E8F0"/>
+    <path d="M135 287c18-56 47-90 79-90 32 0 61 34 79 90v125H135V287Z" fill="#EFF6FF"/>
+    <path d="M160 95c0-31 24-56 54-56 34 0 61 28 61 66 0 25-11 47-26 59-17 14-38 21-59 21-21 0-37-8-47-20-11-12-17-28-17-45 0-10 2-18 6-25 7 11 19 18 34 18 27 0 40-20 40-20s13 13 41 13c11 0 20-2 28-7-3-26-24-51-53-51-19 0-37 10-49 28-7 11-10 21-10 19Z" fill="#7C4A36"/>
+    <path d="M160 241c15 18 31 27 54 27 23 0 41-9 54-27v172H160V241Z" fill="#FFFFFF"/>
+    <path d="M186 238h56v56h-56v-56Z" fill="#BFDBFE"/>
+    <circle cx="194" cy="152" r="9" fill="#1F2937"/>
+    <circle cx="238" cy="152" r="9" fill="#1F2937"/>
+    <path d="M194 196c10 12 22 18 44 18 21 0 34-6 43-18" stroke="#9A5C47" stroke-width="8" stroke-linecap="round"/>
+    <path d="M130 297c22-27 50-41 84-41 34 0 62 14 84 41" stroke="#DCEAF8" stroke-width="16" stroke-linecap="round"/>
+    <path d="M114 309h34v126h-34c-18 0-32-14-32-32V341c0-18 14-32 32-32Z" fill="#E2E8F0"/>
+    <path d="M280 309h34c18 0 32 14 32 32v62c0 18-14 32-32 32h-34V309Z" fill="#E2E8F0"/>
+    <path d="M166 297h96v134h-96V297Z" fill="#FFFFFF"/>
+    <path d="M183 323h62" stroke="#93C5FD" stroke-width="12" stroke-linecap="round"/>
+    <path d="M214 292v62" stroke="#93C5FD" stroke-width="12" stroke-linecap="round"/>
+    <path d="M145 304c12 56 14 104 7 143" stroke="#1E3A8A" stroke-width="8" stroke-linecap="round"/>
+    <path d="M283 304c-12 56-14 104-7 143" stroke="#1E3A8A" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="146" cy="458" r="24" fill="none" stroke="#94A3B8" stroke-width="8"/>
+    <path d="M151 436c12-18 38-17 50 0" stroke="#94A3B8" stroke-width="8" stroke-linecap="round"/>
+  </g>
 </svg>

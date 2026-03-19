@@ -174,6 +174,18 @@ function buildBranding(
     (typeof brandingOverride?.employerGroupLogoUrl === 'string'
       ? brandingOverride.employerGroupLogoUrl
       : undefined);
+  const brokerAgencyName =
+    getStringValueFromKeys(config, [
+      'brokerAgencyName',
+      'agencyName',
+      'brokerDisplayName'
+    ]) ?? tenant.name;
+  const brokerAgencyLogoUrl =
+    getStringValueFromKeys(config, [
+      'brokerAgencyLogoUrl',
+      'agencyLogoUrl',
+      'brokerLogoUrl'
+    ]) ?? employerGroupLogoUrl;
   const planName = getStringValueFromKeys(config, ['memberPlanName', 'planName']);
 
   const primaryColor = experience === 'member' ? memberPayerPrimaryColor : basePrimaryColor;
@@ -184,6 +196,8 @@ function buildBranding(
       ? memberPayerDisplayName
       : experience === 'employer'
         ? employerGroupName
+      : experience === 'broker'
+        ? brokerAgencyName
       : experience === 'provider'
         ? getStringValueFromKeys(config, ['providerNetworkName', 'networkName']) ??
           brandingOverride?.displayName ??
@@ -198,6 +212,15 @@ function buildBranding(
       : experience === 'employer'
         ? withCacheBuster(
             employerGroupLogoUrl ??
+              brandingOverride?.logoUrl ??
+              getStringValue(config, 'logoUrl') ??
+              getStringValue(config, 'logo') ??
+              tenantTheme.logo,
+            brandingOverride?.updatedAt
+          )
+      : experience === 'broker'
+        ? withCacheBuster(
+            brokerAgencyLogoUrl ??
               brandingOverride?.logoUrl ??
               getStringValue(config, 'logoUrl') ??
               getStringValue(config, 'logo') ??

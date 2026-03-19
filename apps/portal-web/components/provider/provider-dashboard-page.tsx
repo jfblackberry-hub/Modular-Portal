@@ -8,16 +8,30 @@ import { PortalHeroBanner } from '../shared/portal-hero-banner';
 import { MedicalProviderDashboard } from './dashboard/MedicalProviderDashboard';
 
 export function ProviderDashboardPage({
+  clinicLogoSrc,
+  clinicName,
   imageSrc,
+  providerName,
   variant
 }: {
+  clinicLogoSrc: string;
+  clinicName: string;
   imageSrc: string;
+  providerName: string;
   variant: ProviderPortalVariant;
 }) {
   const config = getProviderPortalConfig(variant);
 
   if (variant === 'medical' && config.featureFlags.medicalProviderDashboard) {
-    return <MedicalProviderDashboard config={config} imageSrc={imageSrc} />;
+    return (
+      <MedicalProviderDashboard
+        clinicLogoSrc={clinicLogoSrc}
+        clinicName={clinicName}
+        config={config}
+        imageSrc={imageSrc}
+        providerName={providerName}
+      />
+    );
   }
 
   const route = config.routeContent.dashboard;

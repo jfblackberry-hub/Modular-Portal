@@ -51,6 +51,7 @@ export function AdminLoginForm() {
   const searchParams = useSearchParams();
   const { applySession, refreshSession } = useAdminSession();
   const handledHandoffRef = useRef<string | null>(null);
+  const submitLockRef = useRef(false);
   const [email, setEmail] = useState('tenant');
   const [password, setPassword] = useState('password');
   const [error, setError] = useState('');
@@ -158,6 +159,12 @@ export function AdminLoginForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (submitLockRef.current) {
+      return;
+    }
+
+    submitLockRef.current = true;
     setError('');
     setIsSubmitting(true);
 
@@ -231,6 +238,7 @@ export function AdminLoginForm() {
     } catch {
       setError('API unavailable. Start the local API and try again.');
     } finally {
+      submitLockRef.current = false;
       setIsSubmitting(false);
     }
   }

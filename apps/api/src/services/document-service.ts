@@ -11,6 +11,8 @@ import {
   saveFile
 } from '@payer-portal/server';
 
+import { createMockPdfBuffer, isPdfBuffer } from './pdf-utils';
+
 type UploadDocumentInput = {
   file: MultipartFile;
   userId: string;
@@ -196,6 +198,14 @@ export async function downloadDocument(input: DocumentAccessContext & { document
     }
 
     throw error;
+  }
+
+  if (document.mimeType === 'application/pdf' && !isPdfBuffer(fileBuffer)) {
+    const placeholderLines = fileBuffer
+      .toString('utf8')
+      .split(/\r?\n/)
+      .filter(Boolean);
+    fileBuffer = createMockPdfBuffer(document.filename, placeholderLines);
   }
 
   await logAuditEvent({

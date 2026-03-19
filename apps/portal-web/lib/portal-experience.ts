@@ -1,10 +1,18 @@
 import type { PortalSessionUser } from './portal-session';
 
-export type PortalExperience = 'member' | 'employer' | 'provider';
+export type PortalExperience = 'member' | 'employer' | 'provider' | 'broker';
+
+const BROKER_ROLE_SET = new Set([
+  'broker',
+  'broker_admin',
+  'broker_staff',
+  'broker_readonly',
+  'broker_read_only',
+  'account_executive'
+]);
 
 const EMPLOYER_ROLE_SET = new Set([
   'employer_group_admin',
-  'broker',
   'internal_operations',
   'internal_admin'
 ]);
@@ -12,6 +20,13 @@ const EMPLOYER_ROLE_SET = new Set([
 export function resolvePortalExperience(user: PortalSessionUser): PortalExperience {
   if (user.landingContext === 'provider' || user.roles.includes('provider')) {
     return 'provider';
+  }
+
+  if (
+    user.landingContext === 'broker' ||
+    user.roles.some((role) => BROKER_ROLE_SET.has(role))
+  ) {
+    return 'broker';
   }
 
   if (

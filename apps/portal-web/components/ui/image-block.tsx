@@ -4,6 +4,7 @@ export function ImageBlock({
   alt,
   className,
   gradientOverlay = true,
+  imageClassName,
   priority = false,
   rounded = true,
   src
@@ -11,6 +12,7 @@ export function ImageBlock({
   alt: string;
   className?: string;
   gradientOverlay?: boolean;
+  imageClassName?: string;
   priority?: boolean;
   rounded?: boolean;
   src: string;
@@ -26,7 +28,7 @@ export function ImageBlock({
         alt={alt}
         fill
         aria-hidden={alt ? undefined : true}
-        className="object-cover"
+        className={`object-cover ${imageClassName ?? ''}`}
         sizes="(max-width: 768px) 100vw, 40vw"
         priority={priority}
       />
