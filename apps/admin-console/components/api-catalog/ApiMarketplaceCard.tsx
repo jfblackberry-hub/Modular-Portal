@@ -46,7 +46,7 @@ function iconGradient(iconKey: string) {
 export function ApiMarketplaceCard({ entry, featured = false }: ApiMarketplaceCardProps) {
   return (
     <article
-      className={`group relative overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_24px_58px_rgba(15,23,42,0.12)] ${
+      className={`group relative overflow-hidden rounded-[1.35rem] border border-slate-200/80 bg-white shadow-[0_10px_26px_rgba(15,23,42,0.05)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)] ${
         featured ? 'bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)]' : ''
       }`}
     >
@@ -54,78 +54,80 @@ export function ApiMarketplaceCard({ entry, featured = false }: ApiMarketplaceCa
         <div className="absolute inset-x-0 top-0 h-[3px] bg-[linear-gradient(90deg,#0f172a_0%,#0ea5e9_55%,#67e8f9_100%)]" />
       ) : null}
 
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <div
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${iconGradient(
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] bg-gradient-to-br ${iconGradient(
                 entry.iconKey
-              )} text-sm font-semibold text-white shadow-[0_12px_24px_rgba(14,165,233,0.22)]`}
+              )} text-xs font-semibold text-white shadow-[0_8px_18px_rgba(14,165,233,0.18)]`}
             >
               {entry.publisher.slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-[0.8rem] font-medium text-slate-500">{entry.publisher}</p>
-              <p className="truncate text-sm font-semibold text-slate-900">{entry.platformName}</p>
+              <p className="truncate text-[0.74rem] font-medium text-slate-500">{entry.publisher}</p>
+              <p className="truncate text-[0.82rem] font-semibold text-slate-900">{entry.platformName}</p>
             </div>
           </div>
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${badgeTone(entry.lifecycleStatus)}`}>
+          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[0.68rem] font-semibold ${badgeTone(entry.lifecycleStatus)}`}>
             {entry.lifecycleStatus}
           </span>
         </div>
 
-        <div className="mt-5">
-          <h3 className="text-[1.15rem] font-semibold tracking-[-0.03em] text-slate-950">
+        <div className="mt-4">
+          <h3 className="line-clamp-2 text-[1rem] font-semibold leading-6 tracking-[-0.025em] text-slate-950">
             {entry.name}
           </h3>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{entry.shortDescription}</p>
+          <p className="mt-1.5 line-clamp-2 text-[0.82rem] leading-5 text-slate-600">
+            {entry.shortDescription}
+          </p>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {[entry.category, entry.apiType, entry.authType, entry.sandboxAvailable ? 'Sandbox' : 'No sandbox']
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {[entry.category, entry.apiType, entry.sandboxAvailable ? 'Sandbox' : 'No sandbox']
             .filter(Boolean)
-            .slice(0, 4)
+            .slice(0, 3)
             .map((item) => (
               <span
                 key={item}
-                className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700"
+                className="rounded-full bg-slate-100 px-2.5 py-1 text-[0.68rem] font-medium text-slate-700"
               >
                 {item}
               </span>
             ))}
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Audience
+            <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Auth
             </p>
-            <p className="mt-1.5 text-sm font-semibold text-slate-900">
-              {entry.audience.join(' · ')}
+            <p className="mt-1 text-[0.8rem] font-semibold text-slate-900">
+              {entry.authType}
             </p>
           </div>
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-slate-400">
               Updated
             </p>
-            <p className="mt-1.5 text-sm font-semibold text-slate-900">{entry.lastUpdated}</p>
+            <p className="mt-1 text-[0.8rem] font-semibold text-slate-900">{entry.lastUpdated}</p>
           </div>
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-200/90 pt-4">
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200/90 pt-3">
           <div className="min-w-0">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Integration style
+            <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Style
             </p>
-            <p className="truncate text-sm font-semibold text-slate-900">{entry.integrationStyle}</p>
+            <p className="truncate text-[0.8rem] font-semibold text-slate-900">{entry.integrationStyle}</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="hidden text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 sm:inline">
+            <span className="hidden text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-slate-400 sm:inline">
               {entry.version}
             </span>
             <Link
               href={`/admin/platform/connectivity/catalog/${entry.slug}`}
-              className="rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
+              className="rounded-full bg-slate-950 px-3.5 py-2 text-[0.8rem] font-semibold text-white transition hover:bg-sky-700"
             >
               View API
             </Link>

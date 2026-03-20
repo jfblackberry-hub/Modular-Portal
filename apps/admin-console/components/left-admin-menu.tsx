@@ -36,7 +36,7 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
 
   if (!menu) {
     return (
-      <aside className="admin-left-nav min-h-screen w-[296px] shrink-0 overflow-y-auto border-r border-admin-border text-slate-50">
+      <aside className="admin-left-nav min-h-screen w-[425px] shrink-0 overflow-y-auto border-r border-admin-border text-slate-50">
         <div className="px-6 py-8">
           <p className="text-sm text-slate-300">Admin session required.</p>
         </div>
@@ -45,7 +45,7 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
   }
 
   return (
-    <aside className="admin-left-nav min-h-screen w-[296px] shrink-0 overflow-y-auto border-r border-admin-border text-slate-50">
+    <aside className="admin-left-nav min-h-screen w-[425px] shrink-0 overflow-y-auto border-r border-admin-border text-slate-50">
       <div className="flex min-h-screen flex-col px-6 py-8 pb-16">
         <div>
           <div className="admin-left-nav__brand">

@@ -1,70 +1,91 @@
-import type { ApiMarketplaceFilters } from '../../lib/api-marketplace.types';
+import type {
+  ApiMarketplaceFilterOptions,
+  ApiMarketplaceFilters
+} from '../../lib/api-marketplace.types';
 
 type ApiMarketplaceFiltersPanelProps = {
   filters: ApiMarketplaceFilters;
-  publishers: string[];
-  authTypes: string[];
+  options: ApiMarketplaceFilterOptions;
   onChange: (next: ApiMarketplaceFilters) => void;
 };
 
-const API_TYPES = ['All', 'REST', 'FHIR', 'Batch', 'Event', 'EDI', 'Internal', 'External'] as const;
-const AUDIENCES = ['All', 'Internal', 'Partner', 'Customer', 'Vendor'] as const;
-const STATUSES = ['All', 'Available', 'Beta', 'Planned', 'Restricted'] as const;
-const SANDBOX = ['All', 'Yes', 'No'] as const;
 const SORTS = ['Most Relevant', 'Most Popular', 'Recently Updated', 'Alphabetical', 'Recommended'] as const;
 
 export function ApiMarketplaceFiltersPanel({
   filters,
-  publishers,
-  authTypes,
+  options,
   onChange
 }: ApiMarketplaceFiltersPanelProps) {
   return (
-    <aside className="rounded-[1.75rem] border border-slate-200/80 bg-white p-5 shadow-[0_16px_38px_rgba(15,23,42,0.05)]">
-      <div>
-        <p className="text-sm font-semibold text-slate-900">Filter catalog</p>
-        <p className="mt-1 text-sm text-slate-600">
-          Narrow by audience, auth, sandbox access, and rollout status.
-        </p>
+    <section className="rounded-[1.4rem] border border-slate-200/80 bg-white px-4 py-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">Filters</p>
+          <p className="mt-1 text-xs leading-5 text-slate-600">
+            Narrow by category, audience, auth, sandbox access, and rollout status.
+          </p>
+        </div>
       </div>
 
-      <div className="mt-5 space-y-4">
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Category
+          </span>
+          <select
+            value={filters.category}
+            onChange={(event) =>
+              onChange({ ...filters, category: event.target.value as ApiMarketplaceFilters['category'] })
+            }
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500"
+          >
+            <option value="All APIs">All categories</option>
+            {options.categories.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-slate-400">
             API type
           </span>
           <select
             value={filters.apiType}
             onChange={(event) => onChange({ ...filters, apiType: event.target.value as ApiMarketplaceFilters['apiType'] })}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500"
           >
-            {API_TYPES.map((option) => (
+            <option value="All">All API types</option>
+            {options.apiTypes.map((option) => (
               <option key={option} value={option}>
-                {option === 'All' ? 'All API types' : option}
+                {option}
               </option>
             ))}
           </select>
         </label>
 
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-slate-400">
             Audience
           </span>
           <select
             value={filters.audience}
             onChange={(event) => onChange({ ...filters, audience: event.target.value as ApiMarketplaceFilters['audience'] })}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500"
           >
-            {AUDIENCES.map((option) => (
+            <option value="All">All audiences</option>
+            {options.audiences.map((option) => (
               <option key={option} value={option}>
-                {option === 'All' ? 'All audiences' : option}
+                {option}
               </option>
             ))}
           </select>
         </label>
 
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-slate-400">
             Status
           </span>
           <select
@@ -75,27 +96,28 @@ export function ApiMarketplaceFiltersPanel({
                 lifecycleStatus: event.target.value as ApiMarketplaceFilters['lifecycleStatus']
               })
             }
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500"
           >
-            {STATUSES.map((option) => (
+            <option value="All">All statuses</option>
+            {options.lifecycleStatuses.map((option) => (
               <option key={option} value={option}>
-                {option === 'All' ? 'All statuses' : option}
+                {option}
               </option>
             ))}
           </select>
         </label>
 
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-slate-400">
             Auth method
           </span>
           <select
             value={filters.authType}
             onChange={(event) => onChange({ ...filters, authType: event.target.value })}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500"
           >
             <option value="All">All auth methods</option>
-            {authTypes.map((option) => (
+            {options.authTypes.map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>
@@ -104,16 +126,16 @@ export function ApiMarketplaceFiltersPanel({
         </label>
 
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-slate-400">
             Publisher
           </span>
           <select
             value={filters.publisher}
             onChange={(event) => onChange({ ...filters, publisher: event.target.value })}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500"
           >
             <option value="All">All publishers</option>
-            {publishers.map((option) => (
+            {options.publishers.map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>
@@ -122,30 +144,31 @@ export function ApiMarketplaceFiltersPanel({
         </label>
 
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-slate-400">
             Sandbox available
           </span>
           <select
             value={filters.sandbox}
             onChange={(event) => onChange({ ...filters, sandbox: event.target.value as ApiMarketplaceFilters['sandbox'] })}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500"
           >
-            {SANDBOX.map((option) => (
+            <option value="All">Any sandbox posture</option>
+            {options.sandboxValues.map((option) => (
               <option key={option} value={option}>
-                {option === 'All' ? 'Any sandbox posture' : option}
+                {option}
               </option>
             ))}
           </select>
         </label>
 
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-slate-400">
             Sort
           </span>
           <select
             value={filters.sort}
             onChange={(event) => onChange({ ...filters, sort: event.target.value as ApiMarketplaceFilters['sort'] })}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500"
           >
             {SORTS.map((option) => (
               <option key={option} value={option}>
@@ -155,6 +178,6 @@ export function ApiMarketplaceFiltersPanel({
           </select>
         </label>
       </div>
-    </aside>
+    </section>
   );
 }

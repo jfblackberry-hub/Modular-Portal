@@ -1,6 +1,5 @@
 type ApiMarketplaceHeaderProps = {
   totalCount: number;
-  featuredCount: number;
   availableCount: number;
   sandboxCount: number;
   search: string;
@@ -9,7 +8,6 @@ type ApiMarketplaceHeaderProps = {
 
 export function ApiMarketplaceHeader({
   totalCount,
-  featuredCount,
   availableCount,
   sandboxCount,
   search,
@@ -57,9 +55,9 @@ export function ApiMarketplaceHeader({
       <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: 'Catalog entries', value: totalCount },
-          { label: 'Featured integrations', value: featuredCount },
           { label: 'Available now', value: availableCount },
-          { label: 'Sandbox-ready', value: sandboxCount }
+          { label: 'Sandbox-ready', value: sandboxCount },
+          { label: 'Planning candidates', value: totalCount - availableCount }
         ].map((stat) => (
           <div
             key={stat.label}

@@ -1,5 +1,6 @@
 import type {
   ApiMarketplaceEntry,
+  ApiMarketplaceFilterOptions,
   ApiMarketplaceFilters,
   MarketplaceCategory,
   MarketplaceSort
@@ -115,6 +116,59 @@ export function getMarketplacePublishers(entries: ApiMarketplaceEntry[]) {
 
 export function getMarketplaceAuthTypes(entries: ApiMarketplaceEntry[]) {
   return Array.from(new Set(entries.map((entry) => entry.authType))).sort();
+}
+
+function uniqueSorted<T extends string>(values: T[]) {
+  return Array.from(new Set(values)).sort((left, right) => compareStrings(left, right));
+}
+
+export function getMarketplaceFilterOptions(
+  entries: ApiMarketplaceEntry[],
+  filters: ApiMarketplaceFilters
+): ApiMarketplaceFilterOptions {
+  const categories = uniqueSorted(
+    filterMarketplaceEntries(entries, { ...filters, category: 'All APIs' }).map(
+      (entry) => entry.category
+    )
+  );
+  const apiTypes = uniqueSorted(
+    filterMarketplaceEntries(entries, { ...filters, apiType: 'All' }).map((entry) => entry.apiType)
+  );
+  const audiences = uniqueSorted(
+    filterMarketplaceEntries(entries, { ...filters, audience: 'All' }).flatMap(
+      (entry) => entry.audience
+    )
+  );
+  const lifecycleStatuses = uniqueSorted(
+    filterMarketplaceEntries(entries, { ...filters, lifecycleStatus: 'All' }).map(
+      (entry) => entry.lifecycleStatus
+    )
+  );
+  const authTypes = uniqueSorted(
+    filterMarketplaceEntries(entries, { ...filters, authType: 'All' }).map(
+      (entry) => entry.authType
+    )
+  );
+  const sandboxValues = uniqueSorted(
+    filterMarketplaceEntries(entries, { ...filters, sandbox: 'All' }).map((entry) =>
+      entry.sandboxAvailable ? 'Yes' : 'No'
+    )
+  );
+  const publishers = uniqueSorted(
+    filterMarketplaceEntries(entries, { ...filters, publisher: 'All' }).map(
+      (entry) => entry.publisher
+    )
+  );
+
+  return {
+    categories,
+    apiTypes,
+    audiences,
+    lifecycleStatuses,
+    authTypes,
+    sandboxValues,
+    publishers
+  };
 }
 
 export function getMarketplaceCounts(entries: ApiMarketplaceEntry[]) {

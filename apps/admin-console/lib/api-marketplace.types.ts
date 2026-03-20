@@ -80,3 +80,13 @@ export type ApiMarketplaceFilters = {
   publisher: 'All' | string;
   sort: MarketplaceSort;
 };
+
+export type ApiMarketplaceFilterOptions = {
+  categories: MarketplaceCategory[];
+  apiTypes: MarketplaceApiType[];
+  audiences: MarketplaceAudience[];
+  lifecycleStatuses: MarketplaceLifecycleStatus[];
+  authTypes: string[];
+  sandboxValues: Array<'Yes' | 'No'>;
+  publishers: string[];
+};

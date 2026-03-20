@@ -13,7 +13,7 @@ export function ApiMarketplaceFeaturedSection({
   }
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-slate-900">Featured APIs</p>
@@ -29,8 +29,8 @@ export function ApiMarketplaceFeaturedSection({
         </a>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-3">
-        {entries.slice(0, 3).map((entry) => (
+      <div className="grid gap-4 lg:grid-cols-2">
+        {entries.slice(0, 2).map((entry) => (
           <ApiMarketplaceCard key={entry.id} entry={entry} featured />
         ))}
       </div>
