@@ -121,6 +121,7 @@ function MiniBars({
 }
 
 export function OpenEnrollmentOverview({
+  embedded = false,
   cycle,
   summary,
   records,
@@ -129,6 +130,7 @@ export function OpenEnrollmentOverview({
   plans,
   coverageTiers
 }: {
+  embedded?: boolean;
   cycle: EnrollmentCycle | null;
   summary: OpenEnrollmentSummary;
   records: OpenEnrollmentRecord[];
@@ -232,15 +234,17 @@ export function OpenEnrollmentOverview({
 
   return (
     <div className="space-y-5">
-      <section className="portal-card p-6 sm:p-8">
-        <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">Open Enrollment Management</p>
-        <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">
-          Open Enrollment Overview
-        </h1>
-        <p className="mt-3 max-w-3xl text-[15px] leading-7 text-[var(--text-secondary)]">
-          Monitor completion progress, identify pending employees, and review enrollment elections by department.
-        </p>
-      </section>
+      {embedded ? null : (
+        <section className="portal-card p-6 sm:p-8">
+          <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">Open Enrollment Management</p>
+          <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">
+            Open Enrollment Overview
+          </h1>
+          <p className="mt-3 max-w-3xl text-[15px] leading-7 text-[var(--text-secondary)]">
+            Monitor completion progress, identify pending employees, and review enrollment elections by department.
+          </p>
+        </section>
+      )}
 
       <section id="reminder-notifications" className="portal-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

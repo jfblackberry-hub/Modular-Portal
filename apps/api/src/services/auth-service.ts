@@ -52,8 +52,8 @@ const LOCAL_LOGIN_PROFILES = {
   },
   provider1: {
     email: 'provider1',
-    firstName: 'Provider',
-    lastName: 'One',
+    firstName: 'Dr.',
+    lastName: 'Lee',
     landingContext: 'provider',
     roleCode: 'provider',
     roleName: 'Provider',
@@ -68,10 +68,19 @@ const LOCAL_LOGIN_PROFILES = {
     roleName: 'Employer Group Admin',
     roleDescription: 'Employer group admin role for enrollment and billing administration.'
   },
+  'william.schultz': {
+    email: 'william.schultz',
+    firstName: 'William',
+    lastName: 'Schultz',
+    landingContext: 'member',
+    roleCode: 'broker',
+    roleName: 'Broker',
+    roleDescription: 'Broker role for enrollment and billing support workflows.'
+  },
   broker: {
-    email: 'broker',
-    firstName: 'Broker',
-    lastName: 'User',
+    email: 'william.schultz',
+    firstName: 'William',
+    lastName: 'Schultz',
     landingContext: 'member',
     roleCode: 'broker',
     roleName: 'Broker',
@@ -166,6 +175,51 @@ function getPermissionCodesForRole(roleCode: string) {
   }
 }
 
+function buildSessionBrandingConfig(
+  tenantBrandingConfig: unknown,
+  tenantBranding?: {
+    displayName: string | null;
+    primaryColor: string | null;
+    secondaryColor: string | null;
+    logoUrl: string | null;
+    faviconUrl: string | null;
+  } | null,
+  employerGroup?: {
+    employerKey: string;
+    name: string;
+    logoUrl: string | null;
+  } | null
+) {
+  const baseConfig =
+    typeof tenantBrandingConfig === 'object' &&
+    tenantBrandingConfig !== null &&
+    !Array.isArray(tenantBrandingConfig)
+      ? { ...(tenantBrandingConfig as Record<string, unknown>) }
+      : {};
+
+  delete baseConfig.customCss;
+
+  return {
+    ...baseConfig,
+    ...(tenantBranding
+      ? {
+          displayName: tenantBranding.displayName ?? undefined,
+          primaryColor: tenantBranding.primaryColor ?? undefined,
+          secondaryColor: tenantBranding.secondaryColor ?? undefined,
+          logoUrl: tenantBranding.logoUrl ?? undefined,
+          faviconUrl: tenantBranding.faviconUrl ?? undefined
+        }
+      : {}),
+    ...(employerGroup
+      ? {
+          employerKey: employerGroup.employerKey,
+          employerGroupName: employerGroup.name,
+          employerGroupLogoUrl: employerGroup.logoUrl ?? undefined
+        }
+      : {})
+  };
+}
+
 async function getUserWithRelations(email: string) {
   return prisma.user.findUnique({
     where: { email },
@@ -191,6 +245,104 @@ async function getUserWithRelations(email: string) {
       }
     }
   });
+}
+
+async function getUserWithRelationsById(userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      employerGroup: true,
+      tenant: {
+        include: {
+          branding: true
+        }
+      },
+      roles: {
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: {
+                  permission: true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+async function getUserByLoginIdentifier(identifier: string) {
+  const trimmedIdentifier = identifier.trim();
+
+  if (!trimmedIdentifier) {
+    return null;
+  }
+
+  const exactEmailMatch = await getUserWithRelations(trimmedIdentifier);
+  if (exactEmailMatch) {
+    return exactEmailMatch;
+  }
+
+  const normalizedLookup = trimmedIdentifier.toLowerCase();
+  const nameParts = trimmedIdentifier
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const [firstNamePart, ...remainingNameParts] = nameParts;
+  const lastNamePart = remainingNameParts.join(' ');
+
+  const matches = await prisma.user.findMany({
+    where: {
+      isActive: true,
+      OR: [
+        {
+          email: {
+            equals: normalizedLookup,
+            mode: 'insensitive' as const
+          }
+        },
+        {
+          firstName: {
+            equals: normalizedLookup,
+            mode: 'insensitive' as const
+          }
+        },
+        ...(firstNamePart && lastNamePart
+          ? [
+              {
+                AND: [
+                  {
+                    firstName: {
+                      equals: firstNamePart,
+                      mode: 'insensitive' as const
+                    }
+                  },
+                  {
+                    lastName: {
+                      equals: lastNamePart,
+                      mode: 'insensitive' as const
+                    }
+                  }
+                ]
+              }
+            ]
+          : [])
+      ]
+    },
+    select: {
+      id: true
+    },
+    take: 2
+  });
+
+  if (matches.length !== 1) {
+    return null;
+  }
+
+  return getUserWithRelationsById(matches[0].id);
 }
 
 async function recordSuccessfulLogin(userId: string) {
@@ -687,7 +839,7 @@ export async function login(
     options.requiredLandingContext === 'employer'
       ? (await getUserWithRelations(normalizedEmail)) ??
         (await ensureEmployerUserForKey(normalizedLookup))
-      : (await getUserWithRelations(normalizedEmail)) ??
+      : (await getUserByLoginIdentifier(normalizedEmail)) ??
         (await ensureLocalLoginUser(normalizedLookup)) ??
         (await ensureEmployerUserForKey(normalizedLookup));
 
@@ -747,32 +899,25 @@ export async function login(
       tenant: {
       id: updatedUser.tenant.id,
       name: updatedUser.tenant.name,
-      brandingConfig: {
-          ...(typeof updatedUser.tenant.brandingConfig === 'object' &&
-          updatedUser.tenant.brandingConfig !== null &&
-          !Array.isArray(updatedUser.tenant.brandingConfig)
-            ? updatedUser.tenant.brandingConfig
-            : {}),
-          ...(updatedUser.tenant.branding
+      brandingConfig: buildSessionBrandingConfig(
+          updatedUser.tenant.brandingConfig,
+          updatedUser.tenant.branding
             ? {
-                displayName:
-                  updatedUser.tenant.branding.displayName ?? updatedUser.tenant.name,
-                primaryColor: updatedUser.tenant.branding.primaryColor ?? undefined,
-                secondaryColor:
-                  updatedUser.tenant.branding.secondaryColor ?? undefined,
-                logoUrl: updatedUser.tenant.branding.logoUrl ?? undefined,
-                faviconUrl: updatedUser.tenant.branding.faviconUrl ?? undefined
+                displayName: updatedUser.tenant.branding.displayName ?? updatedUser.tenant.name,
+                primaryColor: updatedUser.tenant.branding.primaryColor ?? null,
+                secondaryColor: updatedUser.tenant.branding.secondaryColor ?? null,
+                logoUrl: updatedUser.tenant.branding.logoUrl ?? null,
+                faviconUrl: updatedUser.tenant.branding.faviconUrl ?? null
               }
-            : {})
-          ,
-          ...(updatedUser.employerGroup
+            : null,
+          updatedUser.employerGroup
             ? {
                 employerKey: updatedUser.employerGroup.employerKey,
-                employerGroupName: updatedUser.employerGroup.name,
-                employerGroupLogoUrl: updatedUser.employerGroup.logoUrl ?? undefined
+                name: updatedUser.employerGroup.name,
+                logoUrl: updatedUser.employerGroup.logoUrl ?? null
               }
-            : {})
-        }
+            : null
+        )
       },
       roles: updatedUser.roles.map(({ role }) => role.code),
       permissions

@@ -14,7 +14,7 @@ import {
 import { getBrandingForTenant } from './branding-service';
 import { updateBrandingForTenant } from './branding-service';
 import { listConnectorsForTenant } from './connector-service';
-import { assignRoleToUser, createUser, deleteUser, listRoles, updateUser } from './role-service';
+import { assignRoleToUser, createUser, deleteUser, listRoles, removeRoleFromUser, updateUser } from './role-service';
 
 type AuditContext = {
   actorUserId: string;
@@ -484,6 +484,7 @@ export async function saveTenantBrandingSettings(
     secondaryColor?: string;
     logoUrl?: string;
     faviconUrl?: string;
+    customCss?: string;
   },
   context: AuditContext
 ) {
@@ -515,6 +516,25 @@ export async function assignRoleToTenantUser(
   }
 
   return assignRoleToUser(userId, roleId);
+}
+
+export async function removeRoleFromTenantUser(
+  tenantId: string,
+  userId: string,
+  roleId: string
+) {
+  const user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      tenantId
+    }
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return removeRoleFromUser(userId, roleId);
 }
 
 type TenantUserInput = {

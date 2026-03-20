@@ -13,6 +13,7 @@ import {
   deleteUser,
   listRoles,
   listUsers,
+  removeRoleFromUser,
   updateUser
 } from '../services/role-service';
 
@@ -116,6 +117,42 @@ export async function roleRoutes(app: FastifyInstance) {
 
         if (error instanceof Error) {
           return reply.status(400).send({ message: error.message });
+        }
+
+        return reply.status(503).send({
+          message:
+            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+        });
+      }
+    }
+  );
+
+  app.delete<{ Params: { userId: string; roleId: string } }>(
+    '/platform-admin/users/:userId/roles/:roleId',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        const result = await removeRoleFromUser(
+          request.params.userId,
+          request.params.roleId
+        );
+        return reply.send(result);
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          return reply.status(401).send({ message: error.message });
+        }
+
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ message: error.message });
+        }
+
+        if (error instanceof Error) {
+          const status = error.message === 'User not found' || error.message === 'Role not found' || error.message === 'Role assignment not found'
+            ? 404
+            : 400;
+          return reply.status(status).send({ message: error.message });
         }
 
         return reply.status(503).send({

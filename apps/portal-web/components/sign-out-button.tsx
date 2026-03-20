@@ -12,7 +12,7 @@ export function SignOutButton() {
     } catch {
       // Ignore logout endpoint errors and continue redirect.
     }
-    window.location.assign('/login');
+    window.location.assign('/');
   }
 
   return (

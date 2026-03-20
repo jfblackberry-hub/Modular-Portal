@@ -17,6 +17,7 @@ const DEFAULT_PAYER_BRANDING = {
 };
 
 export interface TenantBranding {
+  customCss?: string;
   faviconUrl?: string;
   fontFamily: string;
   heroImageUrl?: string;
@@ -54,6 +55,7 @@ type BrandingApiResponse = {
   secondaryColor?: string;
   logoUrl?: string | null;
   faviconUrl?: string | null;
+  customCss?: string | null;
   employerGroupName?: string | null;
   employerGroupLogoUrl?: string | null;
   imageOverrides?: Record<string, unknown> | null;
@@ -179,7 +181,7 @@ function buildBranding(
       'brokerAgencyName',
       'agencyName',
       'brokerDisplayName'
-    ]) ?? tenant.name;
+    ]) ?? 'Northbridge Benefits Group';
   const brokerAgencyLogoUrl =
     getStringValueFromKeys(config, [
       'brokerAgencyLogoUrl',
@@ -240,6 +242,9 @@ function buildBranding(
       brandingOverride?.faviconUrl ?? getStringValue(config, 'faviconUrl'),
       brandingOverride?.updatedAt
     ),
+    customCss:
+      (typeof brandingOverride?.customCss === 'string' ? brandingOverride.customCss : undefined) ??
+      getStringValue(config, 'customCss'),
     heroImageUrl:
       brandingOverride?.heroImageUrl ??
       getStringValue(config, 'heroImageUrl') ??

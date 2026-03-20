@@ -1,24 +1,17 @@
 import { PlatformAdminGate } from '../../../../../components/platform-admin-gate';
-import { AdminPlaceholderPage } from '../../../../../components/admin-placeholder-page';
+import { AdminPageLayout } from '../../../../../components/admin-ui';
+import { CreateTenantPanel } from '../../../../tenants/create-tenant-panel';
 
 export default function AdminPlatformTenantConfigurationPage() {
   return (
     <PlatformAdminGate>
-      <AdminPlaceholderPage
+      <AdminPageLayout
         eyebrow="Platform"
         title="Tenant configuration"
-        description="Cross-tenant configuration governance workspace for platform administrators."
-        highlights={[
-          'Prepared route for reviewing tenant-level branding, notification, and integration baselines.',
-          'Keeps tenant management and tenant configuration as separate navigable destinations.',
-          'Useful landing page for future cross-tenant configuration drift detection.'
-        ]}
-        nextSteps={[
-          'Add tenant-by-tenant configuration summaries and search.',
-          'Highlight drift from platform defaults and policy baselines.',
-          'Link into tenant-specific configuration drill-downs.'
-        ]}
-      />
+        description="Launch the guided tenant configuration workflow to fully provision modules, limits, connectivity, and operating defaults."
+      >
+        <CreateTenantPanel />
+      </AdminPageLayout>
     </PlatformAdminGate>
   );
 }

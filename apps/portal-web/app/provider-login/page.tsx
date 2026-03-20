@@ -45,7 +45,7 @@ export default function ProviderLoginPage() {
               defaultUsername="Provider1"
               loginPath="/api/auth/login/provider"
               successPath="/provider/dashboard"
-              helperText="Use your provider username or email. The local demo provider user is `Provider1`."
+              helperText="Use your provider username or email. The local demo provider user is `Provider1` for Dr. Lee."
             />
           </div>
         </div>

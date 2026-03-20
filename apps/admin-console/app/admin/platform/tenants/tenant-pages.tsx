@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { SectionCard } from '../../../../components/section-card';
+import { fetchAdminJsonCached } from '../../../../lib/admin-client-data';
 import { apiBaseUrl, getAdminAuthHeaders } from '../../../../lib/api-auth';
 
 type Tenant = {
@@ -100,52 +101,6 @@ function formatTimestamp(value: string | null | undefined) {
   return new Date(value).toLocaleString();
 }
 
-function getConnectivityLabel(connectors: Connector[]) {
-  if (connectors.length === 0) {
-    return 'Not configured';
-  }
-
-  const activeCount = connectors.filter(
-    (connector) => connector.status.toUpperCase() === 'ACTIVE'
-  ).length;
-
-  if (activeCount === connectors.length) {
-    return 'Healthy';
-  }
-
-  if (activeCount > 0) {
-    return 'Warning';
-  }
-
-  return 'Critical';
-}
-
-function getConfigurationCompleteness(settings: SettingsPayload) {
-  const checks = [
-    Boolean(settings.branding.displayName?.trim()),
-    Boolean(settings.branding.primaryColor?.trim()),
-    Boolean(settings.notificationSettings.replyToEmail?.trim()),
-    settings.notificationSettings.emailEnabled ||
-      settings.notificationSettings.inAppEnabled ||
-      settings.notificationSettings.digestEnabled,
-    settings.integrations.length > 0
-  ];
-
-  return `${Math.round((checks.filter(Boolean).length / checks.length) * 100)}%`;
-}
-
-function getAlertCount(tenant: Tenant, settings: SettingsPayload, auditEvents: AuditEvent[]) {
-  const auditAlertCount = auditEvents.filter((event) =>
-    alertKeywords.some((keyword) => event.eventType.toLowerCase().includes(keyword))
-  ).length;
-  const connectorAlertCount = settings.integrations.filter(
-    (connector) => connector.status.toUpperCase() !== 'ACTIVE'
-  ).length;
-  const tenantStatusAlerts = tenant.status === 'ACTIVE' ? 0 : tenant.status === 'ONBOARDING' ? 1 : 2;
-
-  return auditAlertCount + connectorAlertCount + tenantStatusAlerts;
-}
-
 function getStatusTone(status: string) {
   const normalized = status.toLowerCase();
 
@@ -178,30 +133,37 @@ function buildTenantLogHref(tenantId: string, event?: { eventType: string; resou
   return `/admin/platform/operations/logs?${query.toString()}`;
 }
 
+async function fetchTenantSettings(tenantId: string) {
+  return fetchAdminJsonCached<SettingsPayload>(
+    `${apiBaseUrl}/api/tenant-admin/settings?tenant_id=${tenantId}`,
+    {
+      headers: getAdminAuthHeaders(),
+      ttlMs: 20_000
+    }
+  );
+}
+
+async function fetchTenantAuditEvents(tenantId: string, pageSize = 8) {
+  const payload = await fetchAdminJsonCached<AuditResponse>(
+    `${apiBaseUrl}/platform-admin/audit/events?tenant_id=${tenantId}&page_size=${pageSize}`,
+    {
+      headers: getAdminAuthHeaders(),
+      ttlMs: 20_000
+    }
+  );
+
+  return payload.items;
+}
+
 async function fetchTenantEnrichment(tenantId: string) {
-  const [settingsResponse, auditResponse] = await Promise.all([
-    fetch(`${apiBaseUrl}/api/tenant-admin/settings?tenant_id=${tenantId}`, {
-      cache: 'no-store',
-      headers: getAdminAuthHeaders()
-    }),
-    fetch(`${apiBaseUrl}/platform-admin/audit/events?tenant_id=${tenantId}&page_size=8`, {
-      cache: 'no-store',
-      headers: getAdminAuthHeaders()
-    })
+  const [settingsPayload, auditEvents] = await Promise.all([
+    fetchTenantSettings(tenantId),
+    fetchTenantAuditEvents(tenantId)
   ]);
-
-  if (!settingsResponse.ok || !auditResponse.ok) {
-    throw new Error('Unable to load tenant details.');
-  }
-
-  const [settingsPayload, auditPayload] = (await Promise.all([
-    settingsResponse.json(),
-    auditResponse.json()
-  ])) as [SettingsPayload, AuditResponse];
 
   return {
     settings: settingsPayload,
-    auditEvents: auditPayload.items
+    auditEvents
   };
 }
 
@@ -215,35 +177,19 @@ export function TenantListPage() {
 
     async function loadTenantRows() {
       try {
-        const response = await fetch(`${apiBaseUrl}/platform-admin/tenants`, {
-          cache: 'no-store',
-          headers: getAdminAuthHeaders()
-        });
-
-        if (!response.ok) {
-          throw new Error('Unable to load tenant list.');
-        }
-
-        const tenants = (await response.json()) as Tenant[];
-        const enriched = await Promise.all(
-          tenants.map(async (tenant) => {
-            const { settings, auditEvents } = await fetchTenantEnrichment(tenant.id);
-
-            return {
-              tenant,
-              users: settings.users.filter((user) => user.isActive).length,
-              connectivity: getConnectivityLabel(settings.integrations),
-              configuration: getConfigurationCompleteness(settings),
-              alerts: getAlertCount(tenant, settings, auditEvents)
-            };
-          })
+        const summaries = await fetchAdminJsonCached<TenantListRow[]>(
+          `${apiBaseUrl}/platform-admin/tenant-summaries`,
+          {
+            headers: getAdminAuthHeaders(),
+            ttlMs: 20_000
+          }
         );
 
         if (!isMounted) {
           return;
         }
 
-        setRows(enriched);
+        setRows(summaries);
         setError('');
       } catch (nextError) {
         if (!isMounted) {
@@ -370,19 +316,13 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
 
     async function loadDetail() {
       try {
-        const [tenantResponse, enrichment] = await Promise.all([
-          fetch(`${apiBaseUrl}/platform-admin/tenants/${tenantId}`, {
-            cache: 'no-store',
-            headers: getAdminAuthHeaders()
+        const [tenantPayload, enrichment] = await Promise.all([
+          fetchAdminJsonCached<Tenant>(`${apiBaseUrl}/platform-admin/tenants/${tenantId}`, {
+            headers: getAdminAuthHeaders(),
+            ttlMs: 20_000
           }),
           fetchTenantEnrichment(tenantId)
         ]);
-
-        if (!tenantResponse.ok) {
-          throw new Error('Unable to load tenant detail.');
-        }
-
-        const tenantPayload = (await tenantResponse.json()) as Tenant;
 
         if (!isMounted) {
           return;

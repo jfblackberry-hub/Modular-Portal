@@ -1,3 +1,4 @@
+import { AdminEmptyState, AdminPageLayout } from './admin-ui';
 import { SectionCard } from './section-card';
 
 type AdminPlaceholderPageProps = {
@@ -16,19 +17,17 @@ export function AdminPlaceholderPage({
   nextSteps
 }: AdminPlaceholderPageProps) {
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
-          {eyebrow}
-        </p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-admin-text">
-          {title}
-        </h1>
-        <p className="mt-3 max-w-3xl text-base leading-7 text-admin-muted">
-          {description}
-        </p>
-      </div>
-
+    <AdminPageLayout
+      eyebrow={eyebrow}
+      title={title}
+      description={description}
+      meta={
+        <AdminEmptyState
+          title="This admin area is not fully built yet"
+          description="The route exists and is navigable, but the production workflow, persistence, and operational controls are still incomplete."
+        />
+      }
+    >
       <div className="grid gap-4 xl:grid-cols-2">
         <SectionCard title="Current scope" description="Prepared routing target for the new admin shell.">
           <ul className="space-y-2 text-sm text-admin-muted">
@@ -46,6 +45,6 @@ export function AdminPlaceholderPage({
           </ul>
         </SectionCard>
       </div>
-    </div>
+    </AdminPageLayout>
   );
 }

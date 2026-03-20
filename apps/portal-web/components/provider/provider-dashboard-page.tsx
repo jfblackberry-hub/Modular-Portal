@@ -30,6 +30,7 @@ export function ProviderDashboardPage({
         config={config}
         imageSrc={imageSrc}
         providerName={providerName}
+        variant={variant}
       />
     );
   }

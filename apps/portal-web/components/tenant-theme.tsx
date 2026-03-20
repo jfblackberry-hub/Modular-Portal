@@ -26,7 +26,19 @@ export function TenantTheme({ branding }: { branding: TenantBranding }) {
     }
 
     favicon.href = branding.faviconUrl ?? '/favicon.ico';
+
+    const styleId = 'tenant-custom-css';
+    let customStyle = head.querySelector<HTMLStyleElement>(`style[data-tenant-style="${styleId}"]`);
+
+    if (!customStyle) {
+      customStyle = document.createElement('style');
+      customStyle.setAttribute('data-tenant-style', styleId);
+      head.appendChild(customStyle);
+    }
+
+    customStyle.textContent = branding.customCss ?? '';
   }, [
+    branding.customCss,
     branding.faviconUrl,
     branding.fontFamily,
     branding.primaryColor,

@@ -10,10 +10,12 @@ import { EmptyState, StatusBadge } from '../portal-ui';
 type Grouped = Record<ReportCategory, ReportDefinition[]>;
 
 export function ReportsLibrary({
+  embedded = false,
   groupedReports,
   initialFilters,
   tenantName
 }: {
+  embedded?: boolean;
   groupedReports: Grouped;
   initialFilters: ReportFilters;
   tenantName: string;
@@ -39,13 +41,15 @@ export function ReportsLibrary({
 
   return (
     <div className="space-y-5">
-      <section className="portal-card p-6 sm:p-8">
-        <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">Reports &amp; Analytics</p>
-        <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">Reports Library</h1>
-        <p className="mt-3 max-w-3xl text-[15px] leading-7 text-[var(--text-secondary)]">
-          Generate operational exports for {tenantName} across workforce, coverage, billing, and compliance.
-        </p>
-      </section>
+      {embedded ? null : (
+        <section className="portal-card p-6 sm:p-8">
+          <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">Reports &amp; Analytics</p>
+          <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">Reports Library</h1>
+          <p className="mt-3 max-w-3xl text-[15px] leading-7 text-[var(--text-secondary)]">
+            Generate operational exports for {tenantName} across workforce, coverage, billing, and compliance.
+          </p>
+        </section>
+      )}
 
       <section className="portal-card p-5">
         <div className="flex flex-wrap gap-2">

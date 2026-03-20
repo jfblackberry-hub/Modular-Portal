@@ -3,7 +3,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Payer Portal',
+  title: 'Blue Horizon Health',
   description:
     'Primary frontend portal for the modular healthcare payer platform.'
 };

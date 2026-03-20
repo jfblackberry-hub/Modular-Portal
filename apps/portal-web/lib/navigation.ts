@@ -78,25 +78,11 @@ const memberNavigationSections: PortalNavigationSection[] = [
         requiredPermissions: ['member.view']
       },
       {
-        label: 'Billing',
-        href: '/dashboard/billing',
-        description: 'Premiums, balances, and payment options.',
-        moduleId: 'member_billing',
-        requiredPermissions: ['member.view']
-      },
-      {
         label: 'Care Cost Estimator',
         href: '/dashboard/care-cost-estimator',
         description: 'Compare providers and estimate out-of-pocket costs before you schedule care.',
         moduleId: 'member_care_cost_estimator',
         requiredPermissions: ['member.view']
-      },
-      {
-        label: 'Enrollment & Billing',
-        href: '/individual',
-        description: 'Application, household, documents, and premium self-service.',
-        moduleId: 'billing_enrollment',
-        requiredPermissions: ['billing_enrollment.view']
       },
       {
         label: 'Help',

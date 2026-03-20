@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { SectionCard } from '../../../../components/section-card';
+import { fetchAdminJsonCached } from '../../../../lib/admin-client-data';
 import { apiBaseUrl, getAdminAuthHeaders } from '../../../../lib/api-auth';
 
 type HealthPayload = {
@@ -54,6 +55,13 @@ type AuditEvent = {
 
 type AuditResponse = {
   items: AuditEvent[];
+};
+
+type PlatformHealthOverviewPayload = {
+  health: HealthPayload;
+  tenants: Tenant[];
+  users: User[];
+  auditEvents: AuditResponse;
 };
 
 type PlatformAlert = {
@@ -115,6 +123,20 @@ function getConfigurationStatus(tenant: Tenant) {
 
   const hasBranding = Object.keys(tenant.brandingConfig ?? {}).length > 0;
   return hasBranding ? 'Configured' : 'Needs review';
+}
+
+function getStatusTone(status: string) {
+  const normalized = status.toLowerCase();
+
+  if (normalized === 'ok' || normalized.includes('healthy') || normalized.includes('active')) {
+    return 'bg-emerald-100 text-emerald-700';
+  }
+
+  if (normalized.includes('warning') || normalized.includes('degraded')) {
+    return 'bg-amber-100 text-amber-700';
+  }
+
+  return 'bg-rose-100 text-rose-700';
 }
 
 function buildPlatformAlerts(health: HealthPayload | null, tenants: Tenant[], events: AuditEvent[]) {
@@ -207,41 +229,22 @@ export function PlatformHealthPage() {
       }
 
       try {
-        const [healthResponse, tenantsResponse, usersResponse, auditResponse] = await Promise.all([
-          fetch(`${apiBaseUrl}/health`, { cache: 'no-store' }),
-          fetch(`${apiBaseUrl}/platform-admin/tenants`, {
-            cache: 'no-store',
-            headers: getAdminAuthHeaders()
-          }),
-          fetch(`${apiBaseUrl}/platform-admin/users`, {
-            cache: 'no-store',
-            headers: getAdminAuthHeaders()
-          }),
-          fetch(`${apiBaseUrl}/platform-admin/audit/events?page_size=12`, {
-            cache: 'no-store',
-            headers: getAdminAuthHeaders()
-          })
-        ]);
-
-        if (!healthResponse.ok || !tenantsResponse.ok || !usersResponse.ok || !auditResponse.ok) {
-          throw new Error('Unable to load platform health overview.');
-        }
-
-        const [healthPayload, tenantsPayload, usersPayload, auditPayload] = (await Promise.all([
-          healthResponse.json(),
-          tenantsResponse.json(),
-          usersResponse.json(),
-          auditResponse.json()
-        ])) as [HealthPayload, Tenant[], User[], AuditResponse];
+        const overview = await fetchAdminJsonCached<PlatformHealthOverviewPayload>(
+          `${apiBaseUrl}/platform-admin/health/overview`,
+          {
+            headers: getAdminAuthHeaders(),
+            ttlMs: 20_000
+          }
+        );
 
         if (!isMounted) {
           return;
         }
 
-        setHealth(healthPayload);
-        setTenants(tenantsPayload);
-        setUsers(usersPayload);
-        setEvents(auditPayload.items);
+        setHealth(overview.health);
+        setTenants(overview.tenants);
+        setUsers(overview.users);
+        setEvents(overview.auditEvents.items);
         setLastUpdated(new Date().toISOString());
       } catch (nextError) {
         if (!isMounted) {
@@ -346,6 +349,80 @@ export function PlatformHealthPage() {
           </div>
         ))}
       </div>
+
+      <SectionCard
+        title="API / Connectivity"
+        description="Visible status for shared services, major integrations, and API-dependent platform connectivity."
+      >
+        {isLoading ? (
+          <p className="text-sm text-admin-muted">Loading API and connectivity status...</p>
+        ) : connectivitySummary.length === 0 ? (
+          <p className="text-sm text-admin-muted">No API or connectivity checks available.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-admin-muted">
+                  API Health
+                </p>
+                <div className="mt-3">
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusTone(health?.status ?? 'unknown')}`}>
+                    {health?.status ?? 'Unknown'}
+                  </span>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-admin-muted">
+                  Connectivity Checks
+                </p>
+                <p className="mt-3 text-2xl font-semibold text-admin-text">{connectivitySummary.length}</p>
+              </div>
+              <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-admin-muted">
+                  Attention Needed
+                </p>
+                <p className="mt-3 text-2xl font-semibold text-admin-text">
+                  {connectivitySummary.filter((item) => item.status.toLowerCase() !== 'ok').length}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
+              {connectivitySummary.map((item) => (
+                <article
+                  key={item.key}
+                  className="rounded-2xl border border-admin-border bg-white px-4 py-4"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-sm font-semibold capitalize text-admin-text">{item.key}</p>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusTone(item.status)}`}>
+                      {item.status}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-admin-muted">
+                    {typeof item.latencyMs === 'number' ? `${item.latencyMs} ms` : 'No latency recorded'}
+                  </p>
+                </article>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/admin/platform/connectivity"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white"
+              >
+                Open connectivity workspace
+              </Link>
+              <Link
+                href="/admin/platform/connectivity/adapters"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-admin-border bg-white px-5 py-3 text-sm font-semibold text-admin-text"
+              >
+                API / adapter status
+              </Link>
+            </div>
+          </div>
+        )}
+      </SectionCard>
 
       <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
         <SectionCard

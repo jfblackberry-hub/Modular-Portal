@@ -1,5 +1,18 @@
 import { LoginForm } from '../login/login-form';
 
+const employerQuickSignIns = [
+  {
+    label: 'Northstar employer',
+    username: 'EMP-0316043829906172-001',
+    href: '/employer-login?user=EMP-0316043829906172-001&redirect=/employer&auto=1'
+  },
+  {
+    label: 'Lakeside employer',
+    username: 'EMP-0316043829906172-002',
+    href: '/employer-login?user=EMP-0316043829906172-002&redirect=/employer&auto=1'
+  }
+];
+
 export default function EmployerLoginPage() {
   return (
     <main className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)]">
@@ -36,6 +49,22 @@ export default function EmployerLoginPage() {
                 <p className="mt-5 max-w-xl text-base leading-7 text-[var(--text-secondary)]">
                   Sign in to manage billing, enrollment, notices, census imports, and employer administration workflows.
                 </p>
+
+                <section className="mt-8 rounded-2xl border border-[var(--border-subtle)] bg-white/90 p-5" aria-label="Employer quick sign-in options">
+                  <h2 className="text-sm font-semibold text-[var(--text-primary)]">Employer quick sign-in options</h2>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {employerQuickSignIns.map((option) => (
+                      <a
+                        key={option.username}
+                        href={option.href}
+                        className="flex items-center justify-between gap-2 rounded-xl border border-[var(--border-subtle)] bg-white px-3 py-3 text-sm transition hover:border-[var(--tenant-primary-color)]"
+                      >
+                        <span className="truncate text-[var(--text-secondary)]">{option.label}</span>
+                        <span className="font-semibold text-[var(--text-primary)]">{option.username}</span>
+                      </a>
+                    ))}
+                  </div>
+                </section>
               </div>
             </div>
           </section>

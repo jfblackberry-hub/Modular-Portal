@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useAdminSession } from '../../components/admin-session-provider';
 import { clearAdminSession, storeAdminSession } from '../../lib/api-auth';
+import { canonicalizeAdminPath } from '../../lib/admin-route-aliases';
 
 const portalBaseUrl =
   process.env.NEXT_PUBLIC_PORTAL_BASE_URL ?? 'http://localhost:3000';
@@ -60,7 +61,7 @@ export function AdminLoginForm() {
   useEffect(() => {
     const adminUserId = searchParams.get('admin_user_id');
     const adminEmail = searchParams.get('admin_email');
-    const redirectPath = searchParams.get('redirect') || '/admin';
+    const redirectPath = canonicalizeAdminPath(searchParams.get('redirect'));
     const handoffKey = `${adminUserId ?? ''}:${adminEmail ?? ''}:${redirectPath}`;
 
     if (!adminUserId || !adminEmail) {
@@ -73,14 +74,9 @@ export function AdminLoginForm() {
 
     handledHandoffRef.current = handoffKey;
 
-    const isPlatformAdmin =
-      redirectPath.startsWith('/platform-admin') ||
-      redirectPath.startsWith('/platform') ||
-      redirectPath.startsWith('/admin/platform');
+    const isPlatformAdmin = redirectPath.startsWith('/admin/platform');
     const isTenantAdmin =
-      isPlatformAdmin ||
-      redirectPath.startsWith('/tenant-admin') ||
-      redirectPath.startsWith('/admin/tenant');
+      isPlatformAdmin || redirectPath.startsWith('/admin/tenant');
 
     void (async () => {
       try {

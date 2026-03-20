@@ -15,6 +15,7 @@ import {
   createTenantScopedUser,
   deleteTenantScopedUser,
   getTenantAdminSettings,
+  removeRoleFromTenantUser,
   saveTenantEmployerGroupBrandingSettings,
   saveTenantBrandingSettings,
   saveTenantBillingEnrollmentModuleConfig,
@@ -41,6 +42,7 @@ type BrandingSettingsBody = {
   secondaryColor?: string;
   logoUrl?: string | null;
   faviconUrl?: string | null;
+  customCss?: string | null;
 };
 
 type EmployerGroupBrandingSettingsBody = {
@@ -246,7 +248,8 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
             primaryColor: request.body?.primaryColor,
             secondaryColor: request.body?.secondaryColor,
             logoUrl: request.body?.logoUrl ?? undefined,
-            faviconUrl: request.body?.faviconUrl ?? undefined
+            faviconUrl: request.body?.faviconUrl ?? undefined,
+            customCss: request.body?.customCss ?? undefined
           },
           {
             actorUserId: currentUser.id,
@@ -437,6 +440,31 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
         );
 
         return reply.status(201).send(assignment);
+      } catch (error) {
+        return handleRouteError(error, reply);
+      }
+    }
+  );
+
+  app.delete<{ Params: { userId: string; roleId: string }; Querystring: TenantAdminQuery }>(
+    '/api/tenant-admin/users/:userId/roles/:roleId',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertTenantAdmin(currentUser);
+        const tenantId = await resolveTenantScopeForUserAction(
+          currentUser,
+          request.query.tenant_id,
+          request.params.userId
+        );
+
+        const result = await removeRoleFromTenantUser(
+          tenantId,
+          request.params.userId,
+          request.params.roleId
+        );
+
+        return reply.send(result);
       } catch (error) {
         return handleRouteError(error, reply);
       }

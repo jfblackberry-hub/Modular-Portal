@@ -90,7 +90,7 @@ export function BrokerDocumentsWorkspacePage({
         eyebrow="Broker E&B Portal"
         title="Documents"
         description="Broker document center for census files, proposals, renewal packets, commission statements, plan documents, and employer-submitted materials."
-        actions={<InlineButton href="/broker/documents" tone="secondary">Mock Upload</InlineButton>}
+        actions={<InlineButton href="/broker/documents" tone="secondary">Upload</InlineButton>}
       />
 
       <SurfaceCard title="Document center" description="Search and organize broker documents by category, status, and related employer group.">
@@ -165,7 +165,7 @@ export function BrokerDocumentsWorkspacePage({
           <SurfaceCard title="Upload action" description="Mock upload call-to-action for broker census, proposal, and renewal packet workflows.">
             <p className="text-sm leading-6 text-[var(--text-secondary)]">Use this action to represent broker document intake without requiring live storage integration in this sprint.</p>
             <div className="mt-4">
-              <InlineButton href="/broker/documents" tone="secondary">Upload Document</InlineButton>
+              <InlineButton href="/broker/documents" tone="secondary">Upload</InlineButton>
             </div>
           </SurfaceCard>
         </div>

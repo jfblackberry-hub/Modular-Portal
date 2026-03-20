@@ -23,6 +23,7 @@ type TenantBody = {
 
 type TenantUpdateBody = {
   status?: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
+  quotaUsers?: number;
   quotaMembers?: number;
   quotaStorageGb?: number;
 };

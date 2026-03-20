@@ -94,6 +94,11 @@ const platformMenu: AdminMenuConfig = {
           description: 'Monitor third-party platform integrations.'
         },
         {
+          href: '/admin/platform/connectivity/catalog',
+          label: 'API Catalog',
+          description: 'Browse strategic vendor APIs, readiness, and planning metadata.'
+        },
+        {
           href: '/admin/platform/connectivity/adapters',
           label: 'API / Adapter Status',
           description: 'Inspect adapter and API dependency posture.'
@@ -205,6 +210,11 @@ const tenantMenu: AdminMenuConfig = {
           href: '/admin/tenant/configuration',
           label: 'Tenant Configuration',
           description: 'Tenant branding, notifications, and configuration.'
+        },
+        {
+          href: '/admin/tenant/documents',
+          label: 'Documents',
+          description: 'Manage tenant-owned files and operational uploads.'
         }
       ]
     },
@@ -308,6 +318,26 @@ export function getAdminRoute(pathname: string) {
       .sort((left, right) => right.href.length - left.href.length)
       .find((route) => pathname === route.href || pathname.startsWith(`${route.href}/`)) ?? null
   );
+}
+
+export function getAdminRouteContext(pathname: string) {
+  for (const menu of Object.values(adminMenuByRole)) {
+    for (const section of menu.sections) {
+      const route = [...section.items]
+        .sort((left, right) => right.href.length - left.href.length)
+        .find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
+
+      if (route) {
+        return {
+          roleLabel: menu.label,
+          sectionLabel: section.label,
+          route
+        };
+      }
+    }
+  }
+
+  return null;
 }
 
 export function getDefaultAdminHref(isPlatformAdmin: boolean) {

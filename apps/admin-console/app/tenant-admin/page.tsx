@@ -1,5 +1,5 @@
-import { TenantAdminSettings } from './tenant-admin-settings';
+import { redirect } from 'next/navigation';
 
 export default function TenantAdminPage() {
-  return <TenantAdminSettings />;
+  redirect('/admin/tenant/configuration');
 }

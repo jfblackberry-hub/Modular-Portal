@@ -91,10 +91,12 @@ function FieldControl({ field }: { field: ModuleField }) {
 
 export function ProviderAuthorizationsPage({
   config,
-  variant
+  variant,
+  embedded = false
 }: {
   config: ProviderPortalConfig;
   variant: ProviderPortalVariant;
+  embedded?: boolean;
 }) {
   const labels = config.authorizationsModule.labels;
   const [activeTab, setActiveTab] = useState<AuthorizationTabKey>('check-requirement');
@@ -174,11 +176,13 @@ export function ProviderAuthorizationsPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow={config.displayName}
-        title={labels.title}
-        description={labels.description}
-      />
+      {embedded ? null : (
+        <PageHeader
+          eyebrow={config.displayName}
+          title={labels.title}
+          description={labels.description}
+        />
+      )}
 
       <SurfaceCard title="Module Views" description="Switch between requirement checks, submissions, tracking, referrals, and attachments.">
         <div className="flex flex-wrap gap-2">

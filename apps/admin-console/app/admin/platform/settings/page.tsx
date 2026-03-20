@@ -1,22 +1,15 @@
 import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
+import { AdminPageLayout } from '../../../../components/admin-ui';
 import { SectionCard } from '../../../../components/section-card';
 
 export default function AdminPlatformSettingsPage() {
   return (
     <PlatformAdminGate>
-      <div className="space-y-6">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
-            Platform
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-admin-text">
-            Platform settings
-          </h1>
-          <p className="mt-3 max-w-3xl text-base leading-7 text-admin-muted">
-            Shared operating defaults for the multi-tenant platform and platform operator workflows.
-          </p>
-        </div>
-
+      <AdminPageLayout
+        eyebrow="Platform"
+        title="Platform settings"
+        description="Shared operating defaults for the multi-tenant platform and platform operator workflows."
+      >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <SectionCard title="Default quotas" description="New tenant defaults used during provisioning.">
             <ul className="space-y-2 text-sm text-admin-muted">
@@ -45,7 +38,7 @@ export default function AdminPlatformSettingsPage() {
             </ul>
           </SectionCard>
         </div>
-      </div>
+      </AdminPageLayout>
     </PlatformAdminGate>
   );
 }

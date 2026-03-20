@@ -5,7 +5,8 @@ import {
   assertTenantAdmin,
   AuthenticationError,
   AuthorizationError,
-  getCurrentUserFromHeaders
+  getCurrentUserFromHeaders,
+  resolveTenantScope
 } from '../services/current-user-service';
 import {
   createConnectorForTenant,
@@ -23,6 +24,9 @@ type ConnectorBody = {
 };
 
 type UpdateConnectorBody = Partial<ConnectorBody>;
+type ConnectorQuery = {
+  tenant_id?: string;
+};
 
 function handleRouteError(error: unknown, reply: { status: (code: number) => { send: (body: unknown) => unknown } }) {
   if (error instanceof AuthenticationError) {
@@ -45,24 +49,26 @@ function handleRouteError(error: unknown, reply: { status: (code: number) => { s
 }
 
 export async function connectorRoutes(app: FastifyInstance) {
-  app.get('/api/connectors', async (request, reply) => {
+  app.get<{ Querystring: ConnectorQuery }>('/api/connectors', async (request, reply) => {
     try {
       const currentUser = await getCurrentUserFromHeaders(request.headers);
       assertTenantAdmin(currentUser);
+      const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
 
-      return await listConnectorsForTenant(currentUser.tenantId);
+      return await listConnectorsForTenant(tenantId);
     } catch (error) {
       return handleRouteError(error, reply);
     }
   });
 
-  app.post<{ Body: ConnectorBody }>('/api/connectors', async (request, reply) => {
+  app.post<{ Body: ConnectorBody; Querystring: ConnectorQuery }>('/api/connectors', async (request, reply) => {
     try {
       const currentUser = await getCurrentUserFromHeaders(request.headers);
       assertTenantAdmin(currentUser);
+      const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
 
       const connector = await createConnectorForTenant(
-        currentUser.tenantId,
+        tenantId,
         request.body,
         {
           actorUserId: currentUser.id,
@@ -77,15 +83,16 @@ export async function connectorRoutes(app: FastifyInstance) {
     }
   });
 
-  app.put<{ Params: { id: string }; Body: UpdateConnectorBody }>(
+  app.put<{ Params: { id: string }; Body: UpdateConnectorBody; Querystring: ConnectorQuery }>(
     '/api/connectors/:id',
     async (request, reply) => {
       try {
         const currentUser = await getCurrentUserFromHeaders(request.headers);
         assertTenantAdmin(currentUser);
+        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
 
         const connector = await updateConnectorForTenant(
-          currentUser.tenantId,
+          tenantId,
           request.params.id,
           request.body,
           {
@@ -102,15 +109,16 @@ export async function connectorRoutes(app: FastifyInstance) {
     }
   );
 
-  app.post<{ Params: { id: string } }>(
+  app.post<{ Params: { id: string }; Querystring: ConnectorQuery }>(
     '/api/connectors/:id/sync',
     async (request, reply) => {
       try {
         const currentUser = await getCurrentUserFromHeaders(request.headers);
         assertTenantAdmin(currentUser);
+        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
 
         const job = await enqueueConnectorSyncForTenant(
-          currentUser.tenantId,
+          tenantId,
           request.params.id,
           {
             actorUserId: currentUser.id,
@@ -126,15 +134,16 @@ export async function connectorRoutes(app: FastifyInstance) {
     }
   );
 
-  app.post<{ Params: { id: string } }>(
+  app.post<{ Params: { id: string }; Querystring: ConnectorQuery }>(
     '/api/connectors/:id/health',
     async (request, reply) => {
       try {
         const currentUser = await getCurrentUserFromHeaders(request.headers);
         assertTenantAdmin(currentUser);
+        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
 
         const result = await runConnectorHealthCheckForTenant(
-          currentUser.tenantId,
+          tenantId,
           request.params.id,
           {
             actorUserId: currentUser.id,

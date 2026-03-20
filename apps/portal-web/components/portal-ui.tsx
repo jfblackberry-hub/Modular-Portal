@@ -23,23 +23,23 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <section className="portal-card px-6 py-6 sm:px-8">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-3xl lg:flex-1 lg:pr-8">
+    <section className="tenant-page-header portal-card px-6 py-6 sm:px-8">
+      <div className="tenant-page-header__content flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="tenant-page-header__copy max-w-3xl lg:flex-1 lg:pr-8">
           {eyebrow ? (
-            <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">
+            <p className="tenant-page-header__eyebrow text-[13px] font-medium text-[var(--tenant-primary-color)]">
               {eyebrow}
             </p>
           ) : null}
-          <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)]">
+          <h1 className="tenant-page-header__title mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)]">
             {title}
           </h1>
-          <p className="mt-3 text-[15px] leading-7 text-[var(--text-secondary)]">
+          <p className="tenant-page-header__description mt-3 text-[15px] leading-7 text-[var(--text-secondary)]">
             {description}
           </p>
         </div>
         {actions ? (
-          <div className="flex flex-wrap gap-3 lg:min-w-fit lg:justify-end lg:self-start">
+          <div className="tenant-page-header__actions flex flex-wrap gap-3 lg:min-w-fit lg:justify-end lg:self-start">
             {actions}
           </div>
         ) : null}
@@ -60,21 +60,21 @@ export function SurfaceCard({
   action?: ReactNode;
 }) {
   return (
-    <section className="portal-card p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-[20px] font-semibold text-[var(--text-primary)]">
+    <section className="tenant-surface-card portal-card p-6">
+      <div className="tenant-surface-card__header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="tenant-surface-card__copy">
+          <h2 className="tenant-surface-card__title text-[20px] font-semibold text-[var(--text-primary)]">
             {title}
           </h2>
           {description ? (
-            <p className="mt-2 text-[15px] leading-6 text-[var(--text-secondary)]">
+            <p className="tenant-surface-card__description mt-2 text-[15px] leading-6 text-[var(--text-secondary)]">
               {description}
             </p>
           ) : null}
         </div>
-        {action}
+        {action ? <div className="tenant-surface-card__action">{action}</div> : null}
       </div>
-      <div className="mt-5">{children}</div>
+      <div className="tenant-surface-card__body mt-5">{children}</div>
     </section>
   );
 }
@@ -93,17 +93,17 @@ export function QuickActionCard({
   return (
     <Link
       href={href}
-      className="portal-card group block p-5 transition hover:-translate-y-0.5 hover:border-[var(--tenant-primary-color)] hover:shadow-md"
+      className="tenant-quick-action-card portal-card group block p-5 transition hover:-translate-y-0.5 hover:border-[var(--tenant-primary-color)] hover:shadow-md"
     >
-      <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--tenant-primary-soft-color)] text-xl text-[var(--tenant-primary-color)]">
+      <div className="tenant-quick-action-card__content flex items-center gap-4">
+        <div className="tenant-quick-action-card__icon flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--tenant-primary-soft-color)] text-xl text-[var(--tenant-primary-color)]">
           <span aria-hidden="true">{icon}</span>
         </div>
-        <div>
-          <h3 className="text-base font-semibold text-[var(--text-primary)]">
+        <div className="tenant-quick-action-card__copy">
+          <h3 className="tenant-quick-action-card__label text-base font-semibold text-[var(--text-primary)]">
             {label}
           </h3>
-          <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
+          <p className="tenant-quick-action-card__description mt-1 text-sm leading-6 text-[var(--text-secondary)]">
             {description}
           </p>
         </div>
@@ -116,28 +116,62 @@ export function StatCard({
   label,
   value,
   detail,
-  tone = 'default'
+  tone = 'default',
+  href,
+  ctaLabel,
+  previewItems
 }: {
   label: string;
   value: string;
   detail: string;
   tone?: Tone;
+  href?: string;
+  ctaLabel?: string;
+  previewItems?: string[];
 }) {
-  return (
-    <article className="portal-card p-5">
+  const content = (
+    <>
       <span
-        className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${toneStyles[tone]}`}
+        className={`tenant-stat-card__badge tenant-status-badge tenant-status-badge--${tone} inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${toneStyles[tone]}`}
       >
         {label}
       </span>
-      <p className="mt-4 text-3xl font-semibold text-[var(--text-primary)]">
+      <p className="tenant-stat-card__value mt-4 text-3xl font-semibold text-[var(--text-primary)]">
         {value}
       </p>
-      <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+      <p className="tenant-stat-card__detail mt-2 text-sm leading-6 text-[var(--text-secondary)]">
         {detail}
       </p>
-    </article>
+      {previewItems && previewItems.length > 0 ? (
+        <div className="tenant-stat-card__preview mt-4 space-y-2 border-t border-[var(--border-subtle)] pt-4">
+          {previewItems.slice(0, 3).map((item) => (
+            <p key={item} className="tenant-stat-card__preview-item text-xs leading-5 text-[var(--text-muted)]">
+              {item}
+            </p>
+          ))}
+        </div>
+      ) : null}
+      {href && ctaLabel ? (
+        <div className="tenant-stat-card__cta mt-4 flex items-center justify-between border-t border-[var(--border-subtle)] pt-4 text-sm font-semibold text-[var(--tenant-primary-color)]">
+          <span className="tenant-stat-card__cta-label">{ctaLabel}</span>
+          <span className="tenant-stat-card__cta-icon" aria-hidden="true">→</span>
+        </div>
+      ) : null}
+    </>
   );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="tenant-stat-card portal-card block p-5 transition hover:border-[var(--tenant-primary-color)] hover:shadow-md"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return <article className="tenant-stat-card portal-card p-5">{content}</article>;
 }
 
 export function StatusBadge({ label }: { label: string }) {
@@ -152,7 +186,7 @@ export function StatusBadge({ label }: { label: string }) {
 
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${toneStyles[tone]}`}
+      className={`tenant-status-badge tenant-status-badge--${tone} inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${toneStyles[tone]}`}
       aria-label={`Status: ${label}`}
     >
       {label}
@@ -174,32 +208,32 @@ export function ProgressMeter({
   const percentage = total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
 
   return (
-    <article className="portal-card p-5">
+    <article className="tenant-progress-meter portal-card p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-base font-semibold text-[var(--text-primary)]">
+          <h3 className="tenant-progress-meter__title text-base font-semibold text-[var(--text-primary)]">
             {label}
           </h3>
-          <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+          <p className="tenant-progress-meter__helper mt-2 text-sm leading-6 text-[var(--text-secondary)]">
             {helper}
           </p>
         </div>
-        <p className="text-sm font-semibold text-[var(--tenant-primary-color)]">
+        <p className="tenant-progress-meter__percent text-sm font-semibold text-[var(--tenant-primary-color)]">
           {percentage}%
         </p>
       </div>
-      <div className="mt-5 h-3 rounded-full bg-slate-100">
+      <div className="tenant-progress-meter__track mt-5 h-3 rounded-full bg-slate-100">
         <div
-          className="h-3 rounded-full"
+          className="tenant-progress-meter__fill h-3 rounded-full"
           style={{
             width: `${percentage}%`,
             backgroundColor: 'var(--tenant-primary-color)'
           }}
         />
       </div>
-      <div className="mt-3 flex items-center justify-between text-sm text-[var(--text-secondary)]">
-        <span>${current.toLocaleString()}</span>
-        <span>${total.toLocaleString()}</span>
+      <div className="tenant-progress-meter__values mt-3 flex items-center justify-between text-sm text-[var(--text-secondary)]">
+        <span className="tenant-progress-meter__value">${current.toLocaleString()}</span>
+        <span className="tenant-progress-meter__value">${total.toLocaleString()}</span>
       </div>
     </article>
   );
@@ -217,10 +251,10 @@ export function SupportLink({
   return (
     <Link
       href={href}
-      className="portal-card block p-5 transition hover:border-[var(--tenant-primary-color)] hover:shadow-md"
+      className="tenant-support-link portal-card block p-5 transition hover:border-[var(--tenant-primary-color)] hover:shadow-md"
     >
-      <h3 className="text-base font-semibold text-[var(--text-primary)]">{label}</h3>
-      <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+      <h3 className="tenant-support-link__label text-base font-semibold text-[var(--text-primary)]">{label}</h3>
+      <p className="tenant-support-link__description mt-2 text-sm leading-6 text-[var(--text-secondary)]">
         {description}
       </p>
     </Link>
@@ -246,7 +280,7 @@ export function InlineButton({
   return (
     <Link
       href={href}
-      className={`inline-flex min-h-11 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${className}`}
+      className={`tenant-inline-button tenant-inline-button--${tone} inline-flex min-h-11 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${className}`}
     >
       {children}
     </Link>
@@ -261,9 +295,9 @@ export function EmptyState({
   description: string;
 }) {
   return (
-    <div className="portal-card border-dashed p-8 text-center">
-      <h3 className="text-xl font-semibold text-[var(--text-primary)]">{title}</h3>
-      <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
+    <div className="tenant-empty-state portal-card border-dashed p-8 text-center">
+      <h3 className="tenant-empty-state__title text-xl font-semibold text-[var(--text-primary)]">{title}</h3>
+      <p className="tenant-empty-state__description mt-3 text-sm leading-6 text-[var(--text-secondary)]">
         {description}
       </p>
     </div>

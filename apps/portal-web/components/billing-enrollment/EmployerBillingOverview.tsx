@@ -29,18 +29,26 @@ function lineItemTotal(lineItems: EmployerInvoiceLineItem[], category: EmployerI
     .reduce((total, lineItem) => total + lineItem.amount, 0);
 }
 
-export function EmployerBillingOverview({ dataset }: { dataset: EmployerBillingDataset }) {
+export function EmployerBillingOverview({
+  dataset,
+  embedded = false
+}: {
+  dataset: EmployerBillingDataset;
+  embedded?: boolean;
+}) {
   const currentInvoice = dataset.invoices[0];
 
   if (!currentInvoice) {
     return (
       <div className="space-y-5">
-        <section className="portal-card p-6 sm:p-8">
-          <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">Billing &amp; Payments</p>
-          <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">
-            Billing Overview
-          </h1>
-        </section>
+        {embedded ? null : (
+          <section className="portal-card p-6 sm:p-8">
+            <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">Billing &amp; Payments</p>
+            <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">
+              Billing Overview
+            </h1>
+          </section>
+        )}
         <EmptyState
           title="No invoices generated yet"
           description="Invoices and billing summaries appear once the first billing cycle is generated."
@@ -64,26 +72,28 @@ export function EmployerBillingOverview({ dataset }: { dataset: EmployerBillingD
 
   return (
     <div className="space-y-5">
-      <section className="portal-card p-6 sm:p-8">
-        <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">Billing &amp; Payments</p>
-        <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">
-          Billing Overview
-        </h1>
-        <p className="mt-3 max-w-3xl text-[15px] leading-7 text-[var(--text-secondary)]">
-          Review current invoice, payment status, and billing breakdown for {dataset.employerName}.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link href="/dashboard/billing-enrollment/billing-payments" className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-white">
-            Pay Invoice
-          </Link>
-          <Link href="/dashboard/billing-enrollment/billing-invoices/history" className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)]">
-            Invoice History
-          </Link>
-          <Link href={`/dashboard/billing-enrollment/billing-invoices/${currentInvoice.id}/download/pdf`} className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)]">
-            Download Statement
-          </Link>
-        </div>
-      </section>
+      {embedded ? null : (
+        <section className="portal-card p-6 sm:p-8">
+          <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">Billing &amp; Payments</p>
+          <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">
+            Billing Overview
+          </h1>
+          <p className="mt-3 max-w-3xl text-[15px] leading-7 text-[var(--text-secondary)]">
+            Review current invoice, payment status, and billing breakdown for {dataset.employerName}.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/dashboard/billing-enrollment/billing-payments" className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-white">
+              Pay Invoice
+            </Link>
+            <Link href="/dashboard/billing-enrollment/billing-invoices/history" className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)]">
+              Invoice History
+            </Link>
+            <Link href={`/dashboard/billing-enrollment/billing-invoices/${currentInvoice.id}/download/pdf`} className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)]">
+              Download Statement
+            </Link>
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article className="portal-card p-5">

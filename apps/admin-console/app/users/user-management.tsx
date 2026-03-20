@@ -1,7 +1,7 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { SectionCard } from '../../components/section-card';
 import { apiBaseUrl, getAdminAuthHeaders } from '../../lib/api-auth';
@@ -50,6 +50,10 @@ export function UserManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [tenantFilter, setTenantFilter] = useState('all');
+  const userDirectoryWindowHeight = 'max-h-[36rem]';
 
   async function loadData() {
     setIsLoading(true);
@@ -230,6 +234,31 @@ export function UserManagement() {
     }
   }
 
+  const filteredUsers = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return users.filter((user) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        [
+          user.firstName,
+          user.lastName,
+          user.email,
+          user.tenant.name,
+          ...user.roles
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(normalizedSearch);
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' ? user.isActive : !user.isActive);
+      const matchesTenant = tenantFilter === 'all' || user.tenant.id === tenantFilter;
+
+      return matchesSearch && matchesStatus && matchesTenant;
+    });
+  }, [search, statusFilter, tenantFilter, users]);
+
   return (
     <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
       <SectionCard
@@ -365,15 +394,52 @@ export function UserManagement() {
         title="User directory"
         description="Searchable local user directory with edit, activation, and removal actions."
       >
+        <div className="mb-5 grid gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(2,minmax(0,0.8fr))]">
+          <input
+            className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search name, email, tenant, or role"
+          />
+          <select
+            className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'inactive')}
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
+          <select
+            className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+            value={tenantFilter}
+            onChange={(event) => setTenantFilter(event.target.value)}
+          >
+            <option value="all">All tenants</option>
+            {tenants.map((tenant) => (
+              <option key={tenant.id} value={tenant.id}>
+                {tenant.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {isLoading ? (
           <p className="text-sm text-admin-muted">Loading users...</p>
-        ) : users.length === 0 ? (
+        ) : filteredUsers.length === 0 ? (
           <p className="text-sm text-admin-muted">
             No users found. Add one to start managing access.
           </p>
         ) : (
           <div className="space-y-4">
-            {users.map((user) => (
+            <div className="flex flex-col gap-2 text-xs uppercase tracking-[0.18em] text-admin-muted sm:flex-row sm:items-center sm:justify-between">
+              <p>
+                Showing {filteredUsers.length} matching {filteredUsers.length === 1 ? 'user' : 'users'}
+              </p>
+              <p>Scrollable directory window</p>
+            </div>
+            <div className={`${userDirectoryWindowHeight} space-y-4 overflow-y-auto pr-1 overscroll-contain`}>
+            {filteredUsers.map((user) => (
               <article
                 key={user.id}
                 className="rounded-2xl border border-admin-border bg-slate-50 p-5"
@@ -445,6 +511,7 @@ export function UserManagement() {
                 </div>
               </article>
             ))}
+            </div>
           </div>
         )}
       </SectionCard>

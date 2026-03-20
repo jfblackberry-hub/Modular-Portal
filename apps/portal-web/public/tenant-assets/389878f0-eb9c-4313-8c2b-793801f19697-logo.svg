@@ -1,0 +1,60 @@
+<svg width="1200" height="320" viewBox="0 0 1200 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Real Health API Logo</title>
+  <desc id="desc">Modern SVG logo for Real Health API with a healthcare shield, check mark, and clean wordmark.</desc>
+
+  <defs>
+    <linearGradient id="shieldGradient" x1="40" y1="40" x2="240" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1D4ED8"></stop>
+      <stop offset="1" stop-color="#06B6D4"></stop>
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22C55E"></stop>
+      <stop offset="1" stop-color="#14B8A6"></stop>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.16"></feDropShadow>
+    </filter>
+  </defs>
+
+  <!-- Icon -->
+  <g transform="translate(36,40)" filter="url(#softShadow)">
+    <!-- Shield -->
+    <path d="M120 8C88 26 57 34 24 38V105C24 180 73 229 120 248C167 229 216 180 216 105V38C183 34 152 26 120 8Z" fill="url(#shieldGradient)"></path>
+
+    <!-- Inner circle -->
+    <circle cx="120" cy="110" r="62" fill="white" fill-opacity="0.14"></circle>
+
+    <!-- Cross -->
+    <rect x="111" y="68" width="18" height="84" rx="6" fill="white"></rect>
+    <rect x="78" y="101" width="84" height="18" rx="6" fill="white"></rect>
+
+    <!-- Check / data swoosh -->
+    <path d="M76 169C91 184 101 194 112 208C136 174 160 149 188 127" stroke="url(#accentGradient)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"></path>
+
+    <!-- Small API nodes -->
+    <circle cx="56" cy="56" r="8" fill="#93C5FD"></circle>
+    <circle cx="184" cy="52" r="8" fill="#67E8F9"></circle>
+    <circle cx="198" cy="174" r="8" fill="#86EFAC"></circle>
+    <path d="M64 60L90 78" stroke="#BFDBFE" stroke-width="4" stroke-linecap="round"></path>
+    <path d="M176 58L150 78" stroke="#A5F3FC" stroke-width="4" stroke-linecap="round"></path>
+    <path d="M190 168L168 154" stroke="#BBF7D0" stroke-width="4" stroke-linecap="round"></path>
+  </g>
+
+  <!-- Wordmark -->
+  <g transform="translate(300,78)">
+    <text x="0" y="78" font-family="Inter, Arial, Helvetica, sans-serif" font-size="64" font-weight="800" fill="#0F172A" letter-spacing="-1.5">
+      Real Health
+    </text>
+    <text x="0" y="146" font-family="Inter, Arial, Helvetica, sans-serif" font-size="52" font-weight="700" fill="#0EA5E9" letter-spacing="6">
+      API
+    </text>
+
+    <!-- Tagline -->
+    <text x="2" y="192" font-family="Inter, Arial, Helvetica, sans-serif" font-size="24" font-weight="500" fill="#475569" letter-spacing="0.8">
+      Connected coverage. Trusted payments. Modern healthcare exchange.
+    </text>
+
+    <!-- Accent line -->
+    <rect x="0" y="214" width="420" height="8" rx="4" fill="url(#accentGradient)"></rect>
+  </g>
+</svg>

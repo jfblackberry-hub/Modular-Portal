@@ -1,7 +1,7 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { SectionCard } from '../../components/section-card';
@@ -17,6 +17,7 @@ type Branding = {
   secondaryColor: string;
   logoUrl: string | null;
   faviconUrl: string | null;
+  customCss?: string | null;
   updatedAt?: string | null;
 };
 
@@ -175,7 +176,8 @@ export function TenantAdminSettings() {
     primaryColor: '#38bdf8',
     secondaryColor: '#ffffff',
     logoUrl: '',
-    faviconUrl: ''
+    faviconUrl: '',
+    customCss: ''
   });
   const [employerGroupBrandingForm, setEmployerGroupBrandingForm] = useState({
     employerGroupName: '',
@@ -221,6 +223,12 @@ export function TenantAdminSettings() {
   const [isCreatingIntegration, setIsCreatingIntegration] = useState(false);
   const [isCreatingWebhook, setIsCreatingWebhook] = useState(false);
   const [isAssigningRole, setIsAssigningRole] = useState(false);
+  const [removingRoleKey, setRemovingRoleKey] = useState('');
+  const [userSearch, setUserSearch] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [userRoleFilter, setUserRoleFilter] = useState('all');
+  const [roleAssignmentSearch, setRoleAssignmentSearch] = useState('');
+  const userDirectoryWindowHeight = 'max-h-[36rem]';
 
   async function loadSettings() {
     if (!getStoredAdminUserId()) {
@@ -254,15 +262,14 @@ export function TenantAdminSettings() {
       const availableEmployerKeys = payload.employerGroupBranding.availableEmployerKeys ?? [];
       if (!selectedEmployerKey && payload.employerGroupBranding.employerKey) {
         setSelectedEmployerKey(payload.employerGroupBranding.employerKey);
-      } else if (!selectedEmployerKey && availableEmployerKeys.length > 0) {
-        setSelectedEmployerKey(availableEmployerKeys[0]);
       }
       setBrandingForm({
         displayName: payload.branding.displayName,
         primaryColor: payload.branding.primaryColor,
         secondaryColor: payload.branding.secondaryColor,
         logoUrl: payload.branding.logoUrl ?? '',
-        faviconUrl: payload.branding.faviconUrl ?? ''
+        faviconUrl: payload.branding.faviconUrl ?? '',
+        customCss: payload.branding.customCss ?? ''
       });
       setEmployerGroupBrandingForm({
         employerGroupName: payload.employerGroupBranding.employerGroupName ?? '',
@@ -393,7 +400,8 @@ export function TenantAdminSettings() {
           primaryColor: brandingForm.primaryColor,
           secondaryColor: brandingForm.secondaryColor,
           logoUrl: brandingForm.logoUrl || null,
-          faviconUrl: brandingForm.faviconUrl || null
+          faviconUrl: brandingForm.faviconUrl || null,
+          customCss: brandingForm.customCss
         })
       });
 
@@ -688,6 +696,88 @@ export function TenantAdminSettings() {
     }
   }
 
+  async function handleRoleRemove(userId: string, roleCode: string) {
+    setError('');
+    setSuccess('');
+    const removalKey = `${userId}:${roleCode}`;
+    setRemovingRoleKey(removalKey);
+
+    try {
+      const role = settings?.roles.find((item) => item.code === roleCode);
+
+      if (!role) {
+        setError(`Role ${roleCode} is not available for removal.`);
+        return;
+      }
+
+      const response = await fetch(
+        `${apiBaseUrl}/api/tenant-admin/users/${userId}/roles/${role.id}${tenantQuery}`,
+        {
+          method: 'DELETE',
+          headers: getAdminAuthHeaders()
+        }
+      );
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setError(payload?.message ?? 'Unable to remove role.');
+        return;
+      }
+
+      setSuccess(`Removed ${roleCode} from user.`);
+      await loadSettings();
+    } catch {
+      setError('Unable to remove role.');
+    } finally {
+      setRemovingRoleKey('');
+    }
+  }
+
+  const filteredTenantUsers = useMemo(() => {
+    if (!settings) {
+      return [];
+    }
+
+    const normalizedSearch = userSearch.trim().toLowerCase();
+
+    return settings.users.filter((user) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        [
+          user.firstName,
+          user.lastName,
+          user.email,
+          ...user.roles
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(normalizedSearch);
+      const matchesStatus =
+        userStatusFilter === 'all' ||
+        (userStatusFilter === 'active' ? user.isActive : !user.isActive);
+      const matchesRole =
+        userRoleFilter === 'all' || user.roles.includes(userRoleFilter);
+
+      return matchesSearch && matchesStatus && matchesRole;
+    });
+  }, [settings, userRoleFilter, userSearch, userStatusFilter]);
+  const filteredRoleAssignmentUsers = useMemo(() => {
+    if (!settings) {
+      return [];
+    }
+
+    const normalizedSearch = roleAssignmentSearch.trim().toLowerCase();
+    if (!normalizedSearch) {
+      return settings.users;
+    }
+
+    return settings.users.filter((user) =>
+      [user.firstName, user.lastName, user.email].join(' ').toLowerCase().includes(normalizedSearch)
+    );
+  }, [roleAssignmentSearch, settings]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -859,6 +949,25 @@ export function TenantAdminSettings() {
                   }
                   placeholder="/logos/tenant.ico"
                 />
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-sm font-semibold text-admin-text">Custom portal CSS</p>
+                    <p className="mt-1 text-sm text-admin-muted">
+                      Paste a tenant-specific CSS override here to make it the default design across that tenant's portals.
+                    </p>
+                  </div>
+                  <textarea
+                    className="min-h-64 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 font-mono text-sm text-admin-text outline-none focus:border-admin-accent"
+                    value={brandingForm.customCss}
+                    onChange={(event) =>
+                      setBrandingForm((current) => ({
+                        ...current,
+                        customCss: event.target.value
+                      }))
+                    }
+                    placeholder=":root {\n  --tenant-primary-color: #0ea5a4;\n}\n\n.portal-card {\n  border-radius: 24px;\n}"
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={isSavingBranding}
@@ -1238,18 +1347,27 @@ export function TenantAdminSettings() {
               description="Assign existing roles to users in the current tenant."
             >
               <form className="space-y-4" onSubmit={handleRoleAssign}>
+                <input
+                  className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                  value={roleAssignmentSearch}
+                  onChange={(event) => setRoleAssignmentSearch(event.target.value)}
+                  placeholder="Search users before assigning a role"
+                />
                 <select
                   className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
                   value={selectedUserId}
                   onChange={(event) => setSelectedUserId(event.target.value)}
                   required
                 >
-                  {settings.users.map((user) => (
+                  {filteredRoleAssignmentUsers.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.firstName} {user.lastName} ({user.email})
                     </option>
                   ))}
                 </select>
+                <p className="text-xs uppercase tracking-[0.18em] text-admin-muted">
+                  {filteredRoleAssignmentUsers.length} matching {filteredRoleAssignmentUsers.length === 1 ? 'user' : 'users'} in role assignment list
+                </p>
                 <select
                   className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
                   value={selectedRoleId}
@@ -1270,6 +1388,21 @@ export function TenantAdminSettings() {
                   {isAssigningRole ? 'Assigning role...' : 'Assign role'}
                 </button>
               </form>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {settings.users
+                  .find((user) => user.id === selectedUserId)
+                  ?.roles.map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => void handleRoleRemove(selectedUserId, role)}
+                      disabled={removingRoleKey === `${selectedUserId}:${role}`}
+                      className="rounded-full border border-admin-border bg-white px-3 py-1 text-xs font-medium text-admin-text transition hover:border-rose-300 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {removingRoleKey === `${selectedUserId}:${role}` ? `Removing ${role}...` : `${role} Remove`}
+                    </button>
+                  )) ?? <span className="text-sm text-admin-muted">No roles assigned</span>}
+              </div>
             </SectionCard>
 
             <SectionCard
@@ -1317,8 +1450,51 @@ export function TenantAdminSettings() {
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-admin-muted">
                     Users
                   </h3>
-                  <div className="mt-3 space-y-3">
-                    {settings.users.map((user) => (
+                  <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1.4fr)_repeat(2,minmax(0,0.75fr))]">
+                    <input
+                      className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                      value={userSearch}
+                      onChange={(event) => setUserSearch(event.target.value)}
+                      placeholder="Search users by name, email, or role"
+                    />
+                    <select
+                      className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                      value={userStatusFilter}
+                      onChange={(event) =>
+                        setUserStatusFilter(event.target.value as 'all' | 'active' | 'inactive')
+                      }
+                    >
+                      <option value="all">All statuses</option>
+                      <option value="active">Active only</option>
+                      <option value="inactive">Inactive only</option>
+                    </select>
+                    <select
+                      className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                      value={userRoleFilter}
+                      onChange={(event) => setUserRoleFilter(event.target.value)}
+                    >
+                      <option value="all">All roles</option>
+                      {settings.roles.map((role) => (
+                        <option key={role.id} value={role.code}>
+                          {role.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mt-3">
+                    <div className="flex flex-col gap-2 text-xs uppercase tracking-[0.18em] text-admin-muted sm:flex-row sm:items-center sm:justify-between">
+                      <p>
+                        Showing {filteredTenantUsers.length} matching {filteredTenantUsers.length === 1 ? 'user' : 'users'}
+                      </p>
+                      <p>Scrollable directory window</p>
+                    </div>
+                  </div>
+                  <div className={`mt-3 ${userDirectoryWindowHeight} space-y-3 overflow-y-auto pr-1 overscroll-contain`}>
+                    {filteredTenantUsers.length === 0 ? (
+                      <p className="rounded-2xl border border-dashed border-admin-border px-4 py-5 text-sm text-admin-muted">
+                        No users match the current filters.
+                      </p>
+                    ) : filteredTenantUsers.map((user) => (
                       <div
                         key={user.id}
                         className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-3"
@@ -1328,8 +1504,25 @@ export function TenantAdminSettings() {
                         </p>
                         <p className="mt-1 text-sm text-admin-muted">{user.email}</p>
                         <p className="mt-2 text-xs uppercase tracking-wide text-admin-muted">
-                          Roles: {user.roles.length > 0 ? user.roles.join(', ') : 'none'}
+                          Roles:
                         </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {user.roles.length > 0 ? (
+                            user.roles.map((role) => (
+                              <button
+                                key={`${user.id}-${role}`}
+                                type="button"
+                                onClick={() => void handleRoleRemove(user.id, role)}
+                                disabled={removingRoleKey === `${user.id}:${role}`}
+                                className="rounded-full border border-admin-border bg-white px-3 py-1 text-xs font-medium text-admin-text transition hover:border-rose-300 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {removingRoleKey === `${user.id}:${role}` ? `Removing ${role}...` : `${role} Remove`}
+                              </button>
+                            ))
+                          ) : (
+                            <span className="text-sm text-admin-muted">No roles assigned</span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

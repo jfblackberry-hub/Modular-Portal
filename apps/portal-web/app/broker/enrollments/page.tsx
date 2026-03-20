@@ -1,5 +1,11 @@
-import { BrokerPlaceholderPage } from '../../../components/billing-enrollment/BrokerPlaceholderPage';
+import { BrokerEnrollmentsWorkspacePage } from '../../../components/billing-enrollment/BrokerEnrollmentsWorkspacePage';
+import { getBrokerPortfolioGroups, getBrokerTasks } from '../../../lib/broker-portfolio-data';
 
 export default function BrokerEnrollmentsPage() {
-  return <BrokerPlaceholderPage pageId="enrollments" />;
+  return (
+    <BrokerEnrollmentsWorkspacePage
+      groups={getBrokerPortfolioGroups()}
+      tasks={getBrokerTasks()}
+    />
+  );
 }

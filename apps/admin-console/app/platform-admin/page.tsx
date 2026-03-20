@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
 export default function PlatformAdminPage() {
-  redirect('/platform');
+  redirect('/admin/platform/health');
 }

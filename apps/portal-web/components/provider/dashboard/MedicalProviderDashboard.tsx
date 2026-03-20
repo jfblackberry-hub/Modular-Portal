@@ -1,7 +1,6 @@
 import type { ProviderPortalConfig } from '../../../config/providerPortalConfig';
 import { PortalHeroBanner } from '../../shared/portal-hero-banner';
 import { AuthorizationQueue } from './AuthorizationQueue';
-import { ProviderDashboardActions } from './ProviderDashboardActions';
 import { ClaimsFollowUpQueue } from './ClaimsFollowUpQueue';
 import { ProviderAlertsList } from './ProviderAlertsList';
 import { ProviderHeroBrandLockup } from './ProviderHeroBrandLockup';
@@ -9,64 +8,47 @@ import { ProviderContextBar } from './ProviderContextBar';
 import { ProviderHeroOverlay } from './ProviderHeroOverlay';
 import { ProviderMetricsRow } from './ProviderMetricsRow';
 import { ProviderResourcesRow } from './ProviderResourcesRow';
-
-function getQuickActionHref(config: ProviderPortalConfig, label: string, fallback: string) {
-  const action = config.quickActions.find((item) => item.label.toLowerCase() === label.toLowerCase());
-  return action?.href ?? fallback;
-}
+import { ProviderDashboardWorkspaceSection } from './ProviderDashboardWorkspaceSection';
 
 export function MedicalProviderDashboard({
   clinicLogoSrc,
   clinicName,
   config,
   imageSrc,
-  providerName
+  providerName,
+  variant
 }: {
   clinicLogoSrc: string;
   clinicName: string;
   config: ProviderPortalConfig;
   imageSrc: string;
   providerName: string;
+  variant: 'medical' | 'pharmacy' | 'dental' | 'vision';
 }) {
-  const quickActions = [
-    {
-      label: 'Verify Eligibility',
-      href: getQuickActionHref(config, 'Start eligibility check', '/provider/eligibility')
-    },
-    {
-      label: 'Submit Authorization',
-      href: getQuickActionHref(config, 'Create authorization', '/provider/authorizations')
-    },
-    {
-      label: 'Check Claim Status',
-      href: getQuickActionHref(config, 'Check claim status', '/provider/claims')
-    },
-    {
-      label: 'View Payments',
-      href: getQuickActionHref(config, 'View remits', '/provider/payments')
-    }
-  ];
-
   const metrics = [
     {
       label: 'Eligibility Checks Today',
       value: '42',
-      trend: '+8% vs yesterday'
+      trend: '+8% vs yesterday',
+      trendTone: 'positive' as const
     },
     {
       label: 'Pending Authorizations',
       value: '11',
-      trend: '+2 new requests'
+      trend: '+2 new requests',
+      trendTone: 'negative' as const
     },
     {
       label: 'Claims Requiring Follow-Up',
       value: '19',
-      trend: '5 due today'
+      trend: '5 due today',
+      trendTone: 'negative' as const
     },
     {
       label: 'Payments Posted Today',
       value: '8',
-      trend: '$84,220 total'
+      trend: '$84,220 total',
+      trendTone: 'positive' as const
     }
   ];
 
@@ -197,7 +179,6 @@ export function MedicalProviderDashboard({
   return (
     <div className="mx-auto w-full max-w-none space-y-3 pb-2">
       <PortalHeroBanner
-        eyebrow={config.displayName}
         title="Provider operations dashboard"
         description="Verify eligibility, track authorizations and claims, and keep operational queues moving in one workspace."
         contentFooter={<ProviderContextBar config={config} />}
@@ -209,7 +190,6 @@ export function MedicalProviderDashboard({
           />
         }
         cornerOverlayContent={<ProviderHeroBrandLockup clinicLogoSrc={clinicLogoSrc} clinicName={clinicName} />}
-        actions={<ProviderDashboardActions actions={quickActions} />}
         imageSrc={imageSrc}
         imageAlt="Provider dashboard hero banner"
         imageClassName="h-full min-h-[240px] sm:min-h-[290px] lg:min-h-[320px]"
@@ -218,6 +198,7 @@ export function MedicalProviderDashboard({
         priority
       />
       <ProviderMetricsRow metrics={metrics} />
+      <ProviderDashboardWorkspaceSection config={config} variant={variant} />
 
       <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-3">

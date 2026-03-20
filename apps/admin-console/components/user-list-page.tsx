@@ -1,7 +1,7 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { UserDetailDrawer } from './user-detail-drawer';
@@ -97,7 +97,13 @@ export function UserListPage({ scope }: { scope: Scope }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAssigningRole, setIsAssigningRole] = useState(false);
+  const [removingRoleCode, setRemovingRoleCode] = useState('');
   const [updatingUserId, setUpdatingUserId] = useState('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [tenantFilter, setTenantFilter] = useState('all');
+  const userDirectoryWindowHeight = 'max-h-[36rem]';
 
   async function loadData() {
     setIsLoading(true);
@@ -130,6 +136,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
           rolesResponse.json()
         ])) as [PlatformUsersPayload, TenantOption[], RoleOption[]];
 
+        const hydratedUsers = hydrateUsers(usersPayload);
         setUsers(hydrateUsers(usersPayload));
         setTenants(tenantsPayload);
         setRoles(rolesPayload);
@@ -137,6 +144,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
           ...current,
           tenantId: current.tenantId || tenantsPayload[0]?.id || ''
         }));
+        return hydratedUsers;
       } else {
         const response = await fetch(`${apiBaseUrl}/api/tenant-admin/settings${tenantQuery}`, {
           cache: 'no-store',
@@ -148,6 +156,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
         }
 
         const payload = (await response.json()) as TenantSettingsPayload;
+        const hydratedUsers = hydrateUsers(payload.users);
         setUsers(hydrateUsers(payload.users));
         setTenants([{ id: payload.tenant.id, name: payload.tenant.name }]);
         setRoles(payload.roles);
@@ -155,12 +164,14 @@ export function UserListPage({ scope }: { scope: Scope }) {
           ...current,
           tenantId: payload.tenant.id
         }));
+        return hydratedUsers;
       }
     } catch (nextError) {
       setUsers([]);
       setTenants([]);
       setRoles([]);
       setError(nextError instanceof Error ? nextError.message : 'Unable to load users.');
+      return [];
     } finally {
       setIsLoading(false);
     }
@@ -329,8 +340,8 @@ export function UserListPage({ scope }: { scope: Scope }) {
         throw new Error(payload?.message ?? 'Unable to assign role.');
       }
 
-      await loadData();
-      const refreshedUser = users.find((user) => user.id === selectedUser.id) ?? selectedUser;
+      const refreshedUsers = await loadData();
+      const refreshedUser = refreshedUsers.find((user) => user.id === selectedUser.id) ?? selectedUser;
       setSelectedUser(refreshedUser);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Unable to assign role.');
@@ -339,11 +350,84 @@ export function UserListPage({ scope }: { scope: Scope }) {
     }
   }
 
+  async function handleRemoveRole(roleCode: string) {
+    if (!selectedUser) {
+      return;
+    }
+
+    const role = roles.find((item) => item.code === roleCode);
+    if (!role) {
+      setError(`Role ${roleCode} is not available for removal.`);
+      return;
+    }
+
+    setRemovingRoleCode(roleCode);
+    setError('');
+
+    try {
+      const basePath =
+        scope === 'platform'
+          ? `${apiBaseUrl}/platform-admin/users/${selectedUser.id}/roles/${role.id}`
+          : `${apiBaseUrl}/api/tenant-admin/users/${selectedUser.id}/roles/${role.id}${tenantQuery}`;
+
+      const response = await fetch(basePath, {
+        method: 'DELETE',
+        headers: getAdminAuthHeaders()
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        throw new Error(payload?.message ?? 'Unable to remove role.');
+      }
+
+      const refreshedUsers = await loadData();
+      const refreshedUser = refreshedUsers.find((user) => user.id === selectedUser.id) ?? null;
+      setSelectedUser(refreshedUser);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Unable to remove role.');
+    } finally {
+      setRemovingRoleCode('');
+    }
+  }
+
   const title = scope === 'platform' ? 'User List' : 'Tenant Users';
   const description =
     scope === 'platform'
       ? 'Manage all users across tenants, including role assignment and account status.'
       : 'Manage users inside the active tenant, including role assignment and account status.';
+  const filteredUsers = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return users.filter((user) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        [
+          user.firstName,
+          user.lastName,
+          user.email,
+          user.tenant.name,
+          ...user.roles
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(normalizedSearch);
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' ? user.isActive : !user.isActive);
+      const matchesRole =
+        roleFilter === 'all' || user.roles.includes(roleFilter);
+      const matchesTenant =
+        tenantFilter === 'all' || user.tenant.id === tenantFilter;
+
+      return matchesSearch && matchesStatus && matchesRole && matchesTenant;
+    });
+  }, [roleFilter, search, statusFilter, tenantFilter, users]);
+  const roleOptions = useMemo(
+    () => Array.from(new Set(users.flatMap((user) => user.roles))).sort(),
+    [users]
+  );
 
   return (
     <div className="space-y-6">
@@ -379,14 +463,66 @@ export function UserListPage({ scope }: { scope: Scope }) {
         title="User directory"
         description="Includes create, edit, deactivate, and assign-role workflows."
       >
+        <div className="mb-5 grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.7fr))]">
+          <input
+            className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search name, email, tenant, or role"
+          />
+          <select
+            className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'inactive')}
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
+          <select
+            className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+            value={roleFilter}
+            onChange={(event) => setRoleFilter(event.target.value)}
+          >
+            <option value="all">All roles</option>
+            {roleOptions.map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
+          </select>
+          <select
+            className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+            value={tenantFilter}
+            onChange={(event) => setTenantFilter(event.target.value)}
+            disabled={scope !== 'platform'}
+          >
+            <option value="all">All tenants</option>
+            {tenants.map((tenant) => (
+              <option key={tenant.id} value={tenant.id}>
+                {tenant.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {isLoading ? (
           <p className="text-sm text-admin-muted">Loading users...</p>
-        ) : users.length === 0 ? (
+        ) : filteredUsers.length === 0 ? (
           <p className="text-sm text-admin-muted">No users available yet.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="space-y-3">
+            <div className="flex flex-col gap-2 text-xs uppercase tracking-[0.18em] text-admin-muted sm:flex-row sm:items-center sm:justify-between">
+              <p>
+                Showing {filteredUsers.length} matching {filteredUsers.length === 1 ? 'user' : 'users'}
+              </p>
+              <p>Scrollable directory window</p>
+            </div>
+            <div
+              className={`${userDirectoryWindowHeight} overflow-auto rounded-2xl border border-admin-border overscroll-contain`}
+            >
             <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-admin-border text-xs uppercase tracking-[0.2em] text-admin-muted">
+              <thead className="sticky top-0 z-10 border-b border-admin-border bg-white text-xs uppercase tracking-[0.2em] text-admin-muted">
                 <tr>
                   <th className="px-3 py-3">Name</th>
                   <th className="px-3 py-3">Email</th>
@@ -398,7 +534,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <tr key={user.id} className="border-b border-admin-border/70">
                     <td className="px-3 py-4 font-medium text-admin-text">
                       {user.firstName} {user.lastName}
@@ -452,6 +588,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
               </tbody>
             </table>
           </div>
+          </div>
         )}
       </SectionCard>
 
@@ -466,12 +603,14 @@ export function UserListPage({ scope }: { scope: Scope }) {
         selectedRoleId={selectedRoleId}
         isSubmitting={isSubmitting}
         isAssigningRole={isAssigningRole}
+        removingRoleCode={removingRoleCode}
         error={error}
         onClose={closeDrawer}
         onFormChange={setFormState}
         onSelectedRoleChange={setSelectedRoleId}
         onSubmit={handleSubmit}
         onAssignRole={() => void handleAssignRole()}
+        onRemoveRole={(roleCode) => void handleRemoveRole(roleCode)}
       />
     </div>
   );

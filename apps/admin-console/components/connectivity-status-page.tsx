@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { SectionCard } from './section-card';
+import { fetchAdminJsonCached } from '../lib/admin-client-data';
 import { apiBaseUrl, getAdminAuthHeaders } from '../lib/api-auth';
 
 type Scope = 'platform' | 'tenant';
@@ -31,12 +32,6 @@ type HealthPayload = {
       details?: Record<string, unknown>;
     }
   >;
-};
-
-type Tenant = {
-  id: string;
-  name: string;
-  slug: string;
 };
 
 type TenantSettingsPayload = {
@@ -170,110 +165,6 @@ function getFailureSignals(events: AuditEvent[], matcher: (event: AuditEvent) =>
   };
 }
 
-function buildPlatformRows(
-  health: HealthPayload | null,
-  connectorsByTenant: Array<{ tenant: Tenant; connectors: Connector[]; auditEvents: AuditEvent[] }>
-): ConnectivityRow[] {
-  const allConnectors = connectorsByTenant.flatMap((item) => item.connectors);
-  const allAuditEvents = connectorsByTenant.flatMap((item) => item.auditEvents);
-
-  const families: Array<{ label: string; filter: (connector: Connector) => boolean }> = [
-    {
-      label: 'EDI',
-      filter: (connector) => getConnectionFamily(connector) === 'EDI'
-    },
-    {
-      label: 'API Gateway',
-      filter: (connector) => connector.adapterKey.toLowerCase().includes('rest-api')
-    },
-    {
-      label: 'Event Bus',
-      filter: (connector) => connector.adapterKey.toLowerCase().includes('webhook')
-    },
-    {
-      label: 'External Vendor APIs',
-      filter: (connector) => getConnectionFamily(connector) === 'External Vendor APIs'
-    }
-  ];
-
-  const connectorRows = families.map((family) => {
-    const connectors = allConnectors.filter(family.filter);
-    const { lastFailure, errorCount } = getFailureSignals(
-      allAuditEvents,
-      (event) =>
-        event.resourceType.toLowerCase() === 'connector' &&
-        connectors.some((connector) => connector.id === event.resourceId)
-    );
-
-    return {
-      connection: family.label,
-      scope: 'Platform',
-      status: connectors.length
-        ? getWorstStatus(connectors.map((connector) => toStatusLabel(connector.status)))
-        : 'Not Configured',
-      lastSuccess: getLatest(
-        connectors.map((connector) => connector.lastSyncAt ?? connector.lastHealthCheckAt)
-      ),
-      lastFailure,
-      errorCount
-    } satisfies ConnectivityRow;
-  });
-
-  const apiGatewayStatus = health ? toStatusLabel(health.status === 'ok' ? 'ok' : 'degraded') : 'Not Configured';
-  const integrationsCheck = health?.checks.integrations;
-  const redisCheck = health?.checks.redis;
-
-  return [
-    {
-      connection: 'API Gateway',
-      scope: 'Platform',
-      status: apiGatewayStatus,
-      lastSuccess:
-        health && health.status === 'ok' ? health.timestamp : connectorRows.find((row) => row.connection === 'API Gateway')?.lastSuccess ?? null,
-      lastFailure:
-        health && health.status !== 'ok' ? health.timestamp : connectorRows.find((row) => row.connection === 'API Gateway')?.lastFailure ?? null,
-      errorCount: connectorRows.find((row) => row.connection === 'API Gateway')?.errorCount ?? 0
-    },
-    {
-      connection: 'Event Bus',
-      scope: 'Platform',
-      status: redisCheck ? toStatusLabel(redisCheck.status) : 'Not Configured',
-      lastSuccess: redisCheck?.status === 'pass' ? health?.timestamp ?? null : connectorRows.find((row) => row.connection === 'Event Bus')?.lastSuccess ?? null,
-      lastFailure: redisCheck?.status === 'fail' ? health?.timestamp ?? null : connectorRows.find((row) => row.connection === 'Event Bus')?.lastFailure ?? null,
-      errorCount:
-        (redisCheck?.status === 'fail' ? 1 : 0) +
-        (connectorRows.find((row) => row.connection === 'Event Bus')?.errorCount ?? 0)
-    },
-    {
-      connection: 'EDI',
-      scope: 'Platform',
-      status: connectorRows.find((row) => row.connection === 'EDI')?.status ?? 'Not Configured',
-      lastSuccess: connectorRows.find((row) => row.connection === 'EDI')?.lastSuccess ?? null,
-      lastFailure: connectorRows.find((row) => row.connection === 'EDI')?.lastFailure ?? null,
-      errorCount: connectorRows.find((row) => row.connection === 'EDI')?.errorCount ?? 0
-    },
-    {
-      connection: 'External Vendor APIs',
-      scope: 'Platform',
-      status: integrationsCheck
-        ? getWorstStatus([
-            toStatusLabel(integrationsCheck.status),
-            connectorRows.find((row) => row.connection === 'External Vendor APIs')?.status ?? 'Not Configured'
-          ])
-        : connectorRows.find((row) => row.connection === 'External Vendor APIs')?.status ?? 'Not Configured',
-      lastSuccess:
-        connectorRows.find((row) => row.connection === 'External Vendor APIs')?.lastSuccess ??
-        (integrationsCheck?.status === 'pass' ? health?.timestamp ?? null : null),
-      lastFailure:
-        connectorRows.find((row) => row.connection === 'External Vendor APIs')?.lastFailure ??
-        (integrationsCheck?.status === 'fail' ? health?.timestamp ?? null : null),
-      errorCount:
-        (connectorRows.find((row) => row.connection === 'External Vendor APIs')?.errorCount ?? 0) +
-        (integrationsCheck?.status === 'fail' ? 1 : 0)
-    }
-  ];
-}
-
 function buildTenantRows(
   tenantName: string,
   health: HealthPayload | null,
@@ -355,82 +246,37 @@ export function ConnectivityStatusPage({ scope }: { scope: Scope }) {
 
     async function loadRows() {
       try {
-        const healthResponse = await fetch(`${apiBaseUrl}/health`, {
-          cache: 'no-store'
-        });
-
-        if (!healthResponse.ok) {
-          throw new Error('Unable to load connectivity health.');
-        }
-
-        const health = (await healthResponse.json()) as HealthPayload;
-
         if (scope === 'platform') {
-          const tenantsResponse = await fetch(`${apiBaseUrl}/platform-admin/tenants`, {
-            cache: 'no-store',
-            headers: getAdminAuthHeaders()
-          });
-
-          if (!tenantsResponse.ok) {
-            throw new Error('Unable to load platform tenant connectivity.');
-          }
-
-          const tenants = (await tenantsResponse.json()) as Tenant[];
-          const connectorsByTenant = await Promise.all(
-            tenants.map(async (tenant) => {
-              const [settingsResponse, auditResponse] = await Promise.all([
-                fetch(`${apiBaseUrl}/api/tenant-admin/settings?tenant_id=${tenant.id}`, {
-                  cache: 'no-store',
-                  headers: getAdminAuthHeaders()
-                }),
-                fetch(`${apiBaseUrl}/platform-admin/audit/events?tenant_id=${tenant.id}&page_size=25`, {
-                  cache: 'no-store',
-                  headers: getAdminAuthHeaders()
-                })
-              ]);
-
-              if (!settingsResponse.ok || !auditResponse.ok) {
-                throw new Error('Unable to load tenant connectivity details.');
-              }
-
-              const [settingsPayload, auditPayload] = (await Promise.all([
-                settingsResponse.json(),
-                auditResponse.json()
-              ])) as [TenantSettingsPayload, AuditResponse];
-
-              return {
-                tenant,
-                connectors: settingsPayload.integrations,
-                auditEvents: auditPayload.items
-              };
-            })
+          const payload = await fetchAdminJsonCached<{
+            health: HealthPayload;
+            rows: ConnectivityRow[];
+          }>(
+            `${apiBaseUrl}/platform-admin/connectivity/status`,
+            {
+              headers: getAdminAuthHeaders(),
+              ttlMs: 20_000
+            }
           );
 
           if (!isMounted) {
             return;
           }
 
-          setRows(buildPlatformRows(health, connectorsByTenant));
+          setRows(payload.rows);
         } else {
-          const [settingsResponse, auditResponse] = await Promise.all([
-            fetch(`${apiBaseUrl}/api/tenant-admin/settings`, {
-              cache: 'no-store',
-              headers: getAdminAuthHeaders()
+          const health = await fetchAdminJsonCached<HealthPayload>(`${apiBaseUrl}/health`, {
+            ttlMs: 20_000
+          });
+          const [settingsPayload, auditPayload] = await Promise.all([
+            fetchAdminJsonCached<TenantSettingsPayload>(`${apiBaseUrl}/api/tenant-admin/settings`, {
+              headers: getAdminAuthHeaders(),
+              ttlMs: 20_000
             }),
-            fetch(`${apiBaseUrl}/audit/events?page_size=25`, {
-              cache: 'no-store',
-              headers: getAdminAuthHeaders()
+            fetchAdminJsonCached<AuditResponse>(`${apiBaseUrl}/audit/events?page_size=25`, {
+              headers: getAdminAuthHeaders(),
+              ttlMs: 20_000
             })
           ]);
-
-          if (!settingsResponse.ok || !auditResponse.ok) {
-            throw new Error('Unable to load tenant connectivity.');
-          }
-
-          const [settingsPayload, auditPayload] = (await Promise.all([
-            settingsResponse.json(),
-            auditResponse.json()
-          ])) as [TenantSettingsPayload, AuditResponse];
 
           if (!isMounted) {
             return;

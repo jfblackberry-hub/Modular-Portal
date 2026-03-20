@@ -10,6 +10,7 @@ type Step = 1 | 2 | 3 | 4;
 
 export function BrokerNewQuoteFlowPage({ brokerName }: { brokerName: string }) {
   const intakeOptions = getBrokerQuoteIntakeOptions();
+  const sampleCensusDownloadPath = '/mock-data/broker-quote-sample-census.csv';
   const [step, setStep] = useState<Step>(1);
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [prospectName, setProspectName] = useState('');
@@ -204,6 +205,18 @@ export function BrokerNewQuoteFlowPage({ brokerName }: { brokerName: string }) {
                 <p className="mt-2 text-xs text-[var(--text-muted)]">
                   File selection is mocked for this sprint, but the upload step is represented in the workflow.
                 </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <a
+                    href={sampleCensusDownloadPath}
+                    download
+                    className="inline-flex min-h-10 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    Download sample census
+                  </a>
+                  <span className="inline-flex min-h-10 items-center rounded-full border border-[var(--border-subtle)] bg-white px-4 py-2 text-xs font-medium text-[var(--text-secondary)]">
+                    12 employees · CSV format · Coastal Tech Solutions
+                  </span>
+                </div>
               </div>
             </label>
           ) : null}

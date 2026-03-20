@@ -31,11 +31,13 @@ function formatDate(value: string) {
 }
 
 export function EnrollmentActivityPendingList({
+  embedded = false,
   requests,
   requestTypes,
   plans,
   departments
 }: {
+  embedded?: boolean;
   requests: EnrollmentRequestRecord[];
   requestTypes: EnrollmentRequestType[];
   plans: string[];
@@ -96,15 +98,17 @@ export function EnrollmentActivityPendingList({
 
   return (
     <div className="space-y-5">
-      <section className="portal-card p-6 sm:p-8">
-        <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">Enrollment Activity</p>
-        <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">
-          Pending Enrollments Queue
-        </h1>
-        <p className="mt-3 max-w-3xl text-[15px] leading-7 text-[var(--text-secondary)]">
-          Review enrollment requests that require approval, correction, or manual intervention.
-        </p>
-      </section>
+      {embedded ? null : (
+        <section className="portal-card p-6 sm:p-8">
+          <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">Enrollment Activity</p>
+          <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">
+            Pending Enrollments Queue
+          </h1>
+          <p className="mt-3 max-w-3xl text-[15px] leading-7 text-[var(--text-secondary)]">
+            Review enrollment requests that require approval, correction, or manual intervention.
+          </p>
+        </section>
+      )}
 
       <section className="portal-card p-5">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-8">

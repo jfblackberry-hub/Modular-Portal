@@ -1,0 +1,276 @@
+/*
+  Neon Maximalist Test Theme
+  High-saturation test stylesheet for dramatic tenant branding experiments.
+  Load after the app's default CSS or paste into tenant customCss.
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;700&family=Bungee:wght@400&display=swap');
+
+:root {
+  color-scheme: light;
+  --primary-900: #240046;
+  --primary-700: #7b2cbf;
+  --primary-600: #c112f0;
+  --primary-500: #ff4ecd;
+  --success-700: #007f5f;
+  --success-500: #00b894;
+  --accent-teal-500: #00f5d4;
+  --bg-page: #fff6fe;
+  --bg-card: rgba(255, 255, 255, 0.74);
+  --border-subtle: rgba(255, 0, 200, 0.24);
+  --text-primary: #240046;
+  --text-secondary: #5f0f88;
+  --text-muted: #7b5ea7;
+  --danger-600: #ff006e;
+  --warning-600: #fb5607;
+  --tenant-primary: #ff006e;
+  --tenant-secondary: #00f5d4;
+  --tenant-font: "Outfit", "Space Grotesk", "Aptos", sans-serif;
+  --tenant-primary-color: #ff006e;
+  --tenant-primary-soft-color: rgba(255, 0, 110, 0.18);
+  --tenant-secondary-color: #00f5d4;
+  --tenant-secondary-soft-color: rgba(0, 245, 212, 0.18);
+}
+
+html {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255, 0, 110, 0.28), transparent 18rem),
+    radial-gradient(circle at 88% 14%, rgba(58, 12, 163, 0.26), transparent 18rem),
+    radial-gradient(circle at 50% 100%, rgba(0, 245, 212, 0.22), transparent 24rem),
+    #fff6fe;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(255, 0, 110, 0.22), transparent 22rem),
+    radial-gradient(circle at top right, rgba(131, 56, 236, 0.2), transparent 24rem),
+    radial-gradient(circle at bottom left, rgba(251, 86, 7, 0.18), transparent 26rem),
+    linear-gradient(135deg, #fff7fd 0%, #fff0fb 38%, #eefcff 100%);
+  color: var(--text-primary);
+  font-family: var(--tenant-font);
+}
+
+h1,
+h2,
+h3,
+[class*="text-4xl"],
+[class*="text-5xl"],
+[class*="text-6xl"] {
+  font-family: "Bungee", "Outfit", sans-serif;
+  letter-spacing: 0.01em;
+}
+
+a,
+button {
+  transition:
+    transform 160ms ease,
+    filter 160ms ease,
+    box-shadow 160ms ease;
+}
+
+a:hover,
+button:hover {
+  transform: translateY(-2px) scale(1.01);
+  filter: saturate(1.15);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(0, 245, 212, 0.46);
+  outline-offset: 3px;
+}
+
+.portal-shell-gradient {
+  background:
+    linear-gradient(120deg, #ff006e 0%, #8338ec 34%, #3a0ca3 68%, #00f5d4 100%),
+    linear-gradient(180deg, #ff006e, #3a0ca3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 24px 54px rgba(131, 56, 236, 0.22);
+}
+
+.portal-card,
+[class*="bg-admin-panel"],
+[class*="border-admin-border"][class*="bg-white"],
+[class*="border-admin-border"][class*="bg-slate-50"] {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.68)) !important;
+  border-color: rgba(255, 0, 110, 0.18) !important;
+  border-radius: 24px !important;
+  box-shadow:
+    0 18px 38px rgba(58, 12, 163, 0.14),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset !important;
+  backdrop-filter: blur(18px);
+}
+
+.tenant-side-nav,
+.tenant-side-nav--mobile {
+  background:
+    linear-gradient(180deg, rgba(43, 0, 79, 0.9), rgba(85, 12, 149, 0.88) 52%, rgba(255, 0, 110, 0.82) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 24px 48px rgba(58, 12, 163, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+.tenant-side-nav__header {
+  border-bottom-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.tenant-side-nav__title,
+.tenant-side-nav__description,
+.tenant-side-nav__item,
+.tenant-side-nav__item-label,
+.tenant-side-nav__item-description {
+  color: #fdf4ff !important;
+}
+
+.tenant-side-nav__section-title {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.tenant-side-nav__item {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #fff7fb !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.tenant-side-nav__item-label,
+.tenant-side-nav__item--mobile {
+  color: #ffffff !important;
+  font-family: "Space Grotesk", "Outfit", sans-serif !important;
+  font-weight: 700 !important;
+}
+
+.tenant-side-nav__item-description {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.tenant-side-nav__item:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(0, 245, 212, 0.4) !important;
+}
+
+.tenant-side-nav__item--active {
+  background: linear-gradient(135deg, rgba(255, 0, 110, 0.9), rgba(131, 56, 236, 0.88), rgba(0, 245, 212, 0.82)) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+.tenant-side-nav__item--active .tenant-side-nav__item-label,
+.tenant-side-nav__item--active .tenant-side-nav__item-description,
+.tenant-side-nav__item--active.tenant-side-nav__item--mobile {
+  color: #ffffff !important;
+}
+
+.portal-input,
+input,
+select,
+textarea {
+  border-radius: 18px !important;
+  border-color: rgba(131, 56, 236, 0.22) !important;
+  background: rgba(255, 255, 255, 0.84) !important;
+  color: #240046 !important;
+  font-family: "Space Grotesk", "Outfit", sans-serif !important;
+}
+
+.portal-input:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(255, 0, 110, 0.72) !important;
+  box-shadow: 0 0 0 4px rgba(255, 0, 110, 0.12) !important;
+  outline: none;
+}
+
+.portal-data-table thead th,
+table thead th {
+  background: linear-gradient(180deg, rgba(255, 230, 250, 0.96), rgba(232, 255, 251, 0.92)) !important;
+  color: #9d174d !important;
+}
+
+[class*="bg-admin-bg"] {
+  background:
+    radial-gradient(circle at 10% 10%, rgba(255, 0, 110, 0.16), transparent 18rem),
+    radial-gradient(circle at 90% 10%, rgba(131, 56, 236, 0.16), transparent 20rem),
+    radial-gradient(circle at 50% 100%, rgba(0, 245, 212, 0.14), transparent 20rem),
+    linear-gradient(180deg, #fff7fd 0%, #f9f1ff 100%) !important;
+}
+
+[class*="text-admin-accent"] {
+  color: #ff006e !important;
+}
+
+[class*="text-admin-text"] {
+  color: #240046 !important;
+}
+
+[class*="text-admin-muted"] {
+  color: #7b5ea7 !important;
+}
+
+[class*="border-admin-border"] {
+  border-color: rgba(131, 56, 236, 0.18) !important;
+}
+
+[class*="bg-admin-accent"],
+.portal-skip-link,
+a[class*="bg-[var(--tenant-primary-color)]"],
+button[class*="bg-[var(--tenant-primary-color)]"] {
+  background: linear-gradient(135deg, #ff006e 0%, #ff4ecd 34%, #8338ec 68%, #00f5d4 100%) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  box-shadow: 0 16px 36px rgba(255, 0, 110, 0.3);
+}
+
+aside[class*="bg-slate-950"] {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 0, 110, 0.24), transparent 16rem),
+    radial-gradient(circle at 80% 100%, rgba(0, 245, 212, 0.18), transparent 18rem),
+    linear-gradient(180deg, #190028 0%, #240046 42%, #3a0ca3 100%) !important;
+  border-right-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+aside[class*="bg-slate-950"] h1,
+aside[class*="bg-slate-950"] [class*="tracking-tight"] {
+  font-family: "Bungee", "Outfit", sans-serif !important;
+}
+
+aside[class*="bg-slate-950"] [class*="bg-white/5"],
+aside[class*="bg-slate-950"] [class*="bg-white/[0.03]"] {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+header.sticky {
+  background: rgba(255, 247, 253, 0.8) !important;
+  border-bottom-color: rgba(255, 0, 110, 0.12) !important;
+  backdrop-filter: blur(18px);
+}
+
+[class*="bg-emerald-100"] {
+  background: rgba(0, 184, 148, 0.16) !important;
+  color: #047857 !important;
+}
+
+[class*="bg-amber-100"] {
+  background: rgba(251, 86, 7, 0.16) !important;
+  color: #c2410c !important;
+}
+
+[class*="bg-rose-100"] {
+  background: rgba(255, 0, 110, 0.14) !important;
+  color: #be123c !important;
+}
+
+[class*="bg-sky-100"] {
+  background: rgba(0, 245, 212, 0.16) !important;
+  color: #0f766e !important;
+}
+
+.portal-card strong,
+.portal-card h2,
+.portal-card h3,
+section h2 {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}

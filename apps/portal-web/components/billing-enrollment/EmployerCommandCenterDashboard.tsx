@@ -12,6 +12,7 @@ import { getNotificationsTaskSummaryForTenant } from '../../lib/employer-notific
 import { getLatestImportSummaryForTenant } from '../../lib/hris-census-import-data';
 import { getOpenEnrollmentSummaryForTenant } from '../../lib/open-enrollment-data';
 import { EmptyState, StatusBadge } from '../portal-ui';
+import { EmployerDashboardWorkspaceSection } from './EmployerDashboardWorkspaceSection';
 
 type DashboardMode = 'live' | 'mock' | 'empty' | 'error';
 
@@ -94,14 +95,6 @@ type EmployerDashboardData = {
     integrationsConfigured: number;
   };
 };
-
-const primaryActions = [
-  { label: 'Add Employee', href: '/dashboard/billing-enrollment/enrollment/start' },
-  { label: 'Upload Census File', href: '/dashboard/billing-enrollment/census-import' },
-  { label: 'Review Enrollments', href: '/dashboard/billing-enrollment/enrollment/status' },
-  { label: 'View Billing', href: '/dashboard/billing-enrollment/billing-overview' },
-  { label: 'Run Reports', href: '/dashboard/billing-enrollment/reports' }
-] as const;
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-US', {
@@ -333,9 +326,6 @@ export function EmployerCommandCenterDashboard({
   return (
     <div className="space-y-5" aria-busy={isLoading}>
       <section className="portal-card p-6 sm:p-8">
-        <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">
-          Enrollment & Billing
-        </p>
         <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">
           Employer Command Center
         </h1>
@@ -346,19 +336,11 @@ export function EmployerCommandCenterDashboard({
 
       <section className="portal-card p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Primary Actions</h2>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Workspaces</h2>
           <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Action Bar</p>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          {primaryActions.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="inline-flex min-h-14 items-center justify-center rounded-2xl border border-[var(--tenant-primary-color)] bg-white px-4 py-3 text-center text-sm font-semibold text-[var(--tenant-primary-color)] transition hover:bg-[var(--tenant-primary-soft-color)]"
-            >
-              {item.label}
-            </Link>
-          ))}
+        <div className="mt-4">
+          <EmployerDashboardWorkspaceSection />
         </div>
       </section>
 

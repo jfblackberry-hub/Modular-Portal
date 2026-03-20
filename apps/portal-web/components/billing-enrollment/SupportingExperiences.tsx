@@ -606,7 +606,7 @@ export function NoticesExperience() {
   );
 }
 
-export function SupportExperience() {
+export function SupportExperience({ embedded = false }: { embedded?: boolean } = {}) {
   const [state, setState] = useState<LoadState>('loading');
   const [error, setError] = useState('');
   const [contextTopic, setContextTopic] = useState('topic-enrollment');
@@ -650,11 +650,13 @@ export function SupportExperience() {
 
   return (
     <div className="space-y-5">
-      <section className="portal-card p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--tenant-primary-color)]">Support</p>
-        <h1 className="mt-2 text-3xl font-semibold text-[var(--text-primary)]">Billing & Enrollment Support Center</h1>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]">Context-aware help, FAQ entry points, secure messaging placeholder, and case status placeholders.</p>
-      </section>
+      {embedded ? null : (
+        <section className="portal-card p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--tenant-primary-color)]">Support</p>
+          <h1 className="mt-2 text-3xl font-semibold text-[var(--text-primary)]">Billing & Enrollment Support Center</h1>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">Context-aware help, FAQ entry points, secure messaging placeholder, and case status placeholders.</p>
+        </section>
+      )}
 
       {state === 'loading' ? <LoadingBlock title="Support" /> : null}
       {state === 'error' ? <EmptyState title="Unable to load support" description={error} /> : null}

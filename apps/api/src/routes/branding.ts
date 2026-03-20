@@ -18,6 +18,7 @@ type UpdateBrandingBody = {
   secondaryColor?: string;
   logoUrl?: string;
   faviconUrl?: string;
+  customCss?: string;
 };
 
 export async function brandingRoutes(app: FastifyInstance) {

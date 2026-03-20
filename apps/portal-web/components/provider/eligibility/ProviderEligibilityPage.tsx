@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 
 import type {
@@ -120,10 +122,12 @@ function getRelatedActionHref(config: ProviderPortalConfig, fallback: string, id
 
 export function ProviderEligibilityPage({
   config,
-  variant
+  variant,
+  embedded = false
 }: {
   config: ProviderPortalConfig;
   variant: ProviderPortalVariant;
+  embedded?: boolean;
 }) {
   const page = getEligibilityPageConfig(variant);
 
@@ -159,11 +163,13 @@ export function ProviderEligibilityPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow={`${config.displayName}`}
-        title={page.title}
-        description={page.description}
-      />
+      {embedded ? null : (
+        <PageHeader
+          eyebrow={`${config.displayName}`}
+          title={page.title}
+          description={page.description}
+        />
+      )}
 
       <SurfaceCard title="Patient Search" description="Search by member demographics and service date.">
         <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

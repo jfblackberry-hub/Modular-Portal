@@ -238,10 +238,12 @@ function ClaimDetailModal({
 
 export function ProviderClaimsPage({
   config,
-  variant
+  variant,
+  embedded = false
 }: {
   config: ProviderPortalConfig;
   variant: ProviderPortalVariant;
+  embedded?: boolean;
 }) {
   const [selectedClaim, setSelectedClaim] = useState<ClaimRow | null>(null);
 
@@ -260,11 +262,13 @@ export function ProviderClaimsPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow={config.displayName}
-        title={pageTitle}
-        description="Search claims, review adjudication details, and take the next claims action quickly."
-      />
+      {embedded ? null : (
+        <PageHeader
+          eyebrow={config.displayName}
+          title={pageTitle}
+          description="Search claims, review adjudication details, and take the next claims action quickly."
+        />
+      )}
 
       <SurfaceCard title="Claim Search" description="Filter claims by identifiers, dates, status, and provider context.">
         <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

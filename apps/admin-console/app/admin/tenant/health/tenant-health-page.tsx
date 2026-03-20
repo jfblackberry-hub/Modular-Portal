@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { SectionCard } from '../../../../components/section-card';
+import { fetchAdminJsonCached } from '../../../../lib/admin-client-data';
 import { apiBaseUrl, getAdminAuthHeaders } from '../../../../lib/api-auth';
 
 type Branding = {
@@ -79,6 +81,13 @@ type ChecklistItem = {
   detail: string;
 };
 
+type CatalogMetadata = {
+  entryKey: string;
+  label: string;
+  vendor: string;
+  category: string;
+};
+
 function formatTimestamp(value: string | null) {
   if (!value) {
     return 'No activity recorded';
@@ -105,6 +114,44 @@ function getConnectionStatus(connectors: Connector[]) {
   }
 
   return 'Critical';
+}
+
+function getStatusTone(status: string) {
+  const normalized = status.toLowerCase();
+
+  if (normalized.includes('healthy') || normalized.includes('active')) {
+    return 'bg-emerald-100 text-emerald-700';
+  }
+
+  if (normalized.includes('warning')) {
+    return 'bg-amber-100 text-amber-700';
+  }
+
+  return 'bg-rose-100 text-rose-700';
+}
+
+function getCatalogMetadata(config: Record<string, unknown>) {
+  const catalogCandidate = config.catalog;
+  if (
+    typeof catalogCandidate !== 'object' ||
+    catalogCandidate === null ||
+    Array.isArray(catalogCandidate)
+  ) {
+    return null;
+  }
+
+  const catalog = catalogCandidate as Record<string, unknown>;
+  const entryKey = typeof catalog.entryKey === 'string' ? catalog.entryKey.trim() : '';
+  if (!entryKey) {
+    return null;
+  }
+
+  return {
+    entryKey,
+    label: typeof catalog.label === 'string' ? catalog.label : entryKey,
+    vendor: typeof catalog.vendor === 'string' ? catalog.vendor : 'Unknown',
+    category: typeof catalog.category === 'string' ? catalog.category : 'Unclassified'
+  } satisfies CatalogMetadata;
 }
 
 function buildChecklist(settings: SettingsPayload): ChecklistItem[] {
@@ -199,25 +246,16 @@ export function TenantHealthPage() {
 
     async function loadTenantHealth() {
       try {
-        const [settingsResponse, auditResponse] = await Promise.all([
-          fetch(`${apiBaseUrl}/api/tenant-admin/settings`, {
-            cache: 'no-store',
-            headers: getAdminAuthHeaders()
+        const [settingsPayload, auditPayload] = await Promise.all([
+          fetchAdminJsonCached<SettingsPayload>(`${apiBaseUrl}/api/tenant-admin/settings`, {
+            headers: getAdminAuthHeaders(),
+            ttlMs: 20_000
           }),
-          fetch(`${apiBaseUrl}/audit/events?page_size=8`, {
-            cache: 'no-store',
-            headers: getAdminAuthHeaders()
+          fetchAdminJsonCached<AuditResponse>(`${apiBaseUrl}/audit/events?page_size=8`, {
+            headers: getAdminAuthHeaders(),
+            ttlMs: 20_000
           })
         ]);
-
-        if (!settingsResponse.ok || !auditResponse.ok) {
-          throw new Error('Unable to load tenant health overview.');
-        }
-
-        const [settingsPayload, auditPayload] = (await Promise.all([
-          settingsResponse.json(),
-          auditResponse.json()
-        ])) as [SettingsPayload, AuditResponse];
 
         if (!isMounted) {
           return;
@@ -259,6 +297,21 @@ export function TenantHealthPage() {
   const alerts = settings ? buildAlerts(settings, events) : [];
   const activeUsers = settings?.users.filter((user) => user.isActive).length ?? 0;
   const connectionStatus = settings ? getConnectionStatus(settings.integrations) : '--';
+  const appliedApis = settings
+    ? settings.integrations
+        .map((connector) => ({
+          connector,
+          catalog: getCatalogMetadata(connector.config)
+        }))
+        .filter(
+          (
+            item
+          ): item is {
+            connector: Connector;
+            catalog: CatalogMetadata;
+          } => Boolean(item.catalog)
+        )
+    : [];
   const configurationCompleteness = checklist.length
     ? `${Math.round((checklist.filter((item) => item.complete).length / checklist.length) * 100)}%`
     : '--';
@@ -321,6 +374,124 @@ export function TenantHealthPage() {
           </div>
         ))}
       </div>
+
+      <SectionCard
+        title="API / Connectivity"
+        description="Visible status for tenant integrations, webhooks, and API-dependent connectivity from the health landing page."
+      >
+        {isLoading ? (
+          <p className="text-sm text-admin-muted">Loading API and connectivity status...</p>
+        ) : !settings ? (
+          <p className="text-sm text-admin-muted">No API or connectivity details available.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-admin-muted">
+                  Overall Status
+                </p>
+                <div className="mt-3">
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusTone(connectionStatus)}`}>
+                    {connectionStatus}
+                  </span>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-admin-muted">
+                  Active Integrations
+                </p>
+                <p className="mt-3 text-2xl font-semibold text-admin-text">
+                  {settings.integrations.filter((connector) => connector.status.toUpperCase() === 'ACTIVE').length}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-admin-muted">
+                  Catalog APIs
+                </p>
+                <p className="mt-3 text-2xl font-semibold text-admin-text">
+                  {appliedApis.length}
+                </p>
+              </div>
+            </div>
+
+            {appliedApis.length > 0 ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm font-semibold text-admin-text">Applied API templates</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-admin-muted">
+                    Shared catalog deployments
+                  </p>
+                </div>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {appliedApis.slice(0, 6).map(({ connector, catalog }) => (
+                    <article
+                      key={connector.id}
+                      className="rounded-2xl border border-admin-border bg-white px-4 py-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold text-admin-text">{catalog.label}</p>
+                          <p className="mt-1 text-sm text-admin-muted">
+                            {catalog.vendor} · {catalog.category}
+                          </p>
+                          <p className="mt-2 text-sm text-admin-muted">{connector.name}</p>
+                        </div>
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusTone(connector.status)}`}
+                        >
+                          {connector.status}
+                        </span>
+                      </div>
+                      <div className="mt-3 grid gap-2 text-sm text-admin-muted md:grid-cols-2">
+                        <p>Last sync: {formatTimestamp(connector.lastSyncAt)}</p>
+                        <p>Health check: {formatTimestamp(connector.lastHealthCheckAt)}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="grid gap-3 lg:grid-cols-2">
+              {(settings.integrations.length > 0 ? settings.integrations.slice(0, 4) : settings.webhooks.slice(0, 4)).map((connector) => (
+                <article
+                  key={connector.id}
+                  className="rounded-2xl border border-admin-border bg-white px-4 py-4"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-admin-text">{connector.name}</p>
+                      <p className="mt-1 text-sm text-admin-muted">{connector.adapterKey}</p>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusTone(connector.status)}`}>
+                      {connector.status}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-2 text-sm text-admin-muted md:grid-cols-2">
+                    <p>Last sync: {formatTimestamp(connector.lastSyncAt)}</p>
+                    <p>Health check: {formatTimestamp(connector.lastHealthCheckAt)}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/admin/tenant/connectivity"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white"
+              >
+                Open connectivity workspace
+              </Link>
+              <Link
+                href="/admin/tenant/connectivity/sso"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-admin-border bg-white px-5 py-3 text-sm font-semibold text-admin-text"
+              >
+                Review SSO
+              </Link>
+            </div>
+          </div>
+        )}
+      </SectionCard>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <SectionCard

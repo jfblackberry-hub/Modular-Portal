@@ -36,7 +36,7 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
 
   if (!menu) {
     return (
-      <aside className="min-h-screen w-[340px] shrink-0 overflow-y-auto border-r border-admin-border bg-slate-950 text-slate-50">
+      <aside className="admin-left-nav min-h-screen w-[296px] shrink-0 overflow-y-auto border-r border-admin-border text-slate-50">
         <div className="px-6 py-8">
           <p className="text-sm text-slate-300">Admin session required.</p>
         </div>
@@ -45,28 +45,33 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
   }
 
   return (
-    <aside className="min-h-screen w-[340px] shrink-0 overflow-y-auto border-r border-admin-border bg-slate-950 text-slate-50">
+    <aside className="admin-left-nav min-h-screen w-[296px] shrink-0 overflow-y-auto border-r border-admin-border text-slate-50">
       <div className="flex min-h-screen flex-col px-6 py-8 pb-16">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-300">
-            Admin Console
-          </p>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-            Operations Workspace
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-slate-300">
-            Persistent enterprise shell for separated platform and tenant administration.
+          <div className="admin-left-nav__brand">
+            <div className="admin-left-nav__brand-icon" aria-hidden="true">A</div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-300">
+                Admin Console
+              </p>
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+                Control Plane
+              </h1>
+            </div>
+          </div>
+          <p className="mt-4 text-sm leading-6 text-slate-300">
+            Command-center navigation for platform operations, tenant configuration, and support workflows.
           </p>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+        <div className="admin-left-nav__access mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
             Access
           </p>
           <p className="mt-2 text-sm font-medium text-white">{menu.label}</p>
         </div>
 
-        <nav className="mt-10 flex-1 space-y-4 pb-8">
+        <nav className="admin-left-nav__nav mt-10 flex-1 space-y-4 pb-8">
           {menu.sections.map((section) => {
             const isSectionActive = section.items.some(
               (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
@@ -74,7 +79,7 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
             const isCollapsed = collapsedSections[section.key] ?? false;
 
             return (
-              <div key={section.key} className="rounded-3xl border border-white/10 bg-white/[0.03]">
+              <div key={section.key} className="admin-left-nav__section rounded-3xl border border-white/10 bg-white/[0.03]">
                 <button
                   type="button"
                   onClick={() =>
@@ -83,18 +88,19 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
                       [section.key]: !isCollapsed
                     }))
                   }
-                  className={`flex w-full items-center justify-between px-4 py-3 text-left transition ${
+                  className={`admin-left-nav__section-toggle flex w-full items-center justify-between px-4 py-3 text-left transition ${
                     isSectionActive ? 'text-white' : 'text-slate-200 hover:text-white'
                   }`}
                 >
-                  <span className="text-xs font-semibold uppercase tracking-[0.24em]">
+                  <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em]">
+                    <span aria-hidden="true">•</span>
                     {section.label}
                   </span>
                   <span className="text-sm">{isCollapsed ? '+' : '-'}</span>
                 </button>
 
                 {!isCollapsed ? (
-                  <div className="space-y-2 border-t border-white/10 px-3 py-3">
+                  <div className="admin-left-nav__section-items space-y-2 border-t border-white/10 px-3 py-3">
                     {section.items.map((item) => {
                       const isActive =
                         pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -103,14 +109,15 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
                         <Link
                           key={item.href}
                           href={item.href}
-                          className={`block rounded-2xl border px-4 py-3 transition ${
+                          scroll={false}
+                          className={`admin-left-nav__item ${isActive ? 'admin-left-nav__item--active' : ''} block rounded-2xl border px-4 py-3 transition ${
                             isActive
                               ? 'border-sky-300/60 bg-white/10 text-white'
                               : 'border-white/10 text-slate-200 hover:border-sky-300/40 hover:bg-white/5 hover:text-white'
                           }`}
                         >
-                          <div className="text-sm font-medium">{item.label}</div>
-                          <div className="mt-1 text-xs leading-5 text-slate-400">
+                          <div className="admin-left-nav__item-label text-sm font-medium">{item.label}</div>
+                          <div className="admin-left-nav__item-description mt-1 text-xs leading-5 text-slate-400">
                             {item.description}
                           </div>
                         </Link>

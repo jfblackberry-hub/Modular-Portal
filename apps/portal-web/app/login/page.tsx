@@ -23,13 +23,13 @@ const quickSignInGroups: QuickSignInGroup[] = [
   {
     title: 'Provider',
     users: [
-      { label: 'Provider portal user', username: 'Provider1', href: '/provider-login' }
+      { label: 'Dr. Lee', username: 'Provider1', href: '/provider-login' }
     ]
   },
   {
     title: 'Administrative',
     users: [
-      { label: 'Tenant admin', username: 'tenant' },
+      { label: 'Blue Horizon tenant admin', username: 'tenant' },
       { label: 'Real Health tenant admin', username: 'realtenantadmin' },
       { label: 'Platform admin', username: 'admin' }
     ]
@@ -52,7 +52,7 @@ const quickSignInGroups: QuickSignInGroup[] = [
         username: 'EMP-0316043829906172-002',
         href: '/login?user=EMP-0316043829906172-002&redirect=/employer&auto=1'
       },
-      { label: 'E&B broker', username: 'broker' },
+      { label: 'Northbridge Benefits Group', username: 'william.schultz' },
       { label: 'E&B internal operations', username: 'ops' }
     ]
   },
@@ -60,12 +60,12 @@ const quickSignInGroups: QuickSignInGroup[] = [
     title: 'Shop and Enroll',
     users: [
       {
-        label: 'Individual portal',
+        label: 'Shop and Enroll Individual',
         username: 'chris',
         href: '/login?user=chris&redirect=/individual'
       },
       {
-        label: 'Individual shopper demo',
+        label: 'Shop and Enroll Individual demo',
         username: 'chris',
         href: '/login?user=chris&redirect=/individual'
       }

@@ -59,6 +59,7 @@ function buildCsv(employees: EmployeeCensusRecord[]) {
 }
 
 export function EmployeeCensusList({
+  embedded = false,
   employees,
   employerName,
   summary,
@@ -66,6 +67,7 @@ export function EmployeeCensusList({
   plans,
   departments
 }: {
+  embedded?: boolean;
   employees: EmployeeCensusRecord[];
   employerName: string;
   summary: WorkforceCoverageSummary;
@@ -127,15 +129,17 @@ export function EmployeeCensusList({
 
   return (
     <div className="space-y-5">
-      <section className="portal-card p-6 sm:p-8">
-        <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">Enrollment &amp; Billing</p>
-        <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">
-          Employee Census
-        </h1>
-        <p className="mt-3 max-w-3xl text-[15px] leading-7 text-[var(--text-secondary)]">
-          Search and manage employee coverage records for {employerName}.
-        </p>
-      </section>
+      {embedded ? null : (
+        <section className="portal-card p-6 sm:p-8">
+          <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">Enrollment &amp; Billing</p>
+          <h1 className="mt-2 text-[28px] font-semibold leading-tight text-[var(--text-primary)] sm:text-[32px]">
+            Employee Census
+          </h1>
+          <p className="mt-3 max-w-3xl text-[15px] leading-7 text-[var(--text-secondary)]">
+            Search and manage employee coverage records for {employerName}.
+          </p>
+        </section>
+      )}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <article className="portal-card p-4 xl:col-span-1">

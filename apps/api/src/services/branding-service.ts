@@ -21,6 +21,7 @@ type BrandingInput = {
   secondaryColor?: string;
   logoUrl?: string;
   faviconUrl?: string;
+  customCss?: string;
 };
 
 type AuditContext = {
@@ -77,6 +78,15 @@ function normalizeOptionalString(value: string | undefined) {
   return normalized ? normalized : null;
 }
 
+function normalizeOptionalCss(value: string | undefined) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalized = value.trim();
+  return normalized ? normalized : null;
+}
+
 function validateColor(value: string | null, fieldName: string) {
   if (!value) {
     return null;
@@ -117,13 +127,15 @@ function buildTenantBrandingConfig(input: {
   secondaryColor: string;
   logoUrl: string | null;
   faviconUrl: string | null;
+  customCss: string | null;
 }) {
   return {
     displayName: input.displayName,
     primaryColor: input.primaryColor,
     secondaryColor: input.secondaryColor,
     ...(input.logoUrl ? { logoUrl: input.logoUrl } : {}),
-    ...(input.faviconUrl ? { faviconUrl: input.faviconUrl } : {})
+    ...(input.faviconUrl ? { faviconUrl: input.faviconUrl } : {}),
+    ...(input.customCss ? { customCss: input.customCss } : {})
   } satisfies Prisma.InputJsonValue;
 }
 
@@ -174,6 +186,7 @@ function mapBranding(tenant: {
     secondaryColor: tenant.branding?.secondaryColor ?? DEFAULT_SECONDARY_COLOR,
     logoUrl: tenant.branding?.logoUrl ?? null,
     faviconUrl: tenant.branding?.faviconUrl ?? null,
+    customCss: typeof brandingConfig.customCss === 'string' ? brandingConfig.customCss : null,
     employerGroupName,
     employerGroupLogoUrl,
     createdAt: tenant.branding?.createdAt ?? null,
@@ -226,7 +239,7 @@ export async function updateBrandingForTenant(
   context: AuditContext
 ) {
   const providedFields = (
-    ['displayName', 'primaryColor', 'secondaryColor', 'logoUrl', 'faviconUrl'] as const
+    ['displayName', 'primaryColor', 'secondaryColor', 'logoUrl', 'faviconUrl', 'customCss'] as const
   ).filter((field) => field in input);
 
   if (providedFields.length === 0) {
@@ -269,6 +282,9 @@ export async function updateBrandingForTenant(
       normalizeOptionalString(input.faviconUrl) ?? tenant.branding?.faviconUrl ?? null,
       'faviconUrl'
     );
+    const nextCustomCss =
+      normalizeOptionalCss(input.customCss) ??
+      (typeof currentBrandingConfig.customCss === 'string' ? currentBrandingConfig.customCss : null);
 
     const branding = await tx.tenantBranding.upsert({
       where: {
@@ -301,7 +317,8 @@ export async function updateBrandingForTenant(
             primaryColor: nextPrimaryColor ?? DEFAULT_PRIMARY_COLOR,
             secondaryColor: nextSecondaryColor ?? DEFAULT_SECONDARY_COLOR,
             logoUrl: nextLogoUrl,
-            faviconUrl: nextFaviconUrl
+            faviconUrl: nextFaviconUrl,
+            customCss: nextCustomCss
           })
         } satisfies Prisma.InputJsonValue
       }

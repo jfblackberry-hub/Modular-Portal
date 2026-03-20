@@ -277,6 +277,53 @@ export async function assignRoleToUser(userId: string, roleId: string) {
   };
 }
 
+export async function removeRoleFromUser(userId: string, roleId: string) {
+  const [user, role, assignment] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId }
+    }),
+    prisma.role.findUnique({
+      where: { id: roleId }
+    }),
+    prisma.userRole.findUnique({
+      where: {
+        userId_roleId: {
+          userId,
+          roleId
+        }
+      }
+    })
+  ]);
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  if (!role) {
+    throw new Error('Role not found');
+  }
+
+  if (!assignment) {
+    throw new Error('Role assignment not found');
+  }
+
+  await prisma.userRole.delete({
+    where: {
+      userId_roleId: {
+        userId,
+        roleId
+      }
+    }
+  });
+
+  return {
+    userId,
+    roleId,
+    roleCode: role.code,
+    removed: true
+  };
+}
+
 export async function listUsers() {
   const users = await prisma.user.findMany({
     include: {

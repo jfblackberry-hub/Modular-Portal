@@ -106,10 +106,16 @@ export function PortalHeroBanner({
     );
   }
 
+  const hasImage = Boolean(imageSrc?.trim());
+
   return (
     <section className="portal-card relative overflow-hidden p-0">
       <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-white/30" aria-hidden="true" />
-      <div className="relative grid gap-6 px-6 py-6 sm:px-8 sm:py-7 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)] lg:items-center">
+      <div
+        className={`relative grid gap-6 px-6 py-6 sm:px-8 sm:py-7 ${
+          hasImage ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)] lg:items-center' : ''
+        }`}
+      >
         <div className="max-w-3xl">
           {eyebrow ? (
             <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">{eyebrow}</p>
@@ -121,15 +127,17 @@ export function PortalHeroBanner({
           {actions ? <div className="mt-5 flex flex-wrap gap-3">{actions}</div> : null}
         </div>
 
-        <div className="w-full max-w-[420px] justify-self-end">
-          <ImageBlock
-            src={imageSrc}
-            alt={imageDecorative ? '' : imageAlt ?? ''}
-            className={imageClassName ?? 'aspect-[4/3]'}
-            gradientOverlay={false}
-            priority={priority}
-          />
-        </div>
+        {hasImage ? (
+          <div className="w-full max-w-[420px] justify-self-end">
+            <ImageBlock
+              src={imageSrc}
+              alt={imageDecorative ? '' : imageAlt ?? ''}
+              className={imageClassName ?? 'aspect-[4/3]'}
+              gradientOverlay={false}
+              priority={priority}
+            />
+          </div>
+        ) : null}
       </div>
     </section>
   );

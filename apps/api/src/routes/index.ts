@@ -1,5 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 
+import { adminOperationsRoutes } from './admin-operations';
+import { apiCatalogRoutes } from './api-catalog';
 import { auditRoutes } from './audit';
 import { authRoutes } from './auth';
 import { billingEnrollmentRoutes } from './billing-enrollment';
@@ -18,6 +20,8 @@ import { tenantRoutes } from './tenants';
 import { tenantAdminRoutes } from './tenant-admin';
 
 export function registerRoutes(app: FastifyInstance) {
+  app.register(adminOperationsRoutes);
+  app.register(apiCatalogRoutes);
   app.register(auditRoutes);
   app.register(authRoutes);
   app.register(billingEnrollmentRoutes);

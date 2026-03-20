@@ -100,7 +100,7 @@ export const billingPortalNavigationByAudience: Record<
   ],
   individual: [
     {
-      title: 'Individual E&B Portal',
+      title: 'Shop and Enroll Individual',
       items: [
         {
           label: 'Home',

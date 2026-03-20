@@ -1,3 +1,5 @@
+'use client';
+
 import type {
   ProviderPortalConfig,
   ProviderPortalVariant
@@ -42,20 +44,24 @@ const paymentRows: PaymentRow[] = [
 
 export function ProviderPaymentsPage({
   config,
-  variant
+  variant,
+  embedded = false
 }: {
   config: ProviderPortalConfig;
   variant: ProviderPortalVariant;
+  embedded?: boolean;
 }) {
   const pageTitle = variant === 'medical' ? 'Payments Workspace' : config.routeContent.payments.title;
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow={config.displayName}
-        title={pageTitle}
-        description="Track remittance and payment activity, monitor EFT/ERA status, and download payment artifacts."
-      />
+      {embedded ? null : (
+        <PageHeader
+          eyebrow={config.displayName}
+          title={pageTitle}
+          description="Track remittance and payment activity, monitor EFT/ERA status, and download payment artifacts."
+        />
+      )}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <article className="portal-card p-5">

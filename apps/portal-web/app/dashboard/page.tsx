@@ -3,11 +3,8 @@ import { redirect } from 'next/navigation';
 import { MemberCommandCenter } from '../../components/dashboard/member-command-center';
 import {
   getMe,
-  getMemberAuthorizations,
   getMemberClaims,
   getMemberCoverage,
-  getMemberDocuments,
-  getMemberMessages
 } from '../../lib/member-api';
 import { getPortalSessionUser } from '../../lib/portal-session';
 
@@ -34,13 +31,10 @@ export default async function DashboardPage() {
   }
 
   const sessionUserId = sessionUser?.id;
-  const [me, coverage, claims, documents, messages, authorizations] = await Promise.all([
+  const [me, coverage, claims] = await Promise.all([
     getMe(sessionUserId),
     getMemberCoverage(sessionUserId),
-    getMemberClaims(sessionUserId),
-    getMemberDocuments(sessionUserId),
-    getMemberMessages(sessionUserId),
-    getMemberAuthorizations(sessionUserId)
+    getMemberClaims(sessionUserId)
   ]);
 
   const member = me?.member;
@@ -59,17 +53,13 @@ export default async function DashboardPage() {
       memberId={member?.memberNumber ?? 'Unavailable'}
       employerGroupName={sessionUser?.tenant.name ?? 'Employer'}
       planName={planName}
-      claims={claims?.items ?? []}
-      messages={messages?.items ?? []}
-      documents={documents?.items ?? []}
-      pendingAuthorizations={authorizations?.items ?? []}
       pcpName="Dr. Maya Thompson"
+      recentClaims={claims?.items ?? []}
       deductibleCurrent={750}
       deductibleTotal={2000}
       outOfPocketCurrent={1250}
       outOfPocketTotal={4500}
       coverageStatus={activeCoverage ? 'Active' : 'Status unavailable'}
-      searchBasePath="/dashboard/search"
     />
   );
 }

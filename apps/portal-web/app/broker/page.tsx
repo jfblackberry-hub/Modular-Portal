@@ -9,6 +9,10 @@ export default async function BrokerPortalHomePage() {
   const persona = resolveBrokerPersona({
     roles: sessionUser?.roles ?? []
   });
+  const brokerAgencyName =
+    typeof sessionUser?.tenant.brandingConfig?.brokerAgencyName === 'string'
+      ? sessionUser.tenant.brandingConfig.brokerAgencyName
+      : 'Northbridge Benefits Group';
   const brokerName = `${sessionUser?.firstName ?? 'Avery'} ${sessionUser?.lastName ?? 'Lee'}`;
   const snapshot = getBrokerCommandCenterData();
   const cases = getBrokerCases();
@@ -16,7 +20,7 @@ export default async function BrokerPortalHomePage() {
 
   return (
     <BrokerCommandCenterDashboard
-      agencyName={sessionUser?.tenant.name ?? 'Riverside Benefits Group'}
+      agencyName={brokerAgencyName}
       brokerName={brokerName}
       personaLabel={persona.label}
       canManage={persona.canManage}
@@ -29,7 +33,6 @@ export default async function BrokerPortalHomePage() {
       renewalsNeedingAction={snapshot.renewalsNeedingAction}
       openQuotes={snapshot.openQuotes}
       enrollmentIssues={snapshot.enrollmentIssues}
-      recentActivity={snapshot.recentActivity}
       commissionSnapshot={{
         mtdCommissions: commissionSummary.total,
         postedGroups: commissionSummary.byGroup.length - commissionSummary.exceptions.length,

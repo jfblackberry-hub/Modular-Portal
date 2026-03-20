@@ -152,8 +152,10 @@ function DetailModal({
 }
 
 export function CareCostEstimatorPage({
+  embedded = false,
   initialData
 }: {
+  embedded?: boolean;
   initialData: EstimatorBootstrapPayload;
 }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -248,12 +250,14 @@ export function CareCostEstimatorPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Care Cost Estimator"
-        title="Estimate your healthcare costs before you schedule care"
-        description="Search for a procedure, compare providers, and see your personalized out-of-pocket estimate using your current plan benefits and accumulators."
-        actions={<InlineButton href="/dashboard/providers" tone="secondary">Find Care</InlineButton>}
-      />
+      {embedded ? null : (
+        <PageHeader
+          eyebrow="Care Cost Estimator"
+          title="Estimate your healthcare costs before you schedule care"
+          description="Search for a procedure, compare providers, and see your personalized out-of-pocket estimate using your current plan benefits and accumulators."
+          actions={<InlineButton href="/dashboard/providers" tone="secondary">Find Care</InlineButton>}
+        />
+      )}
 
       <div className="grid gap-4 xl:grid-cols-4">
         <MetricCard label="Plan" value={initialData.plan.name} detail={initialData.plan.description} />

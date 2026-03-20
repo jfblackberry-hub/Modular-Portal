@@ -85,14 +85,14 @@ function ProviderSidebar({
         key={item.key}
         href={item.href}
         onClick={onCloseMobile}
-        className={`flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
+        className={`tenant-provider-sidebar__item ${isActive ? 'tenant-provider-sidebar__item--active' : ''} flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
           isActive
             ? 'border-[var(--tenant-primary-color)] bg-[var(--tenant-primary-soft-color)] text-[var(--tenant-primary-color)]'
             : 'border-transparent text-[var(--text-secondary)] hover:border-[var(--border-subtle)] hover:bg-slate-50 hover:text-[var(--text-primary)]'
         }`}
       >
-        <Icon size={18} className="shrink-0" />
-        <span className={collapsed ? 'portal-sr-only' : 'ml-3'}>{item.label}</span>
+        <Icon size={18} className="tenant-provider-sidebar__icon shrink-0" />
+        <span className={`tenant-provider-sidebar__label ${collapsed ? 'portal-sr-only' : 'ml-3'}`}>{item.label}</span>
       </Link>
     );
   });
@@ -100,20 +100,20 @@ function ProviderSidebar({
   return (
     <>
       <aside
-        className={`hidden border-r border-[var(--border-subtle)] bg-white lg:block ${
+        className={`tenant-provider-sidebar tenant-provider-sidebar--desktop hidden border-r border-[var(--border-subtle)] bg-white lg:block ${
           collapsed ? 'w-[84px]' : 'w-[240px]'
         }`}
       >
-        <div className="sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto px-3 py-4">
+        <div className="tenant-provider-sidebar__inner sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto px-3 py-4">
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)]"
+            className="tenant-provider-sidebar__toggle mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)]"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             <Menu size={16} />
           </button>
-          <nav aria-label="Provider navigation" className="space-y-1">
+          <nav aria-label="Provider navigation" className="tenant-provider-sidebar__nav space-y-1">
             {links}
           </nav>
         </div>
@@ -127,19 +127,19 @@ function ProviderSidebar({
             aria-label="Close navigation drawer"
             onClick={onCloseMobile}
           />
-          <aside className="relative h-full w-[290px] border-r border-[var(--border-subtle)] bg-white p-4 shadow-xl">
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm font-semibold text-[var(--text-primary)]">Provider navigation</p>
+          <aside className="tenant-provider-sidebar tenant-provider-sidebar--mobile relative h-full w-[290px] border-r border-[var(--border-subtle)] bg-white p-4 shadow-xl">
+            <div className="tenant-provider-sidebar__mobile-header mb-4 flex items-center justify-between">
+              <p className="tenant-provider-sidebar__mobile-title text-sm font-semibold text-[var(--text-primary)]">Provider navigation</p>
               <button
                 type="button"
                 onClick={onCloseMobile}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)]"
+                className="tenant-provider-sidebar__close inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)]"
                 aria-label="Close navigation"
               >
                 <X size={16} />
               </button>
             </div>
-            <nav aria-label="Provider navigation" className="space-y-1">
+            <nav aria-label="Provider navigation" className="tenant-provider-sidebar__nav space-y-1">
               {links}
             </nav>
           </aside>
@@ -182,28 +182,28 @@ export function ProviderPortalLayout({
         } as CSSProperties
       }
     >
-      <header className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-white/95 backdrop-blur">
-        <div className="mx-auto w-full max-w-[1280px] px-4 py-3 md:px-6">
-          <div className="flex items-center gap-3">
+      <header className="tenant-provider-header sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-white/95 backdrop-blur">
+        <div className="tenant-provider-header__inner mx-auto w-full max-w-[1280px] px-4 py-3 md:px-6">
+          <div className="tenant-provider-header__content flex items-center gap-3">
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-subtle)] text-[var(--text-secondary)] lg:hidden"
+              className="tenant-provider-header__menu inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-subtle)] text-[var(--text-secondary)] lg:hidden"
               aria-label="Open provider navigation"
               onClick={() => setMobileSidebarOpen(true)}
             >
               <Menu size={18} />
             </button>
 
-            <a href="/provider/dashboard" className="flex items-center gap-3">
+            <a href="/provider/dashboard" className="tenant-provider-header__brand flex items-center gap-3">
               {branding.logoUrl ? (
                 <img
                   src={branding.logoUrl}
                   alt={`${branding.displayName} logo`}
-                  className="h-9 w-auto max-w-[140px] object-contain"
+                  className="tenant-provider-header__logo h-9 w-auto max-w-[140px] object-contain"
                 />
               ) : (
                 <div
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-white"
+                  className="tenant-provider-header__logo-fallback flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-white"
                   style={{ backgroundColor: branding.primaryColor }}
                 >
                   {branding.displayName
@@ -215,46 +215,48 @@ export function ProviderPortalLayout({
               )}
             </a>
 
-            <form action={searchBasePath} method="get" className="min-w-0 flex-1" role="search">
+            <form action={searchBasePath} method="get" className="tenant-provider-header__search min-w-0 flex-1" role="search">
               <input
                 name="q"
                 placeholder="Search patients, claims, authorizations..."
-                className="portal-input h-10 rounded-xl px-3 text-sm"
+                className="tenant-provider-header__search-input portal-input h-10 rounded-xl px-3 text-sm"
               />
             </form>
 
             <button
               type="button"
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-subtle)] text-[var(--text-secondary)]"
+              className="tenant-provider-header__notifications relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-subtle)] text-[var(--text-secondary)]"
               aria-label="Provider notifications"
             >
               <Bell size={18} />
-              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-1 text-xs font-semibold text-white">
+              <span className="tenant-provider-header__notification-count absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-1 text-xs font-semibold text-white">
                 {config.notifications.length}
               </span>
             </button>
 
-            <div className="hidden items-center gap-3 rounded-xl border border-[var(--border-subtle)] px-3 py-1.5 md:flex">
+            <div className="tenant-provider-header__user hidden items-center gap-3 rounded-xl border border-[var(--border-subtle)] px-3 py-1.5 md:flex">
               <div
-                className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white"
+                className="tenant-provider-header__avatar flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white"
                 style={{ backgroundColor: branding.primaryColor }}
               >
                 {initials}
               </div>
-              <div className="leading-tight">
-                <p className="text-sm font-semibold text-[var(--text-primary)]">
+              <div className="tenant-provider-header__user-copy leading-tight">
+                <p className="tenant-provider-header__user-name text-sm font-semibold text-[var(--text-primary)]">
                   {user.firstName} {user.lastName}
                 </p>
-                <p className="text-xs text-[var(--text-muted)]">{config.providerRoleLabel}</p>
+                <p className="tenant-provider-header__user-role text-xs text-[var(--text-muted)]">{config.providerRoleLabel}</p>
               </div>
             </div>
 
-            <SignOutButton />
+            <div className="tenant-provider-header__actions">
+              <SignOutButton />
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-[1280px]">
+      <div className="tenant-provider-shell mx-auto flex w-full max-w-[1280px]">
         <ProviderSidebar
           config={config}
           user={user}
@@ -264,8 +266,8 @@ export function ProviderPortalLayout({
           onToggleCollapse={() => setCollapsed((value) => !value)}
         />
 
-        <div className="min-w-0 flex-1 px-4 pb-6 pt-4 md:px-6 md:pb-8 lg:px-8 lg:pt-6">
-          <main id="main-content" className="min-w-0 space-y-4">
+        <div className="tenant-provider-shell__main min-w-0 flex-1 px-4 pb-6 pt-4 md:px-6 md:pb-8 lg:px-8 lg:pt-6">
+          <main id="main-content" className="tenant-provider-shell__main-content min-w-0 space-y-4">
             {children}
           </main>
         </div>

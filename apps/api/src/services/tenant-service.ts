@@ -17,6 +17,7 @@ type TenantInput = {
 
 type TenantUpdateInput = {
   status?: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
+  quotaUsers?: number;
   quotaMembers?: number;
   quotaStorageGb?: number;
 };
@@ -62,6 +63,8 @@ function mapTenant(tenant: Tenant) {
     brandingConfig: tenant.brandingConfig as Prisma.JsonValue,
     quotaMembers:
       typeof platformQuota.members === 'number' ? platformQuota.members : null,
+    quotaUsers:
+      typeof platformQuota.users === 'number' ? platformQuota.users : null,
     quotaStorageGb:
       typeof platformQuota.storageGb === 'number'
         ? platformQuota.storageGb
@@ -196,6 +199,9 @@ export async function updateTenant(
     ...(typeof input.quotaMembers === 'number'
       ? { members: input.quotaMembers }
       : {}),
+    ...(typeof input.quotaUsers === 'number'
+      ? { users: input.quotaUsers }
+      : {}),
     ...(typeof input.quotaStorageGb === 'number'
       ? { storageGb: input.quotaStorageGb }
       : {})
@@ -236,6 +242,9 @@ export async function updateTenant(
           ...(input.status ? ['status'] : []),
           ...(typeof input.quotaMembers === 'number'
             ? ['brandingConfig.platformQuota.members']
+            : []),
+          ...(typeof input.quotaUsers === 'number'
+            ? ['brandingConfig.platformQuota.users']
             : []),
           ...(typeof input.quotaStorageGb === 'number'
             ? ['brandingConfig.platformQuota.storageGb']

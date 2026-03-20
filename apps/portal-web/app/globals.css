@@ -26,6 +26,70 @@
   --tenant-primary-soft-color: rgba(61, 134, 191, 0.14);
   --tenant-secondary-color: var(--tenant-secondary);
   --tenant-secondary-soft-color: rgba(76, 158, 154, 0.12);
+  --tenant-side-nav-bg: var(--bg-card);
+  --tenant-side-nav-border: var(--border-subtle);
+  --tenant-side-nav-title: var(--tenant-primary-color);
+  --tenant-side-nav-text: var(--text-secondary);
+  --tenant-side-nav-muted: var(--text-muted);
+  --tenant-side-nav-item-bg: transparent;
+  --tenant-side-nav-item-text: var(--text-secondary);
+  --tenant-side-nav-item-description: var(--text-muted);
+  --tenant-side-nav-item-hover-bg: rgba(248, 250, 252, 0.78);
+  --tenant-side-nav-item-hover-text: var(--text-primary);
+  --tenant-side-nav-item-active-bg: var(--tenant-primary-soft-color);
+  --tenant-side-nav-item-active-text: var(--tenant-primary-color);
+  --tenant-utility-bar-bg: rgba(255, 255, 255, 0.95);
+  --tenant-utility-bar-border: var(--border-subtle);
+  --tenant-utility-bar-user-bg: var(--bg-card);
+  --tenant-utility-bar-user-text: var(--text-primary);
+  --tenant-utility-bar-user-muted: var(--text-muted);
+  --tenant-search-form-bg: #ffffff;
+  --tenant-search-form-border: var(--border-subtle);
+  --tenant-search-form-label: var(--text-muted);
+  --tenant-search-form-input: var(--text-primary);
+  --tenant-search-form-placeholder: var(--text-muted);
+  --tenant-search-form-button-bg: var(--tenant-primary-color);
+  --tenant-search-form-button-text: #ffffff;
+  --tenant-footer-bg: #ffffff;
+  --tenant-footer-border: var(--border-subtle);
+  --tenant-footer-title: var(--text-primary);
+  --tenant-footer-text: var(--text-secondary);
+  --tenant-footer-link: var(--text-secondary);
+  --tenant-page-header-eyebrow: var(--tenant-primary-color);
+  --tenant-page-header-title: var(--text-primary);
+  --tenant-page-header-description: var(--text-secondary);
+  --tenant-surface-card-title: var(--text-primary);
+  --tenant-surface-card-description: var(--text-secondary);
+  --tenant-quick-action-icon-bg: var(--tenant-primary-soft-color);
+  --tenant-quick-action-icon-color: var(--tenant-primary-color);
+  --tenant-quick-action-label: var(--text-primary);
+  --tenant-quick-action-description: var(--text-secondary);
+  --tenant-stat-card-value: var(--text-primary);
+  --tenant-stat-card-detail: var(--text-secondary);
+  --tenant-stat-card-preview: var(--text-muted);
+  --tenant-stat-card-cta: var(--tenant-primary-color);
+  --tenant-support-link-title: var(--text-primary);
+  --tenant-support-link-description: var(--text-secondary);
+  --tenant-inline-button-primary-bg: var(--tenant-primary-color);
+  --tenant-inline-button-primary-text: #ffffff;
+  --tenant-inline-button-secondary-border: var(--tenant-primary-color);
+  --tenant-inline-button-secondary-text: var(--tenant-primary-color);
+  --tenant-inline-button-tertiary-text: var(--tenant-primary-color);
+  --tenant-empty-state-title: var(--text-primary);
+  --tenant-empty-state-description: var(--text-secondary);
+  --tenant-provider-header-bg: rgba(255, 255, 255, 0.95);
+  --tenant-provider-header-border: var(--border-subtle);
+  --tenant-provider-header-surface: #ffffff;
+  --tenant-provider-header-text: var(--text-primary);
+  --tenant-provider-header-muted: var(--text-muted);
+  --tenant-provider-sidebar-bg: #ffffff;
+  --tenant-provider-sidebar-border: var(--border-subtle);
+  --tenant-provider-sidebar-item-bg: transparent;
+  --tenant-provider-sidebar-item-text: var(--text-secondary);
+  --tenant-provider-sidebar-item-hover-bg: rgba(248, 250, 252, 0.78);
+  --tenant-provider-sidebar-item-hover-text: var(--text-primary);
+  --tenant-provider-sidebar-item-active-bg: var(--tenant-primary-soft-color);
+  --tenant-provider-sidebar-item-active-text: var(--tenant-primary-color);
 }
 
 * {
@@ -99,6 +163,233 @@ img {
 
 .portal-input::placeholder {
   color: var(--text-muted);
+}
+
+.tenant-side-nav {
+  background: var(--tenant-side-nav-bg);
+  border-color: var(--tenant-side-nav-border);
+}
+
+.tenant-side-nav__header {
+  border-bottom-color: var(--tenant-side-nav-border);
+}
+
+.tenant-side-nav__title {
+  color: var(--tenant-side-nav-title);
+}
+
+.tenant-side-nav__description {
+  color: var(--tenant-side-nav-text);
+}
+
+.tenant-side-nav__section-title {
+  color: var(--tenant-side-nav-muted);
+}
+
+.tenant-side-nav__item {
+  background: var(--tenant-side-nav-item-bg);
+  color: var(--tenant-side-nav-item-text);
+}
+
+.tenant-side-nav__item-label {
+  color: inherit;
+}
+
+.tenant-side-nav__item-description {
+  color: var(--tenant-side-nav-item-description);
+}
+
+.tenant-side-nav__item:hover {
+  background: var(--tenant-side-nav-item-hover-bg);
+  color: var(--tenant-side-nav-item-hover-text);
+}
+
+.tenant-side-nav__item:hover .tenant-side-nav__item-description {
+  color: var(--tenant-side-nav-item-hover-text);
+}
+
+.tenant-side-nav__item--active {
+  background: var(--tenant-side-nav-item-active-bg);
+  color: var(--tenant-side-nav-item-active-text);
+}
+
+.tenant-side-nav__item--active .tenant-side-nav__item-description {
+  color: var(--tenant-side-nav-item-active-text);
+}
+
+.tenant-utility-bar {
+  background: var(--tenant-utility-bar-bg);
+  border-color: var(--tenant-utility-bar-border);
+}
+
+.tenant-utility-bar__user {
+  background: var(--tenant-utility-bar-user-bg);
+}
+
+.tenant-utility-bar__user-name {
+  color: var(--tenant-utility-bar-user-text);
+}
+
+.tenant-utility-bar__user-role {
+  color: var(--tenant-utility-bar-user-muted);
+}
+
+.tenant-search-form {
+  background: var(--tenant-search-form-bg);
+  border-color: var(--tenant-search-form-border);
+}
+
+.tenant-search-form__label {
+  color: var(--tenant-search-form-label);
+}
+
+.tenant-search-form__input {
+  color: var(--tenant-search-form-input);
+}
+
+.tenant-search-form__input::placeholder {
+  color: var(--tenant-search-form-placeholder);
+}
+
+.tenant-search-form__button {
+  background: var(--tenant-search-form-button-bg) !important;
+  color: var(--tenant-search-form-button-text);
+}
+
+.tenant-portal-footer {
+  background: var(--tenant-footer-bg);
+  border-color: var(--tenant-footer-border);
+}
+
+.tenant-portal-footer__title {
+  color: var(--tenant-footer-title);
+}
+
+.tenant-portal-footer__copy {
+  color: var(--tenant-footer-text);
+}
+
+.tenant-portal-footer__link {
+  color: var(--tenant-footer-link);
+}
+
+.tenant-page-header__eyebrow {
+  color: var(--tenant-page-header-eyebrow);
+}
+
+.tenant-page-header__title {
+  color: var(--tenant-page-header-title);
+}
+
+.tenant-page-header__description {
+  color: var(--tenant-page-header-description);
+}
+
+.tenant-surface-card__title {
+  color: var(--tenant-surface-card-title);
+}
+
+.tenant-surface-card__description {
+  color: var(--tenant-surface-card-description);
+}
+
+.tenant-quick-action-card__icon {
+  background: var(--tenant-quick-action-icon-bg);
+  color: var(--tenant-quick-action-icon-color);
+}
+
+.tenant-quick-action-card__label {
+  color: var(--tenant-quick-action-label);
+}
+
+.tenant-quick-action-card__description {
+  color: var(--tenant-quick-action-description);
+}
+
+.tenant-stat-card__value {
+  color: var(--tenant-stat-card-value);
+}
+
+.tenant-stat-card__detail {
+  color: var(--tenant-stat-card-detail);
+}
+
+.tenant-stat-card__preview-item {
+  color: var(--tenant-stat-card-preview);
+}
+
+.tenant-stat-card__cta {
+  color: var(--tenant-stat-card-cta);
+}
+
+.tenant-support-link__label {
+  color: var(--tenant-support-link-title);
+}
+
+.tenant-support-link__description {
+  color: var(--tenant-support-link-description);
+}
+
+.tenant-inline-button--primary {
+  background: var(--tenant-inline-button-primary-bg);
+  color: var(--tenant-inline-button-primary-text);
+}
+
+.tenant-inline-button--secondary {
+  border-color: var(--tenant-inline-button-secondary-border);
+  color: var(--tenant-inline-button-secondary-text);
+}
+
+.tenant-inline-button--tertiary {
+  color: var(--tenant-inline-button-tertiary-text);
+}
+
+.tenant-empty-state__title {
+  color: var(--tenant-empty-state-title);
+}
+
+.tenant-empty-state__description {
+  color: var(--tenant-empty-state-description);
+}
+
+.tenant-provider-header {
+  background: var(--tenant-provider-header-bg);
+  border-color: var(--tenant-provider-header-border);
+}
+
+.tenant-provider-header__menu,
+.tenant-provider-header__notifications,
+.tenant-provider-header__user {
+  background: var(--tenant-provider-header-surface);
+}
+
+.tenant-provider-header__user-name,
+.tenant-provider-sidebar__mobile-title {
+  color: var(--tenant-provider-header-text);
+}
+
+.tenant-provider-header__user-role {
+  color: var(--tenant-provider-header-muted);
+}
+
+.tenant-provider-sidebar {
+  background: var(--tenant-provider-sidebar-bg);
+  border-color: var(--tenant-provider-sidebar-border);
+}
+
+.tenant-provider-sidebar__item {
+  background: var(--tenant-provider-sidebar-item-bg);
+  color: var(--tenant-provider-sidebar-item-text);
+}
+
+.tenant-provider-sidebar__item:hover {
+  background: var(--tenant-provider-sidebar-item-hover-bg);
+  color: var(--tenant-provider-sidebar-item-hover-text);
+}
+
+.tenant-provider-sidebar__item--active {
+  background: var(--tenant-provider-sidebar-item-active-bg);
+  color: var(--tenant-provider-sidebar-item-active-text);
 }
 
 .portal-data-table thead th {

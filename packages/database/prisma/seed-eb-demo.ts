@@ -131,6 +131,7 @@ function tenantBrandingConfig(input: EmployerGroupSeed) {
     logoUrl: payerTenant.logoUrl,
     memberPayerDisplayName: 'Blue Horizon Health',
     memberPayerLogoUrl: payerTenant.logoUrl,
+    brokerAgencyName: 'Northbridge Benefits Group',
     employerGroupName: input.name,
     employerGroupLogoUrl: input.logoUrl,
     employerKey: input.employerKey
@@ -309,10 +310,10 @@ async function seedTenantUsers(
   const sharedLocalAccounts = includeSharedLocalAccounts
     ? [
         { email: 'maria', firstName: 'Maria', lastName: 'Lopez', roleCode: 'member' },
-        { email: 'provider1', firstName: 'Provider', lastName: 'One', roleCode: 'provider' },
+        { email: 'provider1', firstName: 'Dr.', lastName: 'Lee', roleCode: 'provider' },
         { email: 'tenant', firstName: 'Tenant', lastName: 'Admin', roleCode: 'tenant_admin' },
         { email: 'admin', firstName: 'Platform', lastName: 'Admin', roleCode: 'platform_admin' },
-        { email: 'broker', firstName: 'Broker', lastName: 'User', roleCode: 'broker' },
+        { email: 'william.schultz', firstName: 'William', lastName: 'Schultz', roleCode: 'broker' },
         { email: 'ops', firstName: 'Internal', lastName: 'Operations', roleCode: 'internal_operations' },
         { email: 'employer', firstName: 'Employer', lastName: 'Admin', roleCode: 'employer_group_admin' }
       ]
@@ -400,7 +401,7 @@ async function seedTenantUsers(
       roleCode = 'tenant_admin';
     } else if (user.email === 'provider1') {
       roleCode = 'provider';
-    } else if (user.email === 'broker') {
+    } else if (user.email === 'william.schultz' || user.email === 'broker') {
       roleCode = 'broker';
     } else if (user.email === 'ops') {
       roleCode = 'internal_operations';

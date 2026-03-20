@@ -1,7 +1,7 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { SectionCard } from '../../components/section-card';
 import { apiBaseUrl, getAdminAuthHeaders } from '../../lib/api-auth';
@@ -46,6 +46,7 @@ function formatUploadDate(value: string) {
 }
 
 export function DocumentManagement() {
+  const initialLoadCompleteRef = useRef(false);
   const [users, setUsers] = useState<User[]>([]);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -123,11 +124,13 @@ export function DocumentManagement() {
   }
 
   useEffect(() => {
-    void refreshData();
+    void refreshData().finally(() => {
+      initialLoadCompleteRef.current = true;
+    });
   }, []);
 
   useEffect(() => {
-    if (!selectedUserId) {
+    if (!initialLoadCompleteRef.current || !selectedUserId) {
       return;
     }
 

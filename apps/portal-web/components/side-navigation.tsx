@@ -30,16 +30,16 @@ export function SideNavigation({
     <>
       <nav
         aria-label="Primary mobile navigation"
-        className="portal-card sticky bottom-3 z-20 flex items-center justify-between gap-2 overflow-x-auto px-3 py-3 lg:hidden"
+        className="tenant-side-nav tenant-side-nav--mobile portal-card sticky bottom-3 z-20 flex items-center justify-between gap-2 overflow-x-auto px-3 py-3 lg:hidden"
       >
         {mobileItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className={`flex min-w-[78px] flex-1 flex-col items-center rounded-2xl px-3 py-3 text-center text-[12px] font-semibold ${
+            className={`tenant-side-nav__item tenant-side-nav__item--mobile flex min-w-[78px] flex-1 flex-col items-center rounded-2xl px-3 py-3 text-center text-[12px] font-semibold ${
               isActive(item.href)
-                ? 'bg-[var(--tenant-primary-soft-color)] text-[var(--tenant-primary-color)]'
-                : 'text-[var(--text-secondary)]'
+                ? 'tenant-side-nav__item--active bg-[var(--tenant-primary-soft-color)]'
+                : ''
             }`}
           >
             {item.label}
@@ -48,28 +48,28 @@ export function SideNavigation({
       </nav>
 
       <aside className="hidden lg:block">
-        <div className="sticky top-6 rounded-2xl border border-[var(--border-subtle)] bg-white p-4">
-          <div className="mb-4 border-b border-[var(--border-subtle)] pb-4">
-            <p className="text-sm font-semibold" style={{ color: branding.primaryColor }}>
+        <div className="tenant-side-nav tenant-side-nav--desktop sticky top-6 rounded-2xl border border-[var(--border-subtle)] bg-white p-4">
+          <div className="tenant-side-nav__header mb-4 border-b border-[var(--border-subtle)] pb-4">
+            <p className="tenant-side-nav__title text-sm font-semibold">
               {primarySectionTitle}
             </p>
-            <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">
+            <p className="tenant-side-nav__description mt-2 text-xs leading-5">
               {primarySectionDescription}
             </p>
           </div>
 
-          <nav className="space-y-5" aria-label="Primary desktop navigation">
+          <nav className="tenant-side-nav__sections space-y-5" aria-label="Primary desktop navigation">
             {sections.map((section) => (
-              <div key={section.title}>
-                <p className="text-[12px] font-semibold text-[var(--text-muted)]">
+              <div key={section.title} className="tenant-side-nav__section">
+                <p className="tenant-side-nav__section-title text-[12px] font-semibold">
                   {section.title}
                 </p>
-                <div className="mt-3 space-y-2">
+                <div className="tenant-side-nav__section-items mt-3 space-y-2">
                   {section.items.map((item) => {
                     const active = !item.external && isActive(item.href.split('#')[0] ?? item.href);
                     const className = active
-                      ? 'border-[var(--tenant-primary-color)] bg-[var(--tenant-primary-soft-color)] text-[var(--tenant-primary-color)]'
-                      : 'border-transparent text-[var(--text-secondary)] hover:border-[var(--border-subtle)] hover:bg-slate-50/70 hover:text-[var(--text-primary)]';
+                      ? 'tenant-side-nav__item--active border-[var(--tenant-primary-color)] bg-[var(--tenant-primary-soft-color)]'
+                      : 'border-transparent hover:border-[var(--border-subtle)] hover:bg-slate-50/70';
 
                     if (item.external) {
                       return (
@@ -78,10 +78,10 @@ export function SideNavigation({
                           href={item.href}
                           target="_blank"
                           rel="noreferrer"
-                          className={`block rounded-xl border px-3 py-3 transition ${className}`}
+                          className={`tenant-side-nav__item block rounded-xl border px-3 py-3 transition ${className}`}
                         >
-                          <p className="text-sm font-semibold">{item.label}</p>
-                          <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
+                          <p className="tenant-side-nav__item-label text-sm font-semibold">{item.label}</p>
+                          <p className="tenant-side-nav__item-description mt-1 text-xs leading-5">
                             {item.description}
                           </p>
                         </a>
@@ -92,10 +92,10 @@ export function SideNavigation({
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`block rounded-xl border px-3 py-3 transition ${className}`}
+                        className={`tenant-side-nav__item block rounded-xl border px-3 py-3 transition ${className}`}
                       >
-                        <p className="text-sm font-semibold">{item.label}</p>
-                        <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
+                        <p className="tenant-side-nav__item-label text-sm font-semibold">{item.label}</p>
+                        <p className="tenant-side-nav__item-description mt-1 text-xs leading-5">
                           {item.description}
                         </p>
                       </Link>

@@ -46,12 +46,14 @@ type UserDetailDrawerProps = {
   selectedRoleId: string;
   isSubmitting: boolean;
   isAssigningRole: boolean;
+  removingRoleCode: string;
   error: string;
   onClose: () => void;
   onFormChange: (nextState: UserFormState) => void;
   onSelectedRoleChange: (roleId: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onAssignRole: () => void;
+  onRemoveRole: (roleCode: string) => void;
 };
 
 function formatLastLogin(value: string | null) {
@@ -69,12 +71,14 @@ export function UserDetailDrawer({
   selectedRoleId,
   isSubmitting,
   isAssigningRole,
+  removingRoleCode,
   error,
   onClose,
   onFormChange,
   onSelectedRoleChange,
   onSubmit,
-  onAssignRole
+  onAssignRole,
+  onRemoveRole
 }: UserDetailDrawerProps) {
   if (!isOpen) {
     return null;
@@ -282,12 +286,15 @@ export function UserDetailDrawer({
               <div className="mt-4 flex flex-wrap gap-2">
                 {user.roles.length > 0 ? (
                   user.roles.map((role) => (
-                    <span
+                    <button
+                      type="button"
                       key={role}
-                      className="rounded-full border border-admin-border bg-white px-3 py-1 text-xs font-medium text-admin-text"
+                      onClick={() => onRemoveRole(role)}
+                      disabled={removingRoleCode === role}
+                      className="rounded-full border border-admin-border bg-white px-3 py-1 text-xs font-medium text-admin-text transition hover:border-rose-300 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {role}
-                    </span>
+                      {removingRoleCode === role ? `Removing ${role}...` : `${role} Remove`}
+                    </button>
                   ))
                 ) : (
                   <span className="text-sm text-admin-muted">No roles assigned</span>
