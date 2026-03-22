@@ -1,3 +1,4 @@
+import type { Prisma } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
 import { logAuditEvent } from '@payer-portal/server';
 import { createAccessToken } from './access-token-service';
@@ -152,6 +153,8 @@ type LandingContext =
   | 'employer'
   | 'tenant_admin'
   | 'platform_admin';
+
+type SessionType = 'tenant_admin' | 'end_user' | 'platform_admin';
 
 function getPermissionCodesForRole(roleCode: string) {
   switch (roleCode) {
@@ -882,6 +885,17 @@ export async function login(
     return null;
   }
 
+  const sessionType: SessionType =
+    landingContext === 'platform_admin'
+      ? 'platform_admin'
+      : landingContext === 'tenant_admin'
+        ? 'tenant_admin'
+        : 'end_user';
+  const sessionTenantId =
+    sessionType === 'platform_admin'
+      ? null
+      : activeTenant?.id ?? null;
+
   const permissions = Array.from(
     new Set(
       updatedUser.roles.flatMap(({ role }) =>
@@ -897,6 +911,13 @@ export async function login(
       action: 'auth.login.success',
       entityType: 'user',
       entityId: updatedUser.id,
+      beforeState: {
+        lastLoginAt: user.lastLoginAt?.toISOString() ?? null
+      } satisfies Prisma.InputJsonValue,
+      afterState: {
+        lastLoginAt: updatedUser.lastLoginAt?.toISOString() ?? null,
+        sessionType
+      } satisfies Prisma.InputJsonValue,
       ipAddress: context.ipAddress,
       userAgent: context.userAgent
     });
@@ -906,7 +927,11 @@ export async function login(
     token: createAccessToken({
       userId: updatedUser.id,
       email: updatedUser.email,
-      tenantId: activeTenant?.id ?? PLATFORM_ROOT_SCOPE
+      tenantId:
+        sessionType === 'platform_admin'
+          ? PLATFORM_ROOT_SCOPE
+          : activeTenant?.id ?? PLATFORM_ROOT_SCOPE,
+      sessionType
     }),
     user: {
       id: updatedUser.id,
@@ -914,6 +939,12 @@ export async function login(
       firstName: updatedUser.firstName,
       lastName: updatedUser.lastName,
       landingContext,
+      session: {
+        type: sessionType,
+        tenantId: sessionTenantId,
+        roles: updatedUser.roles.map(({ role }) => role.code),
+        permissions
+      },
       tenant: {
         id: activeTenant?.id ?? 'platform',
         name: activeTenant?.name ?? 'Platform',

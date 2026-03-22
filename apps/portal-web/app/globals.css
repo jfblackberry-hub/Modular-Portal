@@ -100,6 +100,8 @@ html {
   min-height: 100%;
   background: var(--bg-page);
   scroll-behavior: smooth;
+  font-size: clamp(14.5px, 0.25vw + 14px, 18px);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -111,6 +113,8 @@ body {
     linear-gradient(180deg, #f9fbfd 0%, var(--bg-page) 28%, #f3f7fb 100%);
   color: var(--text-primary);
   font-family: var(--tenant-font);
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 a {
@@ -150,6 +154,10 @@ img {
   border-radius: 16px;
   background: var(--bg-card);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.portal-fluid-shell {
+  width: min(100%, 1680px);
 }
 
 .portal-input {

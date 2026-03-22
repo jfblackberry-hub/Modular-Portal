@@ -1,11 +1,14 @@
+import { prefixPreviewHref } from '../lib/preview-route';
 import type { PortalSessionUser } from '../lib/portal-session';
 import type { TenantBranding } from '../lib/tenant-branding';
 
 export function PortalFooter({
   branding,
+  routePrefix,
   user
 }: {
   branding: TenantBranding;
+  routePrefix?: string;
   user: PortalSessionUser;
 }) {
   return (
@@ -21,10 +24,10 @@ export function PortalFooter({
           </p>
         </div>
         <div className="tenant-portal-footer__links flex flex-wrap gap-x-5 gap-y-2">
-          <a className="tenant-portal-footer__link" href="/dashboard/help">Accessibility</a>
-          <a className="tenant-portal-footer__link" href="/dashboard/help">Privacy</a>
-          <a className="tenant-portal-footer__link" href="/dashboard/help">Language support</a>
-          <a className="tenant-portal-footer__link" href={branding.supportEmail ? `mailto:${branding.supportEmail}` : '/dashboard/help'}>
+          <a className="tenant-portal-footer__link" href={prefixPreviewHref(routePrefix, '/dashboard/help')}>Accessibility</a>
+          <a className="tenant-portal-footer__link" href={prefixPreviewHref(routePrefix, '/dashboard/help')}>Privacy</a>
+          <a className="tenant-portal-footer__link" href={prefixPreviewHref(routePrefix, '/dashboard/help')}>Language support</a>
+          <a className="tenant-portal-footer__link" href={branding.supportEmail ? `mailto:${branding.supportEmail}` : prefixPreviewHref(routePrefix, '/dashboard/help')}>
             Contact support
           </a>
         </div>

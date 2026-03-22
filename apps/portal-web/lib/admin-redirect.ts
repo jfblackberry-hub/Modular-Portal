@@ -10,19 +10,11 @@ export function getAdminDestination(
     return '/admin/platform/health';
   }
 
-  if (user.landingContext === 'tenant_admin') {
-    return '/admin/tenant/health';
-  }
-
   if (
     user.roles.includes('platform_admin') ||
     user.roles.includes('platform-admin')
   ) {
     return '/admin/platform/health';
-  }
-
-  if (user.roles.includes('tenant_admin')) {
-    return '/admin/tenant/health';
   }
 
   return null;

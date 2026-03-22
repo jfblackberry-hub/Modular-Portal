@@ -25,6 +25,7 @@ import type {
   ProviderPortalConfig,
   ProviderPortalNavIcon
 } from '../../config/providerPortalConfig';
+import { prefixPreviewHref, stripPreviewHref } from '../../lib/preview-route';
 import type { TenantBranding } from '../../lib/tenant-branding';
 import type { TenantPortalModuleId } from '../../lib/tenant-modules';
 import { isTenantModuleEnabledForUser } from '../../lib/tenant-modules';
@@ -58,6 +59,7 @@ const providerNavModuleMap: Record<string, TenantPortalModuleId> = {
 
 function ProviderSidebar({
   config,
+  routePrefix,
   user,
   isMobileOpen,
   collapsed,
@@ -65,13 +67,14 @@ function ProviderSidebar({
   onToggleCollapse
 }: {
   config: ProviderPortalConfig;
+  routePrefix?: string;
   user: PortalSessionUser;
   isMobileOpen: boolean;
   collapsed: boolean;
   onCloseMobile: () => void;
   onToggleCollapse: () => void;
 }) {
-  const pathname = usePathname();
+  const pathname = stripPreviewHref(routePrefix, usePathname());
   const enabledItems = config.navItems.filter((item) =>
     isTenantModuleEnabledForUser(user, providerNavModuleMap[item.key])
   );
@@ -81,10 +84,10 @@ function ProviderSidebar({
     const Icon = NAV_ICON_MAP[item.icon];
 
     return (
-      <Link
-        key={item.key}
-        href={item.href}
-        onClick={onCloseMobile}
+        <Link
+          key={item.key}
+          href={prefixPreviewHref(routePrefix, item.href)}
+          onClick={onCloseMobile}
         className={`tenant-provider-sidebar__item ${isActive ? 'tenant-provider-sidebar__item--active' : ''} flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
           isActive
             ? 'border-[var(--tenant-primary-color)] bg-[var(--tenant-primary-soft-color)] text-[var(--tenant-primary-color)]'
@@ -153,12 +156,14 @@ export function ProviderPortalLayout({
   branding,
   config,
   children,
+  routePrefix,
   searchBasePath,
   user
 }: {
   branding: TenantBranding;
   config: ProviderPortalConfig;
   children: ReactNode;
+  routePrefix?: string;
   searchBasePath: string;
   user: PortalSessionUser;
 }) {
@@ -183,7 +188,7 @@ export function ProviderPortalLayout({
       }
     >
       <header className="tenant-provider-header sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-white/95 backdrop-blur">
-        <div className="tenant-provider-header__inner mx-auto w-full max-w-[1280px] px-4 py-3 md:px-6">
+        <div className="tenant-provider-header__inner portal-fluid-shell mx-auto w-full max-w-[1600px] px-5 py-4 md:px-7">
           <div className="tenant-provider-header__content flex items-center gap-3">
             <button
               type="button"
@@ -194,7 +199,7 @@ export function ProviderPortalLayout({
               <Menu size={18} />
             </button>
 
-            <a href="/provider/dashboard" className="tenant-provider-header__brand flex items-center gap-3">
+            <a href={prefixPreviewHref(routePrefix, '/provider/dashboard')} className="tenant-provider-header__brand flex items-center gap-3">
               {branding.logoUrl ? (
                 <img
                   src={branding.logoUrl}
@@ -256,9 +261,10 @@ export function ProviderPortalLayout({
         </div>
       </header>
 
-      <div className="tenant-provider-shell mx-auto flex w-full max-w-[1280px]">
+      <div className="tenant-provider-shell portal-fluid-shell mx-auto flex w-full max-w-[1600px]">
         <ProviderSidebar
           config={config}
+          routePrefix={routePrefix}
           user={user}
           isMobileOpen={isMobileSidebarOpen}
           collapsed={collapsed}
@@ -266,7 +272,7 @@ export function ProviderPortalLayout({
           onToggleCollapse={() => setCollapsed((value) => !value)}
         />
 
-        <div className="tenant-provider-shell__main min-w-0 flex-1 px-4 pb-6 pt-4 md:px-6 md:pb-8 lg:px-8 lg:pt-6">
+        <div className="tenant-provider-shell__main min-w-0 flex-1 px-5 pb-7 pt-5 md:px-7 md:pb-9 lg:px-10 lg:pt-7">
           <main id="main-content" className="tenant-provider-shell__main-content min-w-0 space-y-4">
             {children}
           </main>

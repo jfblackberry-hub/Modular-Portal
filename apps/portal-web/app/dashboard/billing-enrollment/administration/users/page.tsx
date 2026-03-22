@@ -1,20 +1,20 @@
-import { EmployerAdministratorUsers } from '../../../../../components/billing-enrollment/EmployerAdministratorUsers';
-import {
-  getAdminModules,
-  getAdministratorsForTenant,
-  getRolePermissionMatrixForTenant
-} from '../../../../../lib/employer-admin-settings-data';
+import { redirect } from 'next/navigation';
+
+import { LegacyTenantAdminReadOnly } from '../../../../../components/tenant-admin/legacy-tenant-admin-read-only';
 import { getPortalSessionUser } from '../../../../../lib/portal-session';
 
 export default async function EmployerAdministrationUsersPage() {
   const sessionUser = await getPortalSessionUser();
-  const tenantId = sessionUser?.tenant.id ?? 'unknown-tenant';
+
+  if (sessionUser?.session.type === 'tenant_admin') {
+    redirect('/tenant-admin/users');
+  }
 
   return (
-    <EmployerAdministratorUsers
-      initialAdministrators={getAdministratorsForTenant(tenantId)}
-      initialPermissions={getRolePermissionMatrixForTenant(tenantId)}
-      modules={getAdminModules()}
+    <LegacyTenantAdminReadOnly
+      title="User Management"
+      description="Tenant user management has moved to the dedicated tenant-admin workspace. This legacy billing route is now informational only."
+      targetHref="/tenant-admin/users"
     />
   );
 }

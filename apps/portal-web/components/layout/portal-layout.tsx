@@ -11,11 +11,13 @@ import { Sidebar } from './sidebar';
 export function PortalLayout({
   branding,
   children,
+  routePrefix,
   searchBasePath,
   user
 }: {
   branding: TenantBranding;
   children: ReactNode;
+  routePrefix?: string;
   searchBasePath: string;
   user: PortalSessionUser;
 }) {
@@ -39,24 +41,26 @@ export function PortalLayout({
       <Header
         branding={branding}
         user={user}
+        routePrefix={routePrefix}
         searchBasePath={searchBasePath}
         onMenuClick={() => setMobileSidebarOpen(true)}
       />
 
-      <div className="mx-auto flex w-full max-w-[1200px]">
+      <div className="portal-fluid-shell mx-auto flex w-full max-w-[1600px]">
         <Sidebar
           isMobileOpen={isMobileSidebarOpen}
           onCloseMobile={() => setMobileSidebarOpen(false)}
+          routePrefix={routePrefix}
           user={user}
         />
 
-        <main id="main-content" className="min-w-0 flex-1 p-4 lg:p-8">
+        <main id="main-content" className="min-w-0 flex-1 p-5 lg:p-10">
           {children}
         </main>
       </div>
 
       <footer className="border-t border-[var(--border-subtle)] bg-white">
-        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-2 px-4 py-4 text-sm text-[var(--text-secondary)] md:px-6">
+        <div className="portal-fluid-shell mx-auto flex w-full max-w-[1600px] flex-col gap-2 px-5 py-5 text-sm text-[var(--text-secondary)] md:px-7">
           <p className="font-semibold text-[var(--text-primary)]">
             {branding.displayName} member portal
           </p>

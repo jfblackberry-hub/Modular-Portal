@@ -1,0 +1,145 @@
+.shell {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(11, 18, 32, 0.96);
+  border-bottom: 1px solid rgba(96, 165, 250, 0.18);
+  backdrop-filter: blur(14px);
+  color: #ffffff;
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  font-family: Aptos, "Segoe UI", sans-serif;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  color: #dbeafe;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.action {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+  color: #ffffff;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.action:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.inspector {
+  border-top: 1px solid rgba(96, 165, 250, 0.14);
+  background: rgba(7, 12, 23, 0.96);
+  padding: 0.9rem 1rem 1rem;
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inspectorSection {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.inspectorTitle {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #93c5fd;
+}
+
+.inspectorValue {
+  margin: 0.55rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.inspectorHint {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+.history {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+}
+
+.historyItem {
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.7rem 0.75rem;
+}
+
+.historyRoute {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.historyMeta {
+  margin: 0.2rem 0 0;
+  font-size: 0.76rem;
+  color: #93c5fd;
+}
+
+.historyDetail {
+  margin: 0.25rem 0 0;
+  font-size: 0.76rem;
+  color: #cbd5e1;
+}
+
+@media (max-width: 960px) {
+  .inspector {
+    grid-template-columns: 1fr;
+  }
+}

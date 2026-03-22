@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { Permission, Role, User } from '@payer-portal/database';
-import { prisma } from '@payer-portal/database';
+import { Prisma, prisma } from '@payer-portal/database';
 import {
   createNotification,
   logAuditEvent,
@@ -269,7 +269,7 @@ export async function createRole(input: CreateRoleInput) {
   return mapRole(hydratedRole);
 }
 
-export async function assignRoleToUser(userId: string, roleId: string) {
+export async function assignRoleToUser(userId: string, roleId: string, context: AuditContext = {}) {
   const [user, role] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId }
@@ -286,6 +286,14 @@ export async function assignRoleToUser(userId: string, roleId: string) {
   if (!role) {
     throw new Error('Role not found');
   }
+
+  const tenantId = user.tenantId;
+  const beforeState = {
+    roleIds: await prisma.userRole.findMany({
+      where: { userId },
+      select: { roleId: true }
+    }).then((items) => items.map((item) => item.roleId))
+  };
 
   await prisma.userRole.upsert({
     where: {
@@ -313,6 +321,33 @@ export async function assignRoleToUser(userId: string, roleId: string) {
       code: 'asc'
     }
   });
+  const afterRoleIds = await prisma.userRole.findMany({
+    where: { userId },
+    select: { roleId: true }
+  });
+
+  if (tenantId) {
+    await logAuditEvent({
+      tenantId,
+      actorUserId: context.actorUserId ?? null,
+      action: 'tenant.role-assignment.updated',
+      entityType: 'user-role',
+      entityId: `${userId}:${roleId}`,
+      beforeState: beforeState as unknown as Prisma.InputJsonValue,
+      afterState: {
+        roleIds: afterRoleIds.map((item) => item.roleId),
+        assignedRoleId: roleId,
+        assignedRoleCode: role.code
+      } satisfies Prisma.InputJsonValue,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+      metadata: {
+        userId,
+        roleId,
+        roleCode: role.code
+      }
+    });
+  }
 
   return {
     userId,
@@ -322,7 +357,7 @@ export async function assignRoleToUser(userId: string, roleId: string) {
   };
 }
 
-export async function removeRoleFromUser(userId: string, roleId: string) {
+export async function removeRoleFromUser(userId: string, roleId: string, context: AuditContext = {}) {
   const [user, role, assignment] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId }
@@ -352,6 +387,11 @@ export async function removeRoleFromUser(userId: string, roleId: string) {
     throw new Error('Role assignment not found');
   }
 
+  const beforeRoleIds = await prisma.userRole.findMany({
+    where: { userId },
+    select: { roleId: true }
+  });
+
   await prisma.userRole.delete({
     where: {
       userId_roleId: {
@@ -360,6 +400,36 @@ export async function removeRoleFromUser(userId: string, roleId: string) {
       }
     }
   });
+
+  const afterRoleIds = await prisma.userRole.findMany({
+    where: { userId },
+    select: { roleId: true }
+  });
+
+  if (user.tenantId) {
+    await logAuditEvent({
+      tenantId: user.tenantId,
+      actorUserId: context.actorUserId ?? null,
+      action: 'tenant.role-assignment.removed',
+      entityType: 'user-role',
+      entityId: `${userId}:${roleId}`,
+      beforeState: {
+        roleIds: beforeRoleIds.map((item) => item.roleId)
+      } satisfies Prisma.InputJsonValue,
+      afterState: {
+        roleIds: afterRoleIds.map((item) => item.roleId),
+        removedRoleId: roleId,
+        removedRoleCode: role.code
+      } satisfies Prisma.InputJsonValue,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+      metadata: {
+        userId,
+        roleId,
+        roleCode: role.code
+      }
+    });
+  }
 
   return {
     userId,
@@ -438,6 +508,14 @@ export async function createUser(
         action: 'user.created',
         entityType: 'user',
         entityId: createdUser.id,
+        beforeState: Prisma.JsonNull as unknown as Prisma.InputJsonValue,
+        afterState: {
+          email,
+          firstName,
+          lastName,
+          isActive: input.isActive ?? true,
+          tenantId
+        } satisfies Prisma.InputJsonValue,
         ipAddress: context.ipAddress,
         userAgent: context.userAgent
       });
@@ -479,7 +557,7 @@ export async function createUser(
   return mapUser(user);
 }
 
-export async function updateUser(id: string, input: UpdateUserInput) {
+export async function updateUser(id: string, input: UpdateUserInput, context: AuditContext = {}) {
   const existingUser = await prisma.user.findUnique({
     where: { id }
   });
@@ -518,6 +596,14 @@ export async function updateUser(id: string, input: UpdateUserInput) {
         throw new Error('Tenant not found');
       }
     }
+
+    const beforeState = {
+      tenantId: existingUser.tenantId,
+      email: existingUser.email,
+      firstName: existingUser.firstName,
+      lastName: existingUser.lastName,
+      isActive: existingUser.isActive
+    };
 
     const updatedUser = await tx.user.update({
       where: { id },
@@ -562,6 +648,27 @@ export async function updateUser(id: string, input: UpdateUserInput) {
       });
     }
 
+    if (tenantId) {
+      await logAuditEvent({
+        client: tx,
+        tenantId,
+        actorUserId: context.actorUserId ?? null,
+        action: 'user.updated',
+        entityType: 'user',
+        entityId: id,
+        beforeState: beforeState as Prisma.InputJsonValue,
+        afterState: {
+          tenantId: tenantId ?? null,
+          email,
+          firstName,
+          lastName,
+          isActive
+        } satisfies Prisma.InputJsonValue,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent
+      });
+    }
+
     return tx.user.findUniqueOrThrow({
       where: { id: updatedUser.id },
       include: userInclude
@@ -571,7 +678,7 @@ export async function updateUser(id: string, input: UpdateUserInput) {
   return mapUser(user);
 }
 
-export async function deleteUser(id: string) {
+export async function deleteUser(id: string, context: AuditContext = {}) {
   const existingUser = await prisma.user.findUnique({
     where: { id },
     include: {
@@ -588,8 +695,31 @@ export async function deleteUser(id: string) {
     throw new Error('User not found');
   }
 
-  await prisma.user.delete({
-    where: { id }
+  await prisma.$transaction(async (tx) => {
+    if (existingUser.tenantId) {
+      await logAuditEvent({
+        client: tx,
+        tenantId: existingUser.tenantId,
+        actorUserId: context.actorUserId ?? null,
+        action: 'user.deleted',
+        entityType: 'user',
+        entityId: existingUser.id,
+        beforeState: {
+          email: existingUser.email,
+          firstName: existingUser.firstName,
+          lastName: existingUser.lastName,
+          tenantId: existingUser.tenantId,
+          roles: existingUser.roles.map(({ role }) => role.code)
+        } satisfies Prisma.InputJsonValue,
+        afterState: Prisma.JsonNull as unknown as Prisma.InputJsonValue,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent
+      });
+    }
+
+    await tx.user.delete({
+      where: { id }
+    });
   });
 
   return {

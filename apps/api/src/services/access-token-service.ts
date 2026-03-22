@@ -11,6 +11,9 @@ type AccessTokenPayload = {
   sub: string;
   email: string;
   tenantId: string;
+  sessionType: 'tenant_admin' | 'end_user' | 'platform_admin';
+  previewSessionId?: string;
+  previewMode?: 'READ_ONLY' | 'FUNCTIONAL';
   iat: number;
   exp: number;
 };
@@ -40,6 +43,9 @@ export function createAccessToken(input: {
   userId: string;
   email: string;
   tenantId: string;
+  sessionType: 'tenant_admin' | 'end_user' | 'platform_admin';
+  previewSessionId?: string;
+  previewMode?: 'READ_ONLY' | 'FUNCTIONAL';
   ttlSeconds?: number;
 }) {
   const now = Math.floor(Date.now() / 1000);
@@ -49,6 +55,13 @@ export function createAccessToken(input: {
     sub: input.userId,
     email: input.email,
     tenantId: input.tenantId,
+    sessionType: input.sessionType,
+    ...(input.previewSessionId
+      ? {
+          previewSessionId: input.previewSessionId,
+          previewMode: input.previewMode ?? 'FUNCTIONAL'
+        }
+      : {}),
     iat: now,
     exp: now + (input.ttlSeconds ?? DEFAULT_ACCESS_TOKEN_TTL_SECONDS)
   };
@@ -87,9 +100,26 @@ export function verifyAccessToken(token: string | null | undefined) {
       !payload.email.trim() ||
       typeof payload.tenantId !== 'string' ||
       !payload.tenantId.trim() ||
+      (payload.sessionType !== 'tenant_admin' &&
+        payload.sessionType !== 'end_user' &&
+        payload.sessionType !== 'platform_admin') ||
+      ('previewSessionId' in payload &&
+        payload.previewSessionId !== undefined &&
+        (typeof payload.previewSessionId !== 'string' || !payload.previewSessionId.trim())) ||
+      ('previewMode' in payload &&
+        payload.previewMode !== undefined &&
+        payload.previewMode !== 'READ_ONLY' &&
+        payload.previewMode !== 'FUNCTIONAL') ||
       typeof payload.iat !== 'number' ||
       typeof payload.exp !== 'number' ||
       payload.exp <= Math.floor(Date.now() / 1000)
+    ) {
+      return null;
+    }
+
+    if (
+      payload.sessionType !== 'end_user' &&
+      (payload.previewSessionId !== undefined || payload.previewMode !== undefined)
     ) {
       return null;
     }

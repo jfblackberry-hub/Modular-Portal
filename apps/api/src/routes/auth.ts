@@ -1,5 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 
+import { logAuditEvent } from '@payer-portal/server';
+
 import {
   AuthenticationError,
   getCurrentUserFromHeaders,
@@ -139,4 +141,44 @@ export async function authRoutes(app: FastifyInstance) {
       }
     }
   );
+
+  app.post('/auth/logout', async (request, reply) => {
+    try {
+      const currentUser = await getCurrentUserFromHeaders(request.headers);
+      const auditTenantId =
+        currentUser.tenantId && currentUser.tenantId !== 'platform'
+          ? currentUser.tenantId
+          : currentUser.accessibleTenantIds[0] ?? null;
+
+      if (auditTenantId) {
+        await logAuditEvent({
+          tenantId: auditTenantId,
+          actorUserId: currentUser.id,
+          action: 'auth.logout',
+          entityType: 'user',
+          entityId: currentUser.id,
+          beforeState: {
+            sessionType: currentUser.sessionType,
+            tenantId: currentUser.tenantId
+          },
+          afterState: {
+            sessionActive: false
+          },
+          ipAddress: request.ip,
+          userAgent: request.headers['user-agent']
+        });
+      }
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        return reply.status(401).send({ message: error.message });
+      }
+
+      return reply.status(503).send({
+        message:
+          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+      });
+    }
+  });
 }

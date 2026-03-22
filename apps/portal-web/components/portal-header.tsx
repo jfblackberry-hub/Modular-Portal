@@ -4,9 +4,11 @@ import { SignOutButton } from './sign-out-button';
 
 export function PortalHeader({
   branding,
+  routePrefix,
   user
 }: {
   branding: TenantBranding;
+  routePrefix?: string;
   user: PortalSessionUser;
 }) {
   const initials = `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`;
@@ -20,7 +22,6 @@ export function PortalHeader({
   const payerName = branding.payerDisplayName ?? 'Health Plan';
   const payerLogoUrl = branding.payerLogoUrl;
   const primaryHeaderLogoUrl = isMemberExperience ? payerLogoUrl ?? branding.logoUrl : branding.logoUrl;
-
   return (
     <header className="tenant-portal-header border-b border-[var(--border-subtle)] bg-white">
       <div className="tenant-portal-header__band border-b border-[var(--border-subtle)] bg-[var(--tenant-primary-soft-color)]/35">

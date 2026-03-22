@@ -106,6 +106,12 @@ export function LoginForm({
           firstName: string;
           lastName: string;
           email: string;
+          session: {
+            type: 'tenant_admin' | 'end_user' | 'platform_admin';
+            tenantId: string | null;
+            roles: string[];
+            permissions: string[];
+          };
           landingContext?:
             | 'member'
             | 'provider'
@@ -157,6 +163,20 @@ export function LoginForm({
         console.info('[portal-auth] redirect/navigation', { to: requestedRedirect });
         navigating = true;
         window.location.assign(requestedRedirect);
+        return;
+      }
+
+      if (payload.user.session.type === 'platform_admin') {
+        console.info('[portal-auth] redirect/navigation', { to: adminRedirectUrl ?? redirectPath });
+        navigating = true;
+        window.location.assign(adminRedirectUrl ?? redirectPath);
+        return;
+      }
+
+      if (payload.user.session.type === 'tenant_admin') {
+        console.info('[portal-auth] redirect/navigation', { to: '/tenant-admin/dashboard' });
+        navigating = true;
+        window.location.assign('/tenant-admin/dashboard');
         return;
       }
 

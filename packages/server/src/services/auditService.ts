@@ -21,6 +21,8 @@ export type AuditEventListItem = {
   eventType: string;
   resourceType: string;
   resourceId: string | null;
+  beforeState: Prisma.JsonValue | null;
+  afterState: Prisma.JsonValue | null;
   metadata: Prisma.JsonValue | null;
   ipAddress: string | null;
   userAgent: string | null;
@@ -43,6 +45,8 @@ export type LogAuditEventInput = {
   action: string;
   entityType: string;
   entityId?: string | null;
+  beforeState?: Prisma.InputJsonValue;
+  afterState?: Prisma.InputJsonValue;
   metadata?: Prisma.InputJsonValue;
   ipAddress?: string | null;
   userAgent?: string | null;
@@ -94,6 +98,8 @@ export async function logAuditEvent(
         action: normalizeRequired(input.action, 'action'),
         entityType: normalizeRequired(input.entityType, 'entityType'),
         entityId: normalizeOptional(input.entityId),
+        beforeState: input.beforeState,
+        afterState: input.afterState,
         metadata: input.metadata,
         ipAddress: normalizeOptional(input.ipAddress),
         userAgent: normalizeOptional(input.userAgent)
@@ -168,6 +174,8 @@ export async function listAuditEvents(
       eventType: item.action,
       resourceType: item.entityType,
       resourceId: item.entityId,
+      beforeState: item.beforeState,
+      afterState: item.afterState,
       metadata: item.metadata,
       ipAddress: item.ipAddress,
       userAgent: item.userAgent,

@@ -11,6 +11,133 @@ type SessionEnvelope = {
   v: number;
 };
 
+const SESSION_TYPES = new Set(['tenant_admin', 'end_user', 'platform_admin']);
+const LANDING_CONTEXTS = new Set([
+  'member',
+  'provider',
+  'broker',
+  'employer',
+  'tenant_admin',
+  'platform_admin'
+]);
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
+}
+
+function hasValidPortalSessionUser(user: Record<string, unknown>) {
+  if (
+    typeof user.id !== 'string' ||
+    !user.id.trim() ||
+    typeof user.email !== 'string' ||
+    !user.email.trim() ||
+    typeof user.firstName !== 'string' ||
+    typeof user.lastName !== 'string' ||
+    !isStringArray(user.roles) ||
+    !isStringArray(user.permissions)
+  ) {
+    return false;
+  }
+
+  if (
+    !user.tenant ||
+    typeof user.tenant !== 'object' ||
+    Array.isArray(user.tenant) ||
+    typeof (user.tenant as Record<string, unknown>).id !== 'string' ||
+    !((user.tenant as Record<string, unknown>).id as string).trim() ||
+    typeof (user.tenant as Record<string, unknown>).name !== 'string' ||
+    !((user.tenant as Record<string, unknown>).name as string).trim()
+  ) {
+    return false;
+  }
+
+  if (
+    user.landingContext !== undefined &&
+    (typeof user.landingContext !== 'string' || !LANDING_CONTEXTS.has(user.landingContext))
+  ) {
+    return false;
+  }
+
+  if (
+    !user.session ||
+    typeof user.session !== 'object' ||
+    Array.isArray(user.session)
+  ) {
+    return false;
+  }
+
+  const session = user.session as Record<string, unknown>;
+
+  if (
+    typeof session.type !== 'string' ||
+    !SESSION_TYPES.has(session.type) ||
+    !isStringArray(session.roles) ||
+    !isStringArray(session.permissions) ||
+    (session.tenantId !== null &&
+      (typeof session.tenantId !== 'string' || !(session.tenantId as string).trim()))
+  ) {
+    return false;
+  }
+
+  if (session.type === 'tenant_admin') {
+    if (
+      session.tenantId === null ||
+      user.landingContext !== 'tenant_admin' ||
+      (user as Record<string, unknown>).previewSession !== undefined
+    ) {
+      return false;
+    }
+  }
+
+  if (session.type === 'platform_admin') {
+    if (
+      user.landingContext !== 'platform_admin' ||
+      (user as Record<string, unknown>).previewSession !== undefined
+    ) {
+      return false;
+    }
+  }
+
+  if (
+    session.type === 'end_user' &&
+    user.landingContext !== undefined &&
+    (user.landingContext === 'tenant_admin' || user.landingContext === 'platform_admin')
+  ) {
+    return false;
+  }
+
+  if ((user as Record<string, unknown>).previewSession !== undefined) {
+    const previewSession = (user as Record<string, unknown>).previewSession;
+
+    if (
+      !previewSession ||
+      typeof previewSession !== 'object' ||
+      Array.isArray(previewSession)
+    ) {
+      return false;
+    }
+
+    const preview = previewSession as Record<string, unknown>;
+
+    if (
+      session.type !== 'end_user' ||
+      typeof preview.id !== 'string' ||
+      !preview.id.trim() ||
+      typeof preview.portalType !== 'string' ||
+      typeof preview.persona !== 'string' ||
+      typeof preview.mode !== 'string' ||
+      typeof preview.adminUserEmail !== 'string' ||
+      typeof preview.createdAt !== 'string' ||
+      typeof preview.expiresAt !== 'string' ||
+      typeof preview.homePath !== 'string'
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function getSessionSecret() {
   return process.env.PORTAL_SESSION_SECRET ?? DEFAULT_SESSION_SECRET;
 }
@@ -140,7 +267,8 @@ export async function readPortalSessionEnvelopeFromCookie(
       parsed.exp <= Math.floor(Date.now() / 1000) ||
       !parsed.user ||
       typeof parsed.user !== 'object' ||
-      Array.isArray(parsed.user)
+      Array.isArray(parsed.user) ||
+      !hasValidPortalSessionUser(parsed.user)
     ) {
       return null;
     }

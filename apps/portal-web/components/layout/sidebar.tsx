@@ -16,6 +16,7 @@ import {
   X
 } from 'lucide-react';
 import type { PortalSessionUser } from '../../lib/portal-session';
+import { prefixPreviewHref, stripPreviewHref } from '../../lib/preview-route';
 import type { TenantPortalModuleId } from '../../lib/tenant-modules';
 import { isTenantModuleEnabledForUser } from '../../lib/tenant-modules';
 
@@ -40,13 +41,15 @@ const navItems: NavItem[] = [
 function NavLinks({
   collapsed,
   onNavigate,
+  routePrefix,
   user
 }: {
   collapsed: boolean;
   onNavigate?: () => void;
+  routePrefix?: string;
   user: PortalSessionUser;
 }) {
-  const pathname = usePathname();
+  const pathname = stripPreviewHref(routePrefix, usePathname());
   const enabledNavItems = navItems.filter((item) => isTenantModuleEnabledForUser(user, item.moduleId));
 
   return (
@@ -58,7 +61,7 @@ function NavLinks({
         return (
           <Link
             key={item.label}
-            href={item.href}
+            href={prefixPreviewHref(routePrefix, item.href)}
             onClick={onNavigate}
             className={`flex items-center rounded-xl border px-3 py-2 text-sm font-medium transition ${
               active
@@ -78,10 +81,12 @@ function NavLinks({
 export function Sidebar({
   isMobileOpen,
   onCloseMobile,
+  routePrefix,
   user
 }: {
   isMobileOpen: boolean;
   onCloseMobile: () => void;
+  routePrefix?: string;
   user: PortalSessionUser;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -102,7 +107,7 @@ export function Sidebar({
           >
             <Menu size={16} />
           </button>
-          <NavLinks collapsed={collapsed} user={user} />
+          <NavLinks collapsed={collapsed} routePrefix={routePrefix} user={user} />
         </div>
       </aside>
 
@@ -126,7 +131,7 @@ export function Sidebar({
                 <X size={16} />
               </button>
             </div>
-            <NavLinks collapsed={false} onNavigate={onCloseMobile} user={user} />
+            <NavLinks collapsed={false} onNavigate={onCloseMobile} routePrefix={routePrefix} user={user} />
           </aside>
         </div>
       ) : null}

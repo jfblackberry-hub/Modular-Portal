@@ -261,6 +261,15 @@ export async function updateBrandingForTenant(
     const currentBrandingConfig = isRecord(tenant.brandingConfig)
       ? tenant.brandingConfig
       : {};
+    const currentBrandingState = {
+      displayName: tenant.branding?.displayName ?? tenant.name,
+      primaryColor: tenant.branding?.primaryColor ?? DEFAULT_PRIMARY_COLOR,
+      secondaryColor: tenant.branding?.secondaryColor ?? DEFAULT_SECONDARY_COLOR,
+      logoUrl: tenant.branding?.logoUrl ?? null,
+      faviconUrl: tenant.branding?.faviconUrl ?? null,
+      customCss:
+        typeof currentBrandingConfig.customCss === 'string' ? currentBrandingConfig.customCss : null
+    };
 
     const nextDisplayName =
       normalizeOptionalString(input.displayName) ?? tenant.branding?.displayName ?? tenant.name;
@@ -331,6 +340,15 @@ export async function updateBrandingForTenant(
       action: 'tenant.updated',
       entityType: 'tenant',
       entityId: tenant.id,
+      beforeState: currentBrandingState as Prisma.InputJsonValue,
+      afterState: {
+        displayName: nextDisplayName,
+        primaryColor: nextPrimaryColor,
+        secondaryColor: nextSecondaryColor,
+        logoUrl: nextLogoUrl,
+        faviconUrl: nextFaviconUrl,
+        customCss: nextCustomCss
+      } satisfies Prisma.InputJsonValue,
       ipAddress: context.ipAddress,
       userAgent: context.userAgent,
       metadata: {

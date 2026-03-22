@@ -24,6 +24,7 @@ const SECTION_ICON_MAP = {
   tenants: Building2,
   users: Users2,
   roles: ShieldCheck,
+  security: ShieldCheck,
   modules: Blocks,
   'api-catalog': BookMarked,
   audit: AppWindow,

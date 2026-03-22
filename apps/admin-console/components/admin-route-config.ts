@@ -15,6 +15,7 @@ export type AdminSectionIcon =
   | 'tenants'
   | 'users'
   | 'roles'
+  | 'security'
   | 'modules'
   | 'api-catalog'
   | 'audit'
@@ -230,39 +231,45 @@ const platformMenu: AdminMenuConfig = {
     },
     {
       key: 'security',
-      label: 'Audit Logs',
-      icon: 'audit',
+      label: 'Security',
+      icon: 'security',
       items: [
         {
-          key: 'audit-workspace',
-          label: 'Audit & Permissions',
-          description: 'Security oversight, permissions, and audit visibility.',
-          items: [
-            {
-              key: 'audit-log',
-              href: '/admin/platform/audit',
-              label: 'Audit Log',
-              description: 'Detailed cross-tenant audit history.'
-            },
-            {
-              key: 'permission-matrix',
-              href: '/admin/platform/security/permissions',
-              label: 'Permission Matrix',
-              description: 'Review permission coverage and role boundaries.'
-            },
-            {
-              key: 'session-management',
-              href: '/admin/platform/security/sessions',
-              label: 'Session Management',
-              description: 'Inspect admin session controls and activity.'
-            }
-          ]
+          key: 'permission-matrix',
+          href: '/admin/platform/security/permissions',
+          label: 'Permission Matrix',
+          description: 'Review permission coverage and role boundaries.'
+        },
+        {
+          key: 'session-management',
+          href: '/admin/platform/security/sessions',
+          label: 'Sessions',
+          description: 'Launch and manage isolated admin preview sessions.'
         },
         {
           key: 'role-management',
           href: '/admin/platform/roles',
           label: 'Roles & Permissions',
           description: 'Maintain platform RBAC roles and assignments.'
+        }
+      ]
+    },
+    {
+      key: 'audit-logs',
+      label: 'Audit Logs',
+      icon: 'audit',
+      items: [
+        {
+          key: 'audit-log',
+          href: '/admin/platform/audit',
+          label: 'Audit Log',
+          description: 'Detailed cross-tenant audit history.'
+        },
+        {
+          key: 'audit-overview-workspace',
+          href: '/admin/platform/audit-overview',
+          label: 'Audit Overview',
+          description: 'High-level operational audit visibility.'
         }
       ]
     }

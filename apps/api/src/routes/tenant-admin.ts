@@ -445,7 +445,12 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
         const assignment = await assignRoleToTenantUser(
           tenantId,
           request.params.userId,
-          request.body.roleId
+          request.body.roleId,
+          {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          }
         );
 
         return reply.status(201).send(assignment);
@@ -470,7 +475,12 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
         const result = await removeRoleFromTenantUser(
           tenantId,
           request.params.userId,
-          request.params.roleId
+          request.params.roleId,
+          {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          }
         );
 
         return reply.send(result);
@@ -516,7 +526,12 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
         const user = await updateTenantScopedUser(
           tenantId,
           request.params.userId,
-          request.body
+          request.body,
+          {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          }
         );
 
         return reply.send(user);
@@ -540,7 +555,12 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
 
         const deletedUser = await deleteTenantScopedUser(
           tenantId,
-          request.params.userId
+          request.params.userId,
+          {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          }
         );
 
         return reply.send(deletedUser);

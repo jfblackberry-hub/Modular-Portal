@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 
 import type { PortalNavigationSection } from '../lib/navigation';
+import { prefixPreviewHref } from '../lib/preview-route';
 import { resolvePortalExperience } from '../lib/portal-experience';
 import type { PortalSessionUser } from '../lib/portal-session';
 import type { TenantBranding } from '../lib/tenant-branding';
@@ -17,18 +18,20 @@ export function PortalShell({
   branding,
   children,
   navigation,
+  routePrefix,
   searchBasePath,
   user
 }: Readonly<{
   branding: TenantBranding;
   children: React.ReactNode;
   navigation: PortalNavigationSection[];
+  routePrefix?: string;
   searchBasePath: string;
   user: PortalSessionUser;
 }>) {
   const isMemberExperience = resolvePortalExperience(user) === 'member';
   const isBrokerExperience = branding.experience === 'broker';
-  const shellMaxWidth = isBrokerExperience ? 'max-w-[1560px]' : 'max-w-7xl';
+  const shellMaxWidth = isBrokerExperience ? 'portal-fluid-shell max-w-[1680px]' : 'portal-fluid-shell max-w-[1600px]';
   const initials = `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`;
 
   return (
@@ -52,7 +55,7 @@ export function PortalShell({
       <TenantTheme branding={branding} />
       {isBrokerExperience || isMemberExperience ? (
         <header className="tenant-utility-bar border-b border-[var(--border-subtle)] bg-white/95 backdrop-blur">
-          <div className={`tenant-utility-bar__inner mx-auto ${shellMaxWidth} px-4 py-3 sm:px-6`}>
+          <div className={`tenant-utility-bar__inner mx-auto ${shellMaxWidth} px-5 py-4 sm:px-7`}>
             <div className="tenant-utility-bar__content flex items-center gap-3">
               <div className="tenant-utility-bar__search min-w-0 flex-1">
                 <PortalSearchForm searchBasePath={searchBasePath} />
@@ -84,10 +87,11 @@ export function PortalShell({
       ) : null}
       <PortalHeader
         branding={branding}
+        routePrefix={routePrefix}
         user={user}
       />
-      <div className={`tenant-portal-shell__content mx-auto grid ${shellMaxWidth} gap-4 px-4 py-5 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start`}>
-        <SideNavigation branding={branding} sections={navigation} />
+      <div className={`tenant-portal-shell__content mx-auto grid ${shellMaxWidth} gap-5 px-5 py-6 sm:px-7 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start`}>
+        <SideNavigation branding={branding} routePrefix={routePrefix} sections={navigation} />
         <div className="tenant-portal-shell__main min-w-0 space-y-4">
           <ContentLayout>{children}</ContentLayout>
 
@@ -100,7 +104,7 @@ export function PortalShell({
               <div className="tenant-portal-shell__support-actions flex flex-wrap items-center gap-3 xl:ml-auto xl:justify-end">
                 {isTenantModuleEnabledForUser(user, 'member_messages') ? (
                   <a
-                    href="/dashboard/messages"
+                    href={prefixPreviewHref(routePrefix, '/dashboard/messages')}
                     className="tenant-portal-shell__support-link inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-white px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition hover:border-[var(--tenant-primary-color)] hover:text-[var(--tenant-primary-color)]"
                   >
                     Messages
@@ -108,7 +112,7 @@ export function PortalShell({
                 ) : null}
                 {isTenantModuleEnabledForUser(user, 'member_support') ? (
                   <a
-                    href="/dashboard/help"
+                    href={prefixPreviewHref(routePrefix, '/dashboard/help')}
                     className="tenant-portal-shell__support-link inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-white px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition hover:border-[var(--tenant-primary-color)] hover:text-[var(--tenant-primary-color)]"
                   >
                     Help
@@ -119,7 +123,7 @@ export function PortalShell({
           )}
         </div>
       </div>
-      <PortalFooter branding={branding} user={user} />
+      <PortalFooter branding={branding} routePrefix={routePrefix} user={user} />
     </div>
   );
 }

@@ -162,6 +162,8 @@ export async function auditRoutes(app: FastifyInstance) {
             eventType: item.action,
             resourceType: item.entityType,
             resourceId: item.entityId,
+            beforeState: item.beforeState,
+            afterState: item.afterState,
             metadata: item.metadata,
             ipAddress: item.ipAddress,
             userAgent: item.userAgent,

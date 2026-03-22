@@ -9,11 +9,21 @@ export interface PortalTenant {
   brandingConfig?: Record<string, unknown>;
 }
 
+export type PortalSessionType = 'tenant_admin' | 'end_user' | 'platform_admin';
+
+export interface PortalSessionScope {
+  type: PortalSessionType;
+  tenantId: string | null;
+  roles: string[];
+  permissions: string[];
+}
+
 export interface PortalSessionUser {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
+  session: PortalSessionScope;
   landingContext?:
     | 'member'
     | 'provider'
@@ -24,6 +34,16 @@ export interface PortalSessionUser {
   tenant: PortalTenant;
   roles: string[];
   permissions: string[];
+  previewSession?: {
+    id: string;
+    portalType: 'member' | 'provider' | 'broker' | 'employer' | 'tenant_admin';
+    persona: string;
+    mode: 'READ_ONLY' | 'FUNCTIONAL';
+    adminUserEmail: string;
+    createdAt: string;
+    expiresAt: string;
+    homePath: string;
+  };
 }
 
 export interface PortalSession {

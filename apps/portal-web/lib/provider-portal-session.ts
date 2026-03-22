@@ -11,9 +11,10 @@ export async function getProviderPortalSessionContext() {
   }
 
   const isProviderUser =
-    user.landingContext === 'provider' ||
+    user.session.type === 'end_user' &&
+    (user.landingContext === 'provider' ||
     user.roles.includes('provider') ||
-    user.permissions.includes('provider.view');
+    user.permissions.includes('provider.view'));
 
   if (!isProviderUser) {
     redirect('/login');

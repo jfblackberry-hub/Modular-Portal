@@ -1,0 +1,10 @@
+import { TenantAdminSubtenantsWorkspace } from '../../../components/tenant-admin/tenant-admin-workspaces';
+import { getTenantAdminWorkspaceData } from '../../../lib/tenant-admin-data';
+import { getTenantAdminSessionContext } from '../../../lib/tenant-admin-session';
+
+export default async function TenantAdminSubtenantsPage() {
+  const { tenantId, tenantName } = await getTenantAdminSessionContext();
+  const workspace = getTenantAdminWorkspaceData(tenantId, tenantName);
+
+  return <TenantAdminSubtenantsWorkspace subtenants={workspace.subtenants} />;
+}

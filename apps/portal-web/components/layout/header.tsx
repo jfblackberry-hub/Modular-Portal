@@ -1,23 +1,28 @@
 'use client';
 
+import Link from 'next/link';
 import { Bell, Menu } from 'lucide-react';
 
 import type { PortalSessionUser } from '../../lib/portal-session';
+import { prefixPreviewHref } from '../../lib/preview-route';
 import type { TenantBranding } from '../../lib/tenant-branding';
 import { SignOutButton } from '../sign-out-button';
 
 export function Header({
   branding,
   onMenuClick,
+  routePrefix,
   searchBasePath,
   user
 }: {
   branding: TenantBranding;
   onMenuClick: () => void;
+  routePrefix?: string;
   searchBasePath: string;
   user: PortalSessionUser;
 }) {
   const initials = `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`;
+  const homeHref = prefixPreviewHref(routePrefix, '/member');
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-white/95 backdrop-blur">
@@ -31,7 +36,7 @@ export function Header({
           <Menu size={18} />
         </button>
 
-        <a href="/member" className="min-w-0">
+        <Link href={homeHref} className="min-w-0">
           <div className="flex items-center gap-3">
             {branding.logoUrl ? (
               <img
@@ -61,7 +66,7 @@ export function Header({
               {branding.planName ?? `${branding.employerGroupName ?? user.tenant.name} Gold PPO`}
             </p>
           ) : null}
-        </a>
+        </Link>
 
         <form
           action={searchBasePath}

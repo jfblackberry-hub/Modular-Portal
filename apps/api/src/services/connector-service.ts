@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import type { Prisma } from '@payer-portal/database';
-import { prisma } from '@payer-portal/database';
+import { Prisma, prisma } from '@payer-portal/database';
 import {
   enqueueJob,
   get,
@@ -144,6 +143,13 @@ export async function createConnectorForTenant(
     action: 'connector.created',
     entityType: 'Connector',
     entityId: connector.id,
+    beforeState: Prisma.JsonNull as unknown as Prisma.InputJsonValue,
+    afterState: {
+      adapterKey: connector.adapterKey,
+      name: connector.name,
+      status: connector.status,
+      config: connector.config
+    } satisfies Prisma.InputJsonValue,
     ipAddress: context.ipAddress,
     userAgent: context.userAgent,
     metadata: {
@@ -210,6 +216,18 @@ export async function updateConnectorForTenant(
     action: 'connector.updated',
     entityType: 'Connector',
     entityId: connector.id,
+    beforeState: {
+      adapterKey: existing.adapterKey,
+      name: existing.name,
+      status: existing.status,
+      config: existing.config
+    } satisfies Prisma.InputJsonValue,
+    afterState: {
+      adapterKey: connector.adapterKey,
+      name: connector.name,
+      status: connector.status,
+      config: connector.config
+    } satisfies Prisma.InputJsonValue,
     ipAddress: context.ipAddress,
     userAgent: context.userAgent,
     metadata: {
@@ -323,6 +341,14 @@ export async function runConnectorHealthCheckForTenant(
     action: 'connector.health.checked',
     entityType: 'Connector',
     entityId: connector.id,
+    beforeState: {
+      status: connector.status,
+      lastHealthCheckAt: connector.lastHealthCheckAt?.toISOString() ?? null
+    } satisfies Prisma.InputJsonValue,
+    afterState: {
+      status: updatedConnector.status,
+      lastHealthCheckAt: updatedConnector.lastHealthCheckAt?.toISOString() ?? null
+    } satisfies Prisma.InputJsonValue,
     ipAddress: context.ipAddress,
     userAgent: context.userAgent,
     metadata: {

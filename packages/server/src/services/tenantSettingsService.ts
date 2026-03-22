@@ -476,9 +476,13 @@ export async function updateNotificationSettingsForTenant(
       action: 'tenant.notification-settings.updated',
       entityType: 'tenant',
       entityId: tenant.id,
+      beforeState: currentSettings as unknown as Prisma.InputJsonValue,
+      afterState: nextSettings as unknown as Prisma.InputJsonValue,
       ipAddress: context.ipAddress ?? undefined,
       userAgent: context.userAgent ?? undefined,
-      metadata: nextSettings
+      metadata: {
+        changedKeys: Object.keys(input)
+      }
     });
 
     return nextSettings;
@@ -526,6 +530,7 @@ export async function updatePurchasedModulesForTenant(
     }
 
     const brandingConfig = getTenantBrandingConfigRecord(tenant.brandingConfig);
+    const currentModules = normalizePurchasedModules(brandingConfig.purchasedModules ?? null);
 
     await tx.tenant.update({
       where: { id: tenant.id },
@@ -544,10 +549,12 @@ export async function updatePurchasedModulesForTenant(
       action: 'tenant.purchased-modules.updated',
       entityType: 'tenant',
       entityId: tenant.id,
+      beforeState: currentModules as unknown as Prisma.InputJsonValue,
+      afterState: nextModules as unknown as Prisma.InputJsonValue,
       ipAddress: context.ipAddress ?? undefined,
       userAgent: context.userAgent ?? undefined,
       metadata: {
-        purchasedModules: nextModules
+        changedKeys: ['purchasedModules']
       }
     });
 
@@ -649,9 +656,13 @@ export async function updateBillingEnrollmentModuleConfigForTenant(
       action: 'tenant.billing-enrollment-module-config.updated',
       entityType: 'tenant',
       entityId: tenant.id,
+      beforeState: currentConfig as unknown as Prisma.InputJsonValue,
+      afterState: nextConfig as unknown as Prisma.InputJsonValue,
       ipAddress: context.ipAddress ?? undefined,
       userAgent: context.userAgent ?? undefined,
-      metadata: nextConfig as unknown as Prisma.InputJsonValue
+      metadata: {
+        changedKeys: Object.keys(input)
+      }
     });
 
     return nextConfig;

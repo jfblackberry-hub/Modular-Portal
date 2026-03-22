@@ -17,8 +17,18 @@ type PortalUserCookie = {
   roles?: string[];
   permissions?: string[];
   landingContext?: string;
+  session?: {
+    type?: 'tenant_admin' | 'end_user' | 'platform_admin';
+    tenantId?: string | null;
+    roles?: string[];
+    permissions?: string[];
+  };
   tenant?: {
+    id?: string;
     brandingConfig?: Record<string, unknown>;
+  };
+  previewSession?: {
+    id?: string;
   };
 };
 
@@ -60,8 +70,51 @@ function toLoginRedirect(request: NextRequest) {
   return NextResponse.redirect(redirectUrl);
 }
 
+function toFallbackRedirect(request: NextRequest, pathname: string) {
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = pathname;
+  redirectUrl.search = '';
+  return NextResponse.redirect(redirectUrl);
+}
+
+function hasTenantAdminAccess(portalUser: PortalUserCookie | null) {
+  if (!portalUser) {
+    return false;
+  }
+
+  const roleSet = new Set(portalUser.roles ?? []);
+  const sessionType = portalUser.session?.type;
+  const tenantId = portalUser.session?.tenantId;
+
+  if (!tenantId || sessionType !== 'tenant_admin') {
+    return false;
+  }
+
+  return roleSet.has('tenant_admin') ||
+    roleSet.has('TENANT_ADMIN') ||
+    roleSet.has('tenant_operator') ||
+    roleSet.has('TENANT_OPERATOR');
+}
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  if (pathname === '/tenant-admin' || pathname.startsWith('/tenant-admin/')) {
+    const portalSession = await readPortalSessionEnvelopeFromCookie(
+      request.cookies.get(getPortalSessionCookieName())?.value
+    );
+    const portalUser = portalSession?.user as PortalUserCookie | null;
+
+    if (!portalUser || !portalSession?.accessToken) {
+      return toLoginRedirect(request);
+    }
+
+    if (!hasTenantAdminAccess(portalUser)) {
+      return toFallbackRedirect(request, '/dashboard');
+    }
+
+    return NextResponse.next();
+  }
+
   const route = routeModuleMap.find((item) => pathname === item.prefix || pathname.startsWith(`${item.prefix}/`));
 
   if (!route) {
@@ -74,6 +127,13 @@ export async function middleware(request: NextRequest) {
   const portalUser = portalSession?.user as PortalUserCookie | null;
 
   if (!portalUser || !portalSession?.accessToken) {
+    return toLoginRedirect(request);
+  }
+
+  if (
+    portalUser.previewSession?.id &&
+    portalUser.session?.type !== 'end_user'
+  ) {
     return toLoginRedirect(request);
   }
 
@@ -166,6 +226,8 @@ export const config = {
     '/broker',
     '/broker/:path*',
     '/individual',
-    '/individual/:path*'
+    '/individual/:path*',
+    '/tenant-admin',
+    '/tenant-admin/:path*'
   ]
 };

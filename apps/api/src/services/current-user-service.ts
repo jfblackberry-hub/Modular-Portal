@@ -20,12 +20,15 @@ export class AuthorizationError extends Error {
 export type CurrentUser = {
   id: string;
   tenantId: string;
+  sessionType: 'tenant_admin' | 'end_user' | 'platform_admin';
   employerGroupId?: string | null;
   email: string;
   roles: string[];
   permissions: string[];
   accessibleTenantIds: string[];
   tenantAdminTenantIds: string[];
+  previewSessionId?: string;
+  previewMode?: 'READ_ONLY' | 'FUNCTIONAL';
 };
 
 export const PLATFORM_ADMIN_ROLE_CODE = 'platform_admin';
@@ -115,34 +118,61 @@ export async function getCurrentUserFromHeaders(
     throw new AuthenticationError('Access token tenant scope mismatch.');
   }
 
+  const roleCodes = user.roles.map(({ role }) => role.code);
+  const permissionCodes = Array.from(
+    new Set(
+      user.roles.flatMap(({ role }) =>
+        role.permissions.map(({ permission }) => permission.code)
+      )
+    )
+  );
+  const tenantAdminTenantIds = user.memberships
+    .filter((membership) => membership.isTenantAdmin)
+    .map((membership) => membership.tenantId);
+
+  if (
+    tokenPayload.sessionType === 'platform_admin' &&
+    !roleCodes.includes(PLATFORM_ADMIN_ROLE_CODE) &&
+    !roleCodes.includes(LEGACY_PLATFORM_ADMIN_ROLE_CODE)
+  ) {
+    throw new AuthenticationError('Access token session type mismatch.');
+  }
+
+  if (
+    tokenPayload.sessionType === 'tenant_admin' &&
+    (tokenPayload.tenantId === PLATFORM_ROOT_SCOPE ||
+      !tenantAdminTenantIds.includes(tokenPayload.tenantId))
+  ) {
+    throw new AuthenticationError('Tenant admin session requires a valid tenant scope.');
+  }
+
   return {
     id: user.id,
     tenantId: resolvedTenantId,
+    sessionType: tokenPayload.sessionType,
     employerGroupId: user.employerGroupId,
     email: user.email,
-    roles: user.roles.map(({ role }) => role.code),
-    permissions: Array.from(
-      new Set(
-        user.roles.flatMap(({ role }) =>
-          role.permissions.map(({ permission }) => permission.code)
-        )
-      )
-    ),
+    roles: roleCodes,
+    permissions: permissionCodes,
     accessibleTenantIds,
-    tenantAdminTenantIds: user.memberships
-      .filter((membership) => membership.isTenantAdmin)
-      .map((membership) => membership.tenantId)
+    tenantAdminTenantIds,
+    previewSessionId: tokenPayload.previewSessionId,
+    previewMode: tokenPayload.previewMode
   };
 }
 
 export function isPlatformAdmin(user: CurrentUser) {
-  return (
+  return user.sessionType === 'platform_admin' && (
     user.roles.includes(PLATFORM_ADMIN_ROLE_CODE) ||
     user.roles.includes(LEGACY_PLATFORM_ADMIN_ROLE_CODE)
   );
 }
 
 export function isTenantAdmin(user: CurrentUser) {
+  if (user.sessionType !== 'tenant_admin' && user.sessionType !== 'platform_admin') {
+    return false;
+  }
+
   return (
     isPlatformAdmin(user) ||
     user.tenantAdminTenantIds.length > 0 ||

@@ -4,6 +4,7 @@ import {
   getBillingEnrollmentModuleConfigForTenant,
   getPurchasedModulesForTenant,
   getNotificationSettingsForTenant,
+  logAuditEvent,
   updateBillingEnrollmentModuleConfigForTenant,
   updatePurchasedModulesForTenant,
   updateNotificationSettingsForTenant,
@@ -346,6 +347,7 @@ export async function saveTenantEmployerGroupBrandingSettings(
       !Array.isArray(tenant.brandingConfig)
         ? (tenant.brandingConfig as Record<string, unknown>)
         : {};
+    const existingEmployerGroupBrandingMap = readEmployerGroupBrandingMap(currentBrandingConfig);
 
     const nextEmployerGroupName = normalizeOptionalString(
       input.employerGroupName ??
@@ -372,6 +374,18 @@ export async function saveTenantEmployerGroupBrandingSettings(
       ...currentBrandingConfig
     } as Record<string, unknown>;
     const targetEmployerKey = normalizeEmployerKey(options.employerKey);
+    const beforeState = targetEmployerKey
+      ? existingEmployerGroupBrandingMap[targetEmployerKey] ?? null
+      : {
+          employerGroupName:
+            typeof currentBrandingConfig.employerGroupName === 'string'
+              ? currentBrandingConfig.employerGroupName
+              : null,
+          employerGroupLogoUrl:
+            typeof currentBrandingConfig.employerGroupLogoUrl === 'string'
+              ? currentBrandingConfig.employerGroupLogoUrl
+              : null
+        };
 
     if (targetEmployerKey) {
       const existingEmployerGroup = await tx.employerGroup.findFirst({
@@ -475,6 +489,27 @@ export async function saveTenantEmployerGroupBrandingSettings(
       }
     });
 
+    await logAuditEvent({
+      client: tx,
+      tenantId: tenant.id,
+      actorUserId: context.actorUserId,
+      action: 'tenant.subtenant.updated',
+      entityType: 'subtenant',
+      entityId: targetEmployerKey ?? tenant.id,
+      beforeState: beforeState as Prisma.InputJsonValue | undefined,
+      afterState: {
+        employerKey: targetEmployerKey,
+        employerGroupName: nextEmployerGroupName,
+        employerGroupLogoUrl: nextEmployerGroupLogoUrl
+      } satisfies Prisma.InputJsonValue,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+      metadata: {
+        updatedFields: providedFields,
+        scope: targetEmployerKey ? 'employer_group' : 'tenant'
+      }
+    });
+
     return {
       employerKey: targetEmployerKey,
       employerGroupName: nextEmployerGroupName,
@@ -527,7 +562,8 @@ export async function saveTenantPurchasedModules(
 export async function assignRoleToTenantUser(
   tenantId: string,
   userId: string,
-  roleId: string
+  roleId: string,
+  context: AuditContext
 ) {
   const user = await prisma.user.findFirst({
     where: {
@@ -540,13 +576,14 @@ export async function assignRoleToTenantUser(
     throw new Error('User not found');
   }
 
-  return assignRoleToUser(userId, roleId);
+  return assignRoleToUser(userId, roleId, context);
 }
 
 export async function removeRoleFromTenantUser(
   tenantId: string,
   userId: string,
-  roleId: string
+  roleId: string,
+  context: AuditContext
 ) {
   const user = await prisma.user.findFirst({
     where: {
@@ -559,7 +596,7 @@ export async function removeRoleFromTenantUser(
     throw new Error('User not found');
   }
 
-  return removeRoleFromUser(userId, roleId);
+  return removeRoleFromUser(userId, roleId, context);
 }
 
 type TenantUserInput = {
@@ -586,7 +623,8 @@ export async function createTenantScopedUser(
 export async function updateTenantScopedUser(
   tenantId: string,
   userId: string,
-  input: TenantUserInput
+  input: TenantUserInput,
+  context: AuditContext
 ) {
   const user = await prisma.user.findFirst({
     where: {
@@ -602,10 +640,10 @@ export async function updateTenantScopedUser(
   return updateUser(userId, {
     tenantId,
     ...input
-  });
+  }, context);
 }
 
-export async function deleteTenantScopedUser(tenantId: string, userId: string) {
+export async function deleteTenantScopedUser(tenantId: string, userId: string, context: AuditContext) {
   const user = await prisma.user.findFirst({
     where: {
       id: userId,
@@ -617,5 +655,5 @@ export async function deleteTenantScopedUser(tenantId: string, userId: string) {
     throw new Error('User not found');
   }
 
-  return deleteUser(userId);
+  return deleteUser(userId, context);
 }

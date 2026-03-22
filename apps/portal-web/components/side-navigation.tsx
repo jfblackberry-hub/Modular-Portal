@@ -4,16 +4,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import type { PortalNavigationSection } from '../lib/navigation';
+import { prefixPreviewHref, stripPreviewHref } from '../lib/preview-route';
 import type { TenantBranding } from '../lib/tenant-branding';
 
 export function SideNavigation({
   branding,
+  routePrefix,
   sections
 }: {
   branding: TenantBranding;
+  routePrefix?: string;
   sections: PortalNavigationSection[];
 }) {
-  const pathname = usePathname();
+  const pathname = stripPreviewHref(routePrefix, usePathname());
   const flatItems = sections.flatMap((section) => section.items).filter((item) => !item.external);
   const mobileItems = flatItems.slice(0, 4);
   const primarySectionTitle = sections[0]?.title ?? 'Portal';
@@ -35,10 +38,10 @@ export function SideNavigation({
         {mobileItems.map((item) => (
           <Link
             key={item.href}
-            href={item.href}
+            href={prefixPreviewHref(routePrefix, item.href)}
             className={`tenant-side-nav__item tenant-side-nav__item--mobile flex min-w-[78px] flex-1 flex-col items-center rounded-2xl px-3 py-3 text-center text-[12px] font-semibold ${
               isActive(item.href)
-                ? 'tenant-side-nav__item--active bg-[var(--tenant-primary-soft-color)]'
+            ? 'tenant-side-nav__item--active bg-[var(--tenant-primary-soft-color)]'
                 : ''
             }`}
           >
@@ -75,7 +78,7 @@ export function SideNavigation({
                       return (
                         <a
                           key={item.href}
-                          href={item.href}
+                          href={prefixPreviewHref(routePrefix, item.href)}
                           target="_blank"
                           rel="noreferrer"
                           className={`tenant-side-nav__item block rounded-xl border px-3 py-3 transition ${className}`}
@@ -91,7 +94,7 @@ export function SideNavigation({
                     return (
                       <Link
                         key={item.href}
-                        href={item.href}
+                        href={prefixPreviewHref(routePrefix, item.href)}
                         className={`tenant-side-nav__item block rounded-xl border px-3 py-3 transition ${className}`}
                       >
                         <p className="tenant-side-nav__item-label text-sm font-semibold">{item.label}</p>

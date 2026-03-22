@@ -13,6 +13,11 @@ enum TenantStatus {
   INACTIVE
 }
 
+enum PreviewSessionMode {
+  READ_ONLY
+  FUNCTIONAL
+}
+
 model Tenant {
   id            String        @id @default(uuid()) @db.Uuid
   name          String
@@ -32,6 +37,7 @@ model Tenant {
   integrationExecutions IntegrationExecution[]
   featureFlags FeatureFlag[]
   eventRecords  EventRecord[]
+  previewSessions PreviewSession[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -66,11 +72,42 @@ model User {
   auditLogs   AuditLog[]
   documents   Document[]
   notifications Notification[]
+  createdPreviewSessions PreviewSession[] @relation("PreviewSessionAdminUser")
+  targetPreviewSessions  PreviewSession[] @relation("PreviewSessionTargetUser")
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
   @@index([tenantId])
   @@index([employerGroupId])
+}
+
+model PreviewSession {
+  id            String             @id @default(uuid()) @db.Uuid
+  adminUserId   String             @db.Uuid
+  tenantId      String             @db.Uuid
+  targetUserId  String             @db.Uuid
+  subTenantId   String?
+  portalType    String
+  persona       String
+  mode          PreviewSessionMode
+  launchToken   String             @unique
+  createdAt     DateTime           @default(now())
+  expiresAt     DateTime
+  endedAt       DateTime?
+  lastAccessedAt DateTime?
+  currentRoute  String?
+  currentRouteUpdatedAt DateTime?
+  routeHistory  Json               @default("[]")
+
+  adminUser  User   @relation("PreviewSessionAdminUser", fields: [adminUserId], references: [id], onDelete: Cascade)
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  targetUser User   @relation("PreviewSessionTargetUser", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId, endedAt, createdAt])
+  @@index([tenantId, endedAt])
+  @@index([targetUserId, endedAt])
+  @@index([expiresAt])
+  @@index([currentRouteUpdatedAt])
 }
 
 model UserTenantMembership {
@@ -219,6 +256,8 @@ model AuditLog {
   action      String
   entityType  String
   entityId    String?
+  beforeState Json?
+  afterState  Json?
   metadata    Json?
   ipAddress   String?
   userAgent   String?
@@ -228,6 +267,8 @@ model AuditLog {
   actorUser User?  @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
+  @@index([tenantId, action, createdAt])
+  @@index([actorUserId, createdAt])
   @@index([entityType])
   @@index([entityId])
   @@index([createdAt])
