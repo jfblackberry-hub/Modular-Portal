@@ -20,7 +20,7 @@ export function AdminContentRouter({ children }: AdminContentRouterProps) {
   }, [pathname]);
 
   return (
-    <main ref={containerRef} className="admin-content-router flex-1 overflow-x-hidden overflow-y-auto bg-admin-bg">
+    <main ref={containerRef} className="admin-content-router min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-admin-bg">
       <div className="admin-content-router__frame">
         <div className="admin-content-router__context admin-surface">
           <div className="admin-content-router__breadcrumbs">

@@ -2,132 +2,175 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { AdminSession } from './admin-session-provider';
+import type { AdminMenuItem } from './admin-route-config';
 import { getAdminMenu } from './admin-route-config';
 
 type LeftAdminMenuProps = {
   session: AdminSession | null;
 };
 
+function isItemActive(pathname: string, item: AdminMenuItem): boolean {
+  const matchesSelf = item.href
+    ? pathname === item.href || pathname.startsWith(`${item.href}/`)
+    : false;
+
+  return matchesSelf || (item.items?.some((child) => isItemActive(pathname, child)) ?? false);
+}
+
+function collectExpandableState(items: AdminMenuItem[], pathname: string) {
+  return items.reduce<Record<string, boolean>>((accumulator, item) => {
+    if (item.items?.length) {
+      accumulator[item.key] = isItemActive(pathname, item);
+      Object.assign(accumulator, collectExpandableState(item.items, pathname));
+    }
+
+    return accumulator;
+  }, {});
+}
+
+function MenuBranch({
+  item,
+  pathname,
+  expanded,
+  onToggle,
+  depth = 0
+}: {
+  item: AdminMenuItem;
+  pathname: string;
+  expanded: Record<string, boolean>;
+  onToggle: (key: string) => void;
+  depth?: number;
+}) {
+  const hasChildren = (item.items?.length ?? 0) > 0;
+  const isActive = isItemActive(pathname, item);
+  const isExpanded = expanded[item.key] ?? false;
+
+  if (!hasChildren && item.href) {
+    return (
+      <Link
+        href={item.href}
+        scroll={false}
+        className={`admin-left-nav__link ${isActive ? 'admin-left-nav__link--active' : ''}`}
+        style={{ '--nav-depth': depth } as CSSProperties}
+      >
+        <span className="admin-left-nav__link-label">{item.label}</span>
+        {item.description ? (
+          <span className="admin-left-nav__link-description">{item.description}</span>
+        ) : null}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={`admin-left-nav__branch ${isActive ? 'admin-left-nav__branch--active' : ''}`}>
+      <button
+        type="button"
+        onClick={() => onToggle(item.key)}
+        className={`admin-left-nav__branch-toggle ${isActive ? 'admin-left-nav__branch-toggle--active' : ''}`}
+        style={{ '--nav-depth': depth } as CSSProperties}
+        aria-expanded={isExpanded}
+      >
+        <span className="admin-left-nav__branch-copy">
+          <span className="admin-left-nav__branch-label">{item.label}</span>
+          {item.description ? (
+            <span className="admin-left-nav__branch-description">{item.description}</span>
+          ) : null}
+        </span>
+        <span className={`admin-left-nav__branch-chevron ${isExpanded ? 'admin-left-nav__branch-chevron--open' : ''}`} aria-hidden="true">
+          ▾
+        </span>
+      </button>
+
+      {isExpanded ? (
+        <div className="admin-left-nav__branch-children">
+          {item.items?.map((child) => (
+            <MenuBranch
+              key={child.key}
+              item={child}
+              pathname={pathname}
+              expanded={expanded}
+              onToggle={onToggle}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
   const pathname = usePathname();
   const menu = getAdminMenu(session);
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const defaultExpanded = useMemo(
+    () => (menu ? collectExpandableState(menu.sections.flatMap((section) => section.items), pathname) : {}),
+    [menu, pathname]
+  );
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (!menu) {
-      return;
-    }
-
-    setCollapsedSections((current) => {
-      const nextState = { ...current };
-
-      for (const section of menu.sections) {
-        if (!(section.key in nextState)) {
-          nextState[section.key] = false;
-        }
-      }
-
-      return nextState;
-    });
-  }, [menu]);
+    setExpanded((current) => ({ ...defaultExpanded, ...current }));
+  }, [defaultExpanded]);
 
   if (!menu) {
     return (
-      <aside className="admin-left-nav min-h-screen w-[425px] shrink-0 overflow-y-auto border-r border-admin-border text-slate-50">
-        <div className="px-6 py-8">
-          <p className="text-sm text-slate-300">Admin session required.</p>
+      <aside className="admin-left-nav w-[624px] shrink-0 border-r border-admin-border">
+        <div className="admin-left-nav__inner">
+          <p className="text-sm text-admin-muted">Admin session required.</p>
         </div>
       </aside>
     );
   }
 
   return (
-    <aside className="admin-left-nav min-h-screen w-[425px] shrink-0 overflow-y-auto border-r border-admin-border text-slate-50">
-      <div className="flex min-h-screen flex-col px-6 py-8 pb-16">
-        <div>
-          <div className="admin-left-nav__brand">
-            <div className="admin-left-nav__brand-icon" aria-hidden="true">A</div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-300">
-                Admin Console
-              </p>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-                Control Plane
-              </h1>
-            </div>
+    <aside className="admin-left-nav w-[624px] shrink-0 border-r border-admin-border">
+      <div className="admin-left-nav__inner">
+        <div className="admin-left-nav__brand-panel">
+          <div className="admin-left-nav__brand-mark" aria-hidden="true">
+            A
           </div>
-          <p className="mt-4 text-sm leading-6 text-slate-300">
-            Command-center navigation for platform operations, tenant configuration, and support workflows.
-          </p>
+          <div>
+            <p className="admin-left-nav__eyebrow">Admin Console</p>
+            <h1 className="admin-left-nav__title">Control Plane</h1>
+            <p className="admin-left-nav__intro">
+              Minimal navigation for platform operations, tenant setup, and support workflows.
+            </p>
+          </div>
         </div>
 
-        <div className="admin-left-nav__access mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
-            Access
-          </p>
-          <p className="mt-2 text-sm font-medium text-white">{menu.label}</p>
+        <div className="admin-left-nav__access">
+          <span className="admin-left-nav__access-label">Workspace</span>
+          <span className="admin-left-nav__access-value">{menu.label}</span>
         </div>
 
-        <nav className="admin-left-nav__nav mt-10 flex-1 space-y-4 pb-8">
-          {menu.sections.map((section) => {
-            const isSectionActive = section.items.some(
-              (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
-            );
-            const isCollapsed = collapsedSections[section.key] ?? false;
-
-            return (
-              <div key={section.key} className="admin-left-nav__section rounded-3xl border border-white/10 bg-white/[0.03]">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCollapsedSections((current) => ({
-                      ...current,
-                      [section.key]: !isCollapsed
-                    }))
-                  }
-                  className={`admin-left-nav__section-toggle flex w-full items-center justify-between px-4 py-3 text-left transition ${
-                    isSectionActive ? 'text-white' : 'text-slate-200 hover:text-white'
-                  }`}
-                >
-                  <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em]">
-                    <span aria-hidden="true">•</span>
-                    {section.label}
-                  </span>
-                  <span className="text-sm">{isCollapsed ? '+' : '-'}</span>
-                </button>
-
-                {!isCollapsed ? (
-                  <div className="admin-left-nav__section-items space-y-2 border-t border-white/10 px-3 py-3">
-                    {section.items.map((item) => {
-                      const isActive =
-                        pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          scroll={false}
-                          className={`admin-left-nav__item ${isActive ? 'admin-left-nav__item--active' : ''} block rounded-2xl border px-4 py-3 transition ${
-                            isActive
-                              ? 'border-sky-300/60 bg-white/10 text-white'
-                              : 'border-white/10 text-slate-200 hover:border-sky-300/40 hover:bg-white/5 hover:text-white'
-                          }`}
-                        >
-                          <div className="admin-left-nav__item-label text-sm font-medium">{item.label}</div>
-                          <div className="admin-left-nav__item-description mt-1 text-xs leading-5 text-slate-400">
-                            {item.description}
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                ) : null}
+        <nav aria-label="Admin navigation" className="admin-left-nav__sections">
+          {menu.sections.map((section) => (
+            <section key={section.key} className="admin-left-nav__section">
+              <div className="admin-left-nav__section-header">
+                <p className="admin-left-nav__section-title">{section.label}</p>
               </div>
-            );
-          })}
+              <div className="admin-left-nav__section-links">
+                {section.items.map((item) => (
+                  <MenuBranch
+                    key={item.key}
+                    item={item}
+                    pathname={pathname}
+                    expanded={expanded}
+                    onToggle={(key) =>
+                      setExpanded((current) => ({
+                        ...current,
+                        [key]: !(current[key] ?? false)
+                      }))
+                    }
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
         </nav>
       </div>
     </aside>

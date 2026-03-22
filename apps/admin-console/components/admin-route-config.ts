@@ -3,9 +3,15 @@ import type { AdminSession } from './admin-session-provider';
 export type AdminRole = 'platform_admin' | 'tenant_admin';
 
 export type AdminMenuItem = {
-  href: string;
+  key: string;
   label: string;
-  description: string;
+  href?: string;
+  description?: string;
+  items?: AdminMenuItem[];
+};
+
+type AdminRouteItem = AdminMenuItem & {
+  href: string;
 };
 
 export type AdminMenuSection = {
@@ -31,16 +37,19 @@ const platformMenu: AdminMenuConfig = {
       label: 'Overview',
       items: [
         {
+          key: 'platform-health',
           href: '/admin/platform/health',
           label: 'Platform Health',
           description: 'System readiness and service health checks.'
         },
         {
+          key: 'global-metrics',
           href: '/admin/platform/metrics',
           label: 'Global Metrics',
           description: 'Platform-wide telemetry and raw metrics.'
         },
         {
+          key: 'audit-overview',
           href: '/admin/platform/audit-overview',
           label: 'Audit Overview',
           description: 'High-level operational audit visibility.'
@@ -52,19 +61,36 @@ const platformMenu: AdminMenuConfig = {
       label: 'Tenant Management',
       items: [
         {
-          href: '/admin/platform/tenants',
-          label: 'All Tenants',
-          description: 'Cross-tenant operations and health management.'
-        },
-        {
-          href: '/admin/platform/tenants/provisioning',
-          label: 'Tenant Provisioning',
-          description: 'Create and onboard new tenant records.'
-        },
-        {
-          href: '/admin/platform/tenants/configuration',
-          label: 'Tenant Configuration',
-          description: 'Review tenant-level configuration standards.'
+          key: 'tenants',
+          label: 'Tenants',
+          description: 'Cross-tenant operations and lifecycle management.',
+          items: [
+            {
+              key: 'all-tenants',
+              href: '/admin/platform/tenants',
+              label: 'All Tenants',
+              description: 'Cross-tenant operations and health management.'
+            },
+            {
+              key: 'tenant-lifecycle',
+              label: 'Lifecycle',
+              description: 'Provisioning and tenant setup controls.',
+              items: [
+                {
+                  key: 'tenant-provisioning',
+                  href: '/admin/platform/tenants/provisioning',
+                  label: 'Tenant Provisioning',
+                  description: 'Create and onboard new tenant records.'
+                },
+                {
+                  key: 'tenant-configuration',
+                  href: '/admin/platform/tenants/configuration',
+                  label: 'Tenant Configuration',
+                  description: 'Review tenant-level configuration standards.'
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -73,11 +99,13 @@ const platformMenu: AdminMenuConfig = {
       label: 'User Administration',
       items: [
         {
+          key: 'all-users',
           href: '/admin/platform/users',
           label: 'All Users',
           description: 'Manage users across the entire platform.'
         },
         {
+          key: 'role-management',
           href: '/admin/platform/roles',
           label: 'Role Management',
           description: 'Maintain platform RBAC roles and assignments.'
@@ -89,24 +117,42 @@ const platformMenu: AdminMenuConfig = {
       label: 'Connectivity',
       items: [
         {
+          key: 'external-connections',
           href: '/admin/platform/connectivity',
           label: 'External Connections',
           description: 'Monitor third-party platform integrations.'
         },
         {
-          href: '/admin/platform/connectivity/catalog',
-          label: 'API Catalog',
-          description: 'Browse strategic vendor APIs, readiness, and planning metadata.'
+          key: 'api-marketplace',
+          label: 'API Marketplace',
+          description: 'Catalog and adapter readiness workflows.',
+          items: [
+            {
+              key: 'api-catalog',
+              href: '/admin/platform/connectivity/catalog',
+              label: 'API Catalog',
+              description: 'Browse strategic vendor APIs, readiness, and planning metadata.'
+            },
+            {
+              key: 'api-adapter-status',
+              href: '/admin/platform/connectivity/adapters',
+              label: 'API / Adapter Status',
+              description: 'Inspect adapter and API dependency posture.'
+            }
+          ]
         },
         {
-          href: '/admin/platform/connectivity/adapters',
-          label: 'API / Adapter Status',
-          description: 'Inspect adapter and API dependency posture.'
-        },
-        {
-          href: '/admin/platform/connectivity/identity',
-          label: 'SSO / Identity',
-          description: 'Identity provider and SSO configuration status.'
+          key: 'identity-access',
+          label: 'Identity & Access',
+          description: 'Identity provider and SSO posture.',
+          items: [
+            {
+              key: 'sso-identity',
+              href: '/admin/platform/connectivity/identity',
+              label: 'SSO / Identity',
+              description: 'Identity provider and SSO configuration status.'
+            }
+          ]
         }
       ]
     },
@@ -115,16 +161,19 @@ const platformMenu: AdminMenuConfig = {
       label: 'Configuration',
       items: [
         {
+          key: 'platform-settings',
           href: '/admin/platform/settings',
           label: 'Platform Settings',
           description: 'Shared operator defaults and platform guardrails.'
         },
         {
+          key: 'shared-reference-data',
           href: '/admin/platform/reference-data',
           label: 'Shared Reference Data',
           description: 'Platform-shared lookup and reference data.'
         },
         {
+          key: 'feature-flags',
           href: '/admin/platform/feature-flags',
           label: 'Feature Flags',
           description: 'Manage platform and tenant-scoped capabilities.'
@@ -136,19 +185,29 @@ const platformMenu: AdminMenuConfig = {
       label: 'Operations',
       items: [
         {
-          href: '/admin/platform/operations/jobs',
-          label: 'Job Monitoring',
-          description: 'Background processing visibility and execution state.'
-        },
-        {
-          href: '/admin/platform/operations/alerts',
-          label: 'System Alerts',
-          description: 'Operational alert triage and escalations.'
-        },
-        {
-          href: '/admin/platform/operations/logs',
-          label: 'Logs',
-          description: 'Central platform runtime and diagnostic logs.'
+          key: 'runtime-monitoring',
+          label: 'Runtime Monitoring',
+          description: 'Jobs, alerts, and diagnostic visibility.',
+          items: [
+            {
+              key: 'job-monitoring',
+              href: '/admin/platform/operations/jobs',
+              label: 'Job Monitoring',
+              description: 'Background processing visibility and execution state.'
+            },
+            {
+              key: 'system-alerts',
+              href: '/admin/platform/operations/alerts',
+              label: 'System Alerts',
+              description: 'Operational alert triage and escalations.'
+            },
+            {
+              key: 'platform-logs',
+              href: '/admin/platform/operations/logs',
+              label: 'Logs',
+              description: 'Central platform runtime and diagnostic logs.'
+            }
+          ]
         }
       ]
     },
@@ -157,16 +216,19 @@ const platformMenu: AdminMenuConfig = {
       label: 'Security',
       items: [
         {
+          key: 'audit-log',
           href: '/admin/platform/audit',
           label: 'Audit Log',
           description: 'Detailed cross-tenant audit history.'
         },
         {
+          key: 'permission-matrix',
           href: '/admin/platform/security/permissions',
           label: 'Permission Matrix',
           description: 'Review permission coverage and role boundaries.'
         },
         {
+          key: 'session-management',
           href: '/admin/platform/security/sessions',
           label: 'Session Management',
           description: 'Inspect admin session controls and activity.'
@@ -186,11 +248,13 @@ const tenantMenu: AdminMenuConfig = {
       label: 'Overview',
       items: [
         {
+          key: 'tenant-health',
           href: '/admin/tenant/health',
           label: 'Tenant Health',
           description: 'Tenant readiness and operational status.'
         },
         {
+          key: 'tenant-metrics',
           href: '/admin/tenant/metrics',
           label: 'Tenant Metrics',
           description: 'Tenant-specific service and workflow metrics.'
@@ -202,19 +266,29 @@ const tenantMenu: AdminMenuConfig = {
       label: 'Tenant Administration',
       items: [
         {
+          key: 'tenant-profile',
           href: '/admin/tenant/profile',
           label: 'Tenant Profile',
           description: 'Tenant identity, brand, and profile details.'
         },
         {
-          href: '/admin/tenant/configuration',
-          label: 'Tenant Configuration',
-          description: 'Tenant branding, notifications, and configuration.'
-        },
-        {
-          href: '/admin/tenant/documents',
-          label: 'Documents',
-          description: 'Manage tenant-owned files and operational uploads.'
+          key: 'tenant-configuration-suite',
+          label: 'Tenant Setup',
+          description: 'Branding, settings, and document administration.',
+          items: [
+            {
+              key: 'tenant-configuration',
+              href: '/admin/tenant/configuration',
+              label: 'Tenant Configuration',
+              description: 'Tenant branding, notifications, and configuration.'
+            },
+            {
+              key: 'tenant-documents',
+              href: '/admin/tenant/documents',
+              label: 'Documents',
+              description: 'Manage tenant-owned files and operational uploads.'
+            }
+          ]
         }
       ]
     },
@@ -223,11 +297,13 @@ const tenantMenu: AdminMenuConfig = {
       label: 'User Administration',
       items: [
         {
+          key: 'tenant-users',
           href: '/admin/tenant/users',
           label: 'Tenant Users',
           description: 'Manage tenant-scoped users and access.'
         },
         {
+          key: 'tenant-roles',
           href: '/admin/tenant/roles',
           label: 'Roles',
           description: 'Review tenant role assignments and policies.'
@@ -239,14 +315,23 @@ const tenantMenu: AdminMenuConfig = {
       label: 'Connectivity',
       items: [
         {
+          key: 'tenant-connections',
           href: '/admin/tenant/connectivity',
           label: 'Tenant Connections',
           description: 'Tenant integration and connector posture.'
         },
         {
-          href: '/admin/tenant/connectivity/sso',
-          label: 'SSO',
-          description: 'Tenant SSO and identity connection settings.'
+          key: 'tenant-identity',
+          label: 'Identity',
+          description: 'Tenant identity connection settings.',
+          items: [
+            {
+              key: 'tenant-sso',
+              href: '/admin/tenant/connectivity/sso',
+              label: 'SSO',
+              description: 'Tenant SSO and identity connection settings.'
+            }
+          ]
         }
       ]
     },
@@ -255,14 +340,23 @@ const tenantMenu: AdminMenuConfig = {
       label: 'Operations',
       items: [
         {
-          href: '/admin/tenant/operations/jobs',
-          label: 'Job Status',
-          description: 'Tenant sync jobs and execution status.'
-        },
-        {
-          href: '/admin/tenant/operations/alerts',
-          label: 'Alerts',
-          description: 'Tenant-specific alerts and intervention needs.'
+          key: 'tenant-monitoring',
+          label: 'Monitoring',
+          description: 'Tenant jobs and alerting workflows.',
+          items: [
+            {
+              key: 'tenant-job-status',
+              href: '/admin/tenant/operations/jobs',
+              label: 'Job Status',
+              description: 'Tenant sync jobs and execution status.'
+            },
+            {
+              key: 'tenant-alerts',
+              href: '/admin/tenant/operations/alerts',
+              label: 'Alerts',
+              description: 'Tenant-specific alerts and intervention needs.'
+            }
+          ]
         }
       ]
     },
@@ -271,11 +365,13 @@ const tenantMenu: AdminMenuConfig = {
       label: 'Security',
       items: [
         {
+          key: 'tenant-audit-log',
           href: '/admin/tenant/audit',
           label: 'Tenant Audit Log',
           description: 'Tenant-scoped audit events and change history.'
         },
         {
+          key: 'tenant-access-policies',
           href: '/admin/tenant/security/access',
           label: 'Access Policies',
           description: 'Tenant access policy review and governance.'
@@ -290,8 +386,15 @@ export const adminMenuByRole: Record<AdminRole, AdminMenuConfig> = {
   tenant_admin: tenantMenu
 };
 
+function flattenAdminMenuItems(items: AdminMenuItem[]): AdminRouteItem[] {
+  return items.flatMap((item) => [
+    ...(item.href ? [{ ...item, href: item.href }] : []),
+    ...(item.items ? flattenAdminMenuItems(item.items) : [])
+  ]);
+}
+
 export const adminRoutes = Object.values(adminMenuByRole).flatMap((menu) =>
-  menu.sections.flatMap((section) => section.items)
+  menu.sections.flatMap((section) => flattenAdminMenuItems(section.items))
 );
 
 export function getAdminRole(session: AdminSession | null): AdminRole | null {
@@ -323,7 +426,7 @@ export function getAdminRoute(pathname: string) {
 export function getAdminRouteContext(pathname: string) {
   for (const menu of Object.values(adminMenuByRole)) {
     for (const section of menu.sections) {
-      const route = [...section.items]
+      const route = [...flattenAdminMenuItems(section.items)]
         .sort((left, right) => right.href.length - left.href.length)
         .find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
 

@@ -25,23 +25,23 @@ export function TopHeader({ session, signOut }: TopHeaderProps) {
               Admin Workspace
             </p>
             <p className="admin-top-header__description mt-1 text-sm text-admin-muted">
-              Operational control plane for platform and tenant administration.
+              A calmer, focused workspace for platform and tenant administration.
             </p>
           </div>
         </div>
 
         <div className="admin-top-header__actions flex items-center gap-3">
-          <div className="admin-top-header__search hidden items-center gap-3 rounded-full border border-admin-border bg-white px-4 py-2 text-sm text-admin-muted lg:flex">
+          <div className="admin-top-header__search hidden items-center gap-3 rounded-full border border-admin-border bg-white/90 px-4 py-2 text-sm text-admin-muted lg:flex">
             <span aria-hidden="true">/</span>
             <span>Search admin workspace</span>
           </div>
 
-          <div className="admin-top-header__status hidden items-center gap-2 rounded-full border border-admin-border bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-admin-muted md:flex">
+          <div className="admin-top-header__status hidden items-center gap-2 rounded-full border border-admin-border bg-[var(--admin-highlight)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-admin-muted md:flex">
             <span aria-hidden="true">•</span>
             Live
           </div>
 
-          <div className="admin-top-header__session rounded-full border border-admin-border bg-white px-4 py-2 text-sm text-admin-muted">
+          <div className="admin-top-header__session rounded-full border border-admin-border bg-white/90 px-4 py-2 text-sm text-admin-muted">
             {session ? session.email : 'Admin session required'}
           </div>
 
@@ -52,7 +52,7 @@ export function TopHeader({ session, signOut }: TopHeaderProps) {
                 signOut();
                 window.location.assign(`${portalBaseUrl}/login`);
               }}
-              className="admin-top-header__signout rounded-full border border-admin-border bg-white px-4 py-2 text-sm font-medium text-admin-muted transition hover:border-admin-accent hover:text-admin-text"
+              className="admin-top-header__signout rounded-full border border-admin-border bg-white/90 px-4 py-2 text-sm font-medium text-admin-muted transition hover:border-admin-accent hover:bg-[var(--admin-highlight)] hover:text-admin-text"
             >
               Sign out
             </button>
