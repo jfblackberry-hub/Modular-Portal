@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { AdminPageLayout, AdminStatCard } from '../../../../components/admin-ui';
 import { SectionCard } from '../../../../components/section-card';
 import { fetchAdminJsonCached } from '../../../../lib/admin-client-data';
 import { apiBaseUrl, getAdminAuthHeaders } from '../../../../lib/api-auth';
@@ -309,24 +310,16 @@ export function PlatformHealthPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
-            Platform
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-admin-text">
-            Platform Health
-          </h1>
-          <p className="mt-3 max-w-3xl text-base leading-7 text-admin-muted">
-            Operational health across all tenants
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-muted">
+    <AdminPageLayout
+      eyebrow="Platform Dashboard"
+      title="Platform Health"
+      description="Operational health across all tenants."
+      actions={
+        <div className="rounded-full border border-admin-border bg-white px-4 py-3 text-sm text-admin-muted">
           {lastUpdated ? `Updated ${formatTimestamp(lastUpdated)}` : 'Loading live data...'}
         </div>
-      </div>
+      }
+    >
 
       {error ? (
         <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -336,17 +329,7 @@ export function PlatformHealthPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         {kpis.map((kpi) => (
-          <div
-            key={kpi.label}
-            className="rounded-3xl border border-admin-border bg-admin-panel px-5 py-5 shadow-sm"
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-admin-muted">
-              {kpi.label}
-            </p>
-            <p className="mt-4 text-3xl font-semibold tracking-tight text-admin-text">
-              {isLoading ? '--' : kpi.value}
-            </p>
-          </div>
+          <AdminStatCard key={kpi.label} label={kpi.label} value={isLoading ? '--' : kpi.value} />
         ))}
       </div>
 
@@ -409,13 +392,13 @@ export function PlatformHealthPage() {
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/admin/platform/connectivity"
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white"
+                className="admin-button admin-button--primary"
               >
                 Open connectivity workspace
               </Link>
               <Link
                 href="/admin/platform/connectivity/adapters"
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-admin-border bg-white px-5 py-3 text-sm font-semibold text-admin-text"
+                className="admin-button admin-button--secondary admin-button--content"
               >
                 API / adapter status
               </Link>
@@ -632,6 +615,6 @@ export function PlatformHealthPage() {
           </SectionCard>
         </div>
       </div>
-    </div>
+    </AdminPageLayout>
   );
 }

@@ -22,6 +22,8 @@ export async function authRoutes(app: FastifyInstance) {
         id: user.id,
         email: user.email,
         tenantId: user.tenantId,
+        accessibleTenantIds: user.accessibleTenantIds,
+        tenantAdminTenantIds: user.tenantAdminTenantIds,
         roles: user.roles,
         permissions: user.permissions,
         isPlatformAdmin: isPlatformAdmin(user),

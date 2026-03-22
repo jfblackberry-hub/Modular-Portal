@@ -22,7 +22,8 @@ model Tenant {
   brandingConfig Json         @default("{}")
   branding      TenantBranding?
   employerGroups EmployerGroup[]
-  users         User[]
+  users         User[]        @relation("UserPrimaryTenant")
+  memberships   UserTenantMembership[]
   auditLogs     AuditLog[]
   documents     Document[]
   jobs          Job[]
@@ -51,14 +52,15 @@ model TenantBranding {
 
 model User {
   id          String     @id @default(uuid()) @db.Uuid
-  tenantId    String     @db.Uuid
+  tenantId    String?    @db.Uuid
   employerGroupId String? @db.Uuid
   email       String     @unique
   firstName   String
   lastName    String
   isActive    Boolean    @default(true)
   lastLoginAt DateTime?
-  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant      Tenant?    @relation("UserPrimaryTenant", fields: [tenantId], references: [id], onDelete: SetNull)
+  memberships UserTenantMembership[]
   employerGroup EmployerGroup? @relation(fields: [employerGroupId], references: [id], onDelete: SetNull)
   roles       UserRole[]
   auditLogs   AuditLog[]
@@ -69,6 +71,24 @@ model User {
 
   @@index([tenantId])
   @@index([employerGroupId])
+}
+
+model UserTenantMembership {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  tenantId      String   @db.Uuid
+  isDefault     Boolean  @default(false)
+  isTenantAdmin Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([tenantId])
+  @@index([userId, isTenantAdmin])
+  @@index([userId, isDefault])
 }
 
 model EmployerGroup {

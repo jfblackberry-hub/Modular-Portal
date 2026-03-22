@@ -1,6 +1,7 @@
 import { prisma } from '@payer-portal/database';
 import { logAuditEvent } from '@payer-portal/server';
 import { createAccessToken } from './access-token-service';
+import { PLATFORM_ROOT_SCOPE } from './current-user-service';
 
 const DEFAULT_TENANT_SLUG = 'blue-horizon-health';
 const DEFAULT_TENANT_NAME = 'Blue Horizon Health';
@@ -220,57 +221,55 @@ function buildSessionBrandingConfig(
   };
 }
 
-async function getUserWithRelations(email: string) {
-  return prisma.user.findUnique({
-    where: { email },
+const userSessionInclude = {
+  employerGroup: true,
+  tenant: {
     include: {
-      employerGroup: true,
+      branding: true
+    }
+  },
+  memberships: {
+    include: {
       tenant: {
         include: {
           branding: true
         }
-      },
-      roles: {
+      }
+    },
+    orderBy: [{ isDefault: 'desc' as const }, { createdAt: 'asc' as const }]
+  },
+  roles: {
+    include: {
+      role: {
         include: {
-          role: {
+          permissions: {
             include: {
-              permissions: {
-                include: {
-                  permission: true
-                }
-              }
+              permission: true
             }
           }
         }
       }
     }
+  }
+} satisfies Parameters<typeof prisma.user.findUnique>[0]['include'];
+
+function getActiveTenantForSession(
+  user: Awaited<ReturnType<typeof getUserWithRelations>>
+) {
+  return user?.tenant ?? user?.memberships[0]?.tenant ?? null;
+}
+
+async function getUserWithRelations(email: string) {
+  return prisma.user.findUnique({
+    where: { email },
+    include: userSessionInclude
   });
 }
 
 async function getUserWithRelationsById(userId: string) {
   return prisma.user.findUnique({
     where: { id: userId },
-    include: {
-      employerGroup: true,
-      tenant: {
-        include: {
-          branding: true
-        }
-      },
-      roles: {
-        include: {
-          role: {
-            include: {
-              permissions: {
-                include: {
-                  permission: true
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    include: userSessionInclude
   });
 }
 
@@ -351,27 +350,7 @@ async function recordSuccessfulLogin(userId: string) {
     data: {
       lastLoginAt: new Date()
     },
-    include: {
-      employerGroup: true,
-      tenant: {
-        include: {
-          branding: true
-        }
-      },
-      roles: {
-        include: {
-          role: {
-            include: {
-              permissions: {
-                include: {
-                  permission: true
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    include: userSessionInclude
   });
 }
 
@@ -519,6 +498,25 @@ async function ensureLocalLoginUser(identifier: string) {
       firstName: profile.firstName,
       lastName: profile.lastName,
       isActive: true
+    }
+  });
+
+  await prisma.userTenantMembership.upsert({
+    where: {
+      userId_tenantId: {
+        userId: user.id,
+        tenantId: tenant.id
+      }
+    },
+    update: {
+      isDefault: true,
+      isTenantAdmin: profile.roleCode === 'tenant_admin'
+    },
+    create: {
+      userId: user.id,
+      tenantId: tenant.id,
+      isDefault: true,
+      isTenantAdmin: profile.roleCode === 'tenant_admin'
     }
   });
 
@@ -706,6 +704,23 @@ async function ensureEmployerUserForKey(employerKey: string) {
       }
     });
 
+    await prisma.userTenantMembership.upsert({
+      where: {
+        userId_tenantId: {
+          userId: user.id,
+          tenantId: employerGroup.tenantId
+        }
+      },
+      update: {
+        isDefault: true
+      },
+      create: {
+        userId: user.id,
+        tenantId: employerGroup.tenantId,
+        isDefault: true
+      }
+    });
+
     await prisma.userRole.upsert({
       where: {
         userId_roleId: {
@@ -848,6 +863,7 @@ export async function login(
   }
 
   const updatedUser = await recordSuccessfulLogin(user.id);
+  const activeTenant = getActiveTenantForSession(updatedUser);
   const landingContext: LandingContext =
     updatedUser.roles.some(({ role }) => role.code === 'platform_admin' || role.code === 'platform-admin')
       ? 'platform_admin'
@@ -874,21 +890,23 @@ export async function login(
     )
   );
 
-  await logAuditEvent({
-    tenantId: updatedUser.tenant.id,
-    actorUserId: updatedUser.id,
-    action: 'auth.login.success',
-    entityType: 'user',
-    entityId: updatedUser.id,
-    ipAddress: context.ipAddress,
-    userAgent: context.userAgent
-  });
+  if (activeTenant) {
+    await logAuditEvent({
+      tenantId: activeTenant.id,
+      actorUserId: updatedUser.id,
+      action: 'auth.login.success',
+      entityType: 'user',
+      entityId: updatedUser.id,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent
+    });
+  }
 
   return {
     token: createAccessToken({
       userId: updatedUser.id,
       email: updatedUser.email,
-      tenantId: updatedUser.tenant.id
+      tenantId: activeTenant?.id ?? PLATFORM_ROOT_SCOPE
     }),
     user: {
       id: updatedUser.id,
@@ -897,17 +915,17 @@ export async function login(
       lastName: updatedUser.lastName,
       landingContext,
       tenant: {
-      id: updatedUser.tenant.id,
-      name: updatedUser.tenant.name,
-      brandingConfig: buildSessionBrandingConfig(
-          updatedUser.tenant.brandingConfig,
-          updatedUser.tenant.branding
+        id: activeTenant?.id ?? 'platform',
+        name: activeTenant?.name ?? 'Platform',
+        brandingConfig: buildSessionBrandingConfig(
+          activeTenant?.brandingConfig,
+          activeTenant?.branding
             ? {
-                displayName: updatedUser.tenant.branding.displayName ?? updatedUser.tenant.name,
-                primaryColor: updatedUser.tenant.branding.primaryColor ?? null,
-                secondaryColor: updatedUser.tenant.branding.secondaryColor ?? null,
-                logoUrl: updatedUser.tenant.branding.logoUrl ?? null,
-                faviconUrl: updatedUser.tenant.branding.faviconUrl ?? null
+                displayName: activeTenant.branding.displayName ?? activeTenant.name,
+                primaryColor: activeTenant.branding.primaryColor ?? null,
+                secondaryColor: activeTenant.branding.secondaryColor ?? null,
+                logoUrl: activeTenant.branding.logoUrl ?? null,
+                faviconUrl: activeTenant.branding.faviconUrl ?? null
               }
             : null,
           updatedUser.employerGroup

@@ -29,7 +29,7 @@ type AssignRoleBody = {
 };
 
 type CreateUserBody = {
-  tenantId: string;
+  tenantId?: string;
   email: string;
   firstName: string;
   lastName: string;

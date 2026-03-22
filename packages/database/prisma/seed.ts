@@ -4,6 +4,63 @@ import path from 'node:path';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
+
+async function syncUserTenantMemberships() {
+  const users = await prisma.user.findMany({
+    where: {
+      tenantId: {
+        not: null
+      }
+    },
+    include: {
+      roles: {
+        include: {
+          role: true
+        }
+      }
+    }
+  });
+
+  await Promise.all(
+    users.flatMap((user) => {
+      if (!user.tenantId) {
+        return [];
+      }
+
+      return [
+        prisma.userTenantMembership.upsert({
+          where: {
+            userId_tenantId: {
+              userId: user.id,
+              tenantId: user.tenantId
+            }
+          },
+          update: {
+            isDefault: true,
+            isTenantAdmin: user.roles.some(({ role }) => role.code === 'tenant_admin')
+          },
+          create: {
+            userId: user.id,
+            tenantId: user.tenantId,
+            isDefault: true,
+            isTenantAdmin: user.roles.some(({ role }) => role.code === 'tenant_admin')
+          }
+        }),
+        prisma.userTenantMembership.updateMany({
+          where: {
+            userId: user.id,
+            tenantId: {
+              not: user.tenantId
+            }
+          },
+          data: {
+            isDefault: false
+          }
+        })
+      ];
+    })
+  );
+}
 const apiStorageDir = path.resolve(process.cwd(), '../../apps/api/storage');
 
 const mockPortalDocuments = [
@@ -761,6 +818,8 @@ async function main() {
       }
     });
   }
+
+  await syncUserTenantMemberships();
 }
 
 main()

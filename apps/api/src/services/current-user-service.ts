@@ -24,11 +24,14 @@ export type CurrentUser = {
   email: string;
   roles: string[];
   permissions: string[];
+  accessibleTenantIds: string[];
+  tenantAdminTenantIds: string[];
 };
 
 export const PLATFORM_ADMIN_ROLE_CODE = 'platform_admin';
 export const TENANT_ADMIN_ROLE_CODE = 'tenant_admin';
 const LEGACY_PLATFORM_ADMIN_ROLE_CODE = 'platform-admin';
+export const PLATFORM_ROOT_SCOPE = 'platform';
 
 function getAuthorizationHeader(headers: IncomingHttpHeaders) {
   const authorizationHeader = headers.authorization;
@@ -67,6 +70,14 @@ export async function getCurrentUserFromHeaders(
   const user = await prisma.user.findUnique({
     where: { id: tokenPayload.sub },
     include: {
+      memberships: {
+        select: {
+          tenantId: true,
+          isDefault: true,
+          isTenantAdmin: true
+        },
+        orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
+      },
       roles: {
         include: {
           role: {
@@ -86,13 +97,27 @@ export async function getCurrentUserFromHeaders(
   if (!user) {
     throw new AuthenticationError('Authenticated user not found.');
   }
-  if (user.tenantId !== tokenPayload.tenantId || user.email !== tokenPayload.email) {
+  if (user.email !== tokenPayload.email) {
     throw new AuthenticationError('Access token subject mismatch.');
+  }
+
+  const accessibleTenantIds = user.memberships.map((membership) => membership.tenantId);
+  const resolvedTenantId =
+    user.tenantId ??
+    user.memberships.find((membership) => membership.isDefault)?.tenantId ??
+    user.memberships[0]?.tenantId ??
+    PLATFORM_ROOT_SCOPE;
+
+  if (
+    tokenPayload.tenantId !== PLATFORM_ROOT_SCOPE &&
+    !accessibleTenantIds.includes(tokenPayload.tenantId)
+  ) {
+    throw new AuthenticationError('Access token tenant scope mismatch.');
   }
 
   return {
     id: user.id,
-    tenantId: user.tenantId,
+    tenantId: resolvedTenantId,
     employerGroupId: user.employerGroupId,
     email: user.email,
     roles: user.roles.map(({ role }) => role.code),
@@ -102,7 +127,11 @@ export async function getCurrentUserFromHeaders(
           role.permissions.map(({ permission }) => permission.code)
         )
       )
-    )
+    ),
+    accessibleTenantIds,
+    tenantAdminTenantIds: user.memberships
+      .filter((membership) => membership.isTenantAdmin)
+      .map((membership) => membership.tenantId)
   };
 }
 
@@ -116,7 +145,7 @@ export function isPlatformAdmin(user: CurrentUser) {
 export function isTenantAdmin(user: CurrentUser) {
   return (
     isPlatformAdmin(user) ||
-    user.roles.includes(TENANT_ADMIN_ROLE_CODE) ||
+    user.tenantAdminTenantIds.length > 0 ||
     user.permissions.includes('admin.manage')
   );
 }
@@ -140,12 +169,38 @@ export function resolveTenantScope(
   requestedTenantId?: string | null
 ) {
   const normalizedRequestedTenantId = requestedTenantId?.trim();
+  const hasGlobalTenantAdminPermission = user.permissions.includes('admin.manage');
 
   if (!normalizedRequestedTenantId) {
-    return user.tenantId;
+    if (
+      user.tenantId !== PLATFORM_ROOT_SCOPE &&
+      (isPlatformAdmin(user) ||
+        hasGlobalTenantAdminPermission ||
+        user.tenantAdminTenantIds.includes(user.tenantId))
+    ) {
+      return user.tenantId;
+    }
+
+    const defaultTenantId =
+      user.tenantAdminTenantIds[0] ??
+      (hasGlobalTenantAdminPermission ? user.accessibleTenantIds[0] : undefined);
+    if (defaultTenantId) {
+      return defaultTenantId;
+    }
+
+    if (isPlatformAdmin(user)) {
+      throw new AuthorizationError('Select a tenant workspace for this action.');
+    }
+
+    throw new AuthorizationError('No tenant workspace is available for this user.');
   }
 
-  if (normalizedRequestedTenantId === user.tenantId) {
+  if (
+    normalizedRequestedTenantId === user.tenantId ||
+    user.tenantAdminTenantIds.includes(normalizedRequestedTenantId) ||
+    (hasGlobalTenantAdminPermission &&
+      user.accessibleTenantIds.includes(normalizedRequestedTenantId))
+  ) {
     return normalizedRequestedTenantId;
   }
 
@@ -166,7 +221,11 @@ export function assertTenantMatch(
     requestedTenantId?: string;
   } = {}
 ) {
-  if (resourceTenantId === user.tenantId || isPlatformAdmin(user)) {
+  if (
+    resourceTenantId === user.tenantId ||
+    user.accessibleTenantIds.includes(resourceTenantId) ||
+    isPlatformAdmin(user)
+  ) {
     return;
   }
 

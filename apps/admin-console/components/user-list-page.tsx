@@ -4,6 +4,7 @@ import type { FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
+import { AdminPageLayout } from './admin-ui';
 import { UserDetailDrawer } from './user-detail-drawer';
 import { SectionCard } from './section-card';
 import { apiBaseUrl, getAdminAuthHeaders } from '../lib/api-auth';
@@ -19,7 +20,15 @@ type UserRecord = {
   tenant: {
     id: string;
     name: string;
-  };
+  } | null;
+  memberships?: Array<{
+    tenant: {
+      id: string;
+      name: string;
+    };
+    isDefault: boolean;
+    isTenantAdmin: boolean;
+  }>;
   roles: string[];
   permissions: string[];
   lastLogin: string | null;
@@ -71,6 +80,10 @@ function formatLastLogin(value: string | null) {
   return value ? new Date(value).toLocaleString() : 'Not recorded';
 }
 
+function isPlatformUser(user: Pick<UserRecord, 'roles'>) {
+  return user.roles.some((role) => role === 'platform_admin' || role === 'platform-admin');
+}
+
 function hydrateUsers(users: ApiUserRecord[]): UserRecord[] {
   return users.map((user) => ({
     ...user,
@@ -102,7 +115,8 @@ export function UserListPage({ scope }: { scope: Scope }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [roleFilter, setRoleFilter] = useState('all');
-  const [tenantFilter, setTenantFilter] = useState('all');
+  const [tenantFilter, setTenantFilter] = useState(queryTenantId ?? 'all');
+  const [showPlatformUsers, setShowPlatformUsers] = useState(false);
   const userDirectoryWindowHeight = 'max-h-[36rem]';
 
   async function loadData() {
@@ -195,7 +209,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
   function openCreateDrawer() {
     setDrawerMode('create');
     setSelectedUser(null);
-    setSelectedRoleId(roles[0]?.id ?? '');
+    setSelectedRoleId('');
     setFormState({
       ...emptyFormState,
       tenantId: scope === 'platform' ? tenants[0]?.id ?? '' : tenants[0]?.id ?? ''
@@ -207,9 +221,9 @@ export function UserListPage({ scope }: { scope: Scope }) {
   function openEditDrawer(user: UserRecord) {
     setDrawerMode('edit');
     setSelectedUser(user);
-    setSelectedRoleId(roles[0]?.id ?? '');
+    setSelectedRoleId('');
     setFormState({
-      tenantId: user.tenant.id,
+      tenantId: user.tenant?.id ?? '',
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
@@ -260,6 +274,28 @@ export function UserListPage({ scope }: { scope: Scope }) {
           message?: string;
         } | null;
         throw new Error(payload?.message ?? 'Unable to save user.');
+      }
+
+      const savedUser = (await response.json().catch(() => null)) as UserRecord | null;
+
+      if (drawerMode === 'create' && scope === 'platform' && savedUser?.id && selectedRoleId) {
+        const roleResponse = await fetch(`${apiBaseUrl}/platform-admin/users/${savedUser.id}/roles`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAdminAuthHeaders()
+          },
+          body: JSON.stringify({
+            roleId: selectedRoleId
+          })
+        });
+
+        if (!roleResponse.ok) {
+          const payload = (await roleResponse.json().catch(() => null)) as {
+            message?: string;
+          } | null;
+          throw new Error(payload?.message ?? 'User created, but role assignment failed.');
+        }
       }
 
       await loadData();
@@ -395,19 +431,30 @@ export function UserListPage({ scope }: { scope: Scope }) {
   const title = scope === 'platform' ? 'User List' : 'Tenant Users';
   const description =
     scope === 'platform'
-      ? 'Manage all users across tenants, including role assignment and account status.'
+      ? 'Manage tenant users, switch between tenants, and optionally include platform administration accounts.'
       : 'Manage users inside the active tenant, including role assignment and account status.';
+
+  useEffect(() => {
+    if (scope !== 'platform') {
+      return;
+    }
+
+    setTenantFilter(queryTenantId ?? 'all');
+  }, [queryTenantId, scope]);
+
   const filteredUsers = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
     return users.filter((user) => {
+      const platformUser = isPlatformUser(user);
       const matchesSearch =
         !normalizedSearch ||
         [
           user.firstName,
           user.lastName,
           user.email,
-          user.tenant.name,
+          user.tenant?.name ?? 'platform',
+          platformUser ? 'platform administration platform user' : '',
           ...user.roles
         ]
           .join(' ')
@@ -419,39 +466,44 @@ export function UserListPage({ scope }: { scope: Scope }) {
       const matchesRole =
         roleFilter === 'all' || user.roles.includes(roleFilter);
       const matchesTenant =
-        tenantFilter === 'all' || user.tenant.id === tenantFilter;
+        scope !== 'platform' ||
+        tenantFilter === 'all' ||
+        user.tenant?.id === tenantFilter ||
+        user.memberships?.some((membership) => membership.tenant.id === tenantFilter);
+      const matchesPlatformVisibility =
+        scope !== 'platform' ||
+        !platformUser ||
+        showPlatformUsers;
 
-      return matchesSearch && matchesStatus && matchesRole && matchesTenant;
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesRole &&
+        matchesTenant &&
+        matchesPlatformVisibility
+      );
     });
-  }, [roleFilter, search, statusFilter, tenantFilter, users]);
+  }, [roleFilter, scope, search, showPlatformUsers, statusFilter, tenantFilter, users]);
   const roleOptions = useMemo(
     () => Array.from(new Set(users.flatMap((user) => user.roles))).sort(),
     [users]
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
-            {scope === 'platform' ? 'Platform' : 'Tenant'}
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-admin-text">
-            {title}
-          </h1>
-          <p className="mt-3 max-w-3xl text-base leading-7 text-admin-muted">
-            {description}
-          </p>
-        </div>
-
+    <AdminPageLayout
+      eyebrow={scope === 'platform' ? 'Platform Admin' : 'Tenant Admin'}
+      title={title}
+      description={description}
+      actions={
         <button
           type="button"
           onClick={openCreateDrawer}
-          className="rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+          className="inline-flex min-h-11 items-center justify-center rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.18)] transition hover:opacity-90"
         >
           Create User
         </button>
-      </div>
+      }
+    >
 
       {error && !isDrawerOpen ? (
         <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -463,15 +515,15 @@ export function UserListPage({ scope }: { scope: Scope }) {
         title="User directory"
         description="Includes create, edit, deactivate, and assign-role workflows."
       >
-        <div className="mb-5 grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.7fr))]">
-          <input
-            className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+          <div className="mb-5 grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.7fr))]">
+            <input
+            className="admin-input"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search name, email, tenant, or role"
+            placeholder="Search name, email, tenant, platform user, or role"
           />
           <select
-            className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+            className="admin-input"
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'inactive')}
           >
@@ -480,7 +532,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
             <option value="inactive">Inactive only</option>
           </select>
           <select
-            className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+            className="admin-input"
             value={roleFilter}
             onChange={(event) => setRoleFilter(event.target.value)}
           >
@@ -492,7 +544,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
             ))}
           </select>
           <select
-            className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+            className="admin-input"
             value={tenantFilter}
             onChange={(event) => setTenantFilter(event.target.value)}
             disabled={scope !== 'platform'}
@@ -505,6 +557,21 @@ export function UserListPage({ scope }: { scope: Scope }) {
             ))}
           </select>
         </div>
+
+        {scope === 'platform' ? (
+          <label className="mb-5 flex items-center gap-3 rounded-2xl border border-admin-border bg-admin-surface px-4 py-3 text-sm font-medium text-admin-text shadow-sm">
+            <input
+              type="checkbox"
+              checked={showPlatformUsers}
+              onChange={(event) => setShowPlatformUsers(event.target.checked)}
+              className="h-5 w-5 rounded border-admin-border text-admin-primary focus:ring-2 focus:ring-admin-primary/40"
+            />
+            <span>Include platform users</span>
+            <span className="text-admin-muted">
+              Show administrator accounts used for platform administration.
+            </span>
+          </label>
+        ) : null}
 
         {isLoading ? (
           <p className="text-sm text-admin-muted">Loading users...</p>
@@ -544,7 +611,20 @@ export function UserListPage({ scope }: { scope: Scope }) {
                       {user.roles[0] ?? 'Unassigned'}
                     </td>
                     <td className="px-3 py-4 text-admin-text">
-                      {scope === 'platform' ? user.tenant.name : 'Current tenant'}
+                      {scope === 'platform' ? (
+                        <div className="space-y-2">
+                          {isPlatformUser(user) ? (
+                            <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
+                              Platform user
+                            </span>
+                          ) : null}
+                          <p className="text-sm text-admin-text">
+                            {user.tenant?.name ?? 'Platform-wide account'}
+                          </p>
+                        </div>
+                      ) : (
+                        'Current tenant'
+                      )}
                     </td>
                     <td className="px-3 py-4">
                       <span
@@ -565,7 +645,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
                         <button
                           type="button"
                           onClick={() => openEditDrawer(user)}
-                          className="rounded-full border border-admin-border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-admin-text transition hover:border-admin-accent hover:text-admin-accent"
+                          className="admin-button admin-button--secondary"
                         >
                           Edit
                         </button>
@@ -573,7 +653,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
                           type="button"
                           onClick={() => void handleDeactivate(user)}
                           disabled={updatingUserId === user.id}
-                          className="rounded-full border border-admin-border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-admin-text transition hover:border-admin-accent hover:text-admin-accent disabled:cursor-not-allowed disabled:opacity-70"
+                          className="admin-button admin-button--secondary disabled:cursor-not-allowed disabled:opacity-70"
                         >
                           {updatingUserId === user.id
                             ? 'Saving...'
@@ -612,6 +692,6 @@ export function UserListPage({ scope }: { scope: Scope }) {
         onAssignRole={() => void handleAssignRole()}
         onRemoveRole={(roleCode) => void handleRemoveRole(roleCode)}
       />
-    </div>
+    </AdminPageLayout>
   );
 }

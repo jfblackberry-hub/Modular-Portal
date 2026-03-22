@@ -37,11 +37,10 @@ export function AdminShell({ children }: AdminShellProps) {
 
   return (
     <div className="admin-shell h-screen overflow-hidden bg-admin-bg text-admin-text">
-      <div className="admin-shell__frame flex h-full">
+      <TopHeader session={session} signOut={signOut} />
+      <div className="admin-shell__frame flex min-h-0 h-[calc(100vh-88px)]">
         <LeftAdminMenu session={session} />
-
         <div className="admin-shell__content flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <TopHeader session={session} signOut={signOut} />
           <AdminContentRouter>{children}</AdminContentRouter>
         </div>
       </div>

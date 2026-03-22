@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { AdminPageLayout } from './admin-ui';
 import { SectionCard } from './section-card';
 import { apiBaseUrl, getAdminAuthHeaders } from '../lib/api-auth';
 
@@ -352,28 +353,16 @@ export function AuditLogPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
-            {scope === 'platform' ? 'Platform' : 'Tenant'}
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-admin-text">
-            Audit Log
-          </h1>
-          <p className="mt-3 max-w-3xl text-base leading-7 text-admin-muted">
-            Review administrative activity with filtering, date search, and CSV export.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleExport}
-          className="rounded-full border border-admin-border bg-white px-4 py-2 text-sm font-medium text-admin-text transition hover:border-admin-accent hover:text-admin-accent"
-        >
+    <AdminPageLayout
+      eyebrow={scope === 'platform' ? 'Platform Audit' : 'Tenant Audit'}
+      title="Audit Log"
+      description="Review administrative activity with filtering, date search, and CSV export."
+      actions={
+        <button type="button" onClick={handleExport} className="admin-button admin-button--secondary">
           Export
         </button>
-      </div>
+      }
+    >
 
       <SectionCard
         title="Filters"
@@ -383,7 +372,7 @@ export function AuditLogPage({
           <label className="block">
             <span className="text-sm font-medium text-admin-text">Actor search</span>
             <input
-              className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+              className="admin-input mt-2"
               value={actorQuery}
               onChange={(event) => setActorQuery(event.target.value)}
               placeholder="Search actor or role"
@@ -393,7 +382,7 @@ export function AuditLogPage({
           <label className="block">
             <span className="text-sm font-medium text-admin-text">Event type</span>
             <input
-              className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+              className="admin-input mt-2"
               value={eventTypeQuery}
               onChange={(event) => setEventTypeQuery(event.target.value)}
               placeholder="authorization.updated"
@@ -403,7 +392,7 @@ export function AuditLogPage({
           <label className="block">
             <span className="text-sm font-medium text-admin-text">Resource type</span>
             <input
-              className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+              className="admin-input mt-2"
               value={resourceTypeQuery}
               onChange={(event) => setResourceTypeQuery(event.target.value)}
               placeholder="claim"
@@ -413,7 +402,7 @@ export function AuditLogPage({
           <label className="block">
             <span className="text-sm font-medium text-admin-text">Resource id</span>
             <input
-              className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+              className="admin-input mt-2"
               value={resourceIdQuery}
               onChange={(event) => setResourceIdQuery(event.target.value)}
               placeholder="CLM-100245"
@@ -424,7 +413,7 @@ export function AuditLogPage({
             <span className="text-sm font-medium text-admin-text">Date from</span>
             <input
               type="date"
-              className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+              className="admin-input mt-2"
               value={dateFrom}
               onChange={(event) => setDateFrom(event.target.value)}
             />
@@ -434,7 +423,7 @@ export function AuditLogPage({
             <span className="text-sm font-medium text-admin-text">Date to</span>
             <input
               type="date"
-              className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+              className="admin-input mt-2"
               value={dateTo}
               onChange={(event) => setDateTo(event.target.value)}
             />
@@ -444,7 +433,7 @@ export function AuditLogPage({
             <label className="block">
               <span className="text-sm font-medium text-admin-text">Tenant</span>
               <select
-                className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                className="admin-input mt-2"
                 value={tenantFilter}
                 onChange={(event) => setTenantFilter(event.target.value)}
               >
@@ -509,6 +498,6 @@ export function AuditLogPage({
           </div>
         )}
       </SectionCard>
-    </div>
+    </AdminPageLayout>
   );
 }

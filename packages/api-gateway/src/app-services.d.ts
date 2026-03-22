@@ -8,6 +8,8 @@ declare module '../../../apps/api/dist/services/current-user-service.js' {
     email: string;
     roles: string[];
     permissions: string[];
+    accessibleTenantIds: string[];
+    tenantAdminTenantIds: string[];
   };
 
   export function getCurrentUserFromHeaders(headers: HeadersInit): Promise<CurrentUser>;
@@ -70,7 +72,7 @@ declare module '../../../apps/api/dist/services/role-service.js' {
   export function listUsers(): Promise<unknown>;
   export function createUser(
     input: {
-      tenantId: string;
+      tenantId?: string;
       email: string;
       firstName: string;
       lastName: string;

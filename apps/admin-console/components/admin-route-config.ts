@@ -10,6 +10,16 @@ export type AdminMenuItem = {
   items?: AdminMenuItem[];
 };
 
+export type AdminSectionIcon =
+  | 'dashboard'
+  | 'tenants'
+  | 'users'
+  | 'roles'
+  | 'modules'
+  | 'api-catalog'
+  | 'audit'
+  | 'integrations';
+
 type AdminRouteItem = AdminMenuItem & {
   href: string;
 };
@@ -17,6 +27,7 @@ type AdminRouteItem = AdminMenuItem & {
 export type AdminMenuSection = {
   key: string;
   label: string;
+  icon: AdminSectionIcon;
   items: AdminMenuItem[];
 };
 
@@ -35,6 +46,7 @@ const platformMenu: AdminMenuConfig = {
     {
       key: 'overview',
       label: 'Overview',
+      icon: 'dashboard',
       items: [
         {
           key: 'platform-health',
@@ -59,6 +71,7 @@ const platformMenu: AdminMenuConfig = {
     {
       key: 'tenant-management',
       label: 'Tenant Management',
+      icon: 'tenants',
       items: [
         {
           key: 'tenants',
@@ -96,25 +109,21 @@ const platformMenu: AdminMenuConfig = {
     },
     {
       key: 'user-administration',
-      label: 'User Administration',
+      label: 'User Admin',
+      icon: 'users',
       items: [
         {
           key: 'all-users',
           href: '/admin/platform/users',
           label: 'All Users',
           description: 'Manage users across the entire platform.'
-        },
-        {
-          key: 'role-management',
-          href: '/admin/platform/roles',
-          label: 'Role Management',
-          description: 'Maintain platform RBAC roles and assignments.'
         }
       ]
     },
     {
       key: 'connectivity',
-      label: 'Connectivity',
+      label: 'Integrations',
+      icon: 'integrations',
       items: [
         {
           key: 'external-connections',
@@ -158,7 +167,8 @@ const platformMenu: AdminMenuConfig = {
     },
     {
       key: 'configuration',
-      label: 'Configuration',
+      label: 'Modules',
+      icon: 'modules',
       items: [
         {
           key: 'platform-settings',
@@ -182,13 +192,26 @@ const platformMenu: AdminMenuConfig = {
     },
     {
       key: 'operations',
-      label: 'Operations',
+      label: 'API Catalog',
+      icon: 'api-catalog',
       items: [
         {
-          key: 'runtime-monitoring',
-          label: 'Runtime Monitoring',
-          description: 'Jobs, alerts, and diagnostic visibility.',
+          key: 'catalog-workspace',
+          label: 'Catalog Workspaces',
+          description: 'Browse APIs and monitor adapter deployment readiness.',
           items: [
+            {
+              key: 'api-catalog-workspace',
+              href: '/admin/platform/connectivity/catalog',
+              label: 'API Catalog',
+              description: 'Browse strategic vendor APIs and readiness metadata.'
+            },
+            {
+              key: 'api-adapter-workspace',
+              href: '/admin/platform/connectivity/adapters',
+              label: 'Adapter Status',
+              description: 'Inspect adapter posture and applied catalog templates.'
+            },
             {
               key: 'job-monitoring',
               href: '/admin/platform/operations/jobs',
@@ -196,16 +219,10 @@ const platformMenu: AdminMenuConfig = {
               description: 'Background processing visibility and execution state.'
             },
             {
-              key: 'system-alerts',
+              key: 'platform-alerts',
               href: '/admin/platform/operations/alerts',
               label: 'System Alerts',
               description: 'Operational alert triage and escalations.'
-            },
-            {
-              key: 'platform-logs',
-              href: '/admin/platform/operations/logs',
-              label: 'Logs',
-              description: 'Central platform runtime and diagnostic logs.'
             }
           ]
         }
@@ -213,25 +230,39 @@ const platformMenu: AdminMenuConfig = {
     },
     {
       key: 'security',
-      label: 'Security',
+      label: 'Audit Logs',
+      icon: 'audit',
       items: [
         {
-          key: 'audit-log',
-          href: '/admin/platform/audit',
-          label: 'Audit Log',
-          description: 'Detailed cross-tenant audit history.'
+          key: 'audit-workspace',
+          label: 'Audit & Permissions',
+          description: 'Security oversight, permissions, and audit visibility.',
+          items: [
+            {
+              key: 'audit-log',
+              href: '/admin/platform/audit',
+              label: 'Audit Log',
+              description: 'Detailed cross-tenant audit history.'
+            },
+            {
+              key: 'permission-matrix',
+              href: '/admin/platform/security/permissions',
+              label: 'Permission Matrix',
+              description: 'Review permission coverage and role boundaries.'
+            },
+            {
+              key: 'session-management',
+              href: '/admin/platform/security/sessions',
+              label: 'Session Management',
+              description: 'Inspect admin session controls and activity.'
+            }
+          ]
         },
         {
-          key: 'permission-matrix',
-          href: '/admin/platform/security/permissions',
-          label: 'Permission Matrix',
-          description: 'Review permission coverage and role boundaries.'
-        },
-        {
-          key: 'session-management',
-          href: '/admin/platform/security/sessions',
-          label: 'Session Management',
-          description: 'Inspect admin session controls and activity.'
+          key: 'role-management',
+          href: '/admin/platform/roles',
+          label: 'Roles & Permissions',
+          description: 'Maintain platform RBAC roles and assignments.'
         }
       ]
     }
@@ -245,7 +276,8 @@ const tenantMenu: AdminMenuConfig = {
   sections: [
     {
       key: 'overview',
-      label: 'Overview',
+      label: 'Dashboard',
+      icon: 'dashboard',
       items: [
         {
           key: 'tenant-health',
@@ -264,6 +296,7 @@ const tenantMenu: AdminMenuConfig = {
     {
       key: 'tenant-administration',
       label: 'Tenant Administration',
+      icon: 'tenants',
       items: [
         {
           key: 'tenant-profile',
@@ -294,25 +327,21 @@ const tenantMenu: AdminMenuConfig = {
     },
     {
       key: 'user-administration',
-      label: 'User Administration',
+      label: 'User Admin',
+      icon: 'users',
       items: [
         {
           key: 'tenant-users',
           href: '/admin/tenant/users',
           label: 'Tenant Users',
           description: 'Manage tenant-scoped users and access.'
-        },
-        {
-          key: 'tenant-roles',
-          href: '/admin/tenant/roles',
-          label: 'Roles',
-          description: 'Review tenant role assignments and policies.'
         }
       ]
     },
     {
       key: 'connectivity',
-      label: 'Connectivity',
+      label: 'Integrations',
+      icon: 'integrations',
       items: [
         {
           key: 'tenant-connections',
@@ -337,7 +366,8 @@ const tenantMenu: AdminMenuConfig = {
     },
     {
       key: 'operations',
-      label: 'Operations',
+      label: 'Modules',
+      icon: 'modules',
       items: [
         {
           key: 'tenant-monitoring',
@@ -362,7 +392,8 @@ const tenantMenu: AdminMenuConfig = {
     },
     {
       key: 'security',
-      label: 'Security',
+      label: 'Audit Logs',
+      icon: 'audit',
       items: [
         {
           key: 'tenant-audit-log',
@@ -375,6 +406,12 @@ const tenantMenu: AdminMenuConfig = {
           href: '/admin/tenant/security/access',
           label: 'Access Policies',
           description: 'Tenant access policy review and governance.'
+        },
+        {
+          key: 'tenant-roles',
+          href: '/admin/tenant/roles',
+          label: 'Roles & Permissions',
+          description: 'Review tenant role assignments and policies.'
         }
       ]
     }
@@ -432,7 +469,10 @@ export function getAdminRouteContext(pathname: string) {
 
       if (route) {
         return {
+          role: menu.role,
+          roleHref: menu.defaultHref,
           roleLabel: menu.label,
+          sectionHref: flattenAdminMenuItems(section.items)[0]?.href ?? menu.defaultHref,
           sectionLabel: section.label,
           route
         };

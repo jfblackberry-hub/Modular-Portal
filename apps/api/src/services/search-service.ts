@@ -29,7 +29,15 @@ async function getAuthenticatedUser(userId: string) {
     throw new Error('Authenticated user not found');
   }
 
-  return user;
+  if (!user.tenantId || !user.tenant) {
+    throw new Error('Tenant-bound user required');
+  }
+
+  return {
+    ...user,
+    tenantId: user.tenantId,
+    tenant: user.tenant
+  };
 }
 
 export async function searchTenantData(input: SearchInput) {

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { AdminPageLayout, AdminStatCard } from '../../../../components/admin-ui';
 import { SectionCard } from '../../../../components/section-card';
 import { fetchAdminJsonCached } from '../../../../lib/admin-client-data';
 import { apiBaseUrl, getAdminAuthHeaders } from '../../../../lib/api-auth';
@@ -332,21 +333,16 @@ export function TenantHealthPage() {
     : [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
-            Tenant Scope
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-admin-text">
-            Tenant Health
-          </h1>
-        </div>
-
-        <div className="rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-muted">
+    <AdminPageLayout
+      eyebrow="Tenant Dashboard"
+      title="Tenant Health"
+      description="Tenant readiness, connectivity posture, and active configuration quality."
+      actions={
+        <div className="rounded-full border border-admin-border bg-white px-4 py-3 text-sm text-admin-muted">
           {lastUpdated ? `Updated ${formatTimestamp(lastUpdated)}` : 'Loading live data...'}
         </div>
-      </div>
+      }
+    >
 
       {error ? (
         <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -361,17 +357,7 @@ export function TenantHealthPage() {
           { label: 'Configuration Completeness', value: configurationCompleteness },
           { label: 'Open Alerts', value: isLoading ? '--' : String(alerts.length) }
         ].map((kpi) => (
-          <div
-            key={kpi.label}
-            className="rounded-3xl border border-admin-border bg-admin-panel px-5 py-5 shadow-sm"
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-admin-muted">
-              {kpi.label}
-            </p>
-            <p className="mt-4 text-3xl font-semibold tracking-tight text-admin-text">
-              {kpi.value}
-            </p>
-          </div>
+          <AdminStatCard key={kpi.label} label={kpi.label} value={kpi.value} />
         ))}
       </div>
 
@@ -478,13 +464,13 @@ export function TenantHealthPage() {
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/admin/tenant/connectivity"
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white"
+                className="admin-button admin-button--primary"
               >
                 Open connectivity workspace
               </Link>
               <Link
                 href="/admin/tenant/connectivity/sso"
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-admin-border bg-white px-5 py-3 text-sm font-semibold text-admin-text"
+                className="admin-button admin-button--secondary"
               >
                 Review SSO
               </Link>
@@ -637,6 +623,6 @@ export function TenantHealthPage() {
           )}
         </SectionCard>
       </div>
-    </div>
+    </AdminPageLayout>
   );
 }

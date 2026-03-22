@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { AdminPageLayout } from './admin-ui';
 import { SectionCard } from './section-card';
 import { fetchAdminJsonCached } from '../lib/admin-client-data';
 import { apiBaseUrl, getAdminAuthHeaders } from '../lib/api-auth';
@@ -319,18 +320,11 @@ export function ConnectivityStatusPage({ scope }: { scope: Scope }) {
   }, [scope]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
-          {scope === 'platform' ? 'Platform' : 'Tenant'}
-        </p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-admin-text">
-          Connectivity Status
-        </h1>
-        <p className="mt-3 max-w-3xl text-base leading-7 text-admin-muted">
-          Visibility into system integrations, sync health, and connectivity failures.
-        </p>
-      </div>
+    <AdminPageLayout
+      eyebrow={scope === 'platform' ? 'Platform Integrations' : 'Tenant Integrations'}
+      title="Connectivity Status"
+      description="Visibility into system integrations, sync health, and connectivity failures."
+    >
 
       {error ? (
         <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -379,6 +373,6 @@ export function ConnectivityStatusPage({ scope }: { scope: Scope }) {
           </div>
         )}
       </SectionCard>
-    </div>
+    </AdminPageLayout>
   );
 }

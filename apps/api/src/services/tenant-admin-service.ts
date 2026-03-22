@@ -38,7 +38,13 @@ type TenantUserRecord = {
   tenant: {
     id: string;
     name: string;
-  };
+  } | null;
+  memberships: Array<{
+    tenant: {
+      id: string;
+      name: string;
+    };
+  }>;
   roles: Array<{
     role: {
       code: string;
@@ -52,13 +58,15 @@ type TenantUserRecord = {
 };
 
 function mapTenantUser(user: TenantUserRecord) {
+  const scopedTenant = user.memberships[0]?.tenant ?? user.tenant;
+
   return {
     id: user.id,
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
     isActive: user.isActive,
-    tenant: user.tenant,
+    tenant: scopedTenant,
     roles: user.roles.map(({ role }) => role.code),
     permissions: Array.from(
       new Set(
@@ -150,13 +158,30 @@ export async function getTenantAdminSettings(
       listRoles(),
       prisma.user.findMany({
         where: {
-          tenantId
+          memberships: {
+            some: {
+              tenantId
+            }
+          }
         },
         include: {
           tenant: {
             select: {
               id: true,
               name: true
+            }
+          },
+          memberships: {
+            where: {
+              tenantId
+            },
+            select: {
+              tenant: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
             }
           },
           roles: {

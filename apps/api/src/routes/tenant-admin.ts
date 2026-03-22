@@ -135,7 +135,16 @@ async function resolveTenantScopeForUserAction(
       id: userId
     },
     select: {
-      tenantId: true
+      tenantId: true,
+      memberships: {
+        where: {
+          isDefault: true
+        },
+        select: {
+          tenantId: true
+        },
+        take: 1
+      }
     }
   });
 
@@ -143,7 +152,7 @@ async function resolveTenantScopeForUserAction(
     throw new Error('User not found');
   }
 
-  return targetUser.tenantId;
+  return targetUser.tenantId ?? targetUser.memberships[0]?.tenantId ?? resolveTenantScope(currentUser);
 }
 
 function handleRouteError(

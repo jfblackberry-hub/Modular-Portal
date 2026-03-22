@@ -218,8 +218,8 @@ export async function getPlatformHealthOverview() {
       lastName: user.lastName,
       isActive: user.isActive,
       tenant: {
-        id: user.tenant.id,
-        name: user.tenant.name
+        id: user.tenant?.id ?? 'platform',
+        name: user.tenant?.name ?? 'Platform'
       }
     })),
     auditEvents: {

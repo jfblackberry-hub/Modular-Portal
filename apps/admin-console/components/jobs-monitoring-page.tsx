@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { apiBaseUrl, getAdminAuthHeaders } from '../lib/api-auth';
 import { useAdminSession } from './admin-session-provider';
+import { AdminPageLayout, AdminStatCard } from './admin-ui';
 import { SectionCard } from './section-card';
 
 type Scope = 'platform' | 'tenant';
@@ -289,47 +290,33 @@ export function JobsMonitoringPage({
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
-            {scope === 'platform' ? 'Platform' : 'Tenant'}
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-admin-text">
-            {scope === 'platform' ? 'Job monitoring' : 'Job status'}
-          </h1>
-          <p className="mt-3 max-w-3xl text-base leading-7 text-admin-muted">
-            {scope === 'platform'
-              ? 'Track queue health, identify failed jobs, and retry tenant work without leaving the operations workspace.'
-              : `Review scheduled and recent background work for ${tenantName || 'your tenant'} in one place.`}
-          </p>
-        </div>
-
+    <AdminPageLayout
+      eyebrow={scope === 'platform' ? 'Platform Operations' : 'Tenant Operations'}
+      title={scope === 'platform' ? 'Job monitoring' : 'Job status'}
+      description={
+        scope === 'platform'
+          ? 'Track queue health, identify failed jobs, and retry tenant work without leaving the operations workspace.'
+          : `Review scheduled and recent background work for ${tenantName || 'your tenant'} in one place.`
+      }
+      actions={
         <button
           type="button"
           onClick={() => {
             setIsRefreshing(true);
             setReloadNonce((current) => current + 1);
           }}
-          className="inline-flex items-center justify-center rounded-full border border-admin-border px-4 py-2 text-sm font-medium text-admin-text transition hover:border-admin-accent hover:text-admin-accent"
+          className="admin-button admin-button--secondary"
         >
           {isRefreshing ? 'Refreshing...' : 'Refresh'}
         </button>
-      </div>
+      }
+    >
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SectionCard title="Total jobs" description="Current results for the selected filters.">
-          <p className="text-3xl font-semibold text-admin-text">{summary.total}</p>
-        </SectionCard>
-        <SectionCard title="Active work" description="Pending and currently running jobs.">
-          <p className="text-3xl font-semibold text-admin-text">{summary.active}</p>
-        </SectionCard>
-        <SectionCard title="Failed jobs" description="Items that need operator attention or retry.">
-          <p className="text-3xl font-semibold text-admin-text">{summary.failed}</p>
-        </SectionCard>
-        <SectionCard title="Succeeded" description="Jobs that completed successfully.">
-          <p className="text-3xl font-semibold text-admin-text">{summary.succeeded}</p>
-        </SectionCard>
+        <AdminStatCard label="Total jobs" value={String(summary.total)} detail="Current results for the selected filters." />
+        <AdminStatCard label="Active work" value={String(summary.active)} detail="Pending and currently running jobs." />
+        <AdminStatCard label="Failed jobs" value={String(summary.failed)} detail="Items that need operator attention or retry." />
+        <AdminStatCard label="Succeeded" value={String(summary.succeeded)} detail="Jobs that completed successfully." />
       </div>
 
       <SectionCard
@@ -348,7 +335,7 @@ export function JobsMonitoringPage({
               onChange={(event) =>
                 setStatusFilter(event.target.value as (typeof statusOptions)[number])
               }
-              className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none"
+              className="admin-input"
             >
               {statusOptions.map((status) => (
                 <option key={status} value={status}>
@@ -363,7 +350,7 @@ export function JobsMonitoringPage({
             <select
               value={typeFilter}
               onChange={(event) => setTypeFilter(event.target.value)}
-              className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none"
+              className="admin-input"
             >
               <option value="">All job types</option>
               {availableTypes.map((type) => (
@@ -380,7 +367,7 @@ export function JobsMonitoringPage({
               <select
                 value={tenantFilter}
                 onChange={(event) => setTenantFilter(event.target.value)}
-                className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none"
+                className="admin-input"
               >
                 <option value="ALL">All tenants</option>
                 {tenants.map((tenant) => (
@@ -489,7 +476,7 @@ export function JobsMonitoringPage({
                           type="button"
                           onClick={() => void retryJob(job.id)}
                           disabled={retryingJobId === job.id}
-                          className="rounded-full border border-admin-border px-3 py-2 text-xs font-medium text-admin-text transition hover:border-admin-accent hover:text-admin-accent disabled:cursor-not-allowed disabled:opacity-60"
+                          className="admin-button admin-button--secondary disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {retryingJobId === job.id ? 'Retrying...' : 'Retry job'}
                         </button>
@@ -506,6 +493,6 @@ export function JobsMonitoringPage({
           </div>
         )}
       </SectionCard>
-    </div>
+    </AdminPageLayout>
   );
 }

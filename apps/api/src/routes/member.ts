@@ -43,6 +43,34 @@ function getPortalCatalogContext(user: {
   };
 }
 
+function assertTenantBoundUser<T extends { tenantId: string | null; tenant: unknown }>(
+  user: T
+): T & {
+  tenantId: string;
+  tenant: {
+    slug: string;
+    name: string;
+    createdAt: Date;
+    updatedAt: Date;
+    brandingConfig: unknown;
+  };
+} {
+  if (!user.tenantId || !user.tenant) {
+    throw new AuthorizationError('Member access requires a tenant membership.');
+  }
+
+  return user as T & {
+    tenantId: string;
+    tenant: {
+      slug: string;
+      name: string;
+      createdAt: Date;
+      updatedAt: Date;
+      brandingConfig: unknown;
+    };
+  };
+}
+
 const memberUserInclude = {
   tenant: {
     include: {
@@ -81,11 +109,13 @@ async function getMemberUser(
       throw new AuthenticationError('Authenticated user not found.');
     }
 
-    assertTenantMatch(currentUser, user.tenantId, {
+    const tenantBoundUser = assertTenantBoundUser(user);
+
+    assertTenantMatch(currentUser, tenantBoundUser.tenantId, {
       action: request.url
     });
 
-    return user;
+    return tenantBoundUser;
   } catch (error) {
     if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
       request.log.warn(

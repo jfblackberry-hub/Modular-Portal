@@ -11,7 +11,7 @@ type UserRecord = {
   tenant: {
     id: string;
     name: string;
-  };
+  } | null;
   roles: string[];
   lastLogin: string | null;
 };
@@ -84,6 +84,10 @@ export function UserDetailDrawer({
     return null;
   }
 
+  const isPlatformScope = scope === 'platform';
+  const isPlatformWideAccount = isPlatformScope && formState.tenantId === '';
+  const canChooseInitialRole = mode === 'create' && isPlatformScope;
+
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-slate-950/35 backdrop-blur-sm">
       <div className="flex h-full w-full max-w-2xl flex-col overflow-y-auto border-l border-admin-border bg-white shadow-2xl">
@@ -140,30 +144,84 @@ export function UserDetailDrawer({
           ) : null}
 
           <form className="space-y-5" onSubmit={onSubmit}>
-            {scope === 'platform' ? (
-              <label className="block">
-                <span className="text-sm font-medium text-admin-text">Tenant</span>
-                <select
-                  className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
-                  value={formState.tenantId}
-                  onChange={(event) =>
-                    onFormChange({
-                      ...formState,
-                      tenantId: event.target.value
-                    })
-                  }
-                  required
-                >
-                  <option value="" disabled>
-                    Select tenant
-                  </option>
-                  {tenants.map((tenant) => (
-                    <option key={tenant.id} value={tenant.id}>
-                      {tenant.name}
+            {isPlatformScope ? (
+              <div className="space-y-4 rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                <div>
+                  <p className="text-sm font-medium text-admin-text">Account scope</p>
+                  <p className="mt-1 text-sm text-admin-muted">
+                    Choose whether this account belongs to a tenant workspace or operates at the platform level.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onFormChange({
+                        ...formState,
+                        tenantId: formState.tenantId || tenants[0]?.id || ''
+                      })
+                    }
+                    title="Assign this user to a specific tenant or OU."
+                    aria-label="Tenant User. Assign this user to a specific tenant or OU."
+                    className={`rounded-2xl border px-4 py-4 text-left transition ${
+                      !isPlatformWideAccount
+                        ? 'border-admin-accent bg-blue-50 text-admin-text shadow-sm'
+                        : 'border-admin-border bg-white text-admin-text hover:border-admin-accent'
+                    }`}
+                  >
+                    <p className="text-sm font-semibold">Tenant User</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onFormChange({
+                        ...formState,
+                        tenantId: ''
+                      })
+                    }
+                    title="Create an administrator account that is not tied to any single tenant."
+                    aria-label="Platform User. Create an administrator account that is not tied to any single tenant."
+                    className={`rounded-2xl border px-4 py-4 text-left transition ${
+                      isPlatformWideAccount
+                        ? 'border-admin-accent bg-blue-50 text-admin-text shadow-sm'
+                        : 'border-admin-border bg-white text-admin-text hover:border-admin-accent'
+                    }`}
+                  >
+                    <p className="text-sm font-semibold">Platform User</p>
+                  </button>
+                </div>
+
+                <label className="block">
+                  <span className="text-sm font-medium text-admin-text">Tenant</span>
+                  <select
+                    className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-admin-muted"
+                    value={formState.tenantId}
+                    onChange={(event) =>
+                      onFormChange({
+                        ...formState,
+                        tenantId: event.target.value
+                      })
+                    }
+                    required={!isPlatformWideAccount}
+                    disabled={isPlatformWideAccount}
+                  >
+                    <option value="" disabled>
+                      Select tenant
                     </option>
-                  ))}
-                </select>
-              </label>
+                    {tenants.map((tenant) => (
+                      <option key={tenant.id} value={tenant.id}>
+                        {tenant.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-sm text-admin-muted">
+                    {isPlatformWideAccount
+                      ? 'Tenant assignment is intentionally omitted for platform-level administrator accounts.'
+                      : 'Tenant admins and tenant-bound users should remain aligned to a specific tenant.'}
+                  </p>
+                </label>
+              </div>
             ) : null}
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -227,6 +285,27 @@ export function UserDetailDrawer({
               />
               Active user
             </label>
+
+            {canChooseInitialRole ? (
+              <label className="block">
+                <span className="text-sm font-medium text-admin-text">Initial role</span>
+                <select
+                  className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                  value={selectedRoleId}
+                  onChange={(event) => onSelectedRoleChange(event.target.value)}
+                >
+                  <option value="">Create without role</option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-sm text-admin-muted">
+                  Assign a role during creation so platform administrators can be ready immediately.
+                </p>
+              </label>
+            ) : null}
 
             <div className="flex flex-wrap gap-3">
               <button

@@ -16,7 +16,7 @@ type CreateRoleInput = {
 };
 
 type CreateUserInput = {
-  tenantId: string;
+  tenantId?: string;
   email: string;
   firstName: string;
   lastName: string;
@@ -35,6 +35,34 @@ type AuditContext = {
   actorUserId?: string | null;
   ipAddress?: string;
   userAgent?: string;
+};
+
+const userInclude = {
+  tenant: true,
+  memberships: {
+    include: {
+      tenant: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
+    },
+    orderBy: [{ isDefault: 'desc' as const }, { createdAt: 'asc' as const }]
+  },
+  roles: {
+    include: {
+      role: {
+        include: {
+          permissions: {
+            include: {
+              permission: true
+            }
+          }
+        }
+      }
+    }
+  }
 };
 
 function normalizeCode(value: string) {
@@ -61,7 +89,16 @@ function mapUser(
     tenant: {
       id: string;
       name: string;
-    };
+    } | null;
+    memberships: Array<{
+      tenantId: string;
+      isDefault: boolean;
+      isTenantAdmin: boolean;
+      tenant: {
+        id: string;
+        name: string;
+      };
+    }>;
     roles: Array<{
       role: Role & {
         permissions: Array<{
@@ -78,10 +115,18 @@ function mapUser(
     lastName: user.lastName,
     isActive: user.isActive,
     lastLoginAt: user.lastLoginAt,
-    tenant: {
-      id: user.tenant.id,
-      name: user.tenant.name
-    },
+    tenant:
+      user.tenant ?? user.memberships[0]?.tenant
+        ? {
+            id: (user.tenant ?? user.memberships[0]?.tenant).id,
+            name: (user.tenant ?? user.memberships[0]?.tenant).name
+          }
+        : null,
+    memberships: user.memberships.map((membership) => ({
+      tenant: membership.tenant,
+      isDefault: membership.isDefault,
+      isTenantAdmin: membership.isTenantAdmin
+    })),
     roles: user.roles.map(({ role }) => role.code),
     permissions: Array.from(
       new Set(
@@ -326,22 +371,7 @@ export async function removeRoleFromUser(userId: string, roleId: string) {
 
 export async function listUsers() {
   const users = await prisma.user.findMany({
-    include: {
-      roles: {
-        include: {
-          role: {
-            include: {
-              permissions: {
-                include: {
-                  permission: true
-                }
-              }
-            }
-          }
-        }
-      },
-      tenant: true
-    },
+    include: userInclude,
     orderBy: {
       createdAt: 'desc'
     }
@@ -354,18 +384,20 @@ export async function createUser(
   input: CreateUserInput,
   context: AuditContext = {}
 ) {
-  const tenantId = normalizeRequired(input.tenantId, 'Tenant');
   const email = normalizeRequired(input.email, 'Email').toLowerCase();
   const firstName = normalizeRequired(input.firstName, 'First name');
   const lastName = normalizeRequired(input.lastName, 'Last name');
+  const tenantId = normalizeOptional(input.tenantId);
 
   const user = await prisma.$transaction(async (tx) => {
-    const tenant = await tx.tenant.findUnique({
-      where: { id: tenantId }
-    });
+    if (tenantId) {
+      const tenant = await tx.tenant.findUnique({
+        where: { id: tenantId }
+      });
 
-    if (!tenant) {
-      throw new Error('Tenant not found');
+      if (!tenant) {
+        throw new Error('Tenant not found');
+      }
     }
 
     const createdUser = await tx.user.create({
@@ -376,62 +408,73 @@ export async function createUser(
         lastName,
         isActive: input.isActive ?? true
       },
-      include: {
-        tenant: true,
-        roles: {
-          include: {
-            role: {
-              include: {
-                permissions: {
-                  include: {
-                    permission: true
-                  }
-                }
-              }
-            }
+      include: userInclude
+    });
+
+    if (tenantId) {
+      await tx.userTenantMembership.upsert({
+        where: {
+          userId_tenantId: {
+            userId: createdUser.id,
+            tenantId
           }
+        },
+        update: {
+          isDefault: true
+        },
+        create: {
+          userId: createdUser.id,
+          tenantId,
+          isDefault: true
         }
+      });
+    }
+
+    if (createdUser.tenantId) {
+      await logAuditEvent({
+        client: tx,
+        tenantId: createdUser.tenantId,
+        actorUserId: context.actorUserId ?? null,
+        action: 'user.created',
+        entityType: 'user',
+        entityId: createdUser.id,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent
+      });
+    }
+
+    return tx.user.findUniqueOrThrow({
+      where: { id: createdUser.id },
+      include: userInclude
+    });
+  });
+
+  if (user.tenant?.id) {
+    await createNotification({
+      tenantId: user.tenant.id,
+      userId: user.id,
+      channel: 'EMAIL',
+      template: 'user-welcome',
+      subject: 'Welcome to the portal',
+      body: `Welcome ${user.firstName}. Your portal account is ready.`
+    });
+
+    publishInBackground('user.created', {
+      id: randomUUID(),
+      correlationId: randomUUID(),
+      timestamp: new Date(),
+      tenantId: user.tenant.id,
+      type: 'user.created',
+      payload: {
+        userId: user.id,
+        tenantId: user.tenant.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isActive: user.isActive
       }
     });
-
-    await logAuditEvent({
-      client: tx,
-      tenantId: createdUser.tenantId,
-      actorUserId: context.actorUserId ?? null,
-      action: 'user.created',
-      entityType: 'user',
-      entityId: createdUser.id,
-      ipAddress: context.ipAddress,
-      userAgent: context.userAgent
-    });
-
-    return createdUser;
-  });
-
-  await createNotification({
-    tenantId: user.tenant.id,
-    userId: user.id,
-    channel: 'EMAIL',
-    template: 'user-welcome',
-    subject: 'Welcome to the portal',
-    body: `Welcome ${user.firstName}. Your portal account is ready.`
-  });
-
-  publishInBackground('user.created', {
-    id: randomUUID(),
-    correlationId: randomUUID(),
-    timestamp: new Date(),
-    tenantId: user.tenantId,
-    type: 'user.created',
-    payload: {
-      userId: user.id,
-      tenantId: user.tenantId,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      isActive: user.isActive
-    }
-  });
+  }
 
   return mapUser(user);
 }
@@ -445,17 +488,13 @@ export async function updateUser(id: string, input: UpdateUserInput) {
     throw new Error('User not found');
   }
 
-  const tenantId = normalizeOptional(input.tenantId) ?? existingUser.tenantId;
+  const tenantId = normalizeOptional(input.tenantId) ?? existingUser.tenantId ?? undefined;
   const email =
     normalizeOptional(input.email)?.toLowerCase() ?? existingUser.email;
   const firstName =
     normalizeOptional(input.firstName) ?? existingUser.firstName;
   const lastName = normalizeOptional(input.lastName) ?? existingUser.lastName;
   const isActive = input.isActive ?? existingUser.isActive;
-
-  if (!tenantId) {
-    throw new Error('Tenant is required');
-  }
 
   if (!email) {
     throw new Error('Email is required');
@@ -470,39 +509,62 @@ export async function updateUser(id: string, input: UpdateUserInput) {
   }
 
   const user = await prisma.$transaction(async (tx) => {
-    const tenant = await tx.tenant.findUnique({
-      where: { id: tenantId }
-    });
+    if (tenantId) {
+      const tenant = await tx.tenant.findUnique({
+        where: { id: tenantId }
+      });
 
-    if (!tenant) {
-      throw new Error('Tenant not found');
+      if (!tenant) {
+        throw new Error('Tenant not found');
+      }
     }
 
-    return tx.user.update({
+    const updatedUser = await tx.user.update({
       where: { id },
       data: {
-        tenantId,
+        tenantId: tenantId ?? null,
         email,
         firstName,
         lastName,
         isActive
       },
-      include: {
-        tenant: true,
-        roles: {
-          include: {
-            role: {
-              include: {
-                permissions: {
-                  include: {
-                    permission: true
-                  }
-                }
-              }
-            }
+      include: userInclude
+    });
+
+    if (tenantId) {
+      await tx.userTenantMembership.upsert({
+        where: {
+          userId_tenantId: {
+            userId: id,
+            tenantId
           }
+        },
+        update: {
+          isDefault: true
+        },
+        create: {
+          userId: id,
+          tenantId,
+          isDefault: true
         }
-      }
+      });
+
+      await tx.userTenantMembership.updateMany({
+        where: {
+          userId: id,
+          tenantId: {
+            not: tenantId
+          }
+        },
+        data: {
+          isDefault: false
+        }
+      });
+    }
+
+    return tx.user.findUniqueOrThrow({
+      where: { id: updatedUser.id },
+      include: userInclude
     });
   });
 
@@ -535,10 +597,12 @@ export async function deleteUser(id: string) {
     email: existingUser.email,
     firstName: existingUser.firstName,
     lastName: existingUser.lastName,
-    tenant: {
-      id: existingUser.tenant.id,
-      name: existingUser.tenant.name
-    },
+    tenant: existingUser.tenant
+      ? {
+          id: existingUser.tenant.id,
+          name: existingUser.tenant.name
+        }
+      : null,
     roles: existingUser.roles.map(({ role }) => role.code)
   };
 }
