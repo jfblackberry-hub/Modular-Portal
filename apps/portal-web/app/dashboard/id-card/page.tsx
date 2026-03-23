@@ -1,15 +1,16 @@
 import { MemberIdCardWorkspaceContent } from '../../../components/member/dashboard-workspaces/MemberIdCardWorkspaceContent';
 import { getMe, getMemberCoverage, getMemberProfile } from '../../../lib/member-api';
-import { getPortalSessionUser } from '../../../lib/portal-session';
+import { getPortalSession } from '../../../lib/portal-session';
 import { getTenantBranding } from '../../../lib/tenant-branding';
 
 export default async function IdCardPage() {
-  const sessionUser = await getPortalSessionUser();
-  const sessionUserId = sessionUser?.id;
+  const session = await getPortalSession();
+  const sessionUser = session?.user;
+  const accessToken = session?.accessToken;
   const [me, profile, coverage] = await Promise.all([
-    getMe(sessionUserId),
-    getMemberProfile(sessionUserId),
-    getMemberCoverage(sessionUserId)
+    getMe(accessToken),
+    getMemberProfile(accessToken),
+    getMemberCoverage(accessToken)
   ]);
 
   const member = profile ?? me?.member;

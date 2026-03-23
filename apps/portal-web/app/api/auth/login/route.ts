@@ -1,19 +1,13 @@
 import { NextResponse } from 'next/server';
 
+import { clearLegacyPortalAuthCookies } from '../../../../lib/legacy-auth-cookies';
 import {
   createSignedPortalSessionCookieValue,
+  getPortalSessionCookieOptions,
   getSessionMaxAge
 } from '../../../../lib/portal-session-cookie';
-import {
-  PORTAL_SESSION_COOKIE,
-  PORTAL_TOKEN_COOKIE,
-  PORTAL_USER_COOKIE
-} from '../../../../lib/session-constants';
-
-const apiBaseUrl =
-  process.env.API_BASE_URL ??
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  'http://localhost:3002';
+import { apiInternalOrigin as apiBaseUrl } from '../../../../lib/server-runtime';
+import { PORTAL_SESSION_COOKIE } from '../../../../lib/session-constants';
 
 export async function POST(request: Request) {
   try {
@@ -60,28 +54,14 @@ export async function POST(request: Request) {
       { status: response.status }
     );
 
-    nextResponse.cookies.set(PORTAL_SESSION_COOKIE, sessionCookieValue, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge
-    });
-    // Clear legacy client-trusted auth cookies.
-    nextResponse.cookies.set(PORTAL_TOKEN_COOKIE, '', {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 0
-    });
-    nextResponse.cookies.set(PORTAL_USER_COOKIE, '', {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 0
-    });
+    nextResponse.cookies.set(
+      PORTAL_SESSION_COOKIE,
+      sessionCookieValue,
+      getPortalSessionCookieOptions({
+        maxAge
+      })
+    );
+    clearLegacyPortalAuthCookies(nextResponse);
 
     return nextResponse;
   } catch {

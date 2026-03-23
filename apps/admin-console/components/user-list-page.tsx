@@ -1,13 +1,13 @@
 'use client';
 
-import type { FormEvent } from 'react';
-import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import type { FormEvent } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { AdminPageLayout } from './admin-ui';
-import { UserDetailDrawer } from './user-detail-drawer';
-import { SectionCard } from './section-card';
 import { apiBaseUrl, getAdminAuthHeaders } from '../lib/api-auth';
+import { AdminPageLayout } from './admin-ui';
+import { SectionCard } from './section-card';
+import { UserDetailDrawer } from './user-detail-drawer';
 
 type Scope = 'platform' | 'tenant';
 
@@ -91,7 +91,7 @@ function hydrateUsers(users: ApiUserRecord[]): UserRecord[] {
   }));
 }
 
-export function UserListPage({ scope }: { scope: Scope }) {
+function UserListPageContent({ scope }: { scope: Scope }) {
   const searchParams = useSearchParams();
   const queryTenantId = searchParams.get('tenantId') ?? searchParams.get('tenant_id');
   const tenantQuery = queryTenantId
@@ -119,7 +119,7 @@ export function UserListPage({ scope }: { scope: Scope }) {
   const [showPlatformUsers, setShowPlatformUsers] = useState(false);
   const userDirectoryWindowHeight = 'max-h-[36rem]';
 
-  async function loadData() {
+  const loadData = useCallback(async function loadData() {
     setIsLoading(true);
     setError('');
 
@@ -189,11 +189,11 @@ export function UserListPage({ scope }: { scope: Scope }) {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [scope, tenantQuery]);
 
   useEffect(() => {
     void loadData();
-  }, [scope, tenantQuery]);
+  }, [loadData]);
 
   function closeDrawer() {
     setIsDrawerOpen(false);
@@ -693,5 +693,13 @@ export function UserListPage({ scope }: { scope: Scope }) {
         onRemoveRole={(roleCode) => void handleRemoveRole(roleCode)}
       />
     </AdminPageLayout>
+  );
+}
+
+export function UserListPage({ scope }: { scope: Scope }) {
+  return (
+    <Suspense fallback={<div className="min-h-[12rem]" aria-hidden="true" />}>
+      <UserListPageContent scope={scope} />
+    </Suspense>
   );
 }

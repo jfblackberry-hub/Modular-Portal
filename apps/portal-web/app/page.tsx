@@ -1,20 +1,22 @@
 import Link from 'next/link';
 
+import { adminConsolePublicOrigin } from '../lib/server-runtime';
+
 const adminOptions = [
   {
     label: 'Blue Horizon Tenant Admin',
     description: 'Open tenant operations for the Blue Horizon Health payer tenant.',
-    href: 'http://localhost:3003/login?admin_user_id=tenant&admin_email=tenant&redirect=%2Fadmin%2Ftenant%2Fhealth'
+    href: `${adminConsolePublicOrigin}/login`
   },
   {
     label: 'Real Health Tenant Admin',
     description: 'Open tenant operations for the Real Health payer tenant.',
-    href: 'http://localhost:3003/login?admin_user_id=realtenantadmin&admin_email=realtenantadmin&redirect=%2Fadmin%2Ftenant%2Fhealth'
+    href: `${adminConsolePublicOrigin}/login`
   },
   {
     label: 'Platform Admin',
     description: 'Open platform-wide operations for tenants, governance, and system health.',
-    href: 'http://localhost:3003/login?admin_user_id=admin&admin_email=admin&redirect=%2Fadmin%2Fplatform%2Fhealth'
+    href: `${adminConsolePublicOrigin}/login`
   }
 ];
 

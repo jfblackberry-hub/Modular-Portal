@@ -8,6 +8,7 @@ import { prisma } from '@payer-portal/database';
 import Fastify from 'fastify';
 
 import { tenantAdminRoutes } from '../src/routes/tenant-admin.js';
+import { createAccessToken } from '../src/services/access-token-service.js';
 
 const TEST_PERMISSION_CODE = 'admin.manage';
 const TEST_PLATFORM_ADMIN_ROLE_CODE = 'platform_admin';
@@ -30,13 +31,7 @@ async function cleanupTestData() {
     }
   });
 
-  await prisma.auditLog.deleteMany({
-    where: {
-      action: {
-        in: ['tenant.notification-settings.updated']
-      }
-    }
-  });
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
 
   await prisma.connectorConfig.deleteMany({
     where: {
@@ -263,6 +258,29 @@ async function createFixtureData() {
     })
   ]);
 
+  await prisma.userTenantMembership.createMany({
+    data: [
+      {
+        userId: adminUser.id,
+        tenantId: tenant.id,
+        isDefault: true,
+        isTenantAdmin: true
+      },
+      {
+        userId: memberUser.id,
+        tenantId: tenant.id,
+        isDefault: true,
+        isTenantAdmin: false
+      },
+      {
+        userId: foreignUser.id,
+        tenantId: otherTenant.id,
+        isDefault: true,
+        isTenantAdmin: false
+      }
+    ]
+  });
+
   await prisma.connectorConfig.createMany({
     data: [
       {
@@ -298,6 +316,33 @@ async function createFixtureData() {
   };
 }
 
+function createTenantAdminToken(user: { id: string; email: string }, tenantId: string) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId,
+    sessionType: 'tenant_admin'
+  });
+}
+
+function createEndUserToken(user: { id: string; email: string }, tenantId: string) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId,
+    sessionType: 'end_user'
+  });
+}
+
+function createPlatformAdminToken(user: { id: string; email: string }) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId: 'platform',
+    sessionType: 'platform_admin'
+  });
+}
+
 beforeEach(async () => {
   await cleanupTestData();
 });
@@ -312,12 +357,13 @@ test('tenant admin settings endpoint returns scoped configuration and updates ar
     await createFixtureData();
   const app = Fastify();
   await tenantAdminRoutes(app);
+  const adminToken = createTenantAdminToken(adminUser, tenant.id);
 
   const settingsResponse = await app.inject({
     method: 'GET',
     url: '/api/tenant-admin/settings',
     headers: {
-      'x-user-id': adminUser.id
+      authorization: `Bearer ${adminToken}`
     }
   });
 
@@ -336,7 +382,7 @@ test('tenant admin settings endpoint returns scoped configuration and updates ar
     method: 'PUT',
     url: '/api/tenant-admin/notification-settings',
     headers: {
-      'x-user-id': adminUser.id,
+      authorization: `Bearer ${adminToken}`,
       'user-agent': 'tenant-admin-test'
     },
     payload: {
@@ -378,7 +424,7 @@ test('tenant admin settings endpoint returns scoped configuration and updates ar
     method: 'POST',
     url: `/api/tenant-admin/users/${memberUser.id}/roles`,
     headers: {
-      'x-user-id': adminUser.id
+      authorization: `Bearer ${adminToken}`
     },
     payload: {
       roleId: assignableRole.id
@@ -400,16 +446,18 @@ test('tenant admin settings endpoint returns scoped configuration and updates ar
 });
 
 test('tenant admin routes enforce admin permission and tenant scoping', async () => {
-  const { adminUser, memberUser, foreignUser, assignableRole } =
+  const { tenant, otherTenant, adminUser, memberUser, foreignUser, assignableRole } =
     await createFixtureData();
   const app = Fastify();
   await tenantAdminRoutes(app);
+  const adminToken = createTenantAdminToken(adminUser, tenant.id);
+  const memberToken = createEndUserToken(memberUser, tenant.id);
 
   const forbiddenResponse = await app.inject({
     method: 'GET',
     url: '/api/tenant-admin/settings',
     headers: {
-      'x-user-id': memberUser.id
+      authorization: `Bearer ${memberToken}`
     }
   });
 
@@ -419,7 +467,7 @@ test('tenant admin routes enforce admin permission and tenant scoping', async ()
     method: 'POST',
     url: `/api/tenant-admin/users/${foreignUser.id}/roles`,
     headers: {
-      'x-user-id': adminUser.id
+      authorization: `Bearer ${adminToken}`
     },
     payload: {
       roleId: assignableRole.id
@@ -428,6 +476,17 @@ test('tenant admin routes enforce admin permission and tenant scoping', async ()
 
   assert.equal(foreignAssignmentResponse.statusCode, 404);
 
+  const crossTenantResponse = await app.inject({
+    method: 'GET',
+    url: `/api/tenant-admin/settings?tenant_id=${otherTenant.id}`,
+    headers: {
+      authorization: `Bearer ${adminToken}`,
+      'x-tenant-id': otherTenant.id
+    }
+  });
+
+  assert.equal(crossTenantResponse.statusCode, 401, crossTenantResponse.body);
+
   await app.close();
 });
 
@@ -435,12 +494,14 @@ test('platform admins can switch tenant context on tenant-admin routes', async (
   const { tenant, otherTenant, platformAdminUser } = await createFixtureData();
   const app = Fastify();
   await tenantAdminRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
 
   const targetTenantResponse = await app.inject({
     method: 'GET',
     url: `/api/tenant-admin/settings?tenant_id=${tenant.id}`,
     headers: {
-      'x-user-id': platformAdminUser.id
+      authorization: `Bearer ${platformToken}`,
+      'x-tenant-id': tenant.id
     }
   });
 
@@ -451,7 +512,8 @@ test('platform admins can switch tenant context on tenant-admin routes', async (
     method: 'GET',
     url: `/api/tenant-admin/settings?tenant_id=${otherTenant.id}`,
     headers: {
-      'x-user-id': platformAdminUser.id
+      authorization: `Bearer ${platformToken}`,
+      'x-tenant-id': otherTenant.id
     }
   });
 
@@ -489,12 +551,14 @@ test('tenant-admin jobs endpoint returns tenant-scoped jobs and respects platfor
 
   const app = Fastify();
   await tenantAdminRoutes(app);
+  const adminToken = createTenantAdminToken(adminUser, tenant.id);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
 
   const tenantAdminResponse = await app.inject({
     method: 'GET',
     url: '/api/tenant-admin/jobs',
     headers: {
-      'x-user-id': adminUser.id
+      authorization: `Bearer ${adminToken}`
     }
   });
 
@@ -508,7 +572,8 @@ test('tenant-admin jobs endpoint returns tenant-scoped jobs and respects platfor
     method: 'GET',
     url: `/api/tenant-admin/jobs?tenant_id=${otherTenant.id}&status=PENDING`,
     headers: {
-      'x-user-id': platformAdminUser.id
+      authorization: `Bearer ${platformToken}`,
+      'x-tenant-id': otherTenant.id
     }
   });
 
@@ -517,6 +582,25 @@ test('tenant-admin jobs endpoint returns tenant-scoped jobs and respects platfor
   assert.equal(switchedJobs.length, 1);
   assert.equal(switchedJobs[0].tenantId, otherTenant.id);
   assert.equal(switchedJobs[0].status, 'PENDING');
+
+  await app.close();
+});
+
+test('platform admin requests without explicit tenant workspace fail on tenant-admin routes', async () => {
+  const { platformAdminUser } = await createFixtureData();
+  const app = Fastify();
+  await tenantAdminRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+
+  const response = await app.inject({
+    method: 'GET',
+    url: '/api/tenant-admin/settings',
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(response.statusCode, 403, response.body);
 
   await app.close();
 });

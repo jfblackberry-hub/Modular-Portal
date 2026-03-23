@@ -9,6 +9,7 @@ import {
   useState
 } from 'react';
 
+import { requestAdminLogout } from '../lib/admin-logout';
 import {
   clearAdminSession,
   getAdminAuthHeaders,
@@ -34,7 +35,7 @@ type AdminSessionContextValue = {
   isLoading: boolean;
   error: string;
   refreshSession: () => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
   applySession: (session: AdminSession) => void;
 };
 
@@ -50,7 +51,7 @@ const AdminSessionContext = createContext<AdminSessionContextValue>({
   isLoading: true,
   error: '',
   refreshSession: async () => undefined,
-  signOut: () => undefined,
+  signOut: async () => undefined,
   applySession: () => undefined
 });
 
@@ -178,23 +179,17 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
 
     async function initializeSession() {
-      try {
-        if (!isMounted) {
-          return;
-        }
-
-        const storedSession = getStoredAdminSessionSnapshot() as AdminSession | null;
-
-        if (storedSession && hasAdminConsoleAccess(storedSession)) {
-          setSession(storedSession);
-        }
-
-        await loadSession();
-      } finally {
-        if (!isMounted) {
-          return;
-        }
+      if (!isMounted) {
+        return;
       }
+
+      const storedSession = getStoredAdminSessionSnapshot() as AdminSession | null;
+
+      if (storedSession && hasAdminConsoleAccess(storedSession)) {
+        setSession(storedSession);
+      }
+
+      await loadSession();
     }
 
     void initializeSession();
@@ -202,12 +197,30 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [loadSession]);
 
-  const signOut = useCallback(function signOut() {
-    clearAdminSession();
-    setSession(null);
-    setError('');
+  const signOut = useCallback(async function signOut() {
+    try {
+      await requestAdminLogout((input, init) =>
+        fetch(input, {
+          ...init,
+          headers: {
+            ...(init?.headers ?? {}),
+            ...getAdminAuthHeaders()
+          }
+        })
+      );
+      clearAdminSession();
+      setSession(null);
+      setError('');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to end the admin session right now.';
+      setError(message);
+      throw new Error(message);
+    }
   }, []);
 
   const applySession = useCallback(function applySession(nextSession: AdminSession) {

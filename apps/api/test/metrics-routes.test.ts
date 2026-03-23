@@ -1,12 +1,12 @@
-import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { after, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
 process.env.PAYER_PORTAL_API_AUTOSTART = 'false';
 
-import { publish, recordIntegrationExecution } from '@payer-portal/server';
 import { prisma } from '@payer-portal/database';
+import { publish, recordIntegrationExecution } from '@payer-portal/server';
 
 after(async () => {
   await prisma.$disconnect();

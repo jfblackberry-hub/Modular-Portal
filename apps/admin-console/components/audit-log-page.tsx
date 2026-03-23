@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { apiBaseUrl, getAdminAuthHeaders } from '../lib/api-auth';
 import { AdminPageLayout } from './admin-ui';
 import { SectionCard } from './section-card';
-import { apiBaseUrl, getAdminAuthHeaders } from '../lib/api-auth';
 
 type Scope = 'platform' | 'tenant';
 

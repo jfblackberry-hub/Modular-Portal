@@ -1,5 +1,5 @@
-import type { PortalSessionUser } from './portal-session';
 import { getBrokerNavigationSections } from './broker-portal-config';
+import type { PortalSessionUser } from './portal-session';
 
 export type BillingPortalAudience = 'employer' | 'individual' | 'broker';
 

@@ -1,17 +1,17 @@
 import type { FastifyInstance } from 'fastify';
 
 import {
+  getPlatformAdapterInventory,
+  getPlatformConnectivityStatusRows,
+  getPlatformHealthOverview,
+  listPlatformTenantSummaries
+} from '../services/admin-operations-service';
+import {
   assertPlatformAdmin,
   AuthenticationError,
   AuthorizationError,
   getCurrentUserFromHeaders
 } from '../services/current-user-service';
-import {
-  getPlatformAdapterInventory,
-  getPlatformHealthOverview,
-  getPlatformConnectivityStatusRows,
-  listPlatformTenantSummaries
-} from '../services/admin-operations-service';
 
 function handleRouteError(
   error: unknown,
@@ -31,7 +31,7 @@ function handleRouteError(
 
   return reply.status(503).send({
     message:
-      'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+      'Local database unavailable. Start PostgreSQL, run migrations.'
   });
 }
 

@@ -1,10 +1,10 @@
 import 'server-only';
 
-import { getPortalSessionAccessToken } from './portal-session';
-
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3002';
-const adminConsoleBaseUrl =
-  process.env.NEXT_PUBLIC_ADMIN_CONSOLE_URL ?? 'http://localhost:3003';
+import { buildPortalApiHeaders } from './api-request';
+import {
+  adminConsolePublicOrigin as adminConsoleBaseUrl,
+  apiInternalOrigin as apiBaseUrl
+} from './server-runtime';
 
 export type SearchDocumentResult = {
   id: string;
@@ -48,17 +48,11 @@ export async function searchPlatformContent(accessToken: string, query: string) 
   }
 
   try {
-    const sessionAccessToken = await getPortalSessionAccessToken();
-    const resolvedAccessToken = sessionAccessToken ?? accessToken;
     const response = await fetch(
       `${apiBaseUrl}/api/search?q=${encodeURIComponent(normalizedQuery)}`,
       {
         cache: 'no-store',
-        headers: resolvedAccessToken
-          ? {
-              Authorization: `Bearer ${resolvedAccessToken}`
-            }
-          : undefined
+        headers: await buildPortalApiHeaders({}, { accessToken })
       }
     );
 

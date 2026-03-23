@@ -6,10 +6,13 @@ import {
   getMemberClaims,
   getMemberCoverage,
 } from '../../lib/member-api';
-import { getPortalSessionUser } from '../../lib/portal-session';
+import { getPortalSession } from '../../lib/portal-session';
+import { buildPortalWorkspaceSessionKey } from '../../lib/portal-workspace-session';
 
 export default async function DashboardPage() {
-  const sessionUser = await getPortalSessionUser();
+  const session = await getPortalSession();
+  const sessionUser = session?.user;
+  const accessToken = session?.accessToken;
 
   if (
     sessionUser?.landingContext === 'employer' ||
@@ -30,12 +33,15 @@ export default async function DashboardPage() {
     redirect('/broker');
   }
 
-  const sessionUserId = sessionUser?.id;
   const [me, coverage, claims] = await Promise.all([
-    getMe(sessionUserId),
-    getMemberCoverage(sessionUserId),
-    getMemberClaims(sessionUserId)
+    getMe(accessToken),
+    getMemberCoverage(accessToken),
+    getMemberClaims(accessToken)
   ]);
+  const workspaceSessionKey = buildPortalWorkspaceSessionKey({
+    portal: 'member',
+    user: sessionUser
+  });
 
   const member = me?.member;
   const activeCoverage = coverage?.items[0];
@@ -60,6 +66,7 @@ export default async function DashboardPage() {
       outOfPocketCurrent={1250}
       outOfPocketTotal={4500}
       coverageStatus={activeCoverage ? 'Active' : 'Status unavailable'}
+      workspaceSessionKey={workspaceSessionKey}
     />
   );
 }

@@ -1,7 +1,12 @@
 import type { IncomingHttpHeaders } from 'node:http';
 
-import { prisma } from '@payer-portal/database';
+import { prisma, setTenantContext } from '@payer-portal/database';
+
 import { verifyAccessToken } from './access-token-service';
+import {
+  PLATFORM_TENANT_ID,
+  requireTenantContext
+} from './tenant-context-service';
 
 export class AuthenticationError extends Error {
   constructor(message = 'Authenticated user required. Provide bearer token.') {
@@ -34,7 +39,7 @@ export type CurrentUser = {
 export const PLATFORM_ADMIN_ROLE_CODE = 'platform_admin';
 export const TENANT_ADMIN_ROLE_CODE = 'tenant_admin';
 const LEGACY_PLATFORM_ADMIN_ROLE_CODE = 'platform-admin';
-export const PLATFORM_ROOT_SCOPE = 'platform';
+export const PLATFORM_ROOT_SCOPE = PLATFORM_TENANT_ID;
 
 function getAuthorizationHeader(headers: IncomingHttpHeaders) {
   const authorizationHeader = headers.authorization;
@@ -68,6 +73,16 @@ export async function getCurrentUserFromHeaders(
   const tokenPayload = verifyAccessToken(bearerToken);
   if (!tokenPayload) {
     throw new AuthenticationError('Invalid or expired access token.');
+  }
+
+  let requestTenantContext;
+
+  try {
+    requestTenantContext = requireTenantContext(headers);
+  } catch (error) {
+    throw new AuthenticationError(
+      error instanceof Error ? error.message : 'Tenant context required.'
+    );
   }
 
   const user = await prisma.user.findUnique({
@@ -104,12 +119,12 @@ export async function getCurrentUserFromHeaders(
     throw new AuthenticationError('Access token subject mismatch.');
   }
 
-  const accessibleTenantIds = user.memberships.map((membership) => membership.tenantId);
-  const resolvedTenantId =
-    user.tenantId ??
-    user.memberships.find((membership) => membership.isDefault)?.tenantId ??
-    user.memberships[0]?.tenantId ??
-    PLATFORM_ROOT_SCOPE;
+  const accessibleTenantIds = Array.from(
+    new Set([
+      ...(user.tenantId ? [user.tenantId] : []),
+      ...user.memberships.map((membership) => membership.tenantId)
+    ])
+  );
 
   if (
     tokenPayload.tenantId !== PLATFORM_ROOT_SCOPE &&
@@ -126,9 +141,16 @@ export async function getCurrentUserFromHeaders(
       )
     )
   );
-  const tenantAdminTenantIds = user.memberships
-    .filter((membership) => membership.isTenantAdmin)
-    .map((membership) => membership.tenantId);
+  const tenantAdminTenantIds = Array.from(
+    new Set([
+      ...user.memberships
+        .filter((membership) => membership.isTenantAdmin)
+        .map((membership) => membership.tenantId),
+      ...(roleCodes.includes(TENANT_ADMIN_ROLE_CODE) && user.tenantId
+        ? [user.tenantId]
+        : [])
+    ])
+  );
 
   if (
     tokenPayload.sessionType === 'platform_admin' &&
@@ -141,14 +163,32 @@ export async function getCurrentUserFromHeaders(
   if (
     tokenPayload.sessionType === 'tenant_admin' &&
     (tokenPayload.tenantId === PLATFORM_ROOT_SCOPE ||
-      !tenantAdminTenantIds.includes(tokenPayload.tenantId))
+      (!tenantAdminTenantIds.includes(tokenPayload.tenantId) &&
+        !permissionCodes.includes('admin.manage') &&
+        !accessibleTenantIds.includes(tokenPayload.tenantId)))
   ) {
     throw new AuthenticationError('Tenant admin session requires a valid tenant scope.');
   }
 
+  if (
+    requestTenantContext.tenantId !== PLATFORM_ROOT_SCOPE &&
+    !isPlatformAdminRoleSet(roleCodes) &&
+    requestTenantContext.tenantId !== tokenPayload.tenantId
+  ) {
+    throw new AuthenticationError('Tenant context mismatch for authenticated user.');
+  }
+
+  if (
+    requestTenantContext.tenantId !== PLATFORM_ROOT_SCOPE &&
+    isPlatformAdminRoleSet(roleCodes) === false &&
+    !accessibleTenantIds.includes(requestTenantContext.tenantId)
+  ) {
+    throw new AuthenticationError('Access token tenant scope mismatch.');
+  }
+
   return {
     id: user.id,
-    tenantId: resolvedTenantId,
+    tenantId: requestTenantContext.tenantId,
     sessionType: tokenPayload.sessionType,
     employerGroupId: user.employerGroupId,
     email: user.email,
@@ -161,11 +201,114 @@ export async function getCurrentUserFromHeaders(
   };
 }
 
-export function isPlatformAdmin(user: CurrentUser) {
-  return user.sessionType === 'platform_admin' && (
-    user.roles.includes(PLATFORM_ADMIN_ROLE_CODE) ||
-    user.roles.includes(LEGACY_PLATFORM_ADMIN_ROLE_CODE)
+export async function getCurrentUserFromGatewayClaims(claims: {
+  sub: string;
+  email: string;
+  tenantId: string;
+}) {
+  setTenantContext({
+    tenantId: claims.tenantId,
+    source: 'token'
+  });
+
+  const user = await prisma.user.findUnique({
+    where: { id: claims.sub },
+    include: {
+      memberships: {
+        select: {
+          tenantId: true,
+          isTenantAdmin: true
+        }
+      },
+      roles: {
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: {
+                  permission: true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!user) {
+    throw new AuthenticationError('Authenticated user not found.');
+  }
+
+  if (user.email !== claims.email) {
+    throw new AuthenticationError('Access token subject mismatch.');
+  }
+
+  const roleCodes = user.roles.map(({ role }) => role.code);
+  const permissionCodes = Array.from(
+    new Set(
+      user.roles.flatMap(({ role }) =>
+        role.permissions.map(({ permission }) => permission.code)
+      )
+    )
   );
+  const accessibleTenantIds = Array.from(
+    new Set([
+      ...(user.tenantId ? [user.tenantId] : []),
+      ...user.memberships.map((membership) => membership.tenantId)
+    ])
+  );
+  const tenantAdminTenantIds = Array.from(
+    new Set([
+      ...user.memberships
+        .filter((membership) => membership.isTenantAdmin)
+        .map((membership) => membership.tenantId),
+      ...(roleCodes.includes(TENANT_ADMIN_ROLE_CODE) && user.tenantId
+        ? [user.tenantId]
+        : [])
+    ])
+  );
+
+  if (
+    claims.tenantId !== PLATFORM_ROOT_SCOPE &&
+    !accessibleTenantIds.includes(claims.tenantId)
+  ) {
+    throw new AuthenticationError('Access token tenant scope mismatch.');
+  }
+
+  if (
+    claims.tenantId === PLATFORM_ROOT_SCOPE &&
+    !isPlatformAdminRoleSet(roleCodes)
+  ) {
+    throw new AuthenticationError('Platform tenant scope requires platform admin access.');
+  }
+
+  return {
+    id: user.id,
+    tenantId: claims.tenantId,
+    sessionType: isPlatformAdminRoleSet(roleCodes)
+      ? 'platform_admin'
+      : tenantAdminTenantIds.includes(claims.tenantId)
+        ? 'tenant_admin'
+        : 'end_user',
+    employerGroupId: user.employerGroupId,
+    email: user.email,
+    roles: roleCodes,
+    permissions: permissionCodes,
+    accessibleTenantIds,
+    tenantAdminTenantIds
+  } satisfies CurrentUser;
+}
+
+function isPlatformAdminRoleSet(roleCodes: string[]) {
+  return (
+    roleCodes.includes(PLATFORM_ADMIN_ROLE_CODE) ||
+    roleCodes.includes(LEGACY_PLATFORM_ADMIN_ROLE_CODE)
+  );
+}
+
+export function isPlatformAdmin(user: CurrentUser) {
+  return user.sessionType === 'platform_admin' && isPlatformAdminRoleSet(user.roles);
 }
 
 export function isTenantAdmin(user: CurrentUser) {
@@ -199,23 +342,10 @@ export function resolveTenantScope(
   requestedTenantId?: string | null
 ) {
   const normalizedRequestedTenantId = requestedTenantId?.trim();
-  const hasGlobalTenantAdminPermission = user.permissions.includes('admin.manage');
 
   if (!normalizedRequestedTenantId) {
-    if (
-      user.tenantId !== PLATFORM_ROOT_SCOPE &&
-      (isPlatformAdmin(user) ||
-        hasGlobalTenantAdminPermission ||
-        user.tenantAdminTenantIds.includes(user.tenantId))
-    ) {
+    if (user.tenantId !== PLATFORM_ROOT_SCOPE) {
       return user.tenantId;
-    }
-
-    const defaultTenantId =
-      user.tenantAdminTenantIds[0] ??
-      (hasGlobalTenantAdminPermission ? user.accessibleTenantIds[0] : undefined);
-    if (defaultTenantId) {
-      return defaultTenantId;
     }
 
     if (isPlatformAdmin(user)) {
@@ -225,16 +355,11 @@ export function resolveTenantScope(
     throw new AuthorizationError('No tenant workspace is available for this user.');
   }
 
-  if (
-    normalizedRequestedTenantId === user.tenantId ||
-    user.tenantAdminTenantIds.includes(normalizedRequestedTenantId) ||
-    (hasGlobalTenantAdminPermission &&
-      user.accessibleTenantIds.includes(normalizedRequestedTenantId))
-  ) {
+  if (normalizedRequestedTenantId === user.tenantId) {
     return normalizedRequestedTenantId;
   }
 
-  if (isPlatformAdmin(user)) {
+  if (user.tenantId === PLATFORM_ROOT_SCOPE && isPlatformAdmin(user)) {
     return normalizedRequestedTenantId;
   }
 
@@ -253,8 +378,7 @@ export function assertTenantMatch(
 ) {
   if (
     resourceTenantId === user.tenantId ||
-    user.accessibleTenantIds.includes(resourceTenantId) ||
-    isPlatformAdmin(user)
+    (user.tenantId === PLATFORM_ROOT_SCOPE && isPlatformAdmin(user))
   ) {
     return;
   }

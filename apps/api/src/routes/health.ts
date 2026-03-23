@@ -7,6 +7,12 @@ import {
 } from '../services/health-service';
 
 export async function healthRoutes(app: FastifyInstance) {
+  app.get('/liveness', async () => getLiveStatus());
+  app.get('/readiness', async (_request, reply) => {
+    const result = await getReadinessStatus();
+
+    return reply.status(result.ready ? 200 : 503).send(result.response);
+  });
   app.get('/health/live', async () => getLiveStatus());
 
   app.get('/health/ready', async (_request, reply) => {

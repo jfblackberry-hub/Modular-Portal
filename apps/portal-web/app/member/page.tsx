@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { PageHeader, QuickActionCard, SurfaceCard } from '../../components/portal-ui';
 import {
   getMemberClaims,
   getMemberCoverage,
@@ -7,17 +8,16 @@ import {
   getMemberProfile
 } from '../../lib/member-api';
 import { formatCurrency } from '../../lib/portal-format';
-import { getPortalSessionUser } from '../../lib/portal-session';
-import { PageHeader, QuickActionCard, SurfaceCard } from '../../components/portal-ui';
+import { getPortalSession } from '../../lib/portal-session';
 
 export default async function MemberHomePage() {
-  const sessionUser = await getPortalSessionUser();
-  const sessionUserId = sessionUser?.id;
+  const session = await getPortalSession();
+  const accessToken = session?.accessToken;
   const [profile, coverage, claims, documents] = await Promise.all([
-    getMemberProfile(sessionUserId),
-    getMemberCoverage(sessionUserId),
-    getMemberClaims(sessionUserId),
-    getMemberDocuments(sessionUserId)
+    getMemberProfile(accessToken),
+    getMemberCoverage(accessToken),
+    getMemberClaims(accessToken),
+    getMemberDocuments(accessToken)
   ]);
 
   return (

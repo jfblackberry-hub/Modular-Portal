@@ -1,6 +1,5 @@
 'use client';
 
-import type { BrokerAlert } from '../../lib/broker-portfolio-data';
 import { InlineButton, PageHeader, SupportLink, SurfaceCard } from '../portal-ui';
 
 export function BrokerSupportWorkspacePage({

@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { EmptyState, StatusBadge } from '../../../../../components/portal-ui';
 import { getEmployerEnrollmentActivityById } from '../../../../../lib/billing-enrollment-api';
 import { getPortalSessionUser } from '../../../../../lib/portal-session';
-import { EmptyState, StatusBadge } from '../../../../../components/portal-ui';
 
 function formatDate(value?: string) {
   if (!value) {

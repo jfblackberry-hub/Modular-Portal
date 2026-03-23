@@ -9,6 +9,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./cache-keys": {
+      "types": "./dist/cache-keys.d.ts",
+      "default": "./dist/cache-keys.js"
+    },
+    "./portal-handoff": {
+      "types": "./dist/portal-handoff.d.ts",
+      "default": "./dist/portal-handoff.js"
     }
   },
   "devDependencies": {

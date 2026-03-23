@@ -3,14 +3,6 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { getEmployerBillingDatasetForTenant } from '../../lib/employer-billing-data';
-import { getDocumentCenterSummaryForTenant } from '../../lib/employer-document-center-data';
-import { getEmployerAdministrationSummaryForTenant } from '../../lib/employer-admin-settings-data';
-import { getEnrollmentActivitySummaryForTenant } from '../../lib/enrollment-activity-data';
-import { getWorkforceCoverageSummaryForTenant } from '../../lib/employer-census-data';
-import { getNotificationsTaskSummaryForTenant } from '../../lib/employer-notifications-tasks-data';
-import { getLatestImportSummaryForTenant } from '../../lib/hris-census-import-data';
-import { getOpenEnrollmentSummaryForTenant } from '../../lib/open-enrollment-data';
 import { EmptyState, StatusBadge } from '../portal-ui';
 import { EmployerDashboardWorkspaceSection } from './EmployerDashboardWorkspaceSection';
 
@@ -115,7 +107,9 @@ function formatDateLabel(value?: string | null) {
   });
 }
 
-function getFallbackData(employerName: string): EmployerDashboardData {
+export function createEmployerFallbackData(
+  employerName: string
+): EmployerDashboardData {
   return {
     overview: {
       employerName,
@@ -198,6 +192,32 @@ function getFallbackData(employerName: string): EmployerDashboardData {
   };
 }
 
+export function createEmployerCommandCenterInitialState({
+  employerName,
+  mode
+}: {
+  employerName: string;
+  mode: DashboardMode;
+}) {
+  if (mode === 'live' || mode === 'empty') {
+    return {
+      data: null,
+      isLoading: mode === 'live'
+    } satisfies {
+      data: EmployerDashboardData | null;
+      isLoading: boolean;
+    };
+  }
+
+  return {
+    data: createEmployerFallbackData(employerName),
+    isLoading: false
+  } satisfies {
+    data: EmployerDashboardData | null;
+    isLoading: boolean;
+  };
+}
+
 function LoadingState() {
   return (
     <div className="grid gap-4 lg:grid-cols-2" aria-hidden="true">
@@ -215,55 +235,24 @@ function LoadingState() {
 
 export function EmployerCommandCenterDashboard({
   employerName,
-  tenantId,
+  workspaceSessionKey,
   mode = 'live'
 }: {
   employerName: string;
-  tenantId: string;
+  workspaceSessionKey: string;
   mode?: DashboardMode;
 }) {
-  const fallbackData = useMemo(() => getFallbackData(employerName), [employerName]);
-  const fallbackWorkforceSummary = useMemo(
-    () => getWorkforceCoverageSummaryForTenant(tenantId),
-    [tenantId]
+  const initialState = useMemo(
+    () => createEmployerCommandCenterInitialState({ employerName, mode }),
+    [employerName, mode]
   );
-  const fallbackBillingDataset = useMemo(
-    () => getEmployerBillingDatasetForTenant(tenantId, employerName),
-    [employerName, tenantId]
-  );
-  const fallbackEnrollmentActivitySummary = useMemo(
-    () => getEnrollmentActivitySummaryForTenant(tenantId),
-    [tenantId]
-  );
-  const fallbackDocumentSummary = useMemo(
-    () => getDocumentCenterSummaryForTenant(tenantId),
-    [tenantId]
-  );
-  const fallbackOpenEnrollmentSummary = useMemo(
-    () => getOpenEnrollmentSummaryForTenant(tenantId),
-    [tenantId]
-  );
-  const fallbackLatestImportSummary = useMemo(
-    () => getLatestImportSummaryForTenant(tenantId),
-    [tenantId]
-  );
-  const fallbackNotificationsTaskSummary = useMemo(
-    () => getNotificationsTaskSummaryForTenant(tenantId),
-    [tenantId]
-  );
-  const fallbackAdministrationSummary = useMemo(
-    () => getEmployerAdministrationSummaryForTenant(tenantId),
-    [tenantId]
-  );
-  const [isLoading, setIsLoading] = useState(mode === 'live');
+  const [isLoading, setIsLoading] = useState(initialState.isLoading);
   const [error, setError] = useState('');
-  const [data, setData] = useState<EmployerDashboardData | null>(
-    mode === 'empty' ? null : fallbackData
-  );
+  const [data, setData] = useState<EmployerDashboardData | null>(initialState.data);
 
   const loadData = useCallback(async () => {
     if (mode === 'mock') {
-      setData(fallbackData);
+      setData(createEmployerFallbackData(employerName));
       setError('');
       setIsLoading(false);
       return;
@@ -277,7 +266,7 @@ export function EmployerCommandCenterDashboard({
     }
 
     if (mode === 'error') {
-      setData(fallbackData);
+      setData(createEmployerFallbackData(employerName));
       setError('Unable to load employer command center data right now.');
       setIsLoading(false);
       return;
@@ -298,7 +287,7 @@ export function EmployerCommandCenterDashboard({
       const payload = (await response.json()) as EmployerDashboardData;
       setData(payload);
     } catch (nextError) {
-      setData(fallbackData);
+      setData(createEmployerFallbackData(employerName));
       setError(
         nextError instanceof Error
           ? nextError.message
@@ -307,21 +296,21 @@ export function EmployerCommandCenterDashboard({
     } finally {
       setIsLoading(false);
     }
-  }, [fallbackData, mode]);
+  }, [employerName, mode]);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
 
-  const dashboard = data ?? fallbackData;
-  const workforceSummary = dashboard.workforce ?? fallbackWorkforceSummary;
-  const billingSummary = dashboard.billingSummary ?? fallbackBillingDataset.summary;
-  const enrollmentActivitySummary = dashboard.enrollmentActivity ?? fallbackEnrollmentActivitySummary;
-  const documentSummary = dashboard.documentCenter ?? fallbackDocumentSummary;
-  const openEnrollmentSummary = dashboard.openEnrollment ?? fallbackOpenEnrollmentSummary;
-  const latestImportSummary = dashboard.hrisImport ?? fallbackLatestImportSummary;
-  const notificationsTaskSummary = dashboard.notificationsTasks ?? fallbackNotificationsTaskSummary;
-  const administrationSummary = dashboard.administration ?? fallbackAdministrationSummary;
+  const dashboard = data ?? createEmployerFallbackData(employerName);
+  const workforceSummary = dashboard.workforce;
+  const billingSummary = dashboard.billingSummary;
+  const enrollmentActivitySummary = dashboard.enrollmentActivity;
+  const documentSummary = dashboard.documentCenter;
+  const openEnrollmentSummary = dashboard.openEnrollment;
+  const latestImportSummary = dashboard.hrisImport;
+  const notificationsTaskSummary = dashboard.notificationsTasks;
+  const administrationSummary = dashboard.administration;
 
   return (
     <div className="space-y-5" aria-busy={isLoading}>
@@ -337,10 +326,10 @@ export function EmployerCommandCenterDashboard({
       <section className="portal-card p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">Workspaces</h2>
-          <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Action Bar</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Lazy Tabs</p>
         </div>
         <div className="mt-4">
-          <EmployerDashboardWorkspaceSection />
+          <EmployerDashboardWorkspaceSection sessionScopeKey={workspaceSessionKey} />
         </div>
       </section>
 

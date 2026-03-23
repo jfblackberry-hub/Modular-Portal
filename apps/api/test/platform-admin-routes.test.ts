@@ -10,6 +10,7 @@ import Fastify from 'fastify';
 import { featureFlagRoutes } from '../src/routes/feature-flags.js';
 import { roleRoutes } from '../src/routes/roles.js';
 import { tenantRoutes } from '../src/routes/tenants.js';
+import { createAccessToken } from '../src/services/access-token-service.js';
 
 const TEST_PERMISSION_CODE = 'admin.manage';
 const TEST_PLATFORM_ADMIN_ROLE_CODE = 'platform_admin';
@@ -19,6 +20,8 @@ const TEST_TENANT_ADMIN_EMAIL = 'platform-plane-tenant-admin@example.com';
 const TEST_TENANT_SLUG = 'platform-plane-tenant';
 
 async function cleanupTestData() {
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
+
   await prisma.featureFlag.deleteMany({
     where: {
       key: 'platform-plane.test'
@@ -48,7 +51,6 @@ async function cleanupTestData() {
       slug: TEST_TENANT_SLUG
     }
   });
-
 }
 
 async function createFixtureData() {
@@ -149,11 +151,46 @@ async function createFixtureData() {
     })
   ]);
 
+  await prisma.userTenantMembership.createMany({
+    data: [
+      {
+        userId: platformAdminUser.id,
+        tenantId: tenant.id,
+        isDefault: true,
+        isTenantAdmin: true
+      },
+      {
+        userId: tenantAdminUser.id,
+        tenantId: tenant.id,
+        isDefault: true,
+        isTenantAdmin: true
+      }
+    ]
+  });
+
   return {
     tenant,
     platformAdminUser,
     tenantAdminUser
   };
+}
+
+function createPlatformAdminToken(user: { id: string; email: string }) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId: 'platform',
+    sessionType: 'platform_admin'
+  });
+}
+
+function createTenantAdminToken(user: { id: string; email: string }, tenantId: string) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId,
+    sessionType: 'tenant_admin'
+  });
 }
 
 beforeEach(async () => {
@@ -166,17 +203,19 @@ after(async () => {
 });
 
 test('platform-admin routes are restricted to platform admins', async () => {
-  const { platformAdminUser, tenantAdminUser } = await createFixtureData();
+  const { tenant, platformAdminUser, tenantAdminUser } = await createFixtureData();
   const app = Fastify();
   await tenantRoutes(app);
   await roleRoutes(app);
   await featureFlagRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+  const tenantToken = createTenantAdminToken(tenantAdminUser, tenant.id);
 
   const tenantListResponse = await app.inject({
     method: 'GET',
     url: '/platform-admin/tenants',
     headers: {
-      'x-user-id': platformAdminUser.id
+      authorization: `Bearer ${platformToken}`
     }
   });
 
@@ -186,7 +225,7 @@ test('platform-admin routes are restricted to platform admins', async () => {
     method: 'GET',
     url: '/platform-admin/tenants',
     headers: {
-      'x-user-id': tenantAdminUser.id
+      authorization: `Bearer ${tenantToken}`
     }
   });
 
@@ -196,7 +235,7 @@ test('platform-admin routes are restricted to platform admins', async () => {
     method: 'POST',
     url: '/platform-admin/feature-flags',
     headers: {
-      'x-user-id': platformAdminUser.id
+      authorization: `Bearer ${platformToken}`
     },
     payload: {
       key: 'platform-plane.test',
@@ -211,7 +250,7 @@ test('platform-admin routes are restricted to platform admins', async () => {
     method: 'GET',
     url: '/platform-admin/roles',
     headers: {
-      'x-user-id': tenantAdminUser.id
+      authorization: `Bearer ${tenantToken}`
     }
   });
 

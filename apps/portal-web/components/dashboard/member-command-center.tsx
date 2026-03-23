@@ -16,6 +16,7 @@ type CommandCenterProps = {
   pcpName: string;
   planName: string;
   recentClaims?: ClaimItem[];
+  workspaceSessionKey: string;
 };
 
 type ClaimItem = {
@@ -24,13 +25,6 @@ type ClaimItem = {
   id: string;
   status: string;
   totalAmount: number;
-};
-
-type DocumentItem = {
-  createdAt: string;
-  documentType: string;
-  id: string;
-  title: string;
 };
 
 export function MemberCommandCenter({
@@ -44,7 +38,8 @@ export function MemberCommandCenter({
   outOfPocketTotal,
   pcpName,
   planName,
-  recentClaims = []
+  recentClaims = [],
+  workspaceSessionKey
 }: CommandCenterProps) {
   const recentClaim = recentClaims[0];
   const reviewClaims = recentClaims.filter((claim) =>
@@ -72,7 +67,7 @@ export function MemberCommandCenter({
           </dl>
         </section>
       </section>
-      <MemberDashboardWorkspaceSection />
+      <MemberDashboardWorkspaceSection sessionScopeKey={workspaceSessionKey} />
 
       <section className="member-command-grid grid gap-5 xl:grid-cols-[1.2fr_0.9fr]">
         <div className="space-y-5">

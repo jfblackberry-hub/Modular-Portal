@@ -1,10 +1,10 @@
 import { MemberBenefitsWorkspaceContent } from '../../../components/member/dashboard-workspaces/MemberBenefitsWorkspaceContent';
 import { getMemberCoverage } from '../../../lib/member-api';
-import { getPortalSessionUser } from '../../../lib/portal-session';
+import { getPortalSessionAccessToken } from '../../../lib/portal-session';
 
 export default async function BenefitsPage() {
-  const sessionUser = await getPortalSessionUser();
-  const coverage = await getMemberCoverage(sessionUser?.id);
+  const accessToken = await getPortalSessionAccessToken();
+  const coverage = await getMemberCoverage(accessToken ?? undefined);
   const plan = coverage?.items[0];
 
   return (

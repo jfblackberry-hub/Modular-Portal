@@ -1,17 +1,10 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 
 import { useAdminSession } from '../../components/admin-session-provider';
 import { clearAdminSession, storeAdminSession } from '../../lib/api-auth';
-import { canonicalizeAdminPath } from '../../lib/admin-route-aliases';
-
-const portalBaseUrl =
-  process.env.NEXT_PUBLIC_PORTAL_BASE_URL ?? 'http://localhost:3000';
-const PORTAL_TOKEN_COOKIE = 'portal-token';
-const PORTAL_USER_COOKIE = 'portal-user';
 
 function isAdminUser(roles: string[]) {
   return (
@@ -21,137 +14,42 @@ function isAdminUser(roles: string[]) {
   );
 }
 
-function redirectToMemberPortal(payload: {
-  token: string;
-  user: {
-    id: string;
-    firstName?: string;
-    lastName?: string;
-    email: string;
-    tenant?: {
-      id: string;
-      name: string;
-      brandingConfig?: Record<string, unknown>;
-    };
-    roles: string[];
-    permissions: string[];
-  };
+async function establishPortalHandoffSession(input: {
+  artifact: string;
+  handoffUrl: string;
 }) {
-  const serializedUser = JSON.stringify(payload.user);
-  const maxAge = 60 * 60 * 8;
+  const response = await fetch(input.handoffUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      artifact: input.artifact
+    })
+  });
 
-  clearAdminSession();
-  localStorage.setItem('portal-token', payload.token);
-  localStorage.setItem('portal-user', serializedUser);
-  document.cookie = `${PORTAL_TOKEN_COOKIE}=${payload.token}; path=/; max-age=${maxAge}; samesite=lax`;
-  document.cookie = `${PORTAL_USER_COOKIE}=${encodeURIComponent(serializedUser)}; path=/; max-age=${maxAge}; samesite=lax`;
-  window.location.assign(`${portalBaseUrl}/dashboard`);
+  const payload = (await response.json().catch(() => null)) as
+    | {
+        redirectPath?: string;
+        message?: string;
+      }
+    | null;
+
+  if (!response.ok || !payload?.redirectPath) {
+    throw new Error(payload?.message ?? 'Portal handoff failed.');
+  }
+
+  return payload.redirectPath;
 }
 
-export function AdminLoginForm() {
-  const searchParams = useSearchParams();
-  const { applySession, refreshSession } = useAdminSession();
-  const handledHandoffRef = useRef<string | null>(null);
+function AdminLoginFormContent() {
+  const { applySession } = useAdminSession();
   const submitLockRef = useRef(false);
   const [email, setEmail] = useState('tenant');
   const [password, setPassword] = useState('password');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    const adminUserId = searchParams.get('admin_user_id');
-    const adminEmail = searchParams.get('admin_email');
-    const redirectPath = canonicalizeAdminPath(searchParams.get('redirect'));
-    const handoffKey = `${adminUserId ?? ''}:${adminEmail ?? ''}:${redirectPath}`;
-
-    if (!adminUserId || !adminEmail) {
-      return;
-    }
-
-    if (handledHandoffRef.current === handoffKey) {
-      return;
-    }
-
-    handledHandoffRef.current = handoffKey;
-
-    const isPlatformAdmin = redirectPath.startsWith('/admin/platform');
-    const isTenantAdmin =
-      isPlatformAdmin || redirectPath.startsWith('/admin/tenant');
-
-    void (async () => {
-      try {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            email: adminEmail,
-            password: 'demo'
-          })
-        });
-
-        if (response.ok) {
-          const payload = (await response.json()) as {
-            token?: string;
-            user?: {
-              id: string;
-              email: string;
-              roles: string[];
-              permissions: string[];
-            };
-          };
-
-          if (payload.token && payload.user) {
-            storeAdminSession(
-              {
-                id: payload.user.id,
-                email: payload.user.email
-              },
-              payload.token
-            );
-
-            applySession({
-              id: payload.user.id,
-              email: payload.user.email,
-              tenantId: '',
-              roles: payload.user.roles,
-              permissions: payload.user.permissions,
-              isPlatformAdmin:
-                payload.user.roles.includes('platform_admin') ||
-                payload.user.roles.includes('platform-admin'),
-              isTenantAdmin:
-                payload.user.roles.includes('tenant_admin') ||
-                payload.user.roles.includes('platform_admin') ||
-                payload.user.roles.includes('platform-admin')
-            });
-          }
-        } else {
-          storeAdminSession({
-            id: adminUserId,
-            email: adminEmail
-          });
-
-          applySession({
-            id: adminUserId,
-            email: adminEmail,
-            tenantId: '',
-            roles: isPlatformAdmin
-              ? ['platform_admin']
-              : isTenantAdmin
-                ? ['tenant_admin']
-                : [],
-            permissions: [],
-            isPlatformAdmin,
-            isTenantAdmin
-          });
-        }
-      } finally {
-        window.location.replace(redirectPath);
-        void refreshSession().catch(() => undefined);
-      }
-    })();
-  }, [applySession, refreshSession, searchParams]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -185,8 +83,11 @@ export function AdminLoginForm() {
       }
 
       const payload = (await response.json()) as {
-        token: string;
-        user: {
+        handoffRequired?: boolean;
+        artifact?: string;
+        handoffUrl?: string;
+        token?: string;
+        user?: {
           id: string;
           firstName?: string;
           lastName?: string;
@@ -201,8 +102,18 @@ export function AdminLoginForm() {
         };
       };
 
-      if (!isAdminUser(payload.user.roles)) {
-        redirectToMemberPortal(payload);
+      if (payload.handoffRequired && payload.artifact && payload.handoffUrl) {
+        clearAdminSession();
+        const redirectPath = await establishPortalHandoffSession({
+          artifact: payload.artifact,
+          handoffUrl: payload.handoffUrl
+        });
+        window.location.assign(new URL(redirectPath, payload.handoffUrl).toString());
+        return;
+      }
+
+      if (!payload.token || !payload.user || !isAdminUser(payload.user.roles)) {
+        setError('Unable to establish a secure portal session handoff.');
         return;
       }
 
@@ -289,5 +200,13 @@ export function AdminLoginForm() {
         </button>
       </form>
     </section>
+  );
+}
+
+export function AdminLoginForm() {
+  return (
+    <Suspense fallback={<div className="min-h-[20rem]" aria-hidden="true" />}>
+      <AdminLoginFormContent />
+    </Suspense>
   );
 }

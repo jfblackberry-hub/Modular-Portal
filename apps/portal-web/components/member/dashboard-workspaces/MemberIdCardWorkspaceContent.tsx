@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { formatDate } from '../../../lib/portal-format';
-import { InlineButton, PageHeader, SurfaceCard, StatusBadge } from '../../portal-ui';
+import { InlineButton, PageHeader, StatusBadge,SurfaceCard } from '../../portal-ui';
 
 export function MemberIdCardWorkspaceContent({
   effectiveDate,
@@ -249,6 +249,7 @@ function PlanLogo({
   if (logoUrl) {
     return (
       <div className="flex h-12 items-center rounded-xl border border-white/40 bg-white px-3">
+        {/* eslint-disable-next-line @next/next/no-img-element -- issuer logos are runtime-provided branding assets and not safe to route through next/image without broad remote allowlists */}
         <img src={logoUrl} alt={`${issuerName} logo`} className="h-7 w-auto object-contain" />
       </div>
     );

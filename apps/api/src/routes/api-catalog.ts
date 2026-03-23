@@ -1,15 +1,19 @@
 import type { FastifyInstance } from 'fastify';
 
 import {
+  applyCatalogEntryToTenant,
+  listApiCatalogEntries
+} from '../services/api-catalog-service';
+import {
+  listBackendApiCatalogEntries,
+  parseApiCatalogCategory
+} from '../services/backend-api-catalog-service';
+import {
   assertPlatformAdmin,
   AuthenticationError,
   AuthorizationError,
   getCurrentUserFromHeaders
 } from '../services/current-user-service';
-import {
-  applyCatalogEntryToTenant,
-  listApiCatalogEntries
-} from '../services/api-catalog-service';
 
 type ApplyCatalogBody = {
   catalogEntryKey: string;
@@ -38,11 +42,40 @@ function handleRouteError(error: unknown, reply: { status: (code: number) => { s
 
   return reply.status(503).send({
     message:
-      'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+      'Local database unavailable. Start PostgreSQL, run migrations.'
   });
 }
 
 export async function apiCatalogRoutes(app: FastifyInstance) {
+  app.get<{
+    Querystring: {
+      category?: string;
+    };
+  }>('/api-catalog', async (request, reply) => {
+    try {
+      const currentUser = await getCurrentUserFromHeaders(request.headers);
+      const rawCategory = request.query.category;
+      const category =
+        typeof rawCategory === 'undefined'
+          ? null
+          : parseApiCatalogCategory(rawCategory);
+
+      if (typeof rawCategory !== 'undefined' && !category) {
+        return reply.status(400).send({
+          message:
+            'Invalid category. Supported values: claims, pharmacy, eligibility, clinical, authorization.'
+        });
+      }
+
+      return await listBackendApiCatalogEntries({
+        category,
+        currentUser
+      });
+    } catch (error) {
+      return handleRouteError(error, reply);
+    }
+  });
+
   app.get('/platform-admin/connectivity/api-catalog', async (request, reply) => {
     try {
       const currentUser = await getCurrentUserFromHeaders(request.headers);

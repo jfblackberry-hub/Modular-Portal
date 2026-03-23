@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 
 import { PortalLayout } from '../../components/layout/portal-layout';
-import { resolvePortalExperience } from '../../lib/portal-experience';
 import { TenantTheme } from '../../components/tenant-theme';
+import { resolvePortalExperience } from '../../lib/portal-experience';
 import { getPortalSessionUser } from '../../lib/portal-session';
 import { getTenantBranding } from '../../lib/tenant-branding';
 

@@ -22,9 +22,11 @@ type ProviderWorkspaceKey = 'eligibility' | 'authorizations' | 'claims' | 'payme
 
 export function ProviderDashboardWorkspaceSection({
   config,
+  sessionScopeKey,
   variant
 }: {
   config: ProviderPortalConfig;
+  sessionScopeKey: string;
   variant: ProviderPortalVariant;
 }) {
   const workspaceDefinitions = useMemo<
@@ -85,9 +87,11 @@ export function ProviderDashboardWorkspaceSection({
     <PortalActionWorkspace
       actions={workspaceDefinitions}
       emptyStateTitle="Select a provider workspace"
-      emptyStateDescription="Use the action buttons to open eligibility, authorizations, claims, or payments only when you need them. Loaded workspaces stay hydrated for this page session."
-      persistKey={`provider-dashboard-workspace-${variant}`}
+      emptyStateDescription="Use the workspace tabs to open eligibility, authorizations, claims, or payments only when you need them. Loaded workspaces stay hydrated for this provider session."
+      persistKey={`provider-dashboard-workspace:${variant}:${sessionScopeKey}`}
+      sessionCacheKey={`provider-dashboard-workspace:${variant}:${sessionScopeKey}`}
       sectionTitle="Provider action workspaces"
+      tabListLabel="Provider workspace tabs"
     />
   );
 }

@@ -1,9 +1,9 @@
 import { ReportsLibrary } from '../../../../components/billing-enrollment/ReportsLibrary';
+import { getPortalSessionUser } from '../../../../lib/portal-session';
 import {
   defaultReportFilters,
   groupReportsByCategory
 } from '../../../../lib/reports-analytics-data';
-import { getPortalSessionUser } from '../../../../lib/portal-session';
 
 export default async function BillingEnrollmentReportsPage() {
   const sessionUser = await getPortalSessionUser();

@@ -1,20 +1,25 @@
 import { NextResponse } from 'next/server';
 
-const apiBaseUrl =
-  process.env.API_BASE_URL ??
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  'http://localhost:3002';
+import { apiInternalOrigin } from '../../../../lib/server-runtime';
 
 export async function GET(request: Request) {
   try {
     const authorization = request.headers.get('authorization');
-    const response = await fetch(`${apiBaseUrl}/auth/me`, {
+    const tenantId = request.headers.get('x-tenant-id');
+    const response = await fetch(`${apiInternalOrigin}/auth/me`, {
       method: 'GET',
-      headers: authorization
-        ? {
-            Authorization: authorization
-          }
-        : {},
+      headers: {
+        ...(authorization
+          ? {
+              Authorization: authorization
+            }
+          : {}),
+        ...(tenantId
+          ? {
+              'x-tenant-id': tenantId
+            }
+          : {})
+      },
       cache: 'no-store'
     });
 

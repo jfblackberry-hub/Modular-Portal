@@ -1,8 +1,8 @@
+import type { ApiCatalogEntry } from '../../lib/api-catalog-api';
 import { ApiMarketplaceCard } from './ApiMarketplaceCard';
-import type { ApiMarketplaceEntry } from '../../lib/api-marketplace.types';
 
 type ApiMarketplaceFeaturedSectionProps = {
-  entries: ApiMarketplaceEntry[];
+  entries: ApiCatalogEntry[];
 };
 
 export function ApiMarketplaceFeaturedSection({
@@ -31,7 +31,7 @@ export function ApiMarketplaceFeaturedSection({
 
       <div className="grid gap-4 lg:grid-cols-2">
         {entries.slice(0, 2).map((entry) => (
-          <ApiMarketplaceCard key={entry.id} entry={entry} featured />
+          <ApiMarketplaceCard key={entry.id} entry={entry} />
         ))}
       </div>
     </section>

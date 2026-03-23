@@ -48,15 +48,15 @@ export function ProviderMessagesPage({
   config: ProviderPortalConfig;
   variant: ProviderPortalVariant;
 }) {
-  const module = config.messagesModule;
-  const [selectedMessageId, setSelectedMessageId] = useState(module.inbox[0]?.id ?? '');
+  const messagesModule = config.messagesModule;
+  const [selectedMessageId, setSelectedMessageId] = useState(messagesModule.inbox[0]?.id ?? '');
   const [onlyUnread, setOnlyUnread] = useState(false);
   const [onlyActionRequired, setOnlyActionRequired] = useState(false);
   const [category, setCategory] = useState<'all' | ProviderMessageCategory>('all');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
 
   const filteredMessages = useMemo(() => {
-    return module.inbox.filter((message) => {
+    return messagesModule.inbox.filter((message) => {
       if (onlyUnread && !message.unread) {
         return false;
       }
@@ -79,7 +79,7 @@ export function ProviderMessagesPage({
 
       return true;
     });
-  }, [module.inbox, onlyUnread, onlyActionRequired, category, dateFilter]);
+  }, [messagesModule.inbox, onlyUnread, onlyActionRequired, category, dateFilter]);
 
   const selectedMessage =
     filteredMessages.find((message) => message.id === selectedMessageId) ?? filteredMessages[0] ?? null;
@@ -116,7 +116,7 @@ export function ProviderMessagesPage({
               className="portal-input px-3 py-2 text-sm"
             >
               <option value="all">All categories</option>
-              {module.categories.map((item) => (
+              {messagesModule.categories.map((item) => (
                 <option key={item} value={item}>{item}</option>
               ))}
             </select>
@@ -205,7 +205,7 @@ export function ProviderMessagesPage({
 
           <SurfaceCard title="Announcements and Alerts" description="Banner alerts, informational notices, and scheduled maintenance updates.">
             <div className="space-y-3">
-              {module.announcements.map((item) => (
+              {messagesModule.announcements.map((item) => (
                 <article key={item.id} className="rounded-xl border border-[var(--border-subtle)] bg-slate-50 px-4 py-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <h3 className="text-sm font-semibold text-[var(--text-primary)]">{item.title}</h3>

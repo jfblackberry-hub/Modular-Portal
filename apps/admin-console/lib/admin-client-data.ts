@@ -1,3 +1,5 @@
+import { buildTenantCacheKey } from '@payer-portal/config/cache-keys';
+
 type CacheEntry = {
   expiresAt: number;
   data: unknown;
@@ -35,8 +37,21 @@ export async function fetchAdminJsonCached<T>(
   }
 ) {
   const ttlMs = options?.ttlMs ?? 15_000;
+  const tenantId =
+    options?.headers instanceof Headers
+      ? options.headers.get('x-tenant-id')?.trim() || 'platform'
+      : Array.isArray(options?.headers)
+        ? options?.headers.find(([key]) => key.toLowerCase() === 'x-tenant-id')?.[1]?.trim() || 'platform'
+        : typeof options?.headers === 'object' && options?.headers
+          ? ((options.headers['x-tenant-id'] as string | undefined)?.trim() || 'platform')
+          : 'platform';
   const cacheKey =
-    options?.cacheKey ?? `${url}::${normalizeHeaders(options?.headers)}`;
+    options?.cacheKey ??
+    buildTenantCacheKey({
+      tenantId,
+      resource: 'admin-api-response',
+      parts: [url, normalizeHeaders(options?.headers)]
+    });
   const now = Date.now();
   const cached = responseCache.get(cacheKey);
 

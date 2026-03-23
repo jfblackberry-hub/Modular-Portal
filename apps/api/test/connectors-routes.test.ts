@@ -1,16 +1,17 @@
-import { after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { after, beforeEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
 
-import Fastify from 'fastify';
 import { prisma } from '@payer-portal/database';
+import Fastify from 'fastify';
 
 import { connectorRoutes } from '../src/routes/connectors.js';
+import { createAccessToken } from '../src/services/access-token-service.js';
 
 const TEST_PERMISSION_CODE = 'admin.manage';
 const TEST_ADMIN_ROLE_CODE = 'test-connector-admin';
@@ -22,18 +23,7 @@ const TEST_MEMBER_EMAIL = 'connector-member@example.com';
 const TEST_CONNECTOR_NAME = 'Tenant Eligibility Connector';
 
 async function cleanupTestData() {
-  await prisma.auditLog.deleteMany({
-    where: {
-      action: {
-        in: [
-          'connector.created',
-          'connector.updated',
-          'connector.sync.requested',
-          'connector.health.checked'
-        ]
-      }
-    }
-  });
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
 
   await prisma.job.deleteMany({
     where: {
@@ -185,12 +175,47 @@ async function createFixtureData() {
     })
   ]);
 
+  await prisma.userTenantMembership.createMany({
+    data: [
+      {
+        userId: adminUser.id,
+        tenantId: tenant.id,
+        isDefault: true,
+        isTenantAdmin: true
+      },
+      {
+        userId: memberUser.id,
+        tenantId: otherTenant.id,
+        isDefault: true,
+        isTenantAdmin: false
+      }
+    ]
+  });
+
   return {
     adminUser,
     memberUser,
     tenant,
     otherTenant
   };
+}
+
+function createTenantAdminToken(user: { id: string; email: string }, tenantId: string) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId,
+    sessionType: 'tenant_admin'
+  });
+}
+
+function createEndUserToken(user: { id: string; email: string }, tenantId: string) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId,
+    sessionType: 'end_user'
+  });
 }
 
 beforeEach(async () => {
@@ -207,12 +232,13 @@ test('tenant admins can manage connectors and sync jobs are enqueued with audit 
   const directoryPath = await mkdtemp(path.join(os.tmpdir(), 'connector-api-'));
   const app = Fastify();
   await connectorRoutes(app);
+  const adminToken = createTenantAdminToken(adminUser, tenant.id);
 
   const createResponse = await app.inject({
     method: 'POST',
     url: '/api/connectors',
     headers: {
-      'x-user-id': adminUser.id,
+      authorization: `Bearer ${adminToken}`,
       'user-agent': 'connector-test'
     },
     payload: {
@@ -233,7 +259,7 @@ test('tenant admins can manage connectors and sync jobs are enqueued with audit 
     method: 'GET',
     url: '/api/connectors',
     headers: {
-      'x-user-id': adminUser.id
+      authorization: `Bearer ${adminToken}`
     }
   });
 
@@ -249,7 +275,7 @@ test('tenant admins can manage connectors and sync jobs are enqueued with audit 
     method: 'PUT',
     url: `/api/connectors/${createdConnector.id}`,
     headers: {
-      'x-user-id': adminUser.id,
+      authorization: `Bearer ${adminToken}`,
       'user-agent': 'connector-test'
     },
     payload: {
@@ -265,7 +291,7 @@ test('tenant admins can manage connectors and sync jobs are enqueued with audit 
     method: 'POST',
     url: `/api/connectors/${createdConnector.id}/health`,
     headers: {
-      'x-user-id': adminUser.id,
+      authorization: `Bearer ${adminToken}`,
       'user-agent': 'connector-test'
     }
   });
@@ -277,7 +303,7 @@ test('tenant admins can manage connectors and sync jobs are enqueued with audit 
     method: 'POST',
     url: `/api/connectors/${createdConnector.id}/sync`,
     headers: {
-      'x-user-id': adminUser.id,
+      authorization: `Bearer ${adminToken}`,
       'user-agent': 'connector-test'
     }
   });
@@ -325,6 +351,8 @@ test('non-admin users are blocked and tenant isolation is enforced', async () =>
   const { adminUser, memberUser, otherTenant } = await createFixtureData();
   const app = Fastify();
   await connectorRoutes(app);
+  const adminToken = createTenantAdminToken(adminUser, adminUser.tenantId ?? '');
+  const memberToken = createEndUserToken(memberUser, otherTenant.id);
 
   const foreignConnector = await prisma.connectorConfig.create({
     data: {
@@ -342,7 +370,7 @@ test('non-admin users are blocked and tenant isolation is enforced', async () =>
     method: 'GET',
     url: '/api/connectors',
     headers: {
-      'x-user-id': memberUser.id
+      authorization: `Bearer ${memberToken}`
     }
   });
 
@@ -352,7 +380,7 @@ test('non-admin users are blocked and tenant isolation is enforced', async () =>
     method: 'POST',
     url: `/api/connectors/${foreignConnector.id}/sync`,
     headers: {
-      'x-user-id': adminUser.id
+      authorization: `Bearer ${adminToken}`
     }
   });
 

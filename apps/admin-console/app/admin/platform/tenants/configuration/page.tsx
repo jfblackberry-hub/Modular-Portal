@@ -1,5 +1,5 @@
-import { PlatformAdminGate } from '../../../../../components/platform-admin-gate';
 import { AdminPageLayout } from '../../../../../components/admin-ui';
+import { PlatformAdminGate } from '../../../../../components/platform-admin-gate';
 import { CreateTenantPanel } from '../../../../tenants/create-tenant-panel';
 
 export default function AdminPlatformTenantConfigurationPage() {

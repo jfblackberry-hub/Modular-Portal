@@ -1,6 +1,7 @@
 import type { Prisma } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
-import { logAuditEvent } from '@payer-portal/server';
+import { logAuthenticationEvent } from '@payer-portal/server';
+
 import { createAccessToken } from './access-token-service';
 import { PLATFORM_ROOT_SCOPE } from './current-user-service';
 
@@ -156,6 +157,16 @@ type LandingContext =
 
 type SessionType = 'tenant_admin' | 'end_user' | 'platform_admin';
 
+export class SessionIntegrityError extends Error {
+  statusCode: number;
+
+  constructor(message: string, statusCode = 403) {
+    super(message);
+    this.name = 'SessionIntegrityError';
+    this.statusCode = statusCode;
+  }
+}
+
 function getPermissionCodesForRole(roleCode: string) {
   switch (roleCode) {
     case 'member':
@@ -260,6 +271,121 @@ function getActiveTenantForSession(
   user: Awaited<ReturnType<typeof getUserWithRelations>>
 ) {
   return user?.tenant ?? user?.memberships[0]?.tenant ?? null;
+}
+
+function getLandingContextForUser(
+  user: NonNullable<Awaited<ReturnType<typeof getUserWithRelations>>>
+): LandingContext {
+  return user.roles.some(({ role }) => role.code === 'platform_admin' || role.code === 'platform-admin')
+    ? 'platform_admin'
+    : user.roles.some(({ role }) => role.code === 'tenant_admin')
+      ? 'tenant_admin'
+    : user.roles.some(({ role }) => role.code === 'employer_group_admin')
+      ? 'employer'
+    : user.roles.some(({ role }) => role.code === 'provider')
+      ? 'provider'
+    : 'member';
+}
+
+function getSessionTypeForLandingContext(
+  landingContext: LandingContext
+): SessionType {
+  return landingContext === 'platform_admin'
+    ? 'platform_admin'
+    : landingContext === 'tenant_admin'
+      ? 'tenant_admin'
+      : 'end_user';
+}
+
+function requireTenantForSession(
+  sessionType: SessionType,
+  activeTenant: ReturnType<typeof getActiveTenantForSession>
+) {
+  if (sessionType === 'platform_admin') {
+    return null;
+  }
+
+  const tenantId = activeTenant?.id?.trim();
+
+  if (!tenantId) {
+    throw new SessionIntegrityError(
+      'Tenant context is required for end-user and tenant-admin sessions.',
+      403
+    );
+  }
+
+  return tenantId;
+}
+
+function buildAuthenticatedSessionResult(
+  user: NonNullable<Awaited<ReturnType<typeof getUserWithRelations>>>
+) {
+  const activeTenant = getActiveTenantForSession(user);
+  const landingContext = getLandingContextForUser(user);
+  const sessionType = getSessionTypeForLandingContext(landingContext);
+  const sessionTenantId =
+    sessionType === 'platform_admin'
+      ? null
+      : requireTenantForSession(sessionType, activeTenant);
+  const tokenTenantId: string =
+    sessionType === 'platform_admin' ? PLATFORM_ROOT_SCOPE : sessionTenantId!;
+  const permissions = Array.from(
+    new Set(
+      user.roles.flatMap(({ role }) =>
+        role.permissions.map(({ permission }) => permission.code)
+      )
+    )
+  );
+
+  return {
+    landingContext,
+    sessionType,
+    token: createAccessToken({
+      userId: user.id,
+      email: user.email,
+      tenantId: tokenTenantId,
+      sessionType
+    }),
+    user: {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      landingContext,
+      session: {
+        personaType: sessionType,
+        type: sessionType,
+        tenantId: sessionTenantId,
+        roles: user.roles.map(({ role }) => role.code),
+        permissions
+      },
+      tenant: {
+        id: activeTenant?.id ?? 'platform',
+        name: activeTenant?.name ?? 'Platform',
+        brandingConfig: buildSessionBrandingConfig(
+          activeTenant?.brandingConfig,
+          activeTenant?.branding
+            ? {
+                displayName: activeTenant.branding.displayName ?? activeTenant.name,
+                primaryColor: activeTenant.branding.primaryColor ?? null,
+                secondaryColor: activeTenant.branding.secondaryColor ?? null,
+                logoUrl: activeTenant.branding.logoUrl ?? null,
+                faviconUrl: activeTenant.branding.faviconUrl ?? null
+              }
+            : null,
+          user.employerGroup
+            ? {
+                employerKey: user.employerGroup.employerKey,
+                name: user.employerGroup.name,
+                logoUrl: user.employerGroup.logoUrl ?? null
+              }
+            : null
+        )
+      },
+      roles: user.roles.map(({ role }) => role.code),
+      permissions
+    }
+  };
 }
 
 async function getUserWithRelations(email: string) {
@@ -839,8 +965,36 @@ async function ensureEmployerUserForKey(employerKey: string) {
   return getUserWithRelations(normalizedEmail);
 }
 
+async function ensureTenantScopedLocalLoginUser(
+  user: Awaited<ReturnType<typeof getUserWithRelations>> | null,
+  identifier: string
+) {
+  if (!user) {
+    return null;
+  }
+
+  const normalizedIdentifier = identifier.trim().toLowerCase();
+  const localProfileKey = DEFAULT_MEMBER_ALIASES.has(normalizedIdentifier)
+    ? DEFAULT_MEMBER_LOGIN
+    : normalizedIdentifier;
+  const isKnownLocalProfile =
+    localProfileKey in LOCAL_LOGIN_PROFILES;
+
+  if (!isKnownLocalProfile) {
+    return user;
+  }
+
+  const sessionType = getSessionTypeForLandingContext(getLandingContextForUser(user));
+
+  if (sessionType === 'platform_admin' || getActiveTenantForSession(user)) {
+    return user;
+  }
+
+  return (await ensureLocalLoginUser(localProfileKey)) ?? user;
+}
+
 export async function login(
-  { email, password }: LoginInput,
+  { email }: LoginInput,
   context: LoginContext = {},
   options: {
     requiredLandingContext?: LandingContext;
@@ -853,30 +1007,23 @@ export async function login(
   }
 
   const normalizedLookup = normalizedEmail.toLowerCase();
-  const user =
+  const rawUser =
     options.requiredLandingContext === 'employer'
       ? (await getUserWithRelations(normalizedEmail)) ??
         (await ensureEmployerUserForKey(normalizedLookup))
       : (await getUserByLoginIdentifier(normalizedEmail)) ??
         (await ensureLocalLoginUser(normalizedLookup)) ??
         (await ensureEmployerUserForKey(normalizedLookup));
+  const user = await ensureTenantScopedLocalLoginUser(rawUser, normalizedLookup);
 
   if (!user) {
     return null;
   }
 
   const updatedUser = await recordSuccessfulLogin(user.id);
+  const sessionResult = buildAuthenticatedSessionResult(updatedUser);
   const activeTenant = getActiveTenantForSession(updatedUser);
-  const landingContext: LandingContext =
-    updatedUser.roles.some(({ role }) => role.code === 'platform_admin' || role.code === 'platform-admin')
-      ? 'platform_admin'
-      : updatedUser.roles.some(({ role }) => role.code === 'tenant_admin')
-        ? 'tenant_admin'
-      : updatedUser.roles.some(({ role }) => role.code === 'employer_group_admin')
-        ? 'employer'
-        : updatedUser.roles.some(({ role }) => role.code === 'provider')
-          ? 'provider'
-        : 'member';
+  const landingContext = sessionResult.landingContext;
 
   if (
     options.requiredLandingContext &&
@@ -885,32 +1032,15 @@ export async function login(
     return null;
   }
 
-  const sessionType: SessionType =
-    landingContext === 'platform_admin'
-      ? 'platform_admin'
-      : landingContext === 'tenant_admin'
-        ? 'tenant_admin'
-        : 'end_user';
-  const sessionTenantId =
-    sessionType === 'platform_admin'
-      ? null
-      : activeTenant?.id ?? null;
-
-  const permissions = Array.from(
-    new Set(
-      updatedUser.roles.flatMap(({ role }) =>
-        role.permissions.map(({ permission }) => permission.code)
-      )
-    )
-  );
+  const sessionType = sessionResult.sessionType;
 
   if (activeTenant) {
-    await logAuditEvent({
+    await logAuthenticationEvent({
       tenantId: activeTenant.id,
       actorUserId: updatedUser.id,
       action: 'auth.login.success',
-      entityType: 'user',
-      entityId: updatedUser.id,
+      resourceType: 'user',
+      resourceId: updatedUser.id,
       beforeState: {
         lastLoginAt: user.lastLoginAt?.toISOString() ?? null
       } satisfies Prisma.InputJsonValue,
@@ -923,53 +1053,15 @@ export async function login(
     });
   }
 
-  return {
-    token: createAccessToken({
-      userId: updatedUser.id,
-      email: updatedUser.email,
-      tenantId:
-        sessionType === 'platform_admin'
-          ? PLATFORM_ROOT_SCOPE
-          : activeTenant?.id ?? PLATFORM_ROOT_SCOPE,
-      sessionType
-    }),
-    user: {
-      id: updatedUser.id,
-      email: updatedUser.email,
-      firstName: updatedUser.firstName,
-      lastName: updatedUser.lastName,
-      landingContext,
-      session: {
-        type: sessionType,
-        tenantId: sessionTenantId,
-        roles: updatedUser.roles.map(({ role }) => role.code),
-        permissions
-      },
-      tenant: {
-        id: activeTenant?.id ?? 'platform',
-        name: activeTenant?.name ?? 'Platform',
-        brandingConfig: buildSessionBrandingConfig(
-          activeTenant?.brandingConfig,
-          activeTenant?.branding
-            ? {
-                displayName: activeTenant.branding.displayName ?? activeTenant.name,
-                primaryColor: activeTenant.branding.primaryColor ?? null,
-                secondaryColor: activeTenant.branding.secondaryColor ?? null,
-                logoUrl: activeTenant.branding.logoUrl ?? null,
-                faviconUrl: activeTenant.branding.faviconUrl ?? null
-              }
-            : null,
-          updatedUser.employerGroup
-            ? {
-                employerKey: updatedUser.employerGroup.employerKey,
-                name: updatedUser.employerGroup.name,
-                logoUrl: updatedUser.employerGroup.logoUrl ?? null
-              }
-            : null
-        )
-      },
-      roles: updatedUser.roles.map(({ role }) => role.code),
-      permissions
-    }
-  };
+  return sessionResult;
+}
+
+export async function getAuthenticatedSessionResultByUserId(userId: string) {
+  const user = await getUserWithRelationsById(userId);
+
+  if (!user) {
+    throw new Error('Authenticated user not found.');
+  }
+
+  return buildAuthenticatedSessionResult(user);
 }

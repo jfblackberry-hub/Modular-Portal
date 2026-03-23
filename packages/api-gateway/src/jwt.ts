@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+import { apiGatewayRuntimeConfig } from './runtime-config.js';
 import type { GatewayJwtClaims } from './types.js';
 
 const JWT_ALGORITHM = 'HS256';
@@ -25,7 +26,7 @@ function decodeBase64Url(value: string) {
 }
 
 function getJwtSecret() {
-  return process.env.API_GATEWAY_JWT_SECRET ?? 'local-dev-api-gateway-secret';
+  return apiGatewayRuntimeConfig.apiGatewayJwtSecret;
 }
 
 function signSegment(value: string) {
@@ -35,8 +36,7 @@ function signSegment(value: string) {
 export function createGatewayToken(user: JwtUser): string {
   const issuedAt = Math.floor(Date.now() / 1000);
   const expiresAt =
-    issuedAt +
-    Number(process.env.API_GATEWAY_JWT_TTL_SECONDS ?? DEFAULT_TOKEN_TTL_SECONDS);
+    issuedAt + (apiGatewayRuntimeConfig.jwtTtlSeconds ?? DEFAULT_TOKEN_TTL_SECONDS);
 
   const header = encodeBase64Url(
     JSON.stringify({

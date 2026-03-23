@@ -1,11 +1,10 @@
-import { randomUUID, createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import { createCipheriv, createDecipheriv, createHash, randomBytes,randomUUID } from 'node:crypto';
 
 import { prisma } from '@payer-portal/database';
 
 import { enqueueJob } from '../jobs/jobQueue.js';
-import { getStorageDirectory, readFile } from '../storage/localStorage.js';
+import { buildBackupArtifactStorageKey } from '../storage/keyHelpers.js';
+import { getBackupStorageService, getStorageService } from '../storage/service.js';
 
 export const BACKUP_COVERAGE = {
   DATABASE: 'database',
@@ -50,13 +49,6 @@ function normalizeIntervalHours(value: string | undefined, fallback: number) {
   }
 
   return parsed;
-}
-
-function getBackupRootDirectory() {
-  return path.resolve(
-    process.cwd(),
-    process.env.BACKUP_STORAGE_DIR ?? process.env.BACKUP_DIR ?? 'backups'
-  );
 }
 
 function getEncryptionMaterial() {
@@ -149,35 +141,16 @@ async function collectDatabaseSnapshot() {
   };
 }
 
-async function listFilesRecursive(directory: string): Promise<string[]> {
-  const entries = await fs.readdir(directory, { withFileTypes: true });
-  const files = await Promise.all(
-    entries.map(async (entry) => {
-      const fullPath = path.join(directory, entry.name);
-
-      if (entry.isDirectory()) {
-        return listFilesRecursive(fullPath);
-      }
-
-      return [fullPath];
-    })
-  );
-
-  return files.flat();
-}
-
 async function collectDocumentsSnapshot() {
-  const storageDirectory = getStorageDirectory();
-  await fs.mkdir(storageDirectory, { recursive: true });
-  const files = await listFilesRecursive(storageDirectory);
+  const storage = getStorageService();
+  const files = await storage.list?.('') ?? [];
 
   const snapshotFiles = await Promise.all(
-    files.map(async (filePath) => {
-      const relativePath = path.relative(storageDirectory, filePath);
-      const buffer = await readFile(relativePath);
+    files.map(async (file) => {
+      const buffer = await storage.get(file.key);
 
       return {
-        path: relativePath,
+        path: file.key,
         sizeBytes: buffer.byteLength,
         sha256: createHash('sha256').update(buffer).digest('hex'),
         contentsBase64: buffer.toString('base64')
@@ -187,7 +160,7 @@ async function collectDocumentsSnapshot() {
 
   return {
     snapshot: {
-      storageDirectory,
+      storageRoot: storage.getRootDescriptor(),
       files: snapshotFiles
     },
     recordCounts: {
@@ -270,7 +243,7 @@ function getRestoreProcedure(coverage: BackupCoverage) {
     snapshotProcedure:
       'Decrypt the audit-log artifact and restore the ordered audit rows into PostgreSQL if a compliance recovery is required.',
     pointInTimeRestore:
-      'For timestamp-specific recovery, restore PostgreSQL to the target time with WAL/PITR and query the AuditLog table from that restored instance.'
+      'For timestamp-specific recovery, restore PostgreSQL to the target time with WAL/PITR and query the audit_logs table from that restored instance.'
   };
 }
 
@@ -278,13 +251,7 @@ export async function runBackup(input: BackupRunPayload) {
   const coverage = input.coverage;
   const createdAt = new Date();
   const backupId = `${createdAt.toISOString().replace(/[:.]/g, '-')}-${coverage}-${randomUUID()}`;
-  const backupDirectory = path.join(
-    getBackupRootDirectory(),
-    createdAt.toISOString().slice(0, 10),
-    backupId
-  );
-
-  await fs.mkdir(backupDirectory, { recursive: true });
+  const backupStorage = getBackupStorageService();
 
   const snapshotResult = await collectCoverageSnapshot(coverage);
   const plaintext = Buffer.from(
@@ -302,11 +269,15 @@ export async function runBackup(input: BackupRunPayload) {
   );
   const hashSha256 = createHash('sha256').update(plaintext).digest('hex');
   const encrypted = encryptPayload(plaintext);
-  const encryptedFilePath = path.join(backupDirectory, `${coverage}.backup.enc`);
+  const encryptedFileKey = buildBackupArtifactStorageKey({
+    backupId,
+    createdAt: createdAt.toISOString(),
+    fileName: `${coverage}.backup.enc`
+  });
 
-  await fs.writeFile(encryptedFilePath, encrypted.payload);
+  await backupStorage.put(encryptedFileKey, encrypted.payload);
 
-  const decrypted = decryptPayload(await fs.readFile(encryptedFilePath));
+  const decrypted = decryptPayload(await backupStorage.get(encryptedFileKey));
   const verifiedHash = createHash('sha256').update(decrypted).digest('hex');
   const verified = verifiedHash === hashSha256;
 
@@ -318,11 +289,14 @@ export async function runBackup(input: BackupRunPayload) {
     expectedHashSha256: hashSha256,
     actualHashSha256: verifiedHash
   };
-  const verificationFilePath = path.join(backupDirectory, 'verification.json');
-  await fs.writeFile(
-    verificationFilePath,
-    JSON.stringify(verificationLog, null, 2),
-    'utf8'
+  const verificationFileKey = buildBackupArtifactStorageKey({
+    backupId,
+    createdAt: createdAt.toISOString(),
+    fileName: 'verification.json'
+  });
+  await backupStorage.put(
+    verificationFileKey,
+    Buffer.from(JSON.stringify(verificationLog, null, 2), 'utf8'),
   );
 
   if (!verified) {
@@ -334,18 +308,22 @@ export async function runBackup(input: BackupRunPayload) {
     coverage,
     createdAt: createdAt.toISOString(),
     trigger: input.trigger ?? 'SCHEDULED',
-    encryptedFile: path.relative(getBackupRootDirectory(), encryptedFilePath),
-    verificationLog: path.relative(getBackupRootDirectory(), verificationFilePath),
+    encryptedFile: encryptedFileKey,
+    verificationLog: verificationFileKey,
     keyId: encrypted.keyId,
     hashSha256,
     recordCounts: snapshotResult.recordCounts,
     restore: getRestoreProcedure(coverage)
   };
 
-  await fs.writeFile(
-    path.join(backupDirectory, 'manifest.json'),
-    JSON.stringify(manifest, null, 2),
-    'utf8'
+  const manifestFileKey = buildBackupArtifactStorageKey({
+    backupId,
+    createdAt: createdAt.toISOString(),
+    fileName: 'manifest.json'
+  });
+  await backupStorage.put(
+    manifestFileKey,
+    Buffer.from(JSON.stringify(manifest, null, 2), 'utf8')
   );
 
   return manifest;

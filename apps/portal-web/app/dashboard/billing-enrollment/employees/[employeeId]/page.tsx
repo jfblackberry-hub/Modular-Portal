@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { EmptyState, StatusBadge } from '../../../../../components/portal-ui';
+import { getEmployerEmployeeById } from '../../../../../lib/billing-enrollment-api';
 import {
   type CoverageType
 } from '../../../../../lib/employer-census-data';
-import { getEmployerEmployeeById } from '../../../../../lib/billing-enrollment-api';
 import { getPortalSessionUser } from '../../../../../lib/portal-session';
-import { EmptyState, StatusBadge } from '../../../../../components/portal-ui';
 
 function formatDate(value?: string) {
   if (!value) {

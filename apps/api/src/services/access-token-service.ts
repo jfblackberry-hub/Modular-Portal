@@ -1,8 +1,9 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+import { loadApiServiceConfig } from '@payer-portal/config';
+
 const ACCESS_TOKEN_VERSION = 1;
 const ACCESS_TOKEN_KIND = 'portal-access';
-const DEFAULT_ACCESS_TOKEN_SECRET = 'local-dev-api-access-token-secret-change-me';
 const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 60 * 60 * 8;
 
 type AccessTokenPayload = {
@@ -19,7 +20,7 @@ type AccessTokenPayload = {
 };
 
 function getAccessTokenSecret() {
-  return process.env.API_AUTH_TOKEN_SECRET ?? DEFAULT_ACCESS_TOKEN_SECRET;
+  return loadApiServiceConfig().apiAuthTokenSecret;
 }
 
 function signPayload(payloadBase64Url: string) {

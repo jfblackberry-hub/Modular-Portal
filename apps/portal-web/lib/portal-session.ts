@@ -11,12 +11,21 @@ export interface PortalTenant {
 
 export type PortalSessionType = 'tenant_admin' | 'end_user' | 'platform_admin';
 
-export interface PortalSessionScope {
-  type: PortalSessionType;
-  tenantId: string | null;
-  roles: string[];
-  permissions: string[];
-}
+export type PortalSessionScope =
+  | {
+      personaType: 'platform_admin';
+      type: 'platform_admin';
+      tenantId: null;
+      roles: string[];
+      permissions: string[];
+    }
+  | {
+      personaType: 'tenant_admin' | 'end_user';
+      type: 'tenant_admin' | 'end_user';
+      tenantId: string;
+      roles: string[];
+      permissions: string[];
+    };
 
 export interface PortalSessionUser {
   id: string;

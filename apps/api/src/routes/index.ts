@@ -17,8 +17,8 @@ import { metricsRoutes } from './metrics';
 import { previewSessionRoutes } from './preview-sessions';
 import { roleRoutes } from './roles';
 import { searchRoutes } from './search';
-import { tenantRoutes } from './tenants';
 import { tenantAdminRoutes } from './tenant-admin';
+import { tenantRoutes } from './tenants';
 
 export function registerRoutes(app: FastifyInstance) {
   app.register(adminOperationsRoutes);

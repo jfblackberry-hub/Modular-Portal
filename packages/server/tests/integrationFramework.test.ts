@@ -1,8 +1,8 @@
-import { after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { after, beforeEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
@@ -10,8 +10,8 @@ process.env.DATABASE_URL ??=
 import { prisma } from '@payer-portal/database';
 
 import { clearSubscriptions, publish } from '../src/events/eventBus.js';
-import { clearIntegrationAdapters, listIntegrationAdapters, registerDefaultIntegrations } from '../src/integrations/registry.js';
 import { INTEGRATION_TRIGGER_MODE } from '../src/integrations/integration.js';
+import { clearIntegrationAdapters, listIntegrationAdapters, registerDefaultIntegrations } from '../src/integrations/registry.js';
 import { executeIntegration, listIntegrationExecutions } from '../src/integrations/service.js';
 import {
   enqueueScheduledIntegrations,

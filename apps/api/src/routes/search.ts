@@ -35,7 +35,7 @@ export async function searchRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });

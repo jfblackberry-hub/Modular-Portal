@@ -2,10 +2,9 @@ import { NextResponse } from 'next/server';
 
 import { getEmployerDashboard } from '../../../../../../../lib/billing-enrollment-api';
 import {
+  type DocumentCategory,
   documentsToCsv,
-  getEmployerDocumentsForTenant,
-  type DocumentCategory
-} from '../../../../../../../lib/employer-document-center-data';
+  getEmployerDocumentsForTenant} from '../../../../../../../lib/employer-document-center-data';
 import { getPortalSessionUser } from '../../../../../../../lib/portal-session';
 
 const categorySet = new Set<DocumentCategory>([

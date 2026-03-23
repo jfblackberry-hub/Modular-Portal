@@ -1,5 +1,5 @@
-import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
 import { ConnectivityStatusPage } from '../../../../components/connectivity-status-page';
+import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
 
 export default function AdminPlatformConnectivityPage() {
   return (

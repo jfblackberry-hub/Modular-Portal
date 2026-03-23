@@ -2,11 +2,11 @@
 
 import { useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 import { buildAdminHandoffUrl } from '../../lib/admin-redirect';
 
-export function LoginForm({
+function LoginFormContent({
   defaultUsername = '',
   loginPath = '/api/auth/login',
   successPath = '/dashboard',
@@ -30,7 +30,7 @@ export function LoginForm({
   const submitLockRef = useRef(false);
   const autoLoginHandledRef = useRef<string | null>(null);
 
-  async function confirmSessionEstablished() {
+  const confirmSessionEstablished = useCallback(async function confirmSessionEstablished() {
     const attempts = 5;
 
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -56,7 +56,7 @@ export function LoginForm({
     }
 
     return false;
-  }
+  }, []);
 
   useEffect(() => {
     if (selectedUser) {
@@ -64,7 +64,7 @@ export function LoginForm({
     }
   }, [selectedUser]);
 
-  async function performLogin(emailOverride?: string) {
+  const performLogin = useCallback(async function performLogin(emailOverride?: string) {
     if (submitLockRef.current) {
       console.info('[portal-auth] submit ignored (already authenticating)');
       return;
@@ -166,17 +166,14 @@ export function LoginForm({
         return;
       }
 
-      if (payload.user.session.type === 'platform_admin') {
-        console.info('[portal-auth] redirect/navigation', { to: adminRedirectUrl ?? redirectPath });
+      if (
+        payload.user.session.type === 'platform_admin' ||
+        payload.user.session.type === 'tenant_admin'
+      ) {
+        const target = adminRedirectUrl ?? '/login';
+        console.info('[portal-auth] redirect/navigation', { to: target });
         navigating = true;
-        window.location.assign(adminRedirectUrl ?? redirectPath);
-        return;
-      }
-
-      if (payload.user.session.type === 'tenant_admin') {
-        console.info('[portal-auth] redirect/navigation', { to: '/tenant-admin/dashboard' });
-        navigating = true;
-        window.location.assign('/tenant-admin/dashboard');
+        window.location.assign(target);
         return;
       }
 
@@ -219,7 +216,15 @@ export function LoginForm({
         setAuthPhase('idle');
       }
     }
-  }
+  }, [
+    confirmSessionEstablished,
+    email,
+    loginPath,
+    password,
+    rememberMe,
+    requestedRedirect,
+    successPath
+  ]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -238,7 +243,7 @@ export function LoginForm({
 
     autoLoginHandledRef.current = autoLoginKey;
     void performLogin(selectedUser);
-  }, [autoLogin, loginPath, requestedRedirect, selectedUser]);
+  }, [autoLogin, loginPath, performLogin, requestedRedirect, selectedUser]);
 
   function clearLegacyAuthStorage() {
     localStorage.removeItem('portal-token');
@@ -348,5 +353,18 @@ export function LoginForm({
       </div>
       </div>
     </div>
+  );
+}
+
+export function LoginForm(props: {
+  defaultUsername?: string;
+  loginPath?: string;
+  successPath?: string;
+  helperText?: string;
+}) {
+  return (
+    <Suspense fallback={<div className="min-h-[24rem]" aria-hidden="true" />}>
+      <LoginFormContent {...props} />
+    </Suspense>
   );
 }

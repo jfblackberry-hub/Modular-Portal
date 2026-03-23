@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation';
 
 import { PortalShell } from '../../components/portal-shell';
-import { resolvePortalExperience } from '../../lib/portal-experience';
 import { TenantTheme } from '../../components/tenant-theme';
 import { buildPortalNavigation } from '../../lib/navigation';
 import { getEnabledPlugins } from '../../lib/plugins';
+import { resolvePortalExperience } from '../../lib/portal-experience';
 import { getPortalSessionUser } from '../../lib/portal-session';
 import { getTenantBranding } from '../../lib/tenant-branding';
 

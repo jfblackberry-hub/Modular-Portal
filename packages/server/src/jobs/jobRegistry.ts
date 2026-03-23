@@ -1,14 +1,13 @@
 import type { Prisma } from '@payer-portal/database';
 
-import { prisma } from '@payer-portal/database';
-
-import type { PlatformEvent } from '../events/eventTypes.js';
-import { runBackup, scheduleNextBackupRun } from '../backups/backupService.js';
 import { registerDefaultAdapters } from '../adapters/adapterRegistry.js';
+import { runBackup, scheduleNextBackupRun } from '../backups/backupService.js';
+import type { PlatformEvent } from '../events/eventTypes.js';
+import { createStructuredLogger } from '../observability/logger.js';
+import { runConnectorSync } from '../services/connectorService.js';
 import {
   deliverNotification
 } from '../services/notificationService.js';
-import { runConnectorSync } from '../services/connectorService.js';
 import type { JobRecord, RegisteredJobPayloads, RegisteredJobType } from './jobTypes.js';
 
 function hydrateQueuedEvent(event: RegisteredJobPayloads['connector.sync']['event']) {
@@ -55,11 +54,14 @@ export function registerDefaultJobHandlers() {
 
   defaultsRegistered = true;
   registerDefaultAdapters();
+  const logger = createStructuredLogger({
+    serviceName: process.env.APP_NAME ?? 'job-worker'
+  });
 
   registerJobHandler('backup.run', async ({ payload, job }) => {
     const manifest = await runBackup(payload);
 
-    console.log('[jobs] backup.run', {
+    logger.info('backup.run handled', {
       jobId: job.id,
       coverage: manifest.coverage,
       backupId: manifest.backupId,
@@ -72,7 +74,7 @@ export function registerDefaultJobHandlers() {
   registerJobHandler('notification.send', async ({ payload, job }) => {
     const notification = await deliverNotification(payload.notificationId);
 
-    console.log('[jobs] notification.send', {
+    logger.info('notification.send handled', {
       jobId: job.id,
       tenantId: notification.tenantId,
       notificationId: notification.id,
@@ -89,7 +91,7 @@ export function registerDefaultJobHandlers() {
       hydrateQueuedEvent(payload.event)
     );
 
-    console.log('[jobs] connector.sync', {
+    logger.info('connector.sync handled', {
       jobId: job.id,
       tenantId: connector.tenantId,
       connectorId: connector.id,
@@ -99,7 +101,7 @@ export function registerDefaultJobHandlers() {
   });
 
   registerJobHandler('document.process', async ({ payload, job }) => {
-    console.log('[jobs] document.process', {
+    logger.info('document.process handled', {
       jobId: job.id,
       tenantId: job.tenantId,
       documentId: payload.documentId
@@ -107,7 +109,7 @@ export function registerDefaultJobHandlers() {
   });
 
   registerJobHandler('search.index', async ({ payload, job }) => {
-    console.log('[jobs] search.index', {
+    logger.info('search.index handled', {
       jobId: job.id,
       tenantId: job.tenantId,
       entityType: payload.entityType,

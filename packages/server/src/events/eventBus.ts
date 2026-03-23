@@ -1,5 +1,5 @@
-import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
+import { EventEmitter } from 'node:events';
 
 import type { EventDelivery, EventRecord, Prisma } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
@@ -58,6 +58,7 @@ const subscribers = new Map<
   PlatformEventType,
   Map<string, RegisteredSubscriber>
 >();
+const backgroundPublishes = new Set<Promise<void>>();
 
 emitter.setMaxListeners(0);
 
@@ -353,8 +354,18 @@ export function publishInBackground<TType extends PlatformEventType>(
   event: EventByType[TType]
 ) {
   queueMicrotask(() => {
-    void publish(eventType, event);
+    const pendingPublish = publish(eventType, event).then(() => undefined);
+    backgroundPublishes.add(pendingPublish);
+    void pendingPublish.finally(() => {
+      backgroundPublishes.delete(pendingPublish);
+    });
   });
+}
+
+export async function waitForBackgroundPublishes() {
+  while (backgroundPublishes.size > 0) {
+    await Promise.allSettled(Array.from(backgroundPublishes));
+  }
 }
 
 export async function processPendingEventDeliveries(limit?: number) {

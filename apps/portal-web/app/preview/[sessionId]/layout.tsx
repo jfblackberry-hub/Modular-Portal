@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
+import type { ReactNode } from 'react';
 
 import { AdminPreviewBar } from '../../../components/admin-preview-bar';
 import { PreviewRouteHydrator } from '../../../components/preview-route-hydrator';

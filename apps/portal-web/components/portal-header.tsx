@@ -4,7 +4,6 @@ import { SignOutButton } from './sign-out-button';
 
 export function PortalHeader({
   branding,
-  routePrefix,
   user
 }: {
   branding: TenantBranding;
@@ -32,11 +31,14 @@ export function PortalHeader({
                 <div className="flex flex-col gap-3">
                   <div className="tenant-portal-header__logo-frame flex h-32 w-full max-w-[30rem] items-center justify-center rounded-3xl border border-[var(--border-subtle)] bg-white px-6 py-3">
                     {payerLogoUrl ? (
-                      <img
-                        src={payerLogoUrl}
-                        alt={`${payerName} logo`}
-                        className="h-28 w-auto max-w-[98%] object-contain"
-                      />
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element -- runtime-configured payer branding assets are not constrained to next/image-safe sources */}
+                        <img
+                          src={payerLogoUrl}
+                          alt={`${payerName} logo`}
+                          className="h-28 w-auto max-w-[98%] object-contain"
+                        />
+                      </>
                     ) : (
                       <span className="text-sm font-semibold text-[var(--text-primary)]">
                         {payerName}
@@ -45,11 +47,14 @@ export function PortalHeader({
                   </div>
                   <div className="tenant-portal-header__logo-frame flex h-32 w-full max-w-[30rem] items-center justify-center rounded-3xl border border-[var(--border-subtle)] bg-white px-6 py-3">
                     {employerLogoUrl ? (
-                      <img
-                        src={employerLogoUrl}
-                        alt={`${employerName} logo`}
-                        className="h-28 w-auto max-w-[98%] object-contain"
-                      />
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element -- runtime-configured employer branding assets are not constrained to next/image-safe sources */}
+                        <img
+                          src={employerLogoUrl}
+                          alt={`${employerName} logo`}
+                          className="h-28 w-auto max-w-[98%] object-contain"
+                        />
+                      </>
                     ) : (
                       <span className="text-sm font-semibold text-[var(--text-primary)]">
                         {employerName}
@@ -60,11 +65,14 @@ export function PortalHeader({
               ) : isBrokerExperience ? (
                 <div className="tenant-portal-header__logo-frame flex h-32 w-full max-w-[34rem] items-center justify-center rounded-3xl border border-[var(--border-subtle)] bg-white px-7 py-4 sm:max-w-[38rem]">
                   {payerLogoUrl ? (
-                    <img
-                      src={payerLogoUrl}
-                      alt={`${payerName} logo`}
-                      className="h-28 w-auto max-w-[98%] object-contain"
-                    />
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- runtime-configured payer branding assets are not constrained to next/image-safe sources */}
+                      <img
+                        src={payerLogoUrl}
+                        alt={`${payerName} logo`}
+                        className="h-28 w-auto max-w-[98%] object-contain"
+                      />
+                    </>
                   ) : (
                     <span className="text-sm font-semibold text-[var(--text-primary)]">
                       {payerName}
@@ -73,11 +81,14 @@ export function PortalHeader({
                 </div>
               ) : primaryHeaderLogoUrl ? (
                 <div className="tenant-portal-header__logo-frame flex h-32 w-full max-w-[34rem] items-center justify-center rounded-3xl border border-[var(--border-subtle)] bg-white px-7 py-4 sm:max-w-[38rem]">
-                  <img
-                    src={primaryHeaderLogoUrl}
-                    alt={`${branding.displayName} logo`}
-                    className="h-28 w-auto max-w-[98%] object-contain"
-                  />
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- runtime-configured tenant branding assets are not constrained to next/image-safe sources */}
+                    <img
+                      src={primaryHeaderLogoUrl}
+                      alt={`${branding.displayName} logo`}
+                      className="h-28 w-auto max-w-[98%] object-contain"
+                    />
+                  </>
                 </div>
               ) : (
                 <div

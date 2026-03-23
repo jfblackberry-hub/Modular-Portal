@@ -1,12 +1,14 @@
-import { mkdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { pipeline } from 'node:stream/promises';
 
 import type { MultipartFile } from '@fastify/multipart';
 import type { Prisma, Tenant } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
-import { logAuditEvent, publishInBackground } from '@payer-portal/server';
+import {
+  buildTenantLogoStorageKey,
+  getPublicAssetStorageService,
+  logAdminAction,
+  publishInBackground} from '@payer-portal/server';
 
 type TenantInput = {
   name: string;
@@ -29,11 +31,6 @@ type AuditContext = {
   ipAddress?: string;
   userAgent?: string;
 };
-
-const tenantAssetsDirectory = path.resolve(
-  process.cwd(),
-  '../portal-web/public/tenant-assets'
-);
 
 function normalizeSlug(value: string) {
   return value
@@ -143,13 +140,13 @@ export async function createTenant(
       }
     });
 
-    await logAuditEvent({
+    await logAdminAction({
       client: tx,
       tenantId: createdTenant.id,
       actorUserId: context.actorUserId ?? null,
       action: 'tenant.created',
-      entityType: 'tenant',
-      entityId: createdTenant.id,
+      resourceType: 'tenant',
+      resourceId: createdTenant.id,
       ipAddress: context.ipAddress,
       userAgent: context.userAgent
     });
@@ -228,13 +225,13 @@ export async function updateTenant(
       }
     });
 
-    await logAuditEvent({
+    await logAdminAction({
       client: tx,
       tenantId: nextTenant.id,
       actorUserId: context.actorUserId ?? null,
       action: 'tenant.updated',
-      entityType: 'tenant',
-      entityId: nextTenant.id,
+      resourceType: 'tenant',
+      resourceId: nextTenant.id,
       ipAddress: context.ipAddress,
       userAgent: context.userAgent,
       metadata: {
@@ -276,13 +273,23 @@ export async function uploadTenantLogo(
     throw new Error('Tenant not found');
   }
 
-  await mkdir(tenantAssetsDirectory, { recursive: true });
-
   const extension = getExtension(file.filename, file.mimetype);
-  const fileName = `${tenant.id}-logo${extension}`;
-  const outputPath = path.join(tenantAssetsDirectory, fileName);
+  const fileName = `tenant-logo${extension}`;
+  const storageKey = buildTenantLogoStorageKey({
+    tenantId: tenant.id,
+    fileName
+  });
+  const uploadResult = await getPublicAssetStorageService().put(
+    storageKey,
+    await file.toBuffer(),
+    {
+      contentType: file.mimetype
+    }
+  );
 
-  await pipeline(file.file, (await import('node:fs')).createWriteStream(outputPath));
+  if (!uploadResult.publicUrl) {
+    throw new Error('Public asset storage must return a public URL for tenant logos');
+  }
 
   const currentBrandingConfig: BrandingConfig = isRecord(tenant.brandingConfig)
     ? tenant.brandingConfig
@@ -290,7 +297,7 @@ export async function uploadTenantLogo(
 
   const updatedBrandingConfig = {
     ...currentBrandingConfig,
-    logoUrl: `/tenant-assets/${fileName}`
+    logoUrl: uploadResult.publicUrl
   };
 
   const updatedTenant = await prisma.$transaction(async (tx) => {
@@ -301,13 +308,13 @@ export async function uploadTenantLogo(
       }
     });
 
-    await logAuditEvent({
+    await logAdminAction({
       client: tx,
       tenantId: nextTenant.id,
       actorUserId: context.actorUserId ?? null,
       action: 'tenant.updated',
-      entityType: 'tenant',
-      entityId: nextTenant.id,
+      resourceType: 'tenant',
+      resourceId: nextTenant.id,
       ipAddress: context.ipAddress,
       userAgent: context.userAgent,
       metadata: {

@@ -1,8 +1,8 @@
 'use client';
 
-import type { AdminSession } from './admin-session-provider';
 import { AdminNav } from './admin-nav';
 import { getAdminMenu } from './admin-route-config';
+import type { AdminSession } from './admin-session-provider';
 
 type LeftAdminMenuProps = {
   session: AdminSession | null;

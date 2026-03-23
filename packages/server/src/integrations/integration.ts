@@ -1,5 +1,6 @@
-import type { PlatformEvent } from '../events/eventTypes.js';
 import type { Prisma } from '@payer-portal/database';
+
+import type { PlatformEvent } from '../events/eventTypes.js';
 
 export const INTEGRATION_TRIGGER_MODE = {
   EVENT: 'EVENT',

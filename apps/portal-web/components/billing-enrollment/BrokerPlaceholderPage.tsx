@@ -1,5 +1,5 @@
+import { type BrokerPageId,getBrokerPageMeta } from '../../lib/broker-portal-config';
 import { EmptyState, InlineButton, PageHeader, SurfaceCard } from '../portal-ui';
-import { getBrokerPageMeta, type BrokerPageId } from '../../lib/broker-portal-config';
 
 const sectionHighlights: Record<BrokerPageId, string[]> = {
   dashboard: [

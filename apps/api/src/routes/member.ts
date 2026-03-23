@@ -1,19 +1,25 @@
 import { apiRoutes, openApiSpecification } from '@payer-portal/api-contracts';
+import type { Prisma } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
-import { readFile } from '@payer-portal/server';
+import {
+  assertTenantStorageKey,
+  getStorageService,
+  logSensitiveDataAccess
+} from '@payer-portal/server';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+
 import {
   assertTenantMatch,
   AuthenticationError,
   AuthorizationError,
   getCurrentUserFromHeaders
 } from '../services/current-user-service';
+import { createMockPdfBuffer, isPdfBuffer } from '../services/pdf-utils';
 import {
   getCatalogClaims,
   getCatalogMemberProfile,
   getCatalogProviders
 } from '../services/portal-catalog-service';
-import { createMockPdfBuffer, isPdfBuffer } from '../services/pdf-utils';
 
 const mockPermissions = ['member.view', 'tenant.view'];
 
@@ -138,10 +144,38 @@ async function getMemberUser(
     );
     reply.status(503).send({
       message:
-        'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+        'Local database unavailable. Start PostgreSQL, run migrations.'
     });
     return null;
   }
+}
+
+async function logMemberSensitiveRead(
+  request: FastifyRequest,
+  user: {
+    id: string;
+    tenantId: string;
+  },
+  action: string,
+  resourceType: string,
+  resourceId?: string | null,
+  metadata?: Prisma.InputJsonObject
+) {
+  await logSensitiveDataAccess({
+    tenantId: user.tenantId,
+    actorUserId: user.id,
+    action,
+    resourceType,
+    resourceId,
+    metadata,
+    request: {
+      correlationId: request.id,
+      method: request.method,
+      route: request.routeOptions.url || request.url
+    },
+    ipAddress: request.ip,
+    userAgent: request.headers['user-agent']
+  }).catch(() => undefined);
 }
 
 export async function memberRoutes(app: FastifyInstance) {
@@ -153,6 +187,18 @@ export async function memberRoutes(app: FastifyInstance) {
     const catalogProfile = await getCatalogMemberProfile(
       portalCatalogContext,
       user.email
+    );
+
+    await logMemberSensitiveRead(
+      request,
+      user,
+      'data.member.read',
+      'member_profile',
+      user.id,
+      {
+        sourceSystem: catalogProfile ? 'portal-catalog-sql' : 'local-portal-db',
+        fields: ['member', 'permissions']
+      }
     );
 
     return {
@@ -184,6 +230,17 @@ export async function memberRoutes(app: FastifyInstance) {
       user.email
     );
 
+    await logMemberSensitiveRead(
+      request,
+      user,
+      'data.member.profile.read',
+      'member_profile',
+      user.id,
+      {
+        sourceSystem: catalogProfile ? 'portal-catalog-sql' : 'local-portal-db'
+      }
+    );
+
     return {
       id: user.id,
       sourceSystem: catalogProfile ? 'portal-catalog-sql' : 'local-portal-db',
@@ -200,6 +257,14 @@ export async function memberRoutes(app: FastifyInstance) {
   app.get(apiRoutes.memberCoverage, async (request, reply) => {
     const user = await getMemberUser(request, reply);
     if (!user) return;
+
+    await logMemberSensitiveRead(
+      request,
+      user,
+      'data.member.coverage.read',
+      'coverage',
+      `coverage-${user.tenantId}`
+    );
 
     return {
       items: [
@@ -224,6 +289,17 @@ export async function memberRoutes(app: FastifyInstance) {
 
     const portalCatalogContext = getPortalCatalogContext(user);
     const catalogClaims = await getCatalogClaims(portalCatalogContext, user.email);
+
+    await logMemberSensitiveRead(
+      request,
+      user,
+      'data.member.claims.read',
+      'claim',
+      user.id,
+      {
+        sourceSystem: catalogClaims ? 'portal-catalog-sql' : 'local-portal-db'
+      }
+    );
 
     if (catalogClaims) {
       return {
@@ -340,6 +416,17 @@ export async function memberRoutes(app: FastifyInstance) {
       }
     });
 
+    await logMemberSensitiveRead(
+      request,
+      user,
+      'data.member.documents.read',
+      'document',
+      user.id,
+      {
+        documentCount: documents.length
+      }
+    );
+
     return {
       items: documents.map((document) => {
         const tags = getDocumentTags(document.tags);
@@ -374,6 +461,17 @@ export async function memberRoutes(app: FastifyInstance) {
       }
     });
 
+    await logMemberSensitiveRead(
+      request,
+      user,
+      'data.member.messages.read',
+      'notification',
+      user.id,
+      {
+        messageCount: notifications.length
+      }
+    );
+
     return {
       items: notifications.map((notification) => ({
         id: notification.id,
@@ -400,6 +498,17 @@ export async function memberRoutes(app: FastifyInstance) {
         runAt: 'desc'
       }
     });
+
+    await logMemberSensitiveRead(
+      request,
+      user,
+      'data.member.authorizations.read',
+      'authorization',
+      user.id,
+      {
+        authorizationCount: authorizations.length
+      }
+    );
 
     return {
       items: authorizations.map((authorization) => {
@@ -435,9 +544,8 @@ export async function memberRoutes(app: FastifyInstance) {
       }
 
       try {
-        let buffer = await readFile(document.storageKey, {
-          storageDir: 'storage'
-        });
+        assertTenantStorageKey(document.storageKey, user.tenantId);
+        let buffer = await getStorageService().get(document.storageKey);
 
         if (document.mimeType === 'application/pdf' && !isPdfBuffer(buffer)) {
           const placeholderLines = buffer
@@ -446,6 +554,18 @@ export async function memberRoutes(app: FastifyInstance) {
             .filter(Boolean);
           buffer = createMockPdfBuffer(document.filename, placeholderLines);
         }
+
+        await logMemberSensitiveRead(
+          request,
+          user,
+          'data.member.document.download',
+          'document',
+          document.id,
+          {
+            filename: document.filename,
+            mimeType: document.mimeType
+          }
+        );
 
         return reply
           .header('Content-Type', document.mimeType)

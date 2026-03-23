@@ -1,9 +1,9 @@
+import { API_CATALOG_SORT_OPTIONS, IMPLEMENTATION_STATUSES } from '../../lib/api-catalog.constants';
 import type {
   ApiCatalogFiltersState,
   ApiCatalogViewMode,
   ImplementationStatus
 } from '../../lib/api-catalog.types';
-import { API_CATALOG_SORT_OPTIONS, IMPLEMENTATION_STATUSES } from '../../lib/api-catalog.constants';
 
 type ApiCatalogToolbarProps = {
   filters: ApiCatalogFiltersState;

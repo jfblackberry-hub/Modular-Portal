@@ -12,12 +12,14 @@ export function ProviderDashboardPage({
   clinicName,
   imageSrc,
   providerName,
+  sessionScopeKey,
   variant
 }: {
   clinicLogoSrc: string;
   clinicName: string;
   imageSrc: string;
   providerName: string;
+  sessionScopeKey: string;
   variant: ProviderPortalVariant;
 }) {
   const config = getProviderPortalConfig(variant);
@@ -30,6 +32,7 @@ export function ProviderDashboardPage({
         config={config}
         imageSrc={imageSrc}
         providerName={providerName}
+        sessionScopeKey={sessionScopeKey}
         variant={variant}
       />
     );

@@ -1,7 +1,7 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { SectionCard } from '../../components/section-card';
 import { apiBaseUrl, getAdminAuthHeaders } from '../../lib/api-auth';
@@ -56,7 +56,7 @@ export function DocumentManagement() {
   const [isUploading, setIsUploading] = useState(false);
   const [downloadingDocumentId, setDownloadingDocumentId] = useState('');
 
-  async function loadUsers() {
+  const loadUsers = useCallback(async function loadUsers() {
     const response = await fetch(`${apiBaseUrl}/api/tenant-admin/settings`, {
       cache: 'no-store',
       headers: getAdminAuthHeaders()
@@ -73,9 +73,9 @@ export function DocumentManagement() {
     setUsers(payload.users);
     setSelectedUserId((current) => current || payload.users[0]?.id || '');
     return payload.users;
-  }
+  }, []);
 
-  async function loadDocuments(userId: string) {
+  const loadDocuments = useCallback(async function loadDocuments(userId: string) {
     if (!userId) {
       setDocuments([]);
       return;
@@ -97,45 +97,61 @@ export function DocumentManagement() {
 
     const payload = (await response.json()) as DocumentRecord[];
     setDocuments(payload);
-  }
-
-  async function refreshData(nextUserId?: string) {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const loadedUsers = users.length > 0 ? users : await loadUsers();
-      const activeUserId =
-        nextUserId ?? selectedUserId ?? loadedUsers[0]?.id ?? '';
-      if (!selectedUserId && activeUserId) {
-        setSelectedUserId(activeUserId);
-      }
-      await loadDocuments(activeUserId);
-    } catch (loadError) {
-      setDocuments([]);
-      if (loadError instanceof Error) {
-        setError(loadError.message);
-      } else {
-        setError('API unavailable. Start the local API and try again.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  }, []);
 
   useEffect(() => {
-    void refreshData().finally(() => {
-      initialLoadCompleteRef.current = true;
-    });
-  }, []);
+    async function initializeData() {
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const loadedUsers = await loadUsers();
+        const activeUserId = selectedUserId || loadedUsers[0]?.id || '';
+        if (!selectedUserId && activeUserId) {
+          setSelectedUserId(activeUserId);
+        }
+        await loadDocuments(activeUserId);
+      } catch (loadError) {
+        setDocuments([]);
+        if (loadError instanceof Error) {
+          setError(loadError.message);
+        } else {
+          setError('API unavailable. Start the local API and try again.');
+        }
+      } finally {
+        setIsLoading(false);
+        initialLoadCompleteRef.current = true;
+      }
+    }
+
+    void initializeData();
+  }, [loadDocuments, loadUsers, selectedUserId]);
 
   useEffect(() => {
     if (!initialLoadCompleteRef.current || !selectedUserId) {
       return;
     }
 
-    void refreshData(selectedUserId);
-  }, [selectedUserId]);
+    async function refreshSelectedUserDocuments() {
+      setIsLoading(true);
+      setError('');
+
+      try {
+        await loadDocuments(selectedUserId);
+      } catch (loadError) {
+        setDocuments([]);
+        if (loadError instanceof Error) {
+          setError(loadError.message);
+        } else {
+          setError('API unavailable. Start the local API and try again.');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    void refreshSelectedUserDocuments();
+  }, [loadDocuments, selectedUserId]);
 
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

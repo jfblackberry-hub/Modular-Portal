@@ -2,8 +2,8 @@ import type { MemberMessage } from '@payer-portal/api-contracts';
 
 import { EmptyState, PageHeader, StatusBadge, SurfaceCard } from '../../../components/portal-ui';
 import { getMemberMessages } from '../../../lib/member-api';
-import { getPortalSessionUser } from '../../../lib/portal-session';
 import { formatDate, titleCase } from '../../../lib/portal-format';
+import { getPortalSessionUser } from '../../../lib/portal-session';
 
 export default async function MessagesPage() {
   const sessionUser = await getPortalSessionUser();

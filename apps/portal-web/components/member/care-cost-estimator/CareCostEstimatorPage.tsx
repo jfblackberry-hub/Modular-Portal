@@ -1,8 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import { CircleAlert, LoaderCircle, Scale, Search, SlidersHorizontal, Star } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import type {
+  EstimateResult,
+  EstimateSearchInput,
+  EstimateSortBy,
+  EstimatorBootstrapPayload,
+  SavedEstimateRecord
+} from '../../../lib/care-cost-estimator/service';
 import {
   EmptyState,
   InlineButton,
@@ -10,13 +17,6 @@ import {
   StatusBadge,
   SurfaceCard
 } from '../../portal-ui';
-import type {
-  EstimateResult,
-  EstimateSortBy,
-  EstimatorBootstrapPayload,
-  EstimateSearchInput,
-  SavedEstimateRecord
-} from '../../../lib/care-cost-estimator/service';
 
 const sortOptions: Array<{ label: string; value: EstimateSortBy }> = [
   { label: 'Distance', value: 'distance' },
@@ -187,7 +187,7 @@ export function CareCostEstimatorPage({
     [initialData.procedures, procedureId]
   );
 
-  async function runEstimate() {
+  const runEstimate = useCallback(async function runEstimate() {
     setLoading(true);
     setError('');
     try {
@@ -229,11 +229,29 @@ export function CareCostEstimatorPage({
     } finally {
       setLoading(false);
     }
-  }
+  }, [
+    acceptsNewPatients,
+    accessibilityAccommodations,
+    boardCertified,
+    distanceRadius,
+    eveningWeekendAvailability,
+    facilityType,
+    inNetworkOnly,
+    initialData.member.memberId,
+    language,
+    networkTier,
+    procedureId,
+    providerGender,
+    ratingThreshold,
+    searchTerm,
+    sortBy,
+    specialty,
+    telehealth
+  ]);
 
   useEffect(() => {
     void runEstimate();
-  }, []);
+  }, [runEstimate]);
 
   async function saveEstimate(estimate: EstimateResult) {
     const response = await fetch('/api/care-cost-estimator/saved', {

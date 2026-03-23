@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
 
+import { buildPortalApiHeaders } from '../../../../lib/api-request';
 import { getPortalSession } from '../../../../lib/portal-session';
-
-const apiBaseUrl =
-  process.env.API_BASE_URL ??
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  'http://localhost:3002';
+import { apiInternalOrigin as apiBaseUrl } from '../../../../lib/server-runtime';
 
 export async function POST(request: Request) {
   const session = await getPortalSession();
@@ -21,10 +18,15 @@ export async function POST(request: Request) {
 
   const response = await fetch(`${apiBaseUrl}/preview-sessions/current/events`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.accessToken}`
-    },
+    headers: await buildPortalApiHeaders(
+      {
+        'Content-Type': 'application/json'
+      },
+      {
+        accessToken: session.accessToken,
+        tenantId: session.user.session.tenantId ?? session.user.tenant.id
+      }
+    ),
     body: JSON.stringify(body)
   });
 

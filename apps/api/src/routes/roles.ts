@@ -8,8 +8,8 @@ import {
 } from '../services/current-user-service';
 import {
   assignRoleToUser,
-  createUser,
   createRole,
+  createUser,
   deleteUser,
   listRoles,
   listUsers,
@@ -62,7 +62,7 @@ export async function roleRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -89,7 +89,7 @@ export async function roleRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -121,7 +121,7 @@ export async function roleRoutes(app: FastifyInstance) {
 
         return reply.status(503).send({
           message:
-            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+            'Local database unavailable. Start PostgreSQL, run migrations.'
         });
       }
     }
@@ -157,7 +157,7 @@ export async function roleRoutes(app: FastifyInstance) {
 
         return reply.status(503).send({
           message:
-            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+            'Local database unavailable. Start PostgreSQL, run migrations.'
         });
       }
     }
@@ -180,7 +180,7 @@ export async function roleRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -211,7 +211,7 @@ export async function roleRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -241,7 +241,7 @@ export async function roleRoutes(app: FastifyInstance) {
 
         return reply.status(503).send({
           message:
-            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+            'Local database unavailable. Start PostgreSQL, run migrations.'
         });
       }
     }
@@ -272,7 +272,7 @@ export async function roleRoutes(app: FastifyInstance) {
 
         return reply.status(503).send({
           message:
-            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+            'Local database unavailable. Start PostgreSQL, run migrations.'
         });
       }
     }

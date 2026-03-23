@@ -11,7 +11,7 @@ import {
   isPluginEnabled
 } from '@payer-portal/plugin-sdk';
 
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3002';
+import { apiInternalOrigin as apiBaseUrl } from './server-runtime';
 
 const discoveredPlugins: PluginManifest[] = [
   memberPlugin,

@@ -1,7 +1,6 @@
+import { buildAdminConsoleBoundaryUrl } from './admin-boundary';
 import type { PortalSessionUser } from './portal-session';
-
-const adminConsoleBaseUrl =
-  process.env.NEXT_PUBLIC_ADMIN_CONSOLE_URL ?? 'http://localhost:3003';
+import { adminConsolePublicOrigin as adminConsoleBaseUrl } from './server-runtime';
 
 export function getAdminDestination(
   user: Pick<PortalSessionUser, 'roles' | 'landingContext'>
@@ -17,11 +16,18 @@ export function getAdminDestination(
     return '/admin/platform/health';
   }
 
+  if (
+    user.landingContext === 'tenant_admin' ||
+    user.roles.includes('tenant_admin')
+  ) {
+    return '/admin/tenant/health';
+  }
+
   return null;
 }
 
 export function buildAdminHandoffUrl(
-  user: Pick<PortalSessionUser, 'id' | 'email' | 'roles' | 'landingContext'>
+  user: Pick<PortalSessionUser, 'roles' | 'landingContext'>
 ) {
   const destination = getAdminDestination(user);
 
@@ -29,11 +35,9 @@ export function buildAdminHandoffUrl(
     return null;
   }
 
-  const query = new URLSearchParams({
-    admin_user_id: user.id,
-    admin_email: user.email,
-    redirect: destination
-  });
+  if (destination === '/admin/tenant/health') {
+    return `${adminConsoleBaseUrl}/login`;
+  }
 
-  return `${adminConsoleBaseUrl}/login?${query.toString()}`;
+  return buildAdminConsoleBoundaryUrl(destination);
 }

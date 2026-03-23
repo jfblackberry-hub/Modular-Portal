@@ -6,7 +6,7 @@ The platform backup strategy covers:
 - document storage files
 - audit logs as a dedicated compliance dataset
 
-Backups are executed through the existing PostgreSQL-backed job queue using the `backup.run` job type.
+Backups are executed through the PostgreSQL-backed job queue using the `backup.run` job type, but schedule seeding is intentionally external to the long-running app processes.
 
 ## Configuration
 
@@ -23,23 +23,29 @@ Optional environment variables:
 
 ## Scheduling
 
-Configure the scheduled jobs with:
+Configure the scheduled jobs with a one-shot task:
 
 ```bash
 pnpm --filter @payer-portal/server backups:schedule
 ```
 
-This command is intended to be run by cron or a Kubernetes `CronJob`. It ensures a scheduled `backup.run` job exists for each coverage area:
+For production deployment, the intended model is an AWS EventBridge scheduled ECS task that runs:
+
+```bash
+pnpm --filter @payer-portal/server backups:configure
+```
+
+That command ensures a scheduled `backup.run` job exists for each coverage area:
 
 - `database`
 - `documents`
 - `audit_logs`
 
-Each successful scheduled backup enqueues its next run based on the configured interval.
+Each successful scheduled backup enqueues its next run based on the configured interval. The long-running `job-worker` service executes the queued jobs; web and admin services do not.
 
 ## Backup Artifacts
 
-Every backup run writes a dated directory under the backup storage root containing:
+Every backup run writes storage-backed artifacts under the configured backup profile containing:
 
 - `<coverage>.backup.enc`: encrypted snapshot payload
 - `manifest.json`: restore metadata, record counts, and artifact paths
@@ -50,7 +56,7 @@ Every backup run writes a dated directory under the backup storage root containi
 ### Database Snapshot Restore
 
 1. Stop writes to the platform.
-2. Copy the desired backup directory from backup storage.
+2. Copy the desired backup artifact set from backup storage.
 3. Decrypt `database.backup.enc` using the configured `BACKUP_ENCRYPTION_KEY`.
 4. Load the JSON snapshot and replay the records into PostgreSQL in dependency order.
 5. Validate row counts using `manifest.json`.
@@ -60,7 +66,7 @@ Every backup run writes a dated directory under the backup storage root containi
 Point-in-time restore depends on PostgreSQL WAL archiving or managed database PITR.
 
 1. Restore PostgreSQL to the target timestamp using WAL/PITR support from the database runtime.
-2. If document storage also needs rollback, restore the matching document snapshot directory.
+2. If document storage also needs rollback, restore the matching document snapshot artifact set.
 3. Validate audit-log continuity from the restored `AuditLog` table or the dedicated `audit_logs` snapshot.
 
 The application code in this repo prepares encrypted snapshots and verification logs. WAL retention, archive destinations, and PITR execution must be configured at the PostgreSQL infrastructure layer.

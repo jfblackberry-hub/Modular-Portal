@@ -1,17 +1,13 @@
-import { after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { after, beforeEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
 
 import { prisma } from '@payer-portal/database';
 
-import { clearSubscriptions } from '../src/events/eventBus.js';
-import { publish } from '../src/events/eventBus.js';
-import { runNextJob } from '../src/jobs/jobWorker.js';
-import { getJobById } from '../src/jobs/jobQueue.js';
-import { JOB_STATUS } from '../src/jobs/jobTypes.js';
+import { publish, waitForBackgroundPublishes } from '../src/events/eventBus.js';
 import {
   clearIntegrationAdapters,
   registerDefaultIntegrations
@@ -20,56 +16,39 @@ import {
   clearIntegrationEventSubscriptions,
   registerIntegrationEventSubscriptions
 } from '../src/integrations/subscriptions.js';
+import { getJobById } from '../src/jobs/jobQueue.js';
+import { JOB_STATUS } from '../src/jobs/jobTypes.js';
+import { runNextJob } from '../src/jobs/jobWorker.js';
 
-const TEST_CONNECTOR_NAMES = [
-  'Webhook Subscriber',
-  'Webhook Retry Subscriber'
-];
+const WEBHOOK_TEST_TENANT_SLUG_PREFIX = 'server-webhook-test';
+
+async function createOwnedTenant(testName: string) {
+  const slug = `${WEBHOOK_TEST_TENANT_SLUG_PREFIX}-${testName}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`.toLowerCase();
+
+  return prisma.tenant.create({
+    data: {
+      name: `Webhook ${testName}`,
+      slug,
+      status: 'ACTIVE',
+      brandingConfig: {}
+    },
+    select: {
+      id: true
+    }
+  });
+}
 
 beforeEach(async () => {
   clearIntegrationAdapters();
   clearIntegrationEventSubscriptions();
-  clearSubscriptions();
-  await prisma.job.deleteMany({
-    where: {
-      type: 'connector.sync'
-    }
-  });
-  await prisma.integrationExecution.deleteMany({
-    where: {
-      connectorConfig: {
-        adapterKey: 'webhook'
-      }
-    }
-  });
-  await prisma.connectorConfig.deleteMany({
-    where: {
-      adapterKey: 'webhook'
-    }
-  });
+  await waitForBackgroundPublishes();
 });
 
 after(async () => {
+  await waitForBackgroundPublishes();
   clearIntegrationAdapters();
   clearIntegrationEventSubscriptions();
-  clearSubscriptions();
-  await prisma.job.deleteMany({
-    where: {
-      type: 'connector.sync'
-    }
-  });
-  await prisma.integrationExecution.deleteMany({
-    where: {
-      connectorConfig: {
-        adapterKey: 'webhook'
-      }
-    }
-  });
-  await prisma.connectorConfig.deleteMany({
-    where: {
-      adapterKey: 'webhook'
-    }
-  });
+  await waitForBackgroundPublishes();
   await prisma.$disconnect();
 });
 
@@ -77,11 +56,7 @@ test('webhook subscriptions enqueue and deliver configured event payloads', asyn
   registerDefaultIntegrations();
   registerIntegrationEventSubscriptions();
 
-  const tenant = await prisma.tenant.findFirstOrThrow({
-    select: {
-      id: true
-    }
-  });
+  const tenant = await createOwnedTenant('delivery-success');
 
   let receivedBody: Record<string, unknown> | null = null;
   const server = createServer((request, response) => {
@@ -170,7 +145,7 @@ test('webhook subscriptions enqueue and deliver configured event payloads', asyn
 
     assert.equal(queuedJob.maxAttempts, 2);
 
-    await runNextJob();
+    await runNextJob({ tenantId: tenant.id });
 
     assert.deepEqual(receivedBody, {
       correlation_id: 'tenant-webhook-correlation',
@@ -196,11 +171,7 @@ test('failed webhook deliveries retry through the job queue', async () => {
   registerDefaultIntegrations();
   registerIntegrationEventSubscriptions();
 
-  const tenant = await prisma.tenant.findFirstOrThrow({
-    select: {
-      id: true
-    }
-  });
+  const tenant = await createOwnedTenant('delivery-retry');
 
   let requestCount = 0;
   const server = createServer((_request, response) => {
@@ -305,7 +276,7 @@ test('failed webhook deliveries retry through the job queue', async () => {
       })
     );
 
-    await runNextJob();
+    await runNextJob({ tenantId: tenant.id });
 
     const firstAttempt = await getJobById(queuedJob.id);
     assert.equal(firstAttempt?.status, JOB_STATUS.PENDING);
@@ -319,7 +290,7 @@ test('failed webhook deliveries retry through the job queue', async () => {
       }
     });
 
-    await runNextJob();
+    await runNextJob({ tenantId: tenant.id });
 
     const secondAttempt = await getJobById(queuedJob.id);
     assert.equal(secondAttempt?.status, JOB_STATUS.SUCCEEDED);

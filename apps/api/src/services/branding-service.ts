@@ -1,20 +1,17 @@
-import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
-import { pipeline } from 'node:stream/promises';
 
 import type { MultipartFile } from '@fastify/multipart';
 import type { Prisma } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
-import { logAuditEvent } from '@payer-portal/server';
+import {
+  buildTenantLogoStorageKey,
+  getPublicAssetStorageService,
+  logAuditEvent
+} from '@payer-portal/server';
 
 const DEFAULT_PRIMARY_COLOR = '#38bdf8';
 const DEFAULT_SECONDARY_COLOR = '#ffffff';
 const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-const tenantAssetsDirectory = path.resolve(
-  process.cwd(),
-  '../portal-web/public/tenant-assets'
-);
-
 type BrandingInput = {
   displayName?: string;
   primaryColor?: string;
@@ -60,17 +57,30 @@ function getExtension(fileName: string, mimeType: string) {
 async function writeTenantImageAsset(input: {
   file: MultipartFile;
   fileName: string;
+  tenantId: string;
 }) {
   if (!input.file.mimetype.startsWith('image/')) {
     throw new Error('Logo upload must be an image file');
   }
 
-  await mkdir(tenantAssetsDirectory, { recursive: true });
   const extension = getExtension(input.file.filename, input.file.mimetype);
-  const outputPath = path.join(tenantAssetsDirectory, `${input.fileName}${extension}`);
-  await pipeline(input.file.file, (await import('node:fs')).createWriteStream(outputPath));
+  const storageKey = buildTenantLogoStorageKey({
+    tenantId: input.tenantId,
+    fileName: `${input.fileName}${extension}`
+  });
+  const uploadResult = await getPublicAssetStorageService().put(
+    storageKey,
+    await input.file.toBuffer(),
+    {
+      contentType: input.file.mimetype
+    }
+  );
 
-  return `/tenant-assets/${input.fileName}${extension}`;
+  if (!uploadResult.publicUrl) {
+    throw new Error('Public asset storage must return a public URL for branding assets');
+  }
+
+  return uploadResult.publicUrl;
 }
 
 function normalizeOptionalString(value: string | undefined) {
@@ -383,7 +393,8 @@ export async function uploadBrandingLogoForTenant(
 
   const logoUrl = await writeTenantImageAsset({
     file,
-    fileName: `${tenant.id}-logo`
+    fileName: 'tenant-logo',
+    tenantId: tenant.id
   });
 
   return updateBrandingForTenant(
@@ -410,7 +421,8 @@ export async function uploadEmployerGroupLogoAssetForTenant(
 
   const logoUrl = await writeTenantImageAsset({
     file,
-    fileName: `${tenant.id}-employer-group-logo`
+    fileName: 'employer-group-logo',
+    tenantId: tenant.id
   });
 
   return {

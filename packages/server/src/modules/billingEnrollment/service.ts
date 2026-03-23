@@ -1,29 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
 import type { Prisma } from '@payer-portal/database';
+
 import { publishInBackground } from '../../events/eventBus.js';
 import { logAuditEvent } from '../../services/auditService.js';
-import type {
-  ApplicantProfile,
-  DependentProfile,
-  DocumentRequirementHook,
-  EnrollmentStatusTracker,
-  HouseholdProfile,
-  PlanSelectionCandidate,
-  QualifyingLifeEventInput
-} from './domain.js';
-import { runEnrollmentValidations } from './validation.js';
-import type {
-  BillingEnrollmentContext,
-  BillingEnrollmentWorkspaceSnapshot,
-  CorrespondenceNotice,
-  DocumentRequirement,
-  EnrollmentCase,
-  InvoiceSummary,
-  PaymentSummary,
-  PlanCatalogItem,
-  RenewalWorkflow
-} from './types.js';
 import type {
   AutopayEnrollment,
   BillingAccount,
@@ -36,7 +16,28 @@ import type {
   ReconciliationStatusHook,
   RefundOrReversal
 } from './billing.js';
+import type {
+  ApplicantProfile,
+  DependentProfile,
+  DocumentRequirementHook,
+  EnrollmentStatusTracker,
+  HouseholdProfile,
+  PlanSelectionCandidate,
+  QualifyingLifeEventInput
+} from './domain.js';
 import { MockPaymentGatewayAdapter } from './paymentGateway.js';
+import type {
+  BillingEnrollmentContext,
+  BillingEnrollmentWorkspaceSnapshot,
+  CorrespondenceNotice,
+  DocumentRequirement,
+  EnrollmentCase,
+  InvoiceSummary,
+  PaymentSummary,
+  PlanCatalogItem,
+  RenewalWorkflow
+} from './types.js';
+import { runEnrollmentValidations } from './validation.js';
 
 function nowIso() {
   return new Date().toISOString();

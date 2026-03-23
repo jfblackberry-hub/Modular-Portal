@@ -1,9 +1,9 @@
 import { ReportsScheduleManager } from '../../../../../components/billing-enrollment/ReportsScheduleManager';
+import { getPortalSessionUser } from '../../../../../lib/portal-session';
 import {
   getScheduledReportsForTenant,
   reportDefinitions
 } from '../../../../../lib/reports-analytics-data';
-import { getPortalSessionUser } from '../../../../../lib/portal-session';
 
 export default async function ReportsSchedulePage() {
   const sessionUser = await getPortalSessionUser();

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import type { AccessLevel, AdminModule, AdminRole, AdministratorUser, RolePermissionMatrix } from '../../lib/employer-admin-settings-data';
+import type { AccessLevel, AdministratorUser, AdminModule, AdminRole, RolePermissionMatrix } from '../../lib/employer-admin-settings-data';
 import { EmptyState, StatusBadge } from '../portal-ui';
 
 function formatDateTime(value?: string) {

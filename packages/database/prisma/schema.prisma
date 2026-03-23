@@ -18,6 +18,14 @@ enum PreviewSessionMode {
   FUNCTIONAL
 }
 
+enum ApiCatalogCategory {
+  CLAIMS
+  PHARMACY
+  ELIGIBILITY
+  CLINICAL
+  AUTHORIZATION
+}
+
 model Tenant {
   id            String        @id @default(uuid()) @db.Uuid
   name          String
@@ -38,6 +46,7 @@ model Tenant {
   featureFlags FeatureFlag[]
   eventRecords  EventRecord[]
   previewSessions PreviewSession[]
+  portalAuthHandoffs PortalAuthHandoff[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -74,6 +83,7 @@ model User {
   notifications Notification[]
   createdPreviewSessions PreviewSession[] @relation("PreviewSessionAdminUser")
   targetPreviewSessions  PreviewSession[] @relation("PreviewSessionTargetUser")
+  portalAuthHandoffs PortalAuthHandoff[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
@@ -108,6 +118,27 @@ model PreviewSession {
   @@index([targetUserId, endedAt])
   @@index([expiresAt])
   @@index([currentRouteUpdatedAt])
+}
+
+model PortalAuthHandoff {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  userId       String   @db.Uuid
+  audience     String
+  redirectPath String
+  accessToken  String
+  userSnapshot Json
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  createdAt    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([userId, createdAt])
+  @@index([audience, expiresAt])
+  @@index([consumedAt, expiresAt])
 }
 
 model UserTenantMembership {
@@ -263,8 +294,8 @@ model AuditLog {
   userAgent   String?
   createdAt   DateTime @default(now())
 
-  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  actorUser User?  @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  actorUser User?  @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
 
   @@index([tenantId])
   @@index([tenantId, action, createdAt])
@@ -272,6 +303,27 @@ model AuditLog {
   @@index([entityType])
   @@index([entityId])
   @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model ApiCatalogEntry {
+  id                 String             @id @default(uuid()) @db.Uuid
+  slug               String             @unique
+  name               String
+  category           ApiCatalogCategory
+  vendor             String             @default("Payer Platform")
+  description        String
+  endpoint           String
+  version            String
+  inputModels        Json               @default("[]")
+  outputModels       Json               @default("[]")
+  tenantAvailability Json               @default("[]")
+  sortOrder          Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([category, sortOrder, name])
+  @@map("api_catalog_entries")
 }
 
 model Role {

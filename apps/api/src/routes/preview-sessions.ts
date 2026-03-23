@@ -1,12 +1,14 @@
+import { prisma } from '@payer-portal/database';
+import { logPersonaSwitchEvent } from '@payer-portal/server';
 import type { FastifyInstance } from 'fastify';
 
+import { verifyAccessToken } from '../services/access-token-service';
 import {
   assertPlatformAdmin,
   AuthenticationError,
   AuthorizationError,
   getCurrentUserFromHeaders
 } from '../services/current-user-service';
-import { verifyAccessToken } from '../services/access-token-service';
 import {
   createPreviewSession,
   duplicatePreviewSession,
@@ -22,7 +24,7 @@ import {
 type CreatePreviewSessionBody = {
   tenantId: string;
   subTenantId?: string;
-  portalType: 'member' | 'provider' | 'broker' | 'employer' | 'tenant_admin';
+  portalType: 'member' | 'provider' | 'broker' | 'employer';
   persona: string;
   mode: 'READ_ONLY' | 'FUNCTIONAL';
 };
@@ -41,6 +43,55 @@ type PreviewSessionEventBody = {
   detail?: string;
   statusCode?: number;
 };
+
+type PersonaSessionAuditBody = {
+  action:
+    | 'persona.session.opened'
+    | 'persona.session.focused'
+    | 'persona.session.closed';
+  sessionId: string;
+  tenantId: string;
+  personaType: string;
+  userId: string;
+};
+
+function normalizeRequired(value: string, fieldName: string) {
+  const normalized = value.trim();
+
+  if (!normalized) {
+    throw new Error(`${fieldName} is required.`);
+  }
+
+  return normalized;
+}
+
+async function assertAuthorizedPersonaAuditTenantScope(
+  currentUser: Awaited<ReturnType<typeof getCurrentUserFromHeaders>>,
+  tenantId: string
+) {
+  const targetTenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: {
+      id: true,
+      isActive: true
+    }
+  });
+
+  if (!targetTenant?.isActive) {
+    throw new AuthorizationError(
+      'Target tenant scope is unavailable for persona session auditing.'
+    );
+  }
+
+  if (
+    currentUser.sessionType !== 'platform_admin' &&
+    !currentUser.accessibleTenantIds.includes(tenantId)
+  ) {
+    throw new AuthorizationError(
+      'You do not have access to audit persona activity for that tenant.'
+    );
+  }
+}
 
 function getPreviewTokenPayload(authorizationHeader: string | string[] | undefined) {
   const value = Array.isArray(authorizationHeader)
@@ -79,7 +130,7 @@ function handleRouteError(
 
   return reply.status(503).send({
     message:
-      'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+      'Local database unavailable. Start PostgreSQL, run migrations.'
   });
 }
 
@@ -120,6 +171,44 @@ export async function previewSessionRoutes(app: FastifyInstance) {
         });
 
         return reply.status(201).send(session);
+      } catch (error) {
+        return handleRouteError(error, reply);
+      }
+    }
+  );
+
+  app.post<{ Body: PersonaSessionAuditBody }>(
+    '/platform-admin/persona-sessions/events',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        const tenantId = normalizeRequired(request.body.tenantId, 'tenantId');
+        await assertAuthorizedPersonaAuditTenantScope(currentUser, tenantId);
+
+        await logPersonaSwitchEvent({
+          tenantId,
+          actorUserId: currentUser.id,
+          action: request.body.action,
+          resourceType: 'persona_session',
+          resourceId: normalizeRequired(request.body.sessionId, 'sessionId'),
+          metadata: {
+            adminSurface: 'admin_console',
+            personaType: normalizeRequired(request.body.personaType, 'personaType'),
+            targetUserId: normalizeRequired(request.body.userId, 'userId')
+          },
+          request: {
+            correlationId: request.id,
+            method: request.method,
+            route: request.routeOptions.url,
+            statusCode: 202
+          },
+          ipAddress: request.ip,
+          userAgent: request.headers['user-agent']
+        });
+
+        return reply.status(202).send({ ok: true });
       } catch (error) {
         return handleRouteError(error, reply);
       }

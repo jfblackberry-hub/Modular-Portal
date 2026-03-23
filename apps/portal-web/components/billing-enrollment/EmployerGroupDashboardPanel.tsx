@@ -3,7 +3,11 @@
 import { EmployeeCensusList } from './EmployeeCensusList';
 import { EmployerWorkspaceDataBoundary } from './EmployerWorkspaceDataBoundary';
 
-export function EmployerGroupDashboardPanel() {
+export function EmployerGroupDashboardPanel({
+  sessionScopeKey
+}: {
+  sessionScopeKey: string;
+}) {
   return (
     <EmployerWorkspaceDataBoundary<{
       coverageTypes: string[];
@@ -15,6 +19,7 @@ export function EmployerGroupDashboardPanel() {
     }>
       endpoint="/api/employer-dashboard/workspaces/group-dashboard"
       label="Group dashboard"
+      sessionScopeKey={sessionScopeKey}
       render={(data) => <EmployeeCensusList embedded {...data} />}
     />
   );

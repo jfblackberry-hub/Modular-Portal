@@ -1,13 +1,14 @@
-import { after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { after, beforeEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
 
-import Fastify from 'fastify';
 import { prisma } from '@payer-portal/database';
+import Fastify from 'fastify';
 
 import { brandingRoutes } from '../src/routes/branding.js';
+import { createAccessToken } from '../src/services/access-token-service.js';
 
 const TEST_PERMISSION_CODE = 'admin.manage';
 const TEST_ADMIN_ROLE_CODE = 'test-tenant-admin';
@@ -18,14 +19,7 @@ const TEST_ADMIN_EMAIL = 'branding-admin@example.com';
 const TEST_MEMBER_EMAIL = 'branding-member@example.com';
 
 async function cleanupTestData() {
-  await prisma.auditLog.deleteMany({
-    where: {
-      OR: [
-        { action: 'tenant.updated' },
-        { actorUser: { email: { in: [TEST_ADMIN_EMAIL, TEST_MEMBER_EMAIL] } } }
-      ]
-    }
-  });
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
 
   await prisma.userRole.deleteMany({
     where: {
@@ -172,12 +166,47 @@ async function createFixtureData() {
     })
   ]);
 
+  await prisma.userTenantMembership.createMany({
+    data: [
+      {
+        userId: adminUser.id,
+        tenantId: tenant.id,
+        isDefault: true,
+        isTenantAdmin: true
+      },
+      {
+        userId: memberUser.id,
+        tenantId: otherTenant.id,
+        isDefault: true,
+        isTenantAdmin: false
+      }
+    ]
+  });
+
   return {
     adminUser,
     memberUser,
     tenant,
     otherTenant
   };
+}
+
+function createTenantAdminToken(user: { id: string; email: string }, tenantId: string) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId,
+    sessionType: 'tenant_admin'
+  });
+}
+
+function createEndUserToken(user: { id: string; email: string }, tenantId: string) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId,
+    sessionType: 'end_user'
+  });
 }
 
 beforeEach(async () => {
@@ -193,12 +222,13 @@ test('get branding returns tenant-scoped defaults when no branding record exists
   const { adminUser, tenant } = await createFixtureData();
   const app = Fastify();
   await brandingRoutes(app);
+  const adminToken = createTenantAdminToken(adminUser, tenant.id);
 
   const response = await app.inject({
     method: 'GET',
     url: '/api/branding',
     headers: {
-      'x-user-id': adminUser.id
+      authorization: `Bearer ${adminToken}`
     }
   });
 
@@ -215,15 +245,16 @@ test('get branding returns tenant-scoped defaults when no branding record exists
 });
 
 test('put branding blocks non-admin users', async () => {
-  const { memberUser } = await createFixtureData();
+  const { memberUser, otherTenant } = await createFixtureData();
   const app = Fastify();
   await brandingRoutes(app);
+  const memberToken = createEndUserToken(memberUser, otherTenant.id);
 
   const response = await app.inject({
     method: 'PUT',
     url: '/api/branding',
     headers: {
-      'x-user-id': memberUser.id
+      authorization: `Bearer ${memberToken}`
     },
     payload: {
       displayName: 'Should Fail'
@@ -239,12 +270,13 @@ test('put branding persists tenant branding and writes audit log', async () => {
   const { adminUser, tenant } = await createFixtureData();
   const app = Fastify();
   await brandingRoutes(app);
+  const adminToken = createTenantAdminToken(adminUser, tenant.id);
 
   const response = await app.inject({
     method: 'PUT',
     url: '/api/branding',
     headers: {
-      'x-user-id': adminUser.id,
+      authorization: `Bearer ${adminToken}`,
       'user-agent': 'branding-test'
     },
     payload: {

@@ -2,8 +2,8 @@
 
 import type { ReactNode } from 'react';
 
-import { useAdminSession } from './admin-session-provider';
 import { AccessDeniedCard } from './access-denied-card';
+import { useAdminSession } from './admin-session-provider';
 import { SectionCard } from './section-card';
 
 export function PlatformAdminGate({ children }: { children: ReactNode }) {

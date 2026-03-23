@@ -1,11 +1,15 @@
+import { clearTenantContext } from '@payer-portal/database';
+
+import { createStructuredLogger } from '../observability/logger.js';
 import { logAuditEvent } from '../services/auditService.js';
-import { getJobHandler, registerDefaultJobHandlers } from './jobRegistry.js';
 import {
   getPendingJob,
+  getPendingJobForTenant,
   markJobFailedOrRetry,
   markJobRunning,
   markJobSucceeded
 } from './jobQueue.js';
+import { getJobHandler, registerDefaultJobHandlers } from './jobRegistry.js';
 import { JOB_STATUS } from './jobTypes.js';
 
 export type JobWorkerOptions = {
@@ -19,10 +23,16 @@ function defaultSleep(ms: number) {
   });
 }
 
-export async function runNextJob() {
+export async function runNextJob(options: { tenantId?: string } = {}) {
+  clearTenantContext();
   registerDefaultJobHandlers();
+  const logger = createStructuredLogger({
+    serviceName: process.env.APP_NAME ?? 'job-worker'
+  });
 
-  const pendingJob = await getPendingJob();
+  const pendingJob = options.tenantId
+    ? await getPendingJobForTenant(options.tenantId)
+    : await getPendingJob();
 
   if (!pendingJob) {
     return false;
@@ -34,7 +44,7 @@ export async function runNextJob() {
     return false;
   }
 
-  console.log('[jobs] picked up job', {
+  logger.info('picked up job', {
     id: runningJob.id,
     type: runningJob.type,
     attempts: runningJob.attempts,
@@ -54,13 +64,13 @@ export async function runNextJob() {
     });
 
     await markJobSucceeded(runningJob.id);
-    console.log('[jobs] job succeeded', {
+    logger.info('job succeeded', {
       id: runningJob.id,
       type: runningJob.type
     });
   } catch (error) {
     const updatedJob = await markJobFailedOrRetry(runningJob, error);
-    console.error('[jobs] job failed', {
+    logger.error('job failed', {
       id: runningJob.id,
       type: runningJob.type,
       status: updatedJob.status,
@@ -80,6 +90,8 @@ export async function runNextJob() {
         }
       });
     }
+  } finally {
+    clearTenantContext();
   }
 
   return true;

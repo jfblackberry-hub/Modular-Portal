@@ -1,7 +1,6 @@
-import type { FastifyInstance } from 'fastify';
-
-import { listAuditEvents } from '@payer-portal/server';
 import { prisma } from '@payer-portal/database';
+import { listAuditEvents } from '@payer-portal/server';
+import type { FastifyInstance } from 'fastify';
 
 import {
   assertPlatformAdmin,
@@ -69,7 +68,7 @@ function handleRouteError(
 
   return reply.status(503).send({
     message:
-      'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+      'Local database unavailable. Start PostgreSQL, run migrations.'
   });
 }
 

@@ -8,38 +8,52 @@ import {
   type PortalActionWorkspaceDefinition
 } from '../../shared/portal-action-workspace';
 
-type EmptyProps = Record<string, never>;
+type MemberWorkspaceProps = {
+  sessionScopeKey: string;
+};
 
-export function MemberDashboardWorkspaceSection() {
-  const definitions = useMemo<PortalActionWorkspaceDefinition<EmptyProps>[]>(
+export function MemberDashboardWorkspaceSection({
+  sessionScopeKey
+}: {
+  sessionScopeKey: string;
+}) {
+  const definitions = useMemo<PortalActionWorkspaceDefinition<MemberWorkspaceProps>[]>(
     () => [
       {
         ...portalActionWorkspaceBlueprints.member[0],
         key: 'find-care',
         loader: () =>
           import('./MemberFindCareDashboardPanel').then((mod) => mod.MemberFindCareDashboardPanel),
-        props: {}
+        props: {
+          sessionScopeKey
+        }
       },
       {
         ...portalActionWorkspaceBlueprints.member[1],
         key: 'id-card',
         loader: () =>
           import('./MemberIdCardDashboardPanel').then((mod) => mod.MemberIdCardDashboardPanel),
-        props: {}
+        props: {
+          sessionScopeKey
+        }
       },
       {
         ...portalActionWorkspaceBlueprints.member[2],
         key: 'claims',
         loader: () =>
           import('./MemberClaimsDashboardPanel').then((mod) => mod.MemberClaimsDashboardPanel),
-        props: {}
+        props: {
+          sessionScopeKey
+        }
       },
       {
         ...portalActionWorkspaceBlueprints.member[3],
         key: 'benefits',
         loader: () =>
           import('./MemberBenefitsDashboardPanel').then((mod) => mod.MemberBenefitsDashboardPanel),
-        props: {}
+        props: {
+          sessionScopeKey
+        }
       },
       {
         ...portalActionWorkspaceBlueprints.member[5],
@@ -48,10 +62,12 @@ export function MemberDashboardWorkspaceSection() {
           import('./MemberAuthorizationsDashboardPanel').then(
             (mod) => mod.MemberAuthorizationsDashboardPanel
           ),
-        props: {}
+        props: {
+          sessionScopeKey
+        }
       }
     ],
-    []
+    [sessionScopeKey]
   );
 
   return (
@@ -60,9 +76,12 @@ export function MemberDashboardWorkspaceSection() {
       actionRowClassName="flex gap-3 overflow-x-auto pb-1"
       homeActionLabel="Home"
       emptyStateTitle="Select a member workspace"
-      emptyStateDescription="Use the action buttons to open care, coverage, claims, ID card, and authorization workspaces only when you need them."
+      emptyStateDescription="Use the workspace tabs to open care, coverage, claims, ID card, and authorization tools only when you need them."
+      persistKey={`member-dashboard-workspace:${sessionScopeKey}`}
+      sessionCacheKey={`member-dashboard-workspace:${sessionScopeKey}`}
       showEmptyStateWhenInactive={false}
       sectionTitle="Member action workspaces"
+      tabListLabel="Member workspace tabs"
     />
   );
 }

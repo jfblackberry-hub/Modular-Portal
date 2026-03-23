@@ -1,14 +1,18 @@
+import { logAuthenticationEvent } from '@payer-portal/server';
 import type { FastifyInstance } from 'fastify';
 
-import { logAuditEvent } from '@payer-portal/server';
-
+import { login, SessionIntegrityError } from '../services/auth-service';
 import {
   AuthenticationError,
   getCurrentUserFromHeaders,
   isPlatformAdmin,
   isTenantAdmin
 } from '../services/current-user-service';
-import { login } from '../services/auth-service';
+import {
+  consumePortalAuthHandoff,
+  issuePortalAuthHandoff,
+  PortalAuthHandoffError
+} from '../services/portal-auth-handoff-service';
 
 type LoginBody = {
   email: string;
@@ -38,7 +42,7 @@ export async function authRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -64,10 +68,16 @@ export async function authRoutes(app: FastifyInstance) {
         token: result.token,
         user: result.user
       };
-    } catch {
+    } catch (error) {
+      if (error instanceof SessionIntegrityError) {
+        return reply.status(error.statusCode).send({
+          message: error.message
+        });
+      }
+
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -98,10 +108,16 @@ export async function authRoutes(app: FastifyInstance) {
           token: result.token,
           user: result.user
         };
-      } catch {
+      } catch (error) {
+        if (error instanceof SessionIntegrityError) {
+          return reply.status(error.statusCode).send({
+            message: error.message
+          });
+        }
+
         return reply.status(503).send({
           message:
-            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+            'Local database unavailable. Start PostgreSQL, run migrations.'
         });
       }
     }
@@ -133,10 +149,16 @@ export async function authRoutes(app: FastifyInstance) {
           token: result.token,
           user: result.user
         };
-      } catch {
+      } catch (error) {
+        if (error instanceof SessionIntegrityError) {
+          return reply.status(error.statusCode).send({
+            message: error.message
+          });
+        }
+
         return reply.status(503).send({
           message:
-            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+            'Local database unavailable. Start PostgreSQL, run migrations.'
         });
       }
     }
@@ -151,12 +173,12 @@ export async function authRoutes(app: FastifyInstance) {
           : currentUser.accessibleTenantIds[0] ?? null;
 
       if (auditTenantId) {
-        await logAuditEvent({
+        await logAuthenticationEvent({
           tenantId: auditTenantId,
           actorUserId: currentUser.id,
           action: 'auth.logout',
-          entityType: 'user',
-          entityId: currentUser.id,
+          resourceType: 'user',
+          resourceId: currentUser.id,
           beforeState: {
             sessionType: currentUser.sessionType,
             tenantId: currentUser.tenantId
@@ -177,7 +199,75 @@ export async function authRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
+      });
+    }
+  });
+
+  app.post<{
+    Body: {
+      audience?: string;
+      redirectPath?: string;
+    };
+  }>('/auth/portal-handoffs', async (request, reply) => {
+    try {
+      const currentUser = await getCurrentUserFromHeaders(request.headers);
+      const result = await issuePortalAuthHandoff({
+        actorUserId: currentUser.id,
+        audience: request.body.audience?.trim() || 'portal-web',
+        redirectPath: request.body.redirectPath,
+        ipAddress: request.ip,
+        userAgent: request.headers['user-agent']
+      });
+
+      return result;
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        return reply.status(401).send({ message: error.message });
+      }
+
+      if (error instanceof PortalAuthHandoffError) {
+        return reply.status(error.statusCode).send({ message: error.message });
+      }
+
+      if (error instanceof SessionIntegrityError) {
+        return reply.status(error.statusCode).send({ message: error.message });
+      }
+
+      return reply.status(503).send({
+        message:
+          'Local database unavailable. Start PostgreSQL, run migrations.'
+      });
+    }
+  });
+
+  app.post<{
+    Body: {
+      artifact?: string;
+      audience?: string;
+    };
+  }>('/auth/portal-handoffs/consume', async (request, reply) => {
+    try {
+      const artifact = request.body.artifact?.trim();
+
+      if (!artifact) {
+        return reply.status(400).send({ message: 'artifact is required' });
+      }
+
+      return await consumePortalAuthHandoff({
+        artifact,
+        audience: request.body.audience?.trim() || 'portal-web',
+        ipAddress: request.ip,
+        userAgent: request.headers['user-agent']
+      });
+    } catch (error) {
+      if (error instanceof PortalAuthHandoffError) {
+        return reply.status(error.statusCode).send({ message: error.message });
+      }
+
+      return reply.status(503).send({
+        message:
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });

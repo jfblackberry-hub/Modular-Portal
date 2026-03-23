@@ -8,7 +8,6 @@ import { prefixPreviewHref, stripPreviewHref } from '../lib/preview-route';
 import type { TenantBranding } from '../lib/tenant-branding';
 
 export function SideNavigation({
-  branding,
   routePrefix,
   sections
 }: {

@@ -1,5 +1,5 @@
-import { prefixPreviewHref } from '../lib/preview-route';
 import type { PortalSessionUser } from '../lib/portal-session';
+import { prefixPreviewHref } from '../lib/preview-route';
 import type { TenantBranding } from '../lib/tenant-branding';
 
 export function PortalFooter({

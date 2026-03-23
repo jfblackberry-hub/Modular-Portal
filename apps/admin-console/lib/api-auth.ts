@@ -1,29 +1,38 @@
-export const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3002';
+import { apiPublicOrigin, defaultAdminUserId } from './public-runtime';
+
+export const apiBaseUrl = apiPublicOrigin;
 
 export const ADMIN_USER_ID_STORAGE_KEY = 'admin-console-user-id';
 export const ADMIN_USER_EMAIL_STORAGE_KEY = 'admin-console-user-email';
 export const ADMIN_AUTH_TOKEN_STORAGE_KEY = 'admin-console-auth-token';
 export const ADMIN_SESSION_STORAGE_KEY = 'admin-console-session';
 
-export function getStoredAdminUserId() {
+function getAdminBrowserStorage() {
   if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_ADMIN_USER_ID ?? '';
+    return null;
   }
 
-  return (
-    window.localStorage.getItem(ADMIN_USER_ID_STORAGE_KEY) ??
-    process.env.NEXT_PUBLIC_ADMIN_USER_ID ??
-    ''
-  );
+  return window.sessionStorage;
+}
+
+export function getStoredAdminUserId() {
+  const storage = getAdminBrowserStorage();
+
+  if (!storage) {
+    return defaultAdminUserId;
+  }
+
+  return storage.getItem(ADMIN_USER_ID_STORAGE_KEY) ?? defaultAdminUserId ?? '';
 }
 
 export function getStoredAdminEmail() {
-  if (typeof window === 'undefined') {
+  const storage = getAdminBrowserStorage();
+
+  if (!storage) {
     return '';
   }
 
-  return window.localStorage.getItem(ADMIN_USER_EMAIL_STORAGE_KEY) ?? '';
+  return storage.getItem(ADMIN_USER_EMAIL_STORAGE_KEY) ?? '';
 }
 
 export function getAdminAuthHeaders() {
@@ -37,43 +46,80 @@ export function getAdminAuthHeaders() {
   return headers;
 }
 
+export function getTenantScopedAdminAuthHeaders(tenantId?: string | null) {
+  const headers = getAdminAuthHeaders();
+  const normalizedTenantId = tenantId?.trim();
+
+  if (normalizedTenantId) {
+    headers['x-tenant-id'] = normalizedTenantId;
+    return headers;
+  }
+
+  const session = getStoredAdminSessionSnapshot() as
+    | {
+        tenantId?: string;
+        user?: {
+          tenantId?: string;
+        };
+      }
+    | null;
+  const sessionTenantId =
+    session?.tenantId?.trim() ||
+    session?.user?.tenantId?.trim() ||
+    '';
+
+  if (sessionTenantId) {
+    headers['x-tenant-id'] = sessionTenantId;
+  }
+
+  return headers;
+}
+
 export function getStoredAdminAuthToken() {
-  if (typeof window === 'undefined') {
+  const storage = getAdminBrowserStorage();
+
+  if (!storage) {
     return '';
   }
 
-  return window.localStorage.getItem(ADMIN_AUTH_TOKEN_STORAGE_KEY) ?? '';
+  return storage.getItem(ADMIN_AUTH_TOKEN_STORAGE_KEY) ?? '';
 }
 
 export function storeAdminSession(
   user: { id: string; email: string },
   token?: string
 ) {
-  if (typeof window === 'undefined') {
+  const storage = getAdminBrowserStorage();
+
+  if (!storage) {
     return;
   }
 
-  window.localStorage.setItem(ADMIN_USER_ID_STORAGE_KEY, user.id);
-  window.localStorage.setItem(ADMIN_USER_EMAIL_STORAGE_KEY, user.email);
+  storage.setItem(ADMIN_USER_ID_STORAGE_KEY, user.id);
+  storage.setItem(ADMIN_USER_EMAIL_STORAGE_KEY, user.email);
   if (token) {
-    window.localStorage.setItem(ADMIN_AUTH_TOKEN_STORAGE_KEY, token);
+    storage.setItem(ADMIN_AUTH_TOKEN_STORAGE_KEY, token);
   }
 }
 
 export function storeAdminSessionSnapshot(session: unknown) {
-  if (typeof window === 'undefined') {
+  const storage = getAdminBrowserStorage();
+
+  if (!storage) {
     return;
   }
 
-  window.localStorage.setItem(ADMIN_SESSION_STORAGE_KEY, JSON.stringify(session));
+  storage.setItem(ADMIN_SESSION_STORAGE_KEY, JSON.stringify(session));
 }
 
 export function getStoredAdminSessionSnapshot() {
-  if (typeof window === 'undefined') {
+  const storage = getAdminBrowserStorage();
+
+  if (!storage) {
     return null;
   }
 
-  const rawSession = window.localStorage.getItem(ADMIN_SESSION_STORAGE_KEY);
+  const rawSession = storage.getItem(ADMIN_SESSION_STORAGE_KEY);
 
   if (!rawSession) {
     return null;
@@ -87,12 +133,14 @@ export function getStoredAdminSessionSnapshot() {
 }
 
 export function clearAdminSession() {
-  if (typeof window === 'undefined') {
+  const storage = getAdminBrowserStorage();
+
+  if (!storage) {
     return;
   }
 
-  window.localStorage.removeItem(ADMIN_USER_ID_STORAGE_KEY);
-  window.localStorage.removeItem(ADMIN_USER_EMAIL_STORAGE_KEY);
-  window.localStorage.removeItem(ADMIN_AUTH_TOKEN_STORAGE_KEY);
-  window.localStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+  storage.removeItem(ADMIN_USER_ID_STORAGE_KEY);
+  storage.removeItem(ADMIN_USER_EMAIL_STORAGE_KEY);
+  storage.removeItem(ADMIN_AUTH_TOKEN_STORAGE_KEY);
+  storage.removeItem(ADMIN_SESSION_STORAGE_KEY);
 }

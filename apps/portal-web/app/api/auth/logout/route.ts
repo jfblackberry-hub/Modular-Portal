@@ -1,57 +1,60 @@
 import { NextResponse } from 'next/server';
 
-import { getPortalSessionAccessToken } from '../../../../lib/portal-session';
-import {
-  PORTAL_SESSION_COOKIE,
-  PORTAL_TOKEN_COOKIE,
-  PORTAL_USER_COOKIE
-} from '../../../../lib/session-constants';
-
-const apiBaseUrl =
-  process.env.API_BASE_URL ??
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  'http://localhost:3002';
+import { buildPortalApiHeaders } from '../../../../lib/api-request';
+import { clearLegacyPortalAuthCookies } from '../../../../lib/legacy-auth-cookies';
+import { getExpiredPortalSessionCookieOptions } from '../../../../lib/portal-session-cookie';
+import { apiInternalOrigin as apiBaseUrl } from '../../../../lib/server-runtime';
+import { PORTAL_SESSION_COOKIE } from '../../../../lib/session-constants';
 
 export async function POST() {
-  const accessToken = await getPortalSessionAccessToken();
+  const headers = await buildPortalApiHeaders();
 
-  if (accessToken) {
+  if (headers.get('authorization')) {
     try {
-      await fetch(`${apiBaseUrl}/auth/logout`, {
+      const upstreamResponse = await fetch(`${apiBaseUrl}/auth/logout`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        },
+        headers,
         cache: 'no-store'
       });
+
+      if (!upstreamResponse.ok) {
+        const payload = (await upstreamResponse.json().catch(() => null)) as
+          | {
+              message?: string;
+            }
+          | null;
+
+        return NextResponse.json(
+          {
+            message:
+              payload?.message ??
+              'Unable to complete portal logout audit processing.'
+          },
+          {
+            status: upstreamResponse.status
+          }
+        );
+      }
     } catch {
-      // Ignore audit logging failures and continue clearing local session state.
+      return NextResponse.json(
+        {
+          message: 'Unable to reach the logout service right now.'
+        },
+        {
+          status: 503
+        }
+      );
     }
   }
 
   const response = NextResponse.json({ success: true });
 
-  response.cookies.set(PORTAL_SESSION_COOKIE, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0
-  });
-  response.cookies.set(PORTAL_TOKEN_COOKIE, '', {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0
-  });
-  response.cookies.set(PORTAL_USER_COOKIE, '', {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0
-  });
+  response.cookies.set(
+    PORTAL_SESSION_COOKIE,
+    '',
+    getExpiredPortalSessionCookieOptions()
+  );
+  clearLegacyPortalAuthCookies(response);
 
   return response;
 }

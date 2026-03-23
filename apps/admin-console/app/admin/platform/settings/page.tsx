@@ -1,6 +1,11 @@
-import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
 import { AdminPageLayout } from '../../../../components/admin-ui';
+import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
 import { SectionCard } from '../../../../components/section-card';
+import {
+  adminConsolePublicOrigin,
+  apiPublicOrigin,
+  portalPublicOrigin
+} from '../../../../lib/server-runtime';
 
 export default function AdminPlatformSettingsPage() {
   return (
@@ -32,9 +37,9 @@ export default function AdminPlatformSettingsPage() {
 
           <SectionCard title="Operational notes" description="Current local-development platform conventions.">
             <ul className="space-y-2 text-sm text-admin-muted">
-              <li>API: `localhost:3002`</li>
-              <li>Portal: `localhost:3000`</li>
-              <li>Admin console: `localhost:3003`</li>
+              <li>API: <code>{apiPublicOrigin}</code></li>
+              <li>Portal: <code>{portalPublicOrigin}</code></li>
+              <li>Admin console: <code>{adminConsolePublicOrigin}</code></li>
             </ul>
           </SectionCard>
         </div>

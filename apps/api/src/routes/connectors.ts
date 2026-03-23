@@ -1,13 +1,6 @@
-import type { FastifyInstance } from 'fastify';
 import type { Prisma } from '@payer-portal/database';
+import type { FastifyInstance } from 'fastify';
 
-import {
-  assertTenantAdmin,
-  AuthenticationError,
-  AuthorizationError,
-  getCurrentUserFromHeaders,
-  resolveTenantScope
-} from '../services/current-user-service';
 import {
   createConnectorForTenant,
   enqueueConnectorSyncForTenant,
@@ -15,6 +8,13 @@ import {
   runConnectorHealthCheckForTenant,
   updateConnectorForTenant
 } from '../services/connector-service';
+import {
+  assertTenantAdmin,
+  AuthenticationError,
+  AuthorizationError,
+  getCurrentUserFromHeaders,
+  resolveTenantScope
+} from '../services/current-user-service';
 
 type ConnectorBody = {
   adapterKey: string;
@@ -44,7 +44,7 @@ function handleRouteError(error: unknown, reply: { status: (code: number) => { s
 
   return reply.status(503).send({
     message:
-      'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+      'Local database unavailable. Start PostgreSQL, run migrations.'
   });
 }
 

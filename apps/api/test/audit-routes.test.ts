@@ -1,13 +1,14 @@
-import { after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { after, beforeEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
 
+import { clearTenantContext, prisma } from '@payer-portal/database';
 import Fastify from 'fastify';
-import { prisma } from '@payer-portal/database';
 
 import { auditRoutes } from '../src/routes/audit.js';
+import { createAccessToken } from '../src/services/access-token-service.js';
 
 const TEST_PERMISSION_CODE = 'admin.manage';
 const TEST_ADMIN_ROLE_CODE = 'test-audit-admin';
@@ -18,13 +19,8 @@ const TEST_ADMIN_EMAIL = 'audit-admin@example.com';
 const TEST_MEMBER_EMAIL = 'audit-member@example.com';
 
 async function cleanupTestData() {
-  await prisma.auditLog.deleteMany({
-    where: {
-      action: {
-        startsWith: 'audit.test.'
-      }
-    }
-  });
+  clearTenantContext();
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
 
   await prisma.userRole.deleteMany({
     where: {
@@ -161,6 +157,23 @@ async function createFixtureData() {
     })
   ]);
 
+  await prisma.userTenantMembership.createMany({
+    data: [
+      {
+        userId: adminUser.id,
+        tenantId: tenant.id,
+        isDefault: true,
+        isTenantAdmin: true
+      },
+      {
+        userId: memberUser.id,
+        tenantId: otherTenant.id,
+        isDefault: true,
+        isTenantAdmin: false
+      }
+    ]
+  });
+
   return {
     tenant,
     otherTenant,
@@ -169,11 +182,31 @@ async function createFixtureData() {
   };
 }
 
+function createTenantAdminToken(user: { id: string; email: string }, tenantId: string) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId,
+    sessionType: 'tenant_admin'
+  });
+}
+
+function createEndUserToken(user: { id: string; email: string }, tenantId: string) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId,
+    sessionType: 'end_user'
+  });
+}
+
 beforeEach(async () => {
+  clearTenantContext();
   await cleanupTestData();
 });
 
 after(async () => {
+  clearTenantContext();
   await cleanupTestData();
   await prisma.$disconnect();
 });
@@ -182,6 +215,7 @@ test('tenant admins can query paginated audit events with filters', async () => 
   const { tenant, otherTenant, adminUser } = await createFixtureData();
   const app = Fastify();
   await auditRoutes(app);
+  const adminToken = createTenantAdminToken(adminUser, tenant.id);
 
   const matchingEvent = await prisma.auditLog.create({
     data: {
@@ -230,7 +264,7 @@ test('tenant admins can query paginated audit events with filters', async () => 
     method: 'GET',
     url: `/audit/events?tenant_id=${tenant.id}&user_id=${adminUser.id}&event_type=audit.test.document.viewed&resource_type=Document&date_from=2026-03-14T00:00:00.000Z&date_to=2026-03-14T23:59:59.999Z&page=1&page_size=1`,
     headers: {
-      'x-user-id': adminUser.id
+      authorization: `Bearer ${adminToken}`
     }
   });
 
@@ -249,9 +283,9 @@ test('tenant admins can query paginated audit events with filters', async () => 
 
   const paginatedResponse = await app.inject({
     method: 'GET',
-    url: '/audit/events?page=2&page_size=1',
+    url: `/audit/events?tenant_id=${tenant.id}&page=2&page_size=1`,
     headers: {
-      'x-user-id': adminUser.id
+      authorization: `Bearer ${adminToken}`
     }
   });
 
@@ -271,6 +305,8 @@ test('audit events remain tenant-restricted and require admin access', async () 
   const { tenant, otherTenant, adminUser, memberUser } = await createFixtureData();
   const app = Fastify();
   await auditRoutes(app);
+  const adminToken = createTenantAdminToken(adminUser, tenant.id);
+  const memberToken = createEndUserToken(memberUser, otherTenant.id);
 
   await prisma.auditLog.create({
     data: {
@@ -286,7 +322,7 @@ test('audit events remain tenant-restricted and require admin access', async () 
     method: 'GET',
     url: '/audit/events',
     headers: {
-      'x-user-id': memberUser.id
+      authorization: `Bearer ${memberToken}`
     }
   });
 
@@ -296,7 +332,7 @@ test('audit events remain tenant-restricted and require admin access', async () 
     method: 'GET',
     url: `/audit/events?tenant_id=${otherTenant.id}`,
     headers: {
-      'x-user-id': adminUser.id
+      authorization: `Bearer ${adminToken}`
     }
   });
 
@@ -306,7 +342,7 @@ test('audit events remain tenant-restricted and require admin access', async () 
     method: 'GET',
     url: `/audit/events?tenant_id=${tenant.id}`,
     headers: {
-      'x-user-id': adminUser.id
+      authorization: `Bearer ${adminToken}`
     }
   });
 

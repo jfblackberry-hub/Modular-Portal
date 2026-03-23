@@ -1,9 +1,9 @@
-import { after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
+import { after, afterEach, beforeEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
@@ -12,66 +12,52 @@ import { prisma } from '@payer-portal/database';
 
 import { clear } from '../src/adapters/adapterRegistry.js';
 import { subscribe } from '../src/events/eventBus.js';
+import { waitForBackgroundPublishes } from '../src/events/eventBus.js';
 import { enqueueJob, getJobById } from '../src/jobs/jobQueue.js';
 import { JOB_STATUS } from '../src/jobs/jobTypes.js';
 import { runNextJob } from '../src/jobs/jobWorker.js';
 
 let tempDirectory = '';
+const CONNECTOR_TEST_TENANT_SLUG_PREFIX = 'server-connector-sync-test';
 
-beforeEach(async () => {
-  clear();
-  tempDirectory = await mkdtemp(path.join(os.tmpdir(), 'connector-sync-'));
-  await prisma.job.updateMany({
-    where: {
-      status: 'PENDING',
-      NOT: {
-        type: 'connector.sync'
-      }
-    },
+async function createOwnedTenant(testName: string) {
+  const slug = `${CONNECTOR_TEST_TENANT_SLUG_PREFIX}-${testName}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`.toLowerCase();
+
+  return prisma.tenant.create({
     data: {
-      runAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
-    }
-  });
-  await prisma.job.deleteMany({
-    where: {
-      type: 'connector.sync'
-    }
-  });
-  await prisma.connectorConfig.deleteMany({
-    where: {
-      name: 'Test Local Connector'
-    }
-  });
-});
-
-after(async () => {
-  clear();
-  await prisma.job.deleteMany({
-    where: {
-      type: 'connector.sync'
-    }
-  });
-  await prisma.connectorConfig.deleteMany({
-    where: {
-      name: {
-        in: ['Test Local Connector', 'Test REST Connector', 'Test REST Retry Connector']
-      }
-    }
-  });
-
-  if (tempDirectory) {
-    await rm(tempDirectory, { recursive: true, force: true });
-  }
-
-  await prisma.$disconnect();
-});
-
-test('local file connector runs via job queue, logs parsed records, and updates sync timestamp', async () => {
-  const tenant = await prisma.tenant.findFirstOrThrow({
+      name: `Connector Sync ${testName}`,
+      slug,
+      status: 'ACTIVE',
+      brandingConfig: {}
+    },
     select: {
       id: true
     }
   });
+}
+
+beforeEach(async () => {
+  clear();
+  tempDirectory = await mkdtemp(path.join(os.tmpdir(), 'connector-sync-'));
+});
+
+afterEach(async () => {
+  await waitForBackgroundPublishes();
+
+  if (tempDirectory) {
+    await rm(tempDirectory, { recursive: true, force: true });
+    tempDirectory = '';
+  }
+});
+
+after(async () => {
+  clear();
+  await waitForBackgroundPublishes();
+  await prisma.$disconnect();
+});
+
+test('local file connector runs via job queue, logs parsed records, and updates sync timestamp', async () => {
+  const tenant = await createOwnedTenant('local-file');
 
   const fixturesDirectory = path.join(tempDirectory, 'records');
   await mkdir(fixturesDirectory, { recursive: true });
@@ -128,7 +114,7 @@ test('local file connector runs via job queue, logs parsed records, and updates 
       }
     });
 
-    await runNextJob();
+    await runNextJob({ tenantId: tenant.id });
 
     const storedJob = await getJobById(job.id);
     const updatedConnector = await prisma.connectorConfig.findUniqueOrThrow({
@@ -150,11 +136,7 @@ test('local file connector runs via job queue, logs parsed records, and updates 
 });
 
 test('rest adapter fetches records and publishes events via connector.sync job', async () => {
-  const tenant = await prisma.tenant.findFirstOrThrow({
-    select: {
-      id: true
-    }
-  });
+  const tenant = await createOwnedTenant('rest-success');
 
   const server = createServer((request, response) => {
     if (
@@ -218,7 +200,7 @@ test('rest adapter fetches records and publishes events via connector.sync job',
       }
     });
 
-    await runNextJob();
+    await runNextJob({ tenantId: tenant.id });
 
     const storedJob = await getJobById(job.id);
     const updatedConnector = await prisma.connectorConfig.findUniqueOrThrow({
@@ -237,11 +219,7 @@ test('rest adapter fetches records and publishes events via connector.sync job',
 });
 
 test('rest adapter failures retry via job queue', async () => {
-  const tenant = await prisma.tenant.findFirstOrThrow({
-    select: {
-      id: true
-    }
-  });
+  const tenant = await createOwnedTenant('rest-retry');
 
   let requestCount = 0;
   const server = createServer((request, response) => {
@@ -301,7 +279,7 @@ test('rest adapter failures retry via job queue', async () => {
       maxAttempts: 2
     });
 
-    await runNextJob();
+    await runNextJob({ tenantId: tenant.id });
 
     let storedJob = await getJobById(job.id);
     assert.equal(storedJob?.status, JOB_STATUS.PENDING);
@@ -316,7 +294,7 @@ test('rest adapter failures retry via job queue', async () => {
       }
     });
 
-    await runNextJob();
+    await runNextJob({ tenantId: tenant.id });
 
     storedJob = await getJobById(job.id);
     const updatedConnector = await prisma.connectorConfig.findUniqueOrThrow({
