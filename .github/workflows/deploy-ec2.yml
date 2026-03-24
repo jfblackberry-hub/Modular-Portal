@@ -109,3 +109,7 @@ jobs:
       - name: Refresh compose services on EC2
         run: |
           bash scripts/deploy/refresh-ec2-compose.sh "${ENVIRONMENT}" "${AWS_REGION}" portal-web admin-console api
+
+      - name: Verify public application health
+        run: |
+          bash scripts/deploy/check-application-health.sh "${ENVIRONMENT}" "${AWS_REGION}"

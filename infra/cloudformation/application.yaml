@@ -194,6 +194,8 @@ Resources:
             postgres:
               image: postgres:16-alpine
               restart: unless-stopped
+              labels:
+                autoheal: "true"
               environment:
                 POSTGRES_DB: ${DatabaseName}
                 POSTGRES_USER: ${DatabaseUser}
@@ -211,6 +213,8 @@ Resources:
             api:
               image: ${ApiImageUri}
               restart: unless-stopped
+              labels:
+                autoheal: "true"
               depends_on:
                 postgres:
                   condition: service_healthy
@@ -226,10 +230,18 @@ Resources:
                 - tenant-assets:/workspace/apps/portal-web/public/tenant-assets
                 - storage-data:/workspace/storage
                 - backup-data:/workspace/backups
+              healthcheck:
+                test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3002/health >/dev/null 2>&1 || exit 1"]
+                interval: 30s
+                timeout: 5s
+                retries: 3
+                start_period: 90s
 
             portal-web:
               image: ${PortalImageUri}
               restart: unless-stopped
+              labels:
+                autoheal: "true"
               depends_on:
                 - api
               env_file:
@@ -244,10 +256,18 @@ Resources:
                 - "3000:3000"
               volumes:
                 - tenant-assets:/workspace/apps/portal-web/public/tenant-assets
+              healthcheck:
+                test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3000/liveness >/dev/null 2>&1 || exit 1"]
+                interval: 30s
+                timeout: 5s
+                retries: 3
+                start_period: 60s
 
             admin-console:
               image: ${AdminImageUri}
               restart: unless-stopped
+              labels:
+                autoheal: "true"
               depends_on:
                 - api
               env_file:
@@ -260,6 +280,22 @@ Resources:
                 NEXT_PUBLIC_API_PUBLIC_ORIGIN: http://$PUBLIC_BASE:3002
               ports:
                 - "3003:3003"
+              healthcheck:
+                test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3003/liveness >/dev/null 2>&1 || exit 1"]
+                interval: 30s
+                timeout: 5s
+                retries: 3
+                start_period: 60s
+
+            autoheal:
+              image: willfarrell/autoheal:latest
+              restart: unless-stopped
+              environment:
+                AUTOHEAL_CONTAINER_LABEL: autoheal
+                AUTOHEAL_INTERVAL: 30
+                AUTOHEAL_START_PERIOD: 120
+              volumes:
+                - /var/run/docker.sock:/var/run/docker.sock
 
           volumes:
             postgres-data:
