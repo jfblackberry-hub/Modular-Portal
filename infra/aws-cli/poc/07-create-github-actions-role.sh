@@ -139,10 +139,12 @@ EOF
 main() {
   local trust_policy_file
   local permissions_policy_file
+  local cleanup
 
   trust_policy_file="$(mktemp)"
   permissions_policy_file="$(mktemp)"
-  trap 'rm -f "${trust_policy_file}" "${permissions_policy_file}"' EXIT
+  cleanup="rm -f '${trust_policy_file}' '${permissions_policy_file}'"
+  trap "${cleanup}" EXIT
 
   ensure_oidc_provider
   create_trust_policy "${trust_policy_file}"

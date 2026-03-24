@@ -39,5 +39,5 @@ export CLOUDWATCH_RETENTION_DAYS="${CLOUDWATCH_RETENTION_DAYS:-30}"
 
 export GITHUB_ORG="${GITHUB_ORG:-jfblackberry-hub}"
 export GITHUB_REPO="${GITHUB_REPO:-Modular-Portal}"
-export GITHUB_BRANCH="${GITHUB_BRANCH:-main}"
+export GITHUB_BRANCH="${GITHUB_BRANCH:-codex/confirm-github-repo-access-AWS-Build}"
 export GITHUB_ACTIONS_ROLE_NAME="${GITHUB_ACTIONS_ROLE_NAME:-modular-portal-github-actions}"
