@@ -1,4 +1,4 @@
-import { ProviderMetricCard, type ProviderMetric } from './ProviderMetricCard';
+import { type ProviderMetric,ProviderMetricCard } from './ProviderMetricCard';
 
 export function ProviderMetricsRow({ metrics }: { metrics: ProviderMetric[] }) {
   return (

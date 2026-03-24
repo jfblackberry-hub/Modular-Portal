@@ -1,8 +1,8 @@
 'use client';
 
+import { Button } from '@payer-portal/ui';
 import { CreditCard, Download, QrCode, WalletCards } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '@payer-portal/ui';
 
 import { IDCardModal } from './id-card-modal';
 

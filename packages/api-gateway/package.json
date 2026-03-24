@@ -12,19 +12,20 @@
     }
   },
   "scripts": {
-    "predev": "pnpm --filter api build && pnpm --filter @payer-portal/database build",
+    "predev": "pnpm --filter @payer-portal/config build && pnpm --filter api build && pnpm --filter @payer-portal/database build",
     "dev": "tsx watch src/server.ts",
-    "prebuild": "pnpm --filter api build && pnpm --filter @payer-portal/database build",
+    "prebuild": "pnpm --filter @payer-portal/config build && pnpm --filter api build && pnpm --filter @payer-portal/database build",
     "build": "tsc -p tsconfig.json",
-    "prestart": "pnpm --filter api build && pnpm --filter @payer-portal/database build",
-    "start": "node dist/packages/api-gateway/src/server.js",
+    "prestart": "pnpm --filter @payer-portal/config build && pnpm --filter api build && pnpm --filter @payer-portal/database build",
+    "start": "node ../../scripts/runtime/ensure-prisma-migrations.mjs api-gateway && node dist/packages/api-gateway/src/server.js",
     "lint": "tsc --noEmit -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "pretest": "pnpm --filter api build && pnpm --filter @payer-portal/database build",
+    "pretest": "pnpm --filter @payer-portal/config build && pnpm --filter api build && pnpm --filter @payer-portal/database build",
     "test": "node --import tsx --test test/**/*.test.ts"
   },
   "dependencies": {
     "@fastify/multipart": "^9.0.3",
+    "@payer-portal/config": "workspace:*",
     "@payer-portal/database": "workspace:*",
     "@payer-portal/server": "workspace:*",
     "fastify": "^5.2.1"

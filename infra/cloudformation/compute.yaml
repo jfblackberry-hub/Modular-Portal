@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Modular compute stack
+
+Parameters:
+  EnvironmentName:
+    Type: String
+  Owner:
+    Type: String
+  CostCenter:
+    Type: String
+  RepositoryName1:
+    Type: String
+  RepositoryName2:
+    Type: String
+    Default: ''
+  RepositoryName3:
+    Type: String
+    Default: ''
+
+Conditions:
+  HasRepository2: !Not [!Equals [!Ref RepositoryName2, '']]
+  HasRepository3: !Not [!Equals [!Ref RepositoryName3, '']]
+
+Resources:
+  ComputeRepository1:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub '${EnvironmentName}-compute-${RepositoryName1}'
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-compute-${RepositoryName1}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: compute
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  ComputeRepository2:
+    Type: AWS::ECR::Repository
+    Condition: HasRepository2
+    Properties:
+      RepositoryName: !Sub '${EnvironmentName}-compute-${RepositoryName2}'
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-compute-${RepositoryName2}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: compute
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  ComputeRepository3:
+    Type: AWS::ECR::Repository
+    Condition: HasRepository3
+    Properties:
+      RepositoryName: !Sub '${EnvironmentName}-compute-${RepositoryName3}'
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-compute-${RepositoryName3}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: compute
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+Outputs:
+  EcrRepository1Uri:
+    Value: !GetAtt ComputeRepository1.RepositoryUri
+  EcrRepository2Uri:
+    Condition: HasRepository2
+    Value: !GetAtt ComputeRepository2.RepositoryUri
+  EcrRepository3Uri:
+    Condition: HasRepository3
+    Value: !GetAtt ComputeRepository3.RepositoryUri

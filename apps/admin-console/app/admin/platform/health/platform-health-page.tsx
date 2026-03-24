@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { AdminPageLayout, AdminStatCard } from '../../../../components/admin-ui';
 import { SectionCard } from '../../../../components/section-card';
 import { fetchAdminJsonCached } from '../../../../lib/admin-client-data';
-import { apiBaseUrl, getAdminAuthHeaders } from '../../../../lib/api-auth';
+import { config, getAdminAuthHeaders } from '../../../../lib/api-auth';
 
 type HealthPayload = {
   status: string;
@@ -231,7 +231,7 @@ export function PlatformHealthPage() {
 
       try {
         const overview = await fetchAdminJsonCached<PlatformHealthOverviewPayload>(
-          `${apiBaseUrl}/platform-admin/health/overview`,
+          `${config.apiBaseUrl}/platform-admin/health/overview`,
           {
             headers: getAdminAuthHeaders(),
             ttlMs: 20_000

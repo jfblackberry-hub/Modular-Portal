@@ -6,15 +6,15 @@ import {
   getEmployerEnrollmentActivity
 } from '../../../../../lib/billing-enrollment-api';
 import {
+  createDashboardSessionCacheKey,
+  getCachedDashboardSessionValue
+} from '../../../../../lib/dashboard-session-cache';
+import { getEmployerBillingDatasetForTenant } from '../../../../../lib/employer-billing-data';
+import {
   getDocumentFilterOptions,
   getEmployerDocumentsForTenant,
   getRecentDocumentsForTenant
 } from '../../../../../lib/employer-document-center-data';
-import { getEmployerBillingDatasetForTenant } from '../../../../../lib/employer-billing-data';
-import {
-  defaultReportFilters,
-  groupReportsByCategory
-} from '../../../../../lib/reports-analytics-data';
 import {
   getOpenEnrollmentAnalyticsForTenant,
   getOpenEnrollmentCycleForTenant,
@@ -23,6 +23,55 @@ import {
   getOpenEnrollmentSummaryForTenant
 } from '../../../../../lib/open-enrollment-data';
 import { getPortalSessionUser } from '../../../../../lib/portal-session';
+import {
+  defaultReportFilters,
+  groupReportsByCategory
+} from '../../../../../lib/reports-analytics-data';
+
+async function getCachedEmployerDashboard(input: {
+  tenantId: string;
+  userId: string;
+}) {
+  return getCachedDashboardSessionValue(
+    createDashboardSessionCacheKey([
+      'employer-dashboard',
+      input.tenantId,
+      input.userId,
+      'dashboard'
+    ]),
+    async () => getEmployerDashboard(input.userId).catch(() => null)
+  );
+}
+
+async function getCachedEmployerEmployees(input: {
+  tenantId: string;
+  userId: string;
+}) {
+  return getCachedDashboardSessionValue(
+    createDashboardSessionCacheKey([
+      'employer-dashboard',
+      input.tenantId,
+      input.userId,
+      'employees'
+    ]),
+    async () => getEmployerEmployees(input.userId).catch(() => null)
+  );
+}
+
+async function getCachedEmployerEnrollmentActivity(input: {
+  tenantId: string;
+  userId: string;
+}) {
+  return getCachedDashboardSessionValue(
+    createDashboardSessionCacheKey([
+      'employer-dashboard',
+      input.tenantId,
+      input.userId,
+      'enrollment-activity'
+    ]),
+    async () => getEmployerEnrollmentActivity(input.userId).catch(() => null)
+  );
+}
 
 export async function GET(
   _request: Request,
@@ -39,7 +88,10 @@ export async function GET(
   const employerName = sessionUser.tenant.name ?? 'Employer';
 
   if (workspace === 'group-dashboard') {
-    const payload = await getEmployerEmployees(sessionUser.id).catch(() => null);
+    const payload = await getCachedEmployerEmployees({
+      tenantId,
+      userId: sessionUser.id
+    });
 
     return NextResponse.json({
       coverageTypes: payload?.filters.coverageTypes ?? [],
@@ -77,7 +129,10 @@ export async function GET(
   }
 
   if (workspace === 'census-support') {
-    const payload = await getEmployerEnrollmentActivity(sessionUser.id).catch(() => null);
+    const payload = await getCachedEmployerEnrollmentActivity({
+      tenantId,
+      userId: sessionUser.id
+    });
 
     return NextResponse.json({
       departments: payload?.filters.departments ?? [],
@@ -88,7 +143,10 @@ export async function GET(
   }
 
   if (workspace === 'billing-payments') {
-    const dashboard = await getEmployerDashboard(sessionUser.id).catch(() => null);
+    const dashboard = await getCachedEmployerDashboard({
+      tenantId,
+      userId: sessionUser.id
+    });
     const dataset = getEmployerBillingDatasetForTenant(tenantId, employerName, dashboard?.billingSummary);
 
     return NextResponse.json({
@@ -97,7 +155,10 @@ export async function GET(
   }
 
   if (workspace === 'documents-reports') {
-    const dashboard = await getEmployerDashboard(sessionUser.id).catch(() => null);
+    const dashboard = await getCachedEmployerDashboard({
+      tenantId,
+      userId: sessionUser.id
+    });
     const documents = getEmployerDocumentsForTenant(tenantId, dashboard?.documentCenter);
     const recentDocuments = getRecentDocumentsForTenant(tenantId, 5, dashboard?.documentCenter);
     const filters = getDocumentFilterOptions(documents);

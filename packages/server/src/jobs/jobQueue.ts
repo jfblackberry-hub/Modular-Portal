@@ -80,6 +80,24 @@ export async function getPendingJob(client?: JobDelegateClient) {
   return job ? mapJob(job) : null;
 }
 
+export async function getPendingJobForTenant(
+  tenantId: string,
+  client?: JobDelegateClient
+) {
+  const job = await getClient(client).job.findFirst({
+    where: {
+      status: JOB_STATUS.PENDING,
+      tenantId,
+      runAt: {
+        lte: new Date()
+      }
+    },
+    orderBy: [{ runAt: 'asc' }, { createdAt: 'asc' }]
+  });
+
+  return job ? mapJob(job) : null;
+}
+
 export async function markJobRunning(jobId: string) {
   return prisma.$transaction(async (tx) => {
     const result = await tx.job.updateMany({
@@ -99,7 +117,7 @@ export async function markJobRunning(jobId: string) {
       return null;
     }
 
-    const job = await tx.job.findUnique({
+    const job = await tx.job.findFirst({
       where: { id: jobId }
     });
 
@@ -108,19 +126,43 @@ export async function markJobRunning(jobId: string) {
 }
 
 export async function markJobSucceeded(jobId: string, client?: JobDelegateClient) {
-  const job = await getClient(client).job.update({
-    where: { id: jobId },
+  const existingJob = await getClient(client).job.findFirst({
+    where: { id: jobId }
+  });
+
+  if (!existingJob) {
+    throw new Error('Job not found');
+  }
+
+  const result = await getClient(client).job.updateMany({
+    where: {
+      id: jobId
+    },
     data: {
       status: JOB_STATUS.SUCCEEDED,
       lastError: null
     }
   });
 
+  if (result.count === 0) {
+    throw new Error('Job not found');
+  }
+
+  const job = await getClient(client).job.findFirst({
+    where: {
+      id: jobId
+    }
+  });
+
+  if (!job) {
+    throw new Error('Job not found');
+  }
+
   return mapJob(job);
 }
 
 export async function markJobFailedOrRetry(
-  job: Pick<Job, 'id' | 'attempts' | 'maxAttempts'>,
+  job: Pick<Job, 'id' | 'attempts' | 'maxAttempts' | 'tenantId'>,
   error: unknown,
   client?: JobDelegateClient
 ) {
@@ -131,14 +173,30 @@ export async function markJobFailedOrRetry(
     ? new Date(Date.now() + job.attempts * 60_000)
     : undefined;
 
-  const updatedJob = await getClient(client).job.update({
-    where: { id: job.id },
+  const updatedCount = await getClient(client).job.updateMany({
+    where: {
+      id: job.id
+    },
     data: {
       status: nextStatus,
       lastError,
       runAt
     }
   });
+
+  if (updatedCount.count === 0) {
+    throw new Error('Job not found');
+  }
+
+  const updatedJob = await getClient(client).job.findFirst({
+    where: {
+      id: job.id
+    }
+  });
+
+  if (!updatedJob) {
+    throw new Error('Job not found');
+  }
 
   return mapJob(updatedJob);
 }
@@ -157,7 +215,7 @@ export async function listJobs(filters: JobFilters = {}, client?: JobDelegateCli
 }
 
 export async function getJobById(id: string, client?: JobDelegateClient) {
-  const job = await getClient(client).job.findUnique({
+  const job = await getClient(client).job.findFirst({
     where: { id }
   });
 
@@ -166,7 +224,7 @@ export async function getJobById(id: string, client?: JobDelegateClient) {
 
 export async function retryFailedJob(id: string, client?: JobDelegateClient) {
   const db = getClient(client);
-  const job = await db.job.findUnique({
+  const job = await db.job.findFirst({
     where: { id }
   });
 
@@ -178,8 +236,10 @@ export async function retryFailedJob(id: string, client?: JobDelegateClient) {
     throw new Error('Only failed jobs can be retried');
   }
 
-  const updatedJob = await db.job.update({
-    where: { id },
+  const updatedCount = await db.job.updateMany({
+    where: {
+      id
+    },
     data: {
       status: JOB_STATUS.PENDING,
       lastError: null,
@@ -187,6 +247,20 @@ export async function retryFailedJob(id: string, client?: JobDelegateClient) {
       attempts: 0
     }
   });
+
+  if (updatedCount.count === 0) {
+    throw new Error('Job not found');
+  }
+
+  const updatedJob = await db.job.findFirst({
+    where: {
+      id
+    }
+  });
+
+  if (!updatedJob) {
+    throw new Error('Job not found');
+  }
 
   return mapJob(updatedJob);
 }

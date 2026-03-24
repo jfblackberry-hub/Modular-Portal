@@ -1,0 +1,8 @@
+[
+  {"ParameterKey":"EnvironmentName","ParameterValue":"qa"},
+  {"ParameterKey":"Owner","ParameterValue":"platform"},
+  {"ParameterKey":"CostCenter","ParameterValue":"ENG-2000"},
+  {"ParameterKey":"RepositoryName1","ParameterValue":"portal-web"},
+  {"ParameterKey":"RepositoryName2","ParameterValue":"admin-console"},
+  {"ParameterKey":"RepositoryName3","ParameterValue":"api-server"}
+]

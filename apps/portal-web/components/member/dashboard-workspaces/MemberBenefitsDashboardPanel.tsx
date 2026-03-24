@@ -1,9 +1,13 @@
 'use client';
 
-import { MemberWorkspaceDataBoundary } from './MemberWorkspaceDataBoundary';
 import { MemberBenefitsWorkspaceContent } from './MemberBenefitsWorkspaceContent';
+import { MemberWorkspaceDataBoundary } from './MemberWorkspaceDataBoundary';
 
-export function MemberBenefitsDashboardPanel() {
+export function MemberBenefitsDashboardPanel({
+  sessionScopeKey
+}: {
+  sessionScopeKey: string;
+}) {
   return (
     <MemberWorkspaceDataBoundary<{
       deductibleCurrent: number;
@@ -16,6 +20,7 @@ export function MemberBenefitsDashboardPanel() {
     }>
       endpoint="/api/member-dashboard/workspaces/benefits"
       label="Benefits and coverage"
+      sessionScopeKey={sessionScopeKey}
       render={(data) => <MemberBenefitsWorkspaceContent embedded {...data} />}
     />
   );

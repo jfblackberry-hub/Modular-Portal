@@ -1,10 +1,10 @@
-import { getMemberProfile } from '../../../lib/member-api';
-import { getPortalSessionUser } from '../../../lib/portal-session';
 import { EmptyState, PageHeader, SurfaceCard } from '../../../components/portal-ui';
+import { getMemberProfile } from '../../../lib/member-api';
+import { getPortalSessionAccessToken } from '../../../lib/portal-session';
 
 export default async function MemberProfilePage() {
-  const sessionUser = await getPortalSessionUser();
-  const profile = await getMemberProfile(sessionUser?.id);
+  const accessToken = await getPortalSessionAccessToken();
+  const profile = await getMemberProfile(accessToken ?? undefined);
 
   if (!profile) {
     return (

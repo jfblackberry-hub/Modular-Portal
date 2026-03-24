@@ -1,0 +1,241 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Modular shared services stack
+
+Parameters:
+  EnvironmentName:
+    Type: String
+  Owner:
+    Type: String
+  CostCenter:
+    Type: String
+  RetentionDays:
+    Type: Number
+  CloudTrailBucketName:
+    Type: String
+  CloudTrailLogGroupName:
+    Type: String
+  CloudTrailName:
+    Type: String
+  CloudTrailLogRetentionDays:
+    Type: Number
+  LogGroupName1:
+    Type: String
+  LogGroupName2:
+    Type: String
+    Default: ''
+  LogGroupName3:
+    Type: String
+    Default: ''
+
+Conditions:
+  HasLogGroup2: !Not [!Equals [!Ref LogGroupName2, '']]
+  HasLogGroup3: !Not [!Equals [!Ref LogGroupName3, '']]
+
+Resources:
+  SharedServicesCloudTrailBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref CloudTrailBucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Name
+          Value: !Ref CloudTrailBucketName
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: shared-services
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SharedServicesCloudTrailBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SharedServicesCloudTrailBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudTrailAclCheck
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: s3:GetBucketAcl
+            Resource: !Sub 'arn:${AWS::Partition}:s3:::${CloudTrailBucketName}'
+          - Sid: AllowCloudTrailWrite
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub 'arn:${AWS::Partition}:s3:::${CloudTrailBucketName}/AWSLogs/${AWS::AccountId}/*'
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+
+  SharedServicesCloudTrailLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref CloudTrailLogGroupName
+      RetentionInDays: !Ref CloudTrailLogRetentionDays
+      Tags:
+        - Key: Name
+          Value: !Ref CloudTrailLogGroupName
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: shared-services
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SharedServicesCloudTrailLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${EnvironmentName}-shared-services-cloudtrail-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub '${EnvironmentName}-shared-services-cloudtrail-logs-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: WriteCloudTrailLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudTrailLogGroupName}:log-stream:${AWS::AccountId}_CloudTrail_${AWS::Region}*'
+                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudTrailLogGroupName}:log-stream:o-*_*'
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-shared-services-cloudtrail-role'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: shared-services
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SharedServicesCloudTrail:
+    Type: AWS::CloudTrail::Trail
+    DependsOn:
+      - SharedServicesCloudTrailBucketPolicy
+    Properties:
+      TrailName: !Ref CloudTrailName
+      S3BucketName: !Ref SharedServicesCloudTrailBucket
+      CloudWatchLogsLogGroupArn: !GetAtt SharedServicesCloudTrailLogGroup.Arn
+      CloudWatchLogsRoleArn: !GetAtt SharedServicesCloudTrailLogsRole.Arn
+      EnableLogFileValidation: true
+      IncludeGlobalServiceEvents: true
+      IsLogging: true
+      IsMultiRegionTrail: true
+      Tags:
+        - Key: Name
+          Value: !Ref CloudTrailName
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: shared-services
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SharedServicesLogGroup1:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '${EnvironmentName}-shared-services-${LogGroupName1}'
+      RetentionInDays: !Ref RetentionDays
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-shared-services-${LogGroupName1}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: shared-services
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SharedServicesLogGroup2:
+    Type: AWS::Logs::LogGroup
+    Condition: HasLogGroup2
+    Properties:
+      LogGroupName: !Sub '${EnvironmentName}-shared-services-${LogGroupName2}'
+      RetentionInDays: !Ref RetentionDays
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-shared-services-${LogGroupName2}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: shared-services
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SharedServicesLogGroup3:
+    Type: AWS::Logs::LogGroup
+    Condition: HasLogGroup3
+    Properties:
+      LogGroupName: !Sub '${EnvironmentName}-shared-services-${LogGroupName3}'
+      RetentionInDays: !Ref RetentionDays
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-shared-services-${LogGroupName3}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: shared-services
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+Outputs:
+  LogGroup1Name:
+    Value: !Ref SharedServicesLogGroup1
+  LogGroup2Name:
+    Condition: HasLogGroup2
+    Value: !Ref SharedServicesLogGroup2
+  LogGroup3Name:
+    Condition: HasLogGroup3
+    Value: !Ref SharedServicesLogGroup3

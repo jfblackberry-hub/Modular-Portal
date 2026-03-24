@@ -1,16 +1,16 @@
 import type { FastifyInstance } from 'fastify';
 
 import {
+  getBrandingForTenant,
+  updateBrandingForTenant,
+  uploadBrandingLogoForTenant
+} from '../services/branding-service';
+import {
   assertTenantAdmin,
   AuthenticationError,
   AuthorizationError,
   getCurrentUserFromHeaders
 } from '../services/current-user-service';
-import {
-  getBrandingForTenant,
-  updateBrandingForTenant,
-  uploadBrandingLogoForTenant
-} from '../services/branding-service';
 
 type UpdateBrandingBody = {
   displayName?: string;
@@ -38,7 +38,7 @@ export async function brandingRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -75,7 +75,7 @@ export async function brandingRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -120,7 +120,7 @@ export async function brandingRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });

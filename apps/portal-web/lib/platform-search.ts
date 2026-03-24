@@ -1,10 +1,7 @@
 import 'server-only';
 
-import { getPortalSessionAccessToken } from './portal-session';
-
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3002';
-const adminConsoleBaseUrl =
-  process.env.NEXT_PUBLIC_ADMIN_CONSOLE_URL ?? 'http://localhost:3003';
+import { buildPortalApiHeaders } from './api-request';
+import { config } from './server-runtime';
 
 export type SearchDocumentResult = {
   id: string;
@@ -48,17 +45,11 @@ export async function searchPlatformContent(accessToken: string, query: string) 
   }
 
   try {
-    const sessionAccessToken = await getPortalSessionAccessToken();
-    const resolvedAccessToken = sessionAccessToken ?? accessToken;
     const response = await fetch(
-      `${apiBaseUrl}/api/search?q=${encodeURIComponent(normalizedQuery)}`,
+      `${config.apiBaseUrl}/api/search?q=${encodeURIComponent(normalizedQuery)}`,
       {
         cache: 'no-store',
-        headers: resolvedAccessToken
-          ? {
-              Authorization: `Bearer ${resolvedAccessToken}`
-            }
-          : undefined
+        headers: await buildPortalApiHeaders({}, { accessToken })
       }
     );
 
@@ -83,10 +74,10 @@ export function buildDocumentResultHref(searchBasePath: string, documentId: stri
 
 export function buildUserResultHref(userId: string) {
   const searchParams = new URLSearchParams({ userId });
-  return `${adminConsoleBaseUrl}/users?${searchParams.toString()}`;
+  return `${config.serviceEndpoints.admin}/users?${searchParams.toString()}`;
 }
 
 export function buildTenantResultHref(tenantId: string) {
   const searchParams = new URLSearchParams({ tenantId });
-  return `${adminConsoleBaseUrl}/tenants?${searchParams.toString()}`;
+  return `${config.serviceEndpoints.admin}/tenants?${searchParams.toString()}`;
 }

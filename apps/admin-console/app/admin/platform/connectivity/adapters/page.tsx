@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { PlatformAdminGate } from '../../../../../components/platform-admin-gate';
 import { SectionCard } from '../../../../../components/section-card';
 import { fetchAdminJsonCached } from '../../../../../lib/admin-client-data';
-import { apiBaseUrl, getAdminAuthHeaders } from '../../../../../lib/api-auth';
+import { config, getAdminAuthHeaders } from '../../../../../lib/api-auth';
 
 type Tenant = {
   id: string;
@@ -135,12 +135,12 @@ export default function AdminPlatformAdapterStatusPage() {
         fetchAdminJsonCached<{
           tenants: Tenant[];
           rows: AdapterRow[];
-        }>(`${apiBaseUrl}/platform-admin/connectivity/adapter-inventory`, {
+        }>(`${config.apiBaseUrl}/platform-admin/connectivity/adapter-inventory`, {
           headers: getAdminAuthHeaders(),
           ttlMs: 20_000
         }),
         fetchAdminJsonCached<CatalogEntry[]>(
-          `${apiBaseUrl}/platform-admin/connectivity/api-catalog`,
+          `${config.apiBaseUrl}/platform-admin/connectivity/api-catalog`,
           {
             headers: getAdminAuthHeaders(),
             ttlMs: 20_000
@@ -227,7 +227,7 @@ export default function AdminPlatformAdapterStatusPage() {
 
     try {
       const response = await fetch(
-        `${apiBaseUrl}/platform-admin/connectivity/api-catalog/apply`,
+        `${config.apiBaseUrl}/platform-admin/connectivity/api-catalog/apply`,
         {
           method: 'POST',
           headers: {

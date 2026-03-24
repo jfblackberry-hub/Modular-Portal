@@ -1,15 +1,15 @@
-import { randomUUID } from 'node:crypto';
-import fs from 'node:fs/promises';
 import net from 'node:net';
-import path from 'node:path';
 
+import { readProcessEnv } from '@payer-portal/config';
+import type { Prisma } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
 import {
+  buildRuntimeHealthResponse,
+  buildRuntimeLivenessResponse,
   get,
-  getStorageDirectory,
+  getStorageService,
   registerDefaultAdapters
 } from '@payer-portal/server';
-import type { Prisma } from '@payer-portal/database';
 
 type CheckStatus = 'fail' | 'not_configured' | 'pass';
 
@@ -32,6 +32,8 @@ type HealthResponse = {
   timestamp: string;
 };
 
+type RuntimeReadinessResponse = ReturnType<typeof buildRuntimeHealthResponse>;
+
 function toConfigRecord(value: Prisma.JsonValue): Record<string, unknown> | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return null;
@@ -48,6 +50,14 @@ function summarizeStatus(checks: HealthResponse['checks']) {
 
 function isReady(checks: HealthResponse['checks']) {
   return !Object.values(checks).some((check) => check.status === 'fail');
+}
+
+function getApiConfigStatus(): RuntimeReadinessResponse['checks'][string] {
+  return readProcessEnv('DATABASE_URL') &&
+    readProcessEnv('API_PUBLIC_ORIGIN') &&
+    readProcessEnv('SESSION_SECRET')
+    ? 'ok'
+    : 'down';
 }
 
 async function checkDatabaseConnectivity(): Promise<HealthCheckResult> {
@@ -70,7 +80,7 @@ async function checkDatabaseConnectivity(): Promise<HealthCheckResult> {
 }
 
 async function checkRedisConnectivity(): Promise<HealthCheckResult> {
-  const redisUrl = process.env.REDIS_URL?.trim();
+  const redisUrl = readProcessEnv('REDIS_URL');
 
   if (!redisUrl) {
     return {
@@ -85,8 +95,12 @@ async function checkRedisConnectivity(): Promise<HealthCheckResult> {
 
   try {
     const url = new URL(redisUrl);
-    const host = url.hostname || '127.0.0.1';
+    const host = url.hostname.trim();
     const port = Number(url.port || 6379);
+
+    if (!host) {
+      throw new Error('REDIS_URL must include a hostname');
+    }
 
     await new Promise<void>((resolve, reject) => {
       const socket = net.createConnection({ host, port });
@@ -125,28 +139,24 @@ async function checkRedisConnectivity(): Promise<HealthCheckResult> {
 
 async function checkStorageServices(): Promise<HealthCheckResult> {
   const startedAt = Date.now();
-  const storageDirectory = getStorageDirectory();
-  const probeFile = path.join(storageDirectory, `.health-${randomUUID()}.tmp`);
+  const storage = getStorageService();
 
   try {
-    await fs.mkdir(storageDirectory, { recursive: true });
-    await fs.writeFile(probeFile, 'ok', 'utf8');
-    await fs.readFile(probeFile, 'utf8');
-    await fs.rm(probeFile, { force: true });
+    const result = await storage.healthCheck();
 
     return {
       details: {
-        storageDirectory
+        root: storage.getRootDescriptor(),
+        ...result.details
       },
       latencyMs: Date.now() - startedAt,
-      status: 'pass'
+      status: result.status
     };
   } catch (error) {
-    await fs.rm(probeFile, { force: true }).catch(() => undefined);
-
     return {
       details: {
-        storageDirectory
+        root: storage.getRootDescriptor(),
+        provider: storage.getProviderName()
       },
       error: error instanceof Error ? error.message : 'Storage check failed',
       latencyMs: Date.now() - startedAt,
@@ -237,14 +247,23 @@ async function checkIntegrationServices(): Promise<HealthCheckResult> {
 }
 
 export function getLiveStatus() {
-  return {
-    service: 'api' as const,
-    status: 'ok' as const,
-    timestamp: new Date().toISOString()
-  };
+  return buildRuntimeLivenessResponse();
 }
 
 export async function getReadinessStatus() {
+  const database = await checkDatabaseConnectivity();
+  const response = buildRuntimeHealthResponse({
+    config: getApiConfigStatus(),
+    db: database.status === 'pass' ? 'ok' : 'down'
+  });
+
+  return {
+    ready: response.status === 'ok',
+    response
+  };
+}
+
+export async function getHealthStatus() {
   const checks = {
     database: await checkDatabaseConnectivity(),
     redis: await checkRedisConnectivity(),
@@ -263,8 +282,4 @@ export async function getReadinessStatus() {
     ready: isReady(checks),
     response
   };
-}
-
-export async function getHealthStatus() {
-  return getReadinessStatus();
 }

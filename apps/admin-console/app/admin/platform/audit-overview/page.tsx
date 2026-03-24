@@ -1,5 +1,5 @@
-import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
 import { AdminPlaceholderPage } from '../../../../components/admin-placeholder-page';
+import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
 
 export default function AdminPlatformAuditOverviewPage() {
   return (

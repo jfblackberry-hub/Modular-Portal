@@ -1,10 +1,10 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { SectionCard } from '../../components/section-card';
-import { apiBaseUrl, getAdminAuthHeaders } from '../../lib/api-auth';
+import { config, getAdminAuthHeaders } from '../../lib/api-auth';
 
 type Tenant = {
   id: string;
@@ -99,12 +99,12 @@ export function TenantManagement() {
     (tenant) => tenant.healthStatus === 'SUSPENDED'
   ).length;
 
-  async function loadTenants(preferredTenantId?: string) {
+  const loadTenants = useCallback(async function loadTenants(preferredTenantId?: string) {
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`${apiBaseUrl}/platform-admin/tenants`, {
+      const response = await fetch(`${config.apiBaseUrl}/platform-admin/tenants`, {
         cache: 'no-store',
         headers: getAdminAuthHeaders()
       });
@@ -139,11 +139,11 @@ export function TenantManagement() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [selectedTenantId]);
 
   useEffect(() => {
     void loadTenants();
-  }, []);
+  }, [loadTenants]);
 
   function handleTenantSelect(tenant: Tenant) {
     setSelectedTenantId(tenant.id);
@@ -166,7 +166,7 @@ export function TenantManagement() {
 
     try {
       const response = await fetch(
-        `${apiBaseUrl}/platform-admin/tenants/${selectedTenant.id}`,
+        `${config.apiBaseUrl}/platform-admin/tenants/${selectedTenant.id}`,
         {
           method: 'PATCH',
           headers: {
@@ -219,7 +219,7 @@ export function TenantManagement() {
       formData.append('logo', file);
 
       const response = await fetch(
-        `${apiBaseUrl}/platform-admin/tenants/${tenantId}/logo`,
+        `${config.apiBaseUrl}/platform-admin/tenants/${tenantId}/logo`,
         {
           method: 'POST',
           headers: getAdminAuthHeaders(),
@@ -592,8 +592,9 @@ export function TenantManagement() {
 
                       {typeof selectedTenant.brandingConfig.logoUrl === 'string' ? (
                         <div className="mt-4 flex items-center gap-4 rounded-2xl border border-admin-border bg-slate-50 p-4">
+                          {/* eslint-disable-next-line @next/next/no-img-element -- dynamic tenant branding URLs are runtime-configured and not suitable for next/image without broad remote allowlists */}
                           <img
-                            src={`${apiBaseUrl.replace(':3002', ':3000')}${selectedTenant.brandingConfig.logoUrl}`}
+                            src={`${config.serviceEndpoints.portal}${selectedTenant.brandingConfig.logoUrl}`}
                             alt={`${selectedTenant.name} logo`}
                             className="h-16 w-16 rounded-xl border border-admin-border bg-white object-contain p-2"
                           />

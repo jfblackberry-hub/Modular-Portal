@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
+import { type ComponentType, useEffect, useMemo, useRef, useState } from 'react';
 
 type WorkspaceStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -17,6 +17,8 @@ type WorkspaceRecord<TProps extends object> = {
   error?: string;
   status: WorkspaceStatus;
 };
+
+const workspaceStateCache = new Map<string, unknown>();
 
 function resolveLoadedComponent<TProps extends object>(
   loaded: ComponentType<TProps> | { default: ComponentType<TProps> }
@@ -48,12 +50,14 @@ function ActionWorkspaceSkeleton({ label }: { label: string }) {
 export function PortalActionWorkspace<TProps extends object>({
   actions,
   actionRowClassName,
-  emptyStateDescription = 'Select an action to load a focused workspace without leaving the dashboard.',
+  emptyStateDescription = 'Select a workspace tab to load a focused area without leaving the dashboard.',
   emptyStateTitle = 'Choose a workspace',
   homeActionLabel,
   persistKey,
+  sessionCacheKey,
   showEmptyStateWhenInactive = true,
-  sectionTitle = 'Workspaces'
+  sectionTitle = 'Workspaces',
+  tabListLabel = 'Workspace tabs'
 }: {
   actions: PortalActionWorkspaceDefinition<TProps>[];
   actionRowClassName?: string;
@@ -61,11 +65,12 @@ export function PortalActionWorkspace<TProps extends object>({
   emptyStateTitle?: string;
   homeActionLabel?: string;
   persistKey?: string;
+  sessionCacheKey?: string;
   showEmptyStateWhenInactive?: boolean;
   sectionTitle?: string;
+  tabListLabel?: string;
 }) {
-  const [activeKey, setActiveKey] = useState<string | null>(null);
-  const [workspaceState, setWorkspaceState] = useState<Record<string, WorkspaceRecord<TProps>>>(
+  const initialWorkspaceState = useMemo(
     () =>
       Object.fromEntries(
         actions.map((action) => [
@@ -74,14 +79,49 @@ export function PortalActionWorkspace<TProps extends object>({
             status: 'idle'
           } satisfies WorkspaceRecord<TProps>
         ])
-      )
+      ),
+    [actions]
   );
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [workspaceState, setWorkspaceState] = useState<Record<string, WorkspaceRecord<TProps>>>(() => {
+    if (sessionCacheKey) {
+      const cachedState = workspaceStateCache.get(sessionCacheKey);
+
+      if (cachedState && typeof cachedState === 'object') {
+        return {
+          ...initialWorkspaceState,
+          ...(cachedState as Record<string, WorkspaceRecord<TProps>>)
+        };
+      }
+    }
+
+    return initialWorkspaceState;
+  });
   const pendingRequestRef = useRef<Record<string, number>>({});
 
   const actionsByKey = useMemo(
     () => Object.fromEntries(actions.map((action) => [action.key, action])),
     [actions]
   );
+
+  useEffect(() => {
+    setWorkspaceState((current) => {
+      const nextState = Object.fromEntries(
+        actions.map((action) => [
+          action.key,
+          current[action.key] ?? {
+            status: 'idle'
+          }
+        ])
+      ) as Record<string, WorkspaceRecord<TProps>>;
+
+      if (sessionCacheKey) {
+        workspaceStateCache.set(sessionCacheKey, nextState);
+      }
+
+      return nextState;
+    });
+  }, [actions, sessionCacheKey]);
 
   useEffect(() => {
     if (!persistKey || typeof window === 'undefined') {
@@ -107,6 +147,14 @@ export function PortalActionWorkspace<TProps extends object>({
 
     window.sessionStorage.setItem(persistKey, activeKey);
   }, [activeKey, persistKey]);
+
+  useEffect(() => {
+    if (!sessionCacheKey) {
+      return;
+    }
+
+    workspaceStateCache.set(sessionCacheKey, workspaceState);
+  }, [sessionCacheKey, workspaceState]);
 
   useEffect(() => {
     if (!activeKey) {
@@ -181,46 +229,70 @@ export function PortalActionWorkspace<TProps extends object>({
   return (
     <section className="space-y-3" aria-label={sectionTitle}>
       <div className="portal-card p-4">
-        <div className={actionRowClassName ?? 'flex flex-wrap gap-3'}>
+        <div className="space-y-3">
           {homeActionLabel ? (
-            <button
-              type="button"
-              aria-pressed={activeKey === null}
-              onClick={() => setActiveKey(null)}
-              className={`inline-flex min-h-11 shrink-0 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
-                activeKey === null
-                  ? 'bg-[var(--tenant-primary-color)] text-white hover:brightness-110'
-                  : 'border border-[var(--tenant-primary-color)] bg-white text-[var(--tenant-primary-color)] hover:bg-sky-50'
-              }`}
-            >
-              {homeActionLabel}
-            </button>
-          ) : null}
-          {actions.map((action) => {
-            const isActive = activeKey === action.key;
-
-            return (
+            <div className="flex flex-wrap gap-3">
               <button
-                key={action.key}
                 type="button"
-                aria-pressed={isActive}
-                aria-controls={`workspace-panel-${action.key}`}
-                onClick={() => setActiveKey(action.key)}
-                className={`inline-flex min-h-11 shrink-0 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
-                  isActive
-                    ? 'bg-[var(--tenant-primary-color)] text-white hover:brightness-110'
-                    : 'border border-[var(--tenant-primary-color)] bg-white text-[var(--tenant-primary-color)] hover:bg-sky-50'
+                role="tab"
+                aria-pressed={activeKey === null}
+                aria-selected={activeKey === null}
+                aria-controls="workspace-panel-home"
+                id="workspace-tab-home"
+                onClick={() => setActiveKey(null)}
+                className={`inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border px-5 py-3 text-sm font-semibold transition ${
+                  activeKey === null
+                    ? 'border-[var(--tenant-primary-color)] bg-[var(--tenant-primary-color)] text-white shadow-[0_12px_24px_rgba(15,23,42,0.12)] hover:brightness-110'
+                    : 'border-[var(--border-subtle)] bg-white text-[var(--text-secondary)] hover:border-[var(--tenant-primary-color)] hover:text-[var(--tenant-primary-color)]'
                 }`}
               >
-                {action.label}
+                {homeActionLabel}
               </button>
-            );
-          })}
+            </div>
+          ) : null}
+
+          {homeActionLabel ? (
+            <div className="border-t border-[var(--border-subtle)]" />
+          ) : null}
+
+          <div
+            role="tablist"
+            aria-label={tabListLabel}
+            className={actionRowClassName ?? 'flex flex-wrap gap-3'}
+          >
+            {actions.map((action) => {
+              const isActive = activeKey === action.key;
+
+              return (
+                <button
+                  key={action.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`workspace-panel-${action.key}`}
+                  id={`workspace-tab-${action.key}`}
+                  onClick={() => setActiveKey(action.key)}
+                  className={`inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border px-5 py-3 text-sm font-semibold transition ${
+                    isActive
+                      ? 'border-[var(--tenant-primary-color)] bg-[var(--tenant-primary-color)] text-white shadow-[0_12px_24px_rgba(15,23,42,0.12)] hover:brightness-110'
+                      : 'border-[var(--border-subtle)] bg-white text-[var(--text-secondary)] hover:border-[var(--tenant-primary-color)] hover:text-[var(--tenant-primary-color)]'
+                  }`}
+                >
+                  <span>{action.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {!activeAction && showEmptyStateWhenInactive ? (
-        <section className="portal-card p-6 text-center">
+        <section
+          id="workspace-panel-home"
+          role="tabpanel"
+          aria-labelledby={homeActionLabel ? 'workspace-tab-home' : undefined}
+          className="portal-card p-6 text-center"
+        >
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">{emptyStateTitle}</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
             {emptyStateDescription}
@@ -270,6 +342,8 @@ export function PortalActionWorkspace<TProps extends object>({
           <div
             key={action.key}
             id={`workspace-panel-${action.key}`}
+            role="tabpanel"
+            aria-labelledby={`workspace-tab-${action.key}`}
             hidden={!isActive}
             aria-hidden={!isActive}
           >

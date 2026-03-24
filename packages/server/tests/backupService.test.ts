@@ -1,7 +1,7 @@
-import { after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { after, beforeEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
@@ -12,8 +12,8 @@ process.env.LOCAL_STORAGE_DIR = '.tmp-backup-storage';
 import { prisma } from '@payer-portal/database';
 
 import { configureBackupJobs } from '../src/backups/backupService.js';
-import { clearJobHandlers } from '../src/jobs/jobRegistry.js';
 import { listJobs } from '../src/jobs/jobQueue.js';
+import { clearJobHandlers } from '../src/jobs/jobRegistry.js';
 import { JOB_STATUS } from '../src/jobs/jobTypes.js';
 import { runNextJob } from '../src/jobs/jobWorker.js';
 import { saveFile } from '../src/storage/localStorage.js';
@@ -55,11 +55,7 @@ async function suspendSeedJobs() {
 }
 
 async function cleanupTestData() {
-  await prisma.auditLog.deleteMany({
-    where: {
-      action: 'backup.test.audit'
-    }
-  });
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
 
   await prisma.document.deleteMany({
     where: {

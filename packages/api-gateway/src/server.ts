@@ -1,3 +1,5 @@
+import './runtime-config.js';
+
 import { startApiGateway } from './index.js';
 
 async function start() {

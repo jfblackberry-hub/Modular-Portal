@@ -1,0 +1,41 @@
+aws_region  = "us-east-1"
+environment = "poc"
+project_name = "modular-portal"
+owner       = "platform"
+
+vpc_cidr = "10.0.0.0/16"
+
+public_subnet_cidrs = [
+  "10.0.0.0/24",
+  "10.0.1.0/24"
+]
+
+private_subnet_cidrs = [
+  "10.0.10.0/24",
+  "10.0.11.0/24"
+]
+
+app_port = 3000
+db_port  = 5432
+
+ecr_repository_names = [
+  "portal-web",
+  "admin-console",
+  "api-server"
+]
+
+cloudwatch_log_group_names = [
+  "/aws/ecs/poc/portal-web",
+  "/aws/ecs/poc/admin-console",
+  "/aws/ecs/poc/api-server"
+]
+
+cloudwatch_retention_in_days = 30
+
+task_role_s3_bucket_arns = [
+  "arn:aws:s3:::replace-with-portal-documents-bucket"
+]
+
+task_role_secrets_manager_secret_arns = [
+  "arn:aws:secretsmanager:us-east-1:123456789012:secret:replace-with-app-secret"
+]

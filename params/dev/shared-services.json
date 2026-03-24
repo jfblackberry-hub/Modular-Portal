@@ -1,0 +1,13 @@
+[
+  {"ParameterKey":"EnvironmentName","ParameterValue":"dev"},
+  {"ParameterKey":"Owner","ParameterValue":"platform"},
+  {"ParameterKey":"CostCenter","ParameterValue":"ENG-1000"},
+  {"ParameterKey":"RetentionDays","ParameterValue":"30"},
+  {"ParameterKey":"CloudTrailBucketName","ParameterValue":"modularportal-dev-cloudtrail-773617529976"},
+  {"ParameterKey":"CloudTrailLogGroupName","ParameterValue":"dev-shared-services-cloudtrail"},
+  {"ParameterKey":"CloudTrailName","ParameterValue":"dev-shared-services-cloudtrail"},
+  {"ParameterKey":"CloudTrailLogRetentionDays","ParameterValue":"90"},
+  {"ParameterKey":"LogGroupName1","ParameterValue":"portal-web"},
+  {"ParameterKey":"LogGroupName2","ParameterValue":"admin-console"},
+  {"ParameterKey":"LogGroupName3","ParameterValue":"api-server"}
+]

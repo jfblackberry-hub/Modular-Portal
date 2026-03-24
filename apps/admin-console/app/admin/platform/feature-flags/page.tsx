@@ -1,5 +1,5 @@
-import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
 import { AdminPageLayout } from '../../../../components/admin-ui';
+import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
 import { FeatureFlagManagement } from '../../../feature-flags/feature-flag-management';
 
 export default function AdminPlatformFeatureFlagsPage() {

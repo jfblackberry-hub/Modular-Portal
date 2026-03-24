@@ -1,6 +1,6 @@
 import { ReportsAnalyticsDashboard } from '../../../../../components/billing-enrollment/ReportsAnalyticsDashboard';
-import { getAnalyticsDatasetForTenant } from '../../../../../lib/reports-analytics-data';
 import { getPortalSessionUser } from '../../../../../lib/portal-session';
+import { getAnalyticsDatasetForTenant } from '../../../../../lib/reports-analytics-data';
 
 export default async function ReportsAnalyticsPage() {
   const sessionUser = await getPortalSessionUser();

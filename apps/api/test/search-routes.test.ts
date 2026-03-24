@@ -1,13 +1,14 @@
-import { after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { after, beforeEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
 
-import Fastify from 'fastify';
 import { prisma } from '@payer-portal/database';
+import Fastify from 'fastify';
 
 import { searchRoutes } from '../src/routes/search.js';
+import { createAccessToken } from '../src/services/access-token-service.js';
 
 const TEST_TENANT_SLUG = 'search-test-tenant';
 const TEST_OTHER_TENANT_SLUG = 'search-other-tenant';
@@ -15,6 +16,8 @@ const TEST_USER_EMAIL = 'search-user@example.com';
 const TEST_OTHER_USER_EMAIL = 'search-other@example.com';
 
 async function cleanupTestData() {
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
+
   await prisma.document.deleteMany({
     where: {
       filename: {
@@ -79,6 +82,23 @@ async function createFixtureData() {
     })
   ]);
 
+  await prisma.userTenantMembership.createMany({
+    data: [
+      {
+        userId: user.id,
+        tenantId: tenant.id,
+        isDefault: true,
+        isTenantAdmin: false
+      },
+      {
+        userId: otherUser.id,
+        tenantId: otherTenant.id,
+        isDefault: true,
+        isTenantAdmin: false
+      }
+    ]
+  });
+
   await Promise.all([
     prisma.document.create({
       data: {
@@ -110,6 +130,15 @@ async function createFixtureData() {
   };
 }
 
+function createEndUserToken(user: { id: string; email: string }, tenantId: string) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId,
+    sessionType: 'end_user'
+  });
+}
+
 beforeEach(async () => {
   await cleanupTestData();
 });
@@ -123,12 +152,13 @@ test('search endpoint returns tenant-scoped results', async () => {
   const { tenant, user } = await createFixtureData();
   const app = Fastify();
   await searchRoutes(app);
+  const token = createEndUserToken(user, tenant.id);
 
   const documentResponse = await app.inject({
     method: 'GET',
     url: '/api/search?q=eligibility',
     headers: {
-      'x-user-id': user.id
+      authorization: `Bearer ${token}`
     }
   });
 
@@ -142,7 +172,7 @@ test('search endpoint returns tenant-scoped results', async () => {
     method: 'GET',
     url: '/api/search?q=Sasha',
     headers: {
-      'x-user-id': user.id
+      authorization: `Bearer ${token}`
     }
   });
 
@@ -155,7 +185,7 @@ test('search endpoint returns tenant-scoped results', async () => {
     method: 'GET',
     url: '/api/search?q=Alpha',
     headers: {
-      'x-user-id': user.id
+      authorization: `Bearer ${token}`
     }
   });
 
@@ -168,7 +198,7 @@ test('search endpoint returns tenant-scoped results', async () => {
     method: 'GET',
     url: '/api/search?q=foreign',
     headers: {
-      'x-user-id': user.id
+      authorization: `Bearer ${token}`
     }
   });
 

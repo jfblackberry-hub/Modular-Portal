@@ -6,11 +6,15 @@ import { PortalHeroBanner } from '../../../components/shared/portal-hero-banner'
 import { getMemberDocuments } from '../../../lib/member-api';
 import { formatDate, titleCase } from '../../../lib/portal-format';
 import { getPortalImageSrc } from '../../../lib/portal-image-registry';
-import { getPortalSessionUser } from '../../../lib/portal-session';
+import {
+  getPortalSessionAccessToken,
+  getPortalSessionUser
+} from '../../../lib/portal-session';
 
 export default async function DocumentsPage() {
   const sessionUser = await getPortalSessionUser();
-  const documents = await getMemberDocuments(sessionUser?.id);
+  const accessToken = await getPortalSessionAccessToken();
+  const documents = await getMemberDocuments(accessToken ?? undefined);
   const items = documents?.items ?? [];
   const documentsHeroImage = getPortalImageSrc('documentsHero', {
     tenantBrandingConfig: sessionUser?.tenant.brandingConfig

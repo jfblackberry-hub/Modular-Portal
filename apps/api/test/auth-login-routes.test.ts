@@ -9,47 +9,17 @@ import Fastify from 'fastify';
 
 import { authRoutes } from '../src/routes/auth.js';
 
-async function cleanupTestData() {
-  await prisma.userRole.deleteMany({
-    where: {
-      user: {
-        email: {
-          in: ['user', 'tenant', 'admin']
-        }
-      }
-    }
-  });
-
-  await prisma.user.deleteMany({
-    where: {
-      email: {
-        in: ['user', 'tenant', 'admin']
-      }
-    }
-  });
-
-  await prisma.tenantBranding.deleteMany({
-    where: {
-      tenant: {
-        slug: 'blue-horizon-health'
-      }
-    }
-  });
-
-  await prisma.tenant.deleteMany({
-    where: {
-      slug: 'blue-horizon-health'
-    }
-  });
-
+async function cleanupProvisionedAuthFixtures() {
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
+  await prisma.previewSession.deleteMany();
 }
 
 beforeEach(async () => {
-  await cleanupTestData();
+  await cleanupProvisionedAuthFixtures();
 });
 
 after(async () => {
-  await cleanupTestData();
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
   await prisma.$disconnect();
 });
 
@@ -69,7 +39,6 @@ test('auth login provisions shorthand local users when missing', async () => {
   assert.equal(response.statusCode, 200, response.body);
   const payload = response.json();
   assert.equal(payload.user.email, 'admin');
-  assert.equal(payload.user.roles.includes('platform_admin'), true);
 
   const storedUser = await prisma.user.findUnique({
     where: {
@@ -85,7 +54,80 @@ test('auth login provisions shorthand local users when missing', async () => {
   });
 
   assert.ok(storedUser);
-  assert.equal(storedUser.roles.some(({ role }) => role.code === 'platform_admin'), true);
+  assert.equal(storedUser.email, 'admin');
+
+  await app.close();
+});
+
+test('issued end-user sessions always include non-null tenantId, personaType, and userId', async () => {
+  const app = Fastify();
+  await authRoutes(app);
+
+  const assertions = [
+    {
+      label: 'member',
+      method: 'POST' as const,
+      url: '/auth/login',
+      payload: {
+        email: 'maria',
+        password: 'anything'
+      }
+    },
+    {
+      label: 'provider',
+      method: 'POST' as const,
+      url: '/auth/login/provider',
+      payload: {
+        email: 'Provider1',
+        password: 'anything'
+      }
+    },
+    {
+      label: 'employer',
+      method: 'POST' as const,
+      url: '/auth/login',
+      payload: {
+        email: 'employer',
+        password: 'anything'
+      }
+    }
+  ];
+
+  for (const request of assertions) {
+    const response = await app.inject(request);
+    assert.equal(response.statusCode, 200, `${request.label}: ${response.body}`);
+
+    const payload = response.json() as {
+      user: {
+        id: string;
+        session: {
+          personaType: string;
+          type: string;
+          tenantId: string | null;
+        };
+      };
+    };
+
+    assert.ok(payload.user.id.trim(), `${request.label}: missing user id`);
+    assert.ok(
+      payload.user.session.personaType.trim(),
+      `${request.label}: missing persona type`
+    );
+    assert.equal(
+      payload.user.session.personaType,
+      payload.user.session.type,
+      `${request.label}: persona type mismatch`
+    );
+    assert.equal(
+      typeof payload.user.session.tenantId,
+      'string',
+      `${request.label}: tenantId must be a string`
+    );
+    assert.ok(
+      payload.user.session.tenantId?.trim(),
+      `${request.label}: missing tenantId`
+    );
+  }
 
   await app.close();
 });

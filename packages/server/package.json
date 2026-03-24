@@ -12,17 +12,23 @@
     }
   },
   "scripts": {
+    "backups:configure": "node dist/backups/runScheduledBackups.js",
     "backups:schedule": "tsx src/backups/runScheduledBackups.ts",
+    "prebuild": "pnpm --filter @payer-portal/config build",
     "build": "tsc -p tsconfig.json",
+    "prelint": "pnpm --filter @payer-portal/config build",
     "lint": "tsc --noEmit",
+    "pretypecheck": "pnpm --filter @payer-portal/config build",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test --test-concurrency=1 tests/**/*.test.ts",
-    "worker:jobs": "tsx src/jobs/runWorker.ts"
+    "worker:jobs": "tsx src/jobs/runWorker.ts",
+    "worker:start": "node ../../scripts/runtime/ensure-prisma-migrations.mjs job-worker && node dist/jobs/runWorker.js"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/exporter-prometheus": "^0.204.0",
     "@opentelemetry/sdk-metrics": "^2.1.0",
+    "@payer-portal/config": "workspace:*",
     "@payer-portal/database": "workspace:*"
   },
   "devDependencies": {

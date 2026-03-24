@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 
 import { SectionCard } from '../../../../components/section-card';
 import { fetchAdminJsonCached } from '../../../../lib/admin-client-data';
-import { apiBaseUrl, getAdminAuthHeaders } from '../../../../lib/api-auth';
+import { config, getAdminAuthHeaders } from '../../../../lib/api-auth';
 
 type Tenant = {
   id: string;
@@ -135,7 +135,7 @@ function buildTenantLogHref(tenantId: string, event?: { eventType: string; resou
 
 async function fetchTenantSettings(tenantId: string) {
   return fetchAdminJsonCached<SettingsPayload>(
-    `${apiBaseUrl}/api/tenant-admin/settings?tenant_id=${tenantId}`,
+    `${config.apiBaseUrl}/api/tenant-admin/settings?tenant_id=${tenantId}`,
     {
       headers: getAdminAuthHeaders(),
       ttlMs: 20_000
@@ -145,7 +145,7 @@ async function fetchTenantSettings(tenantId: string) {
 
 async function fetchTenantAuditEvents(tenantId: string, pageSize = 8) {
   const payload = await fetchAdminJsonCached<AuditResponse>(
-    `${apiBaseUrl}/platform-admin/audit/events?tenant_id=${tenantId}&page_size=${pageSize}`,
+    `${config.apiBaseUrl}/platform-admin/audit/events?tenant_id=${tenantId}&page_size=${pageSize}`,
     {
       headers: getAdminAuthHeaders(),
       ttlMs: 20_000
@@ -178,7 +178,7 @@ export function TenantListPage() {
     async function loadTenantRows() {
       try {
         const summaries = await fetchAdminJsonCached<TenantListRow[]>(
-          `${apiBaseUrl}/platform-admin/tenant-summaries`,
+          `${config.apiBaseUrl}/platform-admin/tenant-summaries`,
           {
             headers: getAdminAuthHeaders(),
             ttlMs: 20_000
@@ -317,7 +317,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
     async function loadDetail() {
       try {
         const [tenantPayload, enrichment] = await Promise.all([
-          fetchAdminJsonCached<Tenant>(`${apiBaseUrl}/platform-admin/tenants/${tenantId}`, {
+          fetchAdminJsonCached<Tenant>(`${config.apiBaseUrl}/platform-admin/tenants/${tenantId}`, {
             headers: getAdminAuthHeaders(),
             ttlMs: 20_000
           }),

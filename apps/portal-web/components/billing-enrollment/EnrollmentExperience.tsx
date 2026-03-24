@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 
 import { EmptyState, StatusBadge } from '../portal-ui';
 
@@ -208,7 +208,7 @@ function Stepper({
   );
 }
 
-export function EnrollmentExperience({ view }: { view: EnrollmentView }) {
+function EnrollmentExperienceContent({ view }: { view: EnrollmentView }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -604,5 +604,13 @@ export function EnrollmentExperience({ view }: { view: EnrollmentView }) {
         </section>
       )}
     </div>
+  );
+}
+
+export function EnrollmentExperience({ view }: { view: EnrollmentView }) {
+  return (
+    <Suspense fallback={<div className="min-h-[16rem]" aria-hidden="true" />}>
+      <EnrollmentExperienceContent view={view} />
+    </Suspense>
   );
 }

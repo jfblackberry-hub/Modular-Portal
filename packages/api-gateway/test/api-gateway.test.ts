@@ -1,5 +1,5 @@
-import { after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { after, beforeEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
@@ -192,6 +192,26 @@ test('gateway enforces JWT auth, tenant scoping, and serves OpenAPI', async () =
   const { tenant, otherTenant, platformAdminUser, memberUser, otherMemberUser } =
     await createFixtureData();
   const app = buildApiGateway();
+
+  const livenessResponse = await app.inject({
+    method: 'GET',
+    url: '/liveness'
+  });
+  const readinessResponse = await app.inject({
+    method: 'GET',
+    url: '/readiness'
+  });
+  const healthResponse = await app.inject({
+    method: 'GET',
+    url: '/health'
+  });
+
+  assert.equal(livenessResponse.statusCode, 200);
+  assert.equal(livenessResponse.json().service, 'api-gateway');
+  assert.equal(readinessResponse.statusCode, 200);
+  assert.equal(readinessResponse.json().service, 'api-gateway');
+  assert.equal(healthResponse.statusCode, 200);
+  assert.equal(healthResponse.json().service, 'api-gateway');
 
   const unauthorizedResponse = await app.inject({
     method: 'GET',

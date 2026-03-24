@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { AdminPageLayout, AdminStatCard } from '../../../../components/admin-ui';
 import { SectionCard } from '../../../../components/section-card';
 import { fetchAdminJsonCached } from '../../../../lib/admin-client-data';
-import { apiBaseUrl, getAdminAuthHeaders } from '../../../../lib/api-auth';
+import { config, getAdminAuthHeaders } from '../../../../lib/api-auth';
 
 type Branding = {
   tenantId: string;
@@ -248,11 +248,11 @@ export function TenantHealthPage() {
     async function loadTenantHealth() {
       try {
         const [settingsPayload, auditPayload] = await Promise.all([
-          fetchAdminJsonCached<SettingsPayload>(`${apiBaseUrl}/api/tenant-admin/settings`, {
+          fetchAdminJsonCached<SettingsPayload>(`${config.apiBaseUrl}/api/tenant-admin/settings`, {
             headers: getAdminAuthHeaders(),
             ttlMs: 20_000
           }),
-          fetchAdminJsonCached<AuditResponse>(`${apiBaseUrl}/audit/events?page_size=8`, {
+          fetchAdminJsonCached<AuditResponse>(`${config.apiBaseUrl}/audit/events?page_size=8`, {
             headers: getAdminAuthHeaders(),
             ttlMs: 20_000
           })

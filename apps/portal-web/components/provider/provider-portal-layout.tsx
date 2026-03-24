@@ -1,9 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import type { CSSProperties, ReactNode } from 'react';
-import { useState } from 'react';
 import {
   Bell,
   ClipboardList,
@@ -19,12 +15,16 @@ import {
   Wallet,
   X
 } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import type { CSSProperties, ReactNode } from 'react';
+import { useState } from 'react';
 
-import type { PortalSessionUser } from '../../lib/portal-session';
 import type {
   ProviderPortalConfig,
   ProviderPortalNavIcon
 } from '../../config/providerPortalConfig';
+import type { PortalSessionUser } from '../../lib/portal-session';
 import { prefixPreviewHref, stripPreviewHref } from '../../lib/preview-route';
 import type { TenantBranding } from '../../lib/tenant-branding';
 import type { TenantPortalModuleId } from '../../lib/tenant-modules';
@@ -201,11 +201,14 @@ export function ProviderPortalLayout({
 
             <a href={prefixPreviewHref(routePrefix, '/provider/dashboard')} className="tenant-provider-header__brand flex items-center gap-3">
               {branding.logoUrl ? (
-                <img
-                  src={branding.logoUrl}
-                  alt={`${branding.displayName} logo`}
-                  className="tenant-provider-header__logo h-9 w-auto max-w-[140px] object-contain"
-                />
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- dynamic provider branding URLs are runtime-configured and not safe to route through next/image without broad remote allowlists */}
+                  <img
+                    src={branding.logoUrl}
+                    alt={`${branding.displayName} logo`}
+                    className="tenant-provider-header__logo h-9 w-auto max-w-[140px] object-contain"
+                  />
+                </>
               ) : (
                 <div
                   className="tenant-provider-header__logo-fallback flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-white"

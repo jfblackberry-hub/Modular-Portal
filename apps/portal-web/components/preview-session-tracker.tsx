@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 
 type PreviewEventType =
   | 'route_changed'
@@ -33,7 +33,7 @@ async function postPreviewEvent(body: {
   }
 }
 
-export function PreviewSessionTracker() {
+function PreviewSessionTrackerContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const previousRouteRef = useRef<string | undefined>(undefined);
@@ -106,6 +106,14 @@ export function PreviewSessionTracker() {
   }, [pathname]);
 
   return null;
+}
+
+export function PreviewSessionTracker() {
+  return (
+    <Suspense fallback={null}>
+      <PreviewSessionTrackerContent />
+    </Suspense>
+  );
 }
 
 export function reportBlockedPreviewRoute(input: {

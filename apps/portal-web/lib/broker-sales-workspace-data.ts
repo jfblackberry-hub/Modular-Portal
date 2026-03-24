@@ -1,8 +1,6 @@
 import {
-  getBrokerAlerts,
   getBrokerPortfolioGroup,
-  getBrokerPortfolioGroups,
-  getBrokerTasks
+  getBrokerPortfolioGroups
 } from './broker-portfolio-data';
 
 export type BrokerQuoteStatus =
@@ -593,18 +591,6 @@ const brokerRenewals: BrokerRenewal[] = [
   }
 ];
 
-function parseDate(value: string) {
-  return new Date(`${value}T00:00:00`);
-}
-
-function getRateChangePercent(current: number, proposed: number) {
-  if (current === 0) {
-    return 0;
-  }
-
-  return ((proposed - current) / current) * 100;
-}
-
 export function getBrokerQuotes() {
   return brokerQuotes;
 }
@@ -662,63 +648,15 @@ export function getBrokerRenewalsGroupedByWindow() {
   return groups;
 }
 
-export function getBrokerCommandCenterData() {
-  const groups = getBrokerPortfolioGroups();
-  const tasks = getBrokerTasks();
-  const alerts = getBrokerAlerts();
-  const recentActivity = groups
-    .flatMap((group) =>
-      group.activities.map((activity) => ({
-        ...activity,
-        groupId: group.id,
-        groupName: group.groupName
-      }))
-    )
-    .sort((left, right) => right.date.localeCompare(left.date))
-    .slice(0, 8);
-  const openQuoteCount = brokerQuotes.filter(
-    (quote) => quote.status !== 'Sold' && quote.status !== 'Closed Lost'
-  ).length;
-  const activeRenewalCount = brokerRenewals.filter(
-    (renewal) => renewal.status !== 'Accepted' && renewal.status !== 'Declined'
-  ).length;
-
+export function getBrokerCommandCenterSummary() {
   return {
-    tasks,
-    alerts,
     kpis: {
-      assignedGroups: groups.length,
-      renewalsDue: activeRenewalCount,
-      openQuotes: openQuoteCount,
-      enrollmentsInProgress: groups.filter(
-        (group) => group.status === 'Enrollment in progress' || group.status === 'Implementation active'
-      ).length,
-      pendingTasks: tasks.length,
-      mtdCommissions: groups.reduce((sum, group) => sum + group.mtdCommission, 0)
-    },
-    renewalsNeedingAction: brokerRenewals
-      .filter((renewal) => renewal.status !== 'Accepted' && renewal.status !== 'Declined')
-      .sort((left, right) => left.daysUntilRenewal - right.daysUntilRenewal)
-      .slice(0, 5),
-    openQuotes: brokerQuotes
-      .filter((quote) => quote.status !== 'Sold' && quote.status !== 'Closed Lost')
-      .sort((left, right) => right.lastUpdated.localeCompare(left.lastUpdated))
-      .slice(0, 5),
-    enrollmentIssues: groups
-      .filter((group) => group.enrollmentSummary.pendingItems.length > 0)
-      .sort(
-        (left, right) =>
-          right.enrollmentSummary.pendingItems.length - left.enrollmentSummary.pendingItems.length
-      )
-      .slice(0, 5),
-    recentActivity,
-    commissionSnapshot: {
-      mtdCommissions: groups.reduce((sum, group) => sum + group.mtdCommission, 0),
-      postedGroups: groups.filter((group) => group.commissionStatus === 'Posted').length,
-      exceptions: groups.filter((group) => group.commissionStatus !== 'Posted').length,
-      pendingValue: groups
-        .filter((group) => group.commissionStatus !== 'Posted')
-        .reduce((sum, group) => sum + group.mtdCommission, 0)
+      assignedGroups: 18,
+      renewalsDue: 11,
+      openQuotes: 9,
+      enrollmentsInProgress: 6,
+      pendingTasks: 14,
+      mtdCommissions: 268_400
     }
   };
 }

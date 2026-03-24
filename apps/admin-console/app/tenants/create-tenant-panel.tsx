@@ -5,7 +5,7 @@ import type { FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { SectionCard } from '../../components/section-card';
-import { apiBaseUrl, getAdminAuthHeaders } from '../../lib/api-auth';
+import { config, getAdminAuthHeaders } from '../../lib/api-auth';
 
 type TenantStatus = 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
 type ModuleAudience = 'Member portal' | 'Provider portal' | 'Billing & Enrollment';
@@ -254,7 +254,7 @@ export function CreateTenantPanel() {
 
     async function loadRoles() {
       try {
-        const response = await fetch(`${apiBaseUrl}/platform-admin/roles`, {
+        const response = await fetch(`${config.apiBaseUrl}/platform-admin/roles`, {
           cache: 'no-store',
           headers: getAdminAuthHeaders()
         });
@@ -381,7 +381,7 @@ export function CreateTenantPanel() {
       );
       const primaryEmployerGroup = activeEmployerGroups[0];
 
-      const createResponse = await fetch(`${apiBaseUrl}/platform-admin/tenants`, {
+      const createResponse = await fetch(`${config.apiBaseUrl}/platform-admin/tenants`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -428,7 +428,7 @@ export function CreateTenantPanel() {
       const tenantQuery = `?tenant_id=${encodeURIComponent(tenantId)}`;
       setActivityLog((current) => [...current, `Created tenant record for ${tenantPayload.name}.`]);
 
-      const quotaResponse = await fetch(`${apiBaseUrl}/platform-admin/tenants/${tenantId}`, {
+      const quotaResponse = await fetch(`${config.apiBaseUrl}/platform-admin/tenants/${tenantId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -447,7 +447,7 @@ export function CreateTenantPanel() {
       }
       setActivityLog((current) => [...current, 'Applied tenant size and user limits.']);
 
-      const brandingResponse = await fetch(`${apiBaseUrl}/api/tenant-admin/branding${tenantQuery}`, {
+      const brandingResponse = await fetch(`${config.apiBaseUrl}/api/tenant-admin/branding${tenantQuery}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -469,7 +469,7 @@ export function CreateTenantPanel() {
       setActivityLog((current) => [...current, 'Saved branding and portal theme defaults.']);
 
       const modulesResponse = await fetch(
-        `${apiBaseUrl}/api/tenant-admin/purchased-modules${tenantQuery}`,
+        `${config.apiBaseUrl}/api/tenant-admin/purchased-modules${tenantQuery}`,
         {
           method: 'PUT',
           headers: {
@@ -488,7 +488,7 @@ export function CreateTenantPanel() {
       setActivityLog((current) => [...current, 'Enabled the selected portal modules.']);
 
       const notificationResponse = await fetch(
-        `${apiBaseUrl}/api/tenant-admin/notification-settings${tenantQuery}`,
+        `${config.apiBaseUrl}/api/tenant-admin/notification-settings${tenantQuery}`,
         {
           method: 'PUT',
           headers: {
@@ -513,7 +513,7 @@ export function CreateTenantPanel() {
       setActivityLog((current) => [...current, 'Saved notification behaviors and sender defaults.']);
 
       const billingResponse = await fetch(
-        `${apiBaseUrl}/api/tenant-admin/billing-enrollment-module-config${tenantQuery}`,
+        `${config.apiBaseUrl}/api/tenant-admin/billing-enrollment-module-config${tenantQuery}`,
         {
           method: 'PUT',
           headers: {
@@ -556,7 +556,7 @@ export function CreateTenantPanel() {
           employerGroup.employerKey.trim()
         )}`;
         const employerResponse = await fetch(
-          `${apiBaseUrl}/api/tenant-admin/employer-group-branding${employerQuery}`,
+          `${config.apiBaseUrl}/api/tenant-admin/employer-group-branding${employerQuery}`,
           {
             method: 'PUT',
             headers: {
@@ -593,7 +593,7 @@ export function CreateTenantPanel() {
       for (const connector of activeConnectors) {
         const parsedConfig = JSON.parse(connector.config) as Record<string, unknown>;
         const connectorResponse = await fetch(
-          `${apiBaseUrl}/api/connectors${tenantQuery}`,
+          `${config.apiBaseUrl}/api/connectors${tenantQuery}`,
           {
             method: 'POST',
             headers: {
@@ -640,7 +640,7 @@ export function CreateTenantPanel() {
           throw new Error(`Missing role definition for ${account.roleCode}.`);
         }
 
-        const userResponse = await fetch(`${apiBaseUrl}/api/tenant-admin/users${tenantQuery}`, {
+        const userResponse = await fetch(`${config.apiBaseUrl}/api/tenant-admin/users${tenantQuery}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -665,7 +665,7 @@ export function CreateTenantPanel() {
 
         const createdUser = (await userResponse.json()) as { id: string };
         const roleResponse = await fetch(
-          `${apiBaseUrl}/api/tenant-admin/users/${createdUser.id}/roles${tenantQuery}`,
+          `${config.apiBaseUrl}/api/tenant-admin/users/${createdUser.id}/roles${tenantQuery}`,
           {
             method: 'POST',
             headers: {

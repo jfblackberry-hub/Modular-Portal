@@ -48,7 +48,7 @@ async function syncUserTenantMemberships() {
     })
   );
 }
-const apiStorageDir = path.resolve(process.cwd(), '../../apps/api/storage');
+const apiStorageDir = path.resolve(process.cwd(), '../../storage');
 
 const PRIMARY_EMPLOYEE_COUNT = 12300;
 const SECONDARY_EMPLOYEE_COUNT = 1850;

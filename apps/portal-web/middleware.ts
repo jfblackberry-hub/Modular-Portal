@@ -1,16 +1,19 @@
+import './lib/runtime-config';
+
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-import {
-  getPortalSessionCookieName,
-  readPortalSessionEnvelopeFromCookie
-} from './lib/portal-session-cookie';
 import { hasBillingEnrollmentRoleAccess } from './lib/billing-enrollment-access';
 import {
   hasBillingPortalAudienceAccess,
   mapLegacyBillingPortalPath,
   resolveBillingPortalAudience
 } from './lib/billing-portal-audience';
+import { DEMO_ACCESS_COOKIE, findDemoUser } from './lib/demo-access';
+import {
+  getPortalSessionCookieNames,
+  readPortalSessionEnvelopeFromCookie
+} from './lib/portal-session-cookie';
 import { isTenantModuleEnabled, type TenantPortalModuleId } from './lib/tenant-modules';
 
 type PortalUserCookie = {
@@ -70,49 +73,85 @@ function toLoginRedirect(request: NextRequest) {
   return NextResponse.redirect(redirectUrl);
 }
 
-function toFallbackRedirect(request: NextRequest, pathname: string) {
-  const redirectUrl = request.nextUrl.clone();
-  redirectUrl.pathname = pathname;
-  redirectUrl.search = '';
-  return NextResponse.redirect(redirectUrl);
-}
+async function readPortalSessionFromRequest(request: NextRequest) {
+  for (const cookieName of getPortalSessionCookieNames()) {
+    const portalSession = await readPortalSessionEnvelopeFromCookie(
+      request.cookies.get(cookieName)?.value
+    );
 
-function hasTenantAdminAccess(portalUser: PortalUserCookie | null) {
-  if (!portalUser) {
-    return false;
+    if (portalSession) {
+      return portalSession;
+    }
   }
 
-  const roleSet = new Set(portalUser.roles ?? []);
-  const sessionType = portalUser.session?.type;
-  const tenantId = portalUser.session?.tenantId;
-
-  if (!tenantId || sessionType !== 'tenant_admin') {
-    return false;
-  }
-
-  return roleSet.has('tenant_admin') ||
-    roleSet.has('TENANT_ADMIN') ||
-    roleSet.has('tenant_operator') ||
-    roleSet.has('TENANT_OPERATOR');
+  return null;
 }
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  if (pathname === '/tenant-admin' || pathname.startsWith('/tenant-admin/')) {
-    const portalSession = await readPortalSessionEnvelopeFromCookie(
-      request.cookies.get(getPortalSessionCookieName())?.value
-    );
+  const isApiRoute = pathname === '/api' || pathname.startsWith('/api/');
+  const demoAccessCookie = request.cookies.get(DEMO_ACCESS_COOKIE)?.value ?? '';
+  const hasDemoAccess = Boolean(findDemoUser(demoAccessCookie));
+  const isDemoAccessApi = pathname === '/api/demo-access';
+  const isProtectedDemoPage =
+    pathname === '/login' ||
+    pathname.startsWith('/login') ||
+    pathname === '/provider-login' ||
+    pathname.startsWith('/provider-login') ||
+    pathname === '/employer-login' ||
+    pathname.startsWith('/employer-login');
+  const isProtectedDemoAuthApi =
+    pathname === '/api/auth/login' ||
+    pathname === '/api/auth/login/provider' ||
+    pathname === '/api/auth/login/employer' ||
+    pathname === '/api/auth/session' ||
+    pathname === '/api/auth/logout';
+
+  if (isDemoAccessApi) {
+    return NextResponse.next();
+  }
+
+  if (isProtectedDemoPage && !hasDemoAccess) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = '/';
+    redirectUrl.search = '';
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (isProtectedDemoAuthApi && !hasDemoAccess) {
+    return NextResponse.json({ message: 'Demo access required.' }, { status: 403 });
+  }
+
+  if (
+    isApiRoute &&
+    pathname !== '/api/auth/login' &&
+    pathname !== '/api/auth/login/employer' &&
+    pathname !== '/api/auth/login/provider' &&
+    pathname !== '/api/auth/logout' &&
+    pathname !== '/api/auth/session'
+  ) {
+    const portalSession = await readPortalSessionFromRequest(request);
     const portalUser = portalSession?.user as PortalUserCookie | null;
 
     if (!portalUser || !portalSession?.accessToken) {
-      return toLoginRedirect(request);
+      return NextResponse.json({ message: 'Authentication required.' }, { status: 401 });
     }
 
-    if (!hasTenantAdminAccess(portalUser)) {
-      return toFallbackRedirect(request, '/dashboard');
+    const tenantId =
+      portalUser.session?.tenantId ??
+      portalUser.tenant?.id ??
+      null;
+
+    if (!tenantId) {
+      return NextResponse.json(
+        { message: 'Tenant context required. No default tenant fallback is available.' },
+        { status: 403 }
+      );
     }
 
-    return NextResponse.next();
+    const response = NextResponse.next();
+    response.headers.set('x-tenant-id', tenantId);
+    return response;
   }
 
   const route = routeModuleMap.find((item) => pathname === item.prefix || pathname.startsWith(`${item.prefix}/`));
@@ -121,9 +160,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const portalSession = await readPortalSessionEnvelopeFromCookie(
-    request.cookies.get(getPortalSessionCookieName())?.value
-  );
+  const portalSession = await readPortalSessionFromRequest(request);
   const portalUser = portalSession?.user as PortalUserCookie | null;
 
   if (!portalUser || !portalSession?.accessToken) {
@@ -215,6 +252,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
+    '/login',
+    '/provider-login',
+    '/employer-login',
     '/provider',
     '/provider/:path*',
     '/dashboard',
@@ -227,6 +268,8 @@ export const config = {
     '/broker/:path*',
     '/individual',
     '/individual/:path*',
+    '/api',
+    '/api/:path*',
     '/tenant-admin',
     '/tenant-admin/:path*'
   ]

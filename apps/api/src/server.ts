@@ -1,16 +1,32 @@
-import Fastify from 'fastify';
+import { randomUUID } from 'node:crypto';
+
+import { readProcessEnv } from '@payer-portal/config';
+import { clearTenantContext, setTenantContext } from '@payer-portal/database';
 import {
+  createStructuredLogger,
   initializeMonitoring,
+  logAuthenticationEvent,
+  logAuthorizationFailure,
+  recordApiRequest,
   registerBillingEnrollmentAdapters,
   registerIntegrationEventSubscriptions,
-  recordApiRequest,
   registerJobEventSubscriptions
 } from '@payer-portal/server';
+import Fastify from 'fastify';
 
-import { verifyAccessToken } from './services/access-token-service';
-import { logPreviewSessionActivity } from './services/preview-session-service';
 import { registerPlugins } from './plugins';
 import { registerRoutes } from './routes';
+import { apiRuntimeConfig } from './runtime-config';
+import { verifyAccessToken } from './services/access-token-service';
+import { logPreviewSessionActivity } from './services/preview-session-service';
+import {
+  resolveOptionalTenantContext,
+  TENANT_HEADER_NAME
+} from './services/tenant-context-service';
+
+const serviceLogger = createStructuredLogger({
+  serviceName: apiRuntimeConfig.observability.serviceName
+});
 
 function getBearerToken(authorizationHeader: string | string[] | undefined) {
   const value = Array.isArray(authorizationHeader)
@@ -29,6 +45,50 @@ function getBearerToken(authorizationHeader: string | string[] | undefined) {
   return token;
 }
 
+function getHeaderValue(value: string | string[] | undefined) {
+  if (typeof value === 'string') {
+    return value.trim() || null;
+  }
+
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    return value[0].trim() || null;
+  }
+
+  return null;
+}
+
+function resolveAuditTenantId(request: {
+  headers: Record<string, string | string[] | undefined>;
+}, tokenPayload: ReturnType<typeof verifyAccessToken>) {
+  const headerTenantId = getHeaderValue(request.headers[TENANT_HEADER_NAME]);
+
+  if (headerTenantId && headerTenantId !== 'platform') {
+    return headerTenantId;
+  }
+
+  if (tokenPayload?.tenantId && tokenPayload.tenantId !== 'platform') {
+    return tokenPayload.tenantId;
+  }
+
+  return null;
+}
+
+function isTenantContextExemptRoute(url: string) {
+  return (
+    url === '/liveness' ||
+    url === '/readiness' ||
+    url === '/health' ||
+    url.startsWith('/health/') ||
+    url.startsWith('/api/health/') ||
+    url === '/metrics' ||
+    url === '/auth/login' ||
+    url === '/auth/login/provider' ||
+    url === '/auth/login/employer' ||
+    url === '/auth/portal-handoffs/consume' ||
+    url.startsWith('/preview-sessions/launch/')
+  );
+}
+
 export function buildServer() {
   initializeMonitoring();
   registerJobEventSubscriptions();
@@ -36,11 +96,59 @@ export function buildServer() {
   registerBillingEnrollmentAdapters();
 
   const app = Fastify({
-    logger: true
+    trustProxy: apiRuntimeConfig.security.trustProxy,
+    logger: {
+      level: apiRuntimeConfig.observability.logLevel,
+      base: {
+        service: apiRuntimeConfig.observability.serviceName
+      },
+      messageKey: 'message'
+    },
+    genReqId(request) {
+      const headerValue = request.headers['x-correlation-id'];
+      const correlationId =
+        typeof headerValue === 'string'
+          ? headerValue
+          : Array.isArray(headerValue)
+            ? headerValue[0]
+            : undefined;
+
+      return correlationId?.trim() || randomUUID();
+    },
+    requestIdHeader: 'x-correlation-id'
   });
 
   app.addHook('onRequest', async (request, reply) => {
+    clearTenantContext();
     request.headers['x-request-start-ms'] = String(Date.now());
+    reply.header('x-correlation-id', request.id);
+
+    try {
+      const tenantContext = resolveOptionalTenantContext(request.headers);
+
+      if (!tenantContext) {
+        if (!isTenantContextExemptRoute(request.url)) {
+          return reply.status(401).send({
+            message:
+              'Tenant context required. Provide x-tenant-id or a tenant-scoped bearer token.'
+          });
+        }
+      } else {
+        clearTenantContext();
+        // Attach the tenant to async request-local DB context immediately so all
+        // downstream Prisma access stays bound to the authenticated tenant.
+        setTenantContext(tenantContext);
+        request.headers[TENANT_HEADER_NAME] = tenantContext.tenantId;
+        reply.header(TENANT_HEADER_NAME, tenantContext.tenantId);
+      }
+    } catch (error) {
+      return reply.status(403).send({
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Tenant context mismatch.'
+      });
+    }
 
     const tokenPayload = verifyAccessToken(getBearerToken(request.headers.authorization));
     if (
@@ -77,15 +185,62 @@ export function buildServer() {
   app.addHook('onResponse', async (request, reply) => {
     const startedAt = Number(request.headers['x-request-start-ms'] ?? Date.now());
     const route = request.routeOptions.url || request.url;
+    const durationMs = Date.now() - startedAt;
 
     recordApiRequest({
-      durationMs: Date.now() - startedAt,
+      durationMs,
       method: request.method,
       route,
       statusCode: reply.statusCode
     });
 
+    request.log.info({
+      correlationId: request.id,
+      durationMs,
+      method: request.method,
+      route,
+      statusCode: reply.statusCode
+    }, 'request completed');
+
     const tokenPayload = verifyAccessToken(getBearerToken(request.headers.authorization));
+
+    if (reply.statusCode === 401 || reply.statusCode === 403) {
+      const tenantId = resolveAuditTenantId(
+        request as { headers: Record<string, string | string[] | undefined> },
+        tokenPayload
+      );
+
+      if (tenantId) {
+        const auditInput = {
+          tenantId,
+          actorUserId: tokenPayload?.sub ?? null,
+          resourceType: 'route',
+          resourceId: route,
+          request: {
+            correlationId: request.id,
+            method: request.method,
+            route,
+            statusCode: reply.statusCode
+          },
+          metadata: {
+            outcome: reply.statusCode === 401 ? 'authentication_failed' : 'authorization_failed'
+          },
+          ipAddress: request.ip,
+          userAgent: request.headers['user-agent']
+        } as const;
+
+        const auditPromise =
+          reply.statusCode === 401
+            ? logAuthenticationEvent({
+                ...auditInput,
+                action: 'auth.authentication.failed'
+              })
+            : logAuthorizationFailure(auditInput);
+
+        await auditPromise.catch(() => undefined);
+      }
+    }
+
     if (tokenPayload?.previewSessionId) {
       const isWrite = !['GET', 'HEAD', 'OPTIONS'].includes(request.method);
       const action =
@@ -112,6 +267,43 @@ export function buildServer() {
         userAgent: request.headers['user-agent']
       }).catch(() => undefined);
     }
+
+    clearTenantContext();
+  });
+
+  app.addHook('onError', async () => {
+    clearTenantContext();
+  });
+
+  app.setErrorHandler((error, request, reply) => {
+    const resolvedError = error instanceof Error ? error : new Error(String(error));
+
+    request.log.error({
+      correlationId: request.id,
+      errorMessage: resolvedError.message,
+      errorName: resolvedError.name,
+      method: request.method,
+      route: request.routeOptions.url || request.url,
+      stack: resolvedError.stack
+    }, 'request failed');
+
+    if (reply.sent) {
+      clearTenantContext();
+      return;
+    }
+
+    const statusCode =
+      typeof (error as { statusCode?: unknown }).statusCode === 'number' &&
+      (error as { statusCode?: number }).statusCode! >= 400
+        ? (error as { statusCode?: number }).statusCode!
+        : 500;
+
+    reply.status(statusCode).send({
+      message: statusCode >= 500 ? 'Internal server error' : resolvedError.message,
+      correlationId: request.id
+    });
+
+    clearTenantContext();
   });
 
   registerPlugins(app);
@@ -122,17 +314,29 @@ export function buildServer() {
 
 async function start() {
   const app = buildServer();
-  const port = Number(process.env.PORT ?? 3002);
-  const host = process.env.HOST ?? '0.0.0.0';
+  const port = apiRuntimeConfig.port ?? apiRuntimeConfig.runtimeModel.ports.api;
+  const host = apiRuntimeConfig.host;
 
   try {
     await app.listen({ port, host });
+    serviceLogger.info('api service started', {
+      correlationId: resolveStartupCorrelationId(),
+      host,
+      port
+    });
   } catch (error) {
-    app.log.error(error);
+    serviceLogger.error('api service failed to start', {
+      correlationId: resolveStartupCorrelationId(),
+      errorMessage: error instanceof Error ? error.message : String(error)
+    });
     process.exit(1);
   }
 }
 
-if (process.env.PAYER_PORTAL_API_AUTOSTART !== 'false') {
+function resolveStartupCorrelationId() {
+  return readProcessEnv('STARTUP_CORRELATION_ID') || randomUUID();
+}
+
+if (readProcessEnv('PAYER_PORTAL_API_AUTOSTART') !== 'false') {
   void start();
 }

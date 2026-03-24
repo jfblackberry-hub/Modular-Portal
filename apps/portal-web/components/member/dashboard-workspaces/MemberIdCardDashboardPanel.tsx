@@ -1,9 +1,13 @@
 'use client';
 
-import { MemberWorkspaceDataBoundary } from './MemberWorkspaceDataBoundary';
 import { MemberIdCardWorkspaceContent } from './MemberIdCardWorkspaceContent';
+import { MemberWorkspaceDataBoundary } from './MemberWorkspaceDataBoundary';
 
-export function MemberIdCardDashboardPanel() {
+export function MemberIdCardDashboardPanel({
+  sessionScopeKey
+}: {
+  sessionScopeKey: string;
+}) {
   return (
     <MemberWorkspaceDataBoundary<{
       effectiveDate?: string;
@@ -23,6 +27,7 @@ export function MemberIdCardDashboardPanel() {
     }>
       endpoint="/api/member-dashboard/workspaces/id-card"
       label="Digital ID card"
+      sessionScopeKey={sessionScopeKey}
       render={(data) => <MemberIdCardWorkspaceContent embedded {...data} />}
     />
   );

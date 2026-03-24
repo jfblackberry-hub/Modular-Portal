@@ -1,4 +1,6 @@
 import './globals.css';
+import '../lib/server-runtime';
+import '../lib/runtime-config';
 
 import type { Metadata } from 'next';
 

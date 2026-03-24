@@ -1,5 +1,5 @@
-import { PlatformAdminGate } from '../../../../../components/platform-admin-gate';
 import { AuditLogPage } from '../../../../../components/audit-log-page';
+import { PlatformAdminGate } from '../../../../../components/platform-admin-gate';
 
 export default async function AdminPlatformLogsPage({
   searchParams

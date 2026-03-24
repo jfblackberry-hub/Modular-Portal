@@ -1,11 +1,7 @@
 import 'server-only';
 
-import { getPortalSessionAccessToken } from './portal-session';
-
-const apiBaseUrl =
-  process.env.API_BASE_URL ??
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  'http://localhost:3002';
+import { buildPortalApiHeaders } from './api-request';
+import { config } from './server-runtime';
 
 export type TenantAdminAuditEventRecord = {
   id: string;
@@ -40,17 +36,15 @@ type TenantAdminAuditResponse = {
 };
 
 export async function getTenantAdminAuditEvents() {
-  const accessToken = await getPortalSessionAccessToken();
+  const headers = await buildPortalApiHeaders();
 
-  if (!accessToken) {
+  if (!headers.get('authorization')) {
     return [] as TenantAdminAuditEventRecord[];
   }
 
   try {
-    const response = await fetch(`${apiBaseUrl}/audit/events?page=1&page_size=50`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      },
+    const response = await fetch(`${config.apiBaseUrl}/audit/events?page=1&page_size=50`, {
+      headers,
       cache: 'no-store'
     });
 

@@ -10,8 +10,7 @@ export type PreviewPortalType =
   | 'member'
   | 'provider'
   | 'broker'
-  | 'employer'
-  | 'tenant_admin';
+  | 'employer';
 
 export type PreviewSessionMode = 'READ_ONLY' | 'FUNCTIONAL';
 
@@ -58,8 +57,7 @@ const portalRoleCodes: Record<PreviewPortalType, string[]> = {
   member: ['member'],
   provider: ['provider'],
   broker: ['broker', 'broker_admin', 'broker_staff', 'broker_readonly', 'broker_read_only'],
-  employer: ['employer_group_admin'],
-  tenant_admin: ['tenant_admin']
+  employer: ['employer_group_admin']
 };
 
 const MAX_ROUTE_HISTORY = 40;
@@ -87,7 +85,8 @@ function normalizePreviewRoute(route: string | undefined | null) {
 
   if (value.startsWith('/preview/')) {
     const [, , , ...rest] = value.split('/');
-    return `/${rest.join('/')}` || '/';
+    const normalizedPreviewRoute = rest.join('/');
+    return normalizedPreviewRoute ? `/${normalizedPreviewRoute}` : '/';
   }
 
   return value.startsWith('/') ? value : `/${value}`;
@@ -137,7 +136,7 @@ function buildSessionRecord(session: {
       firstName: session.targetUser.firstName,
       lastName: session.targetUser.lastName
     },
-    launchUrl: `/api/admin-preview/start?token=${encodeURIComponent(session.launchToken)}`
+    launchUrl: `/api/admin-preview/start/${encodeURIComponent(session.launchToken)}`
   };
 }
 
@@ -196,8 +195,6 @@ function getPreviewHomePath(portalType: PreviewPortalType) {
       return '/broker';
     case 'employer':
       return '/employer';
-    case 'tenant_admin':
-      return '/tenant-admin/dashboard';
     case 'member':
     default:
       return '/dashboard';
@@ -259,6 +256,7 @@ function buildPreviewUserSnapshot(
     lastName: user.lastName,
     landingContext: previewSession.portalType,
     session: {
+      personaType: 'end_user' as const,
       type: 'end_user' as const,
       tenantId: user.tenant.id,
       roles,
@@ -529,7 +527,7 @@ export async function duplicatePreviewSession(
   sessionId: string,
   context: AuditContext
 ) {
-  const session = await prisma.previewSession.findUnique({
+  const session = await prisma.previewSession.findFirst({
     where: {
       id: sessionId
     }
@@ -555,7 +553,7 @@ export async function endPreviewSession(
   sessionId: string,
   context: AuditContext
 ) {
-  const session = await prisma.previewSession.findUnique({
+  const session = await prisma.previewSession.findFirst({
     where: {
       id: sessionId
     }
@@ -565,27 +563,32 @@ export async function endPreviewSession(
     throw new Error('Preview session not found');
   }
 
-  const ended = await prisma.previewSession.update({
+  const result = await prisma.previewSession.updateMany({
     where: {
-      id: sessionId
+      id: sessionId,
+      tenantId: session.tenantId
     },
     data: {
       endedAt: new Date()
     }
   });
 
+  if (result.count === 0) {
+    throw new Error('Preview session not found');
+  }
+
   await logAuditEvent({
-    tenantId: ended.tenantId,
+    tenantId: session.tenantId,
     actorUserId: context.actorUserId,
     action: 'preview.session.ended',
     entityType: 'PreviewSession',
-    entityId: ended.id,
+    entityId: session.id,
     ipAddress: context.ipAddress,
     userAgent: context.userAgent,
     metadata: {
-      portalType: ended.portalType,
-      persona: ended.persona,
-      mode: ended.mode
+      portalType: session.portalType,
+      persona: session.persona,
+      mode: session.mode
     }
   });
 
@@ -595,7 +598,7 @@ export async function endPreviewSession(
 }
 
 export async function resolvePreviewLaunch(launchToken: string) {
-  const session = await prisma.previewSession.findUnique({
+  const session = await prisma.previewSession.findFirst({
     where: {
       launchToken
     },
@@ -638,9 +641,10 @@ export async function resolvePreviewLaunch(launchToken: string) {
     throw new Error('Preview session target user is missing an active tenant.');
   }
 
-  await prisma.previewSession.update({
+  await prisma.previewSession.updateMany({
     where: {
-      id: session.id
+      id: session.id,
+      tenantId: session.tenantId
     },
     data: {
       lastAccessedAt: new Date()
@@ -796,7 +800,7 @@ export async function recordPreviewSessionEvent(input: {
   ipAddress?: string;
   userAgent?: string;
 }) {
-  const session = await prisma.previewSession.findUnique({
+  const session = await prisma.previewSession.findFirst({
     where: {
       id: input.previewSessionId
     },
@@ -825,9 +829,10 @@ export async function recordPreviewSessionEvent(input: {
     -MAX_ROUTE_HISTORY
   );
 
-  await prisma.previewSession.update({
+  const updated = await prisma.previewSession.updateMany({
     where: {
-      id: input.previewSessionId
+      id: input.previewSessionId,
+      tenantId: input.tenantId
     },
     data: {
       currentRoute: normalizedRoute,
@@ -835,6 +840,10 @@ export async function recordPreviewSessionEvent(input: {
       routeHistory: nextHistory as unknown as Prisma.InputJsonValue
     }
   });
+
+  if (updated.count === 0) {
+    throw new Error('Preview session not found');
+  }
 
   const auditActionByType: Record<typeof input.type, string> = {
     route_changed: 'preview.session.route.changed',

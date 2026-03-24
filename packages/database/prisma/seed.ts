@@ -61,7 +61,7 @@ async function syncUserTenantMemberships() {
     })
   );
 }
-const apiStorageDir = path.resolve(process.cwd(), '../../apps/api/storage');
+const apiStorageDir = path.resolve(process.cwd(), '../../storage');
 
 const mockPortalDocuments = [
   {

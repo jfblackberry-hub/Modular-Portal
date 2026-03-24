@@ -1,6 +1,7 @@
-import { afterEach, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { afterEach, test } from 'node:test';
 
+import type { RegisteredAdapter } from '../src/adapters/adapter.js';
 import {
   clear,
   discover,
@@ -8,7 +9,6 @@ import {
   list,
   register
 } from '../src/adapters/adapterRegistry.js';
-import type { RegisteredAdapter } from '../src/adapters/adapter.js';
 
 function createAdapter(
   key: string,

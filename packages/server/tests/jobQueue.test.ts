@@ -1,15 +1,16 @@
-import { after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, rm } from 'node:fs/promises';
+import { after, beforeEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
 
 import { prisma } from '@payer-portal/database';
 
-import { clearJobHandlers, registerJobHandler } from '../src/jobs/jobRegistry.js';
 import { enqueueJob, getJobById, listJobs } from '../src/jobs/jobQueue.js';
+import { clearJobHandlers, registerJobHandler } from '../src/jobs/jobRegistry.js';
 import { JOB_STATUS } from '../src/jobs/jobTypes.js';
+import { runNextJob } from '../src/jobs/jobWorker.js';
 import { getConsoleEmailLogPath } from '../src/providers/consoleEmailProvider.js';
 import {
   createNotification,
@@ -19,7 +20,6 @@ import {
   resetEmailProvider,
   setEmailProvider
 } from '../src/services/notificationService.js';
-import { runNextJob } from '../src/jobs/jobWorker.js';
 
 const TEST_PREFIX = 'test.jobs.';
 

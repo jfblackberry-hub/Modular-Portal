@@ -1,9 +1,10 @@
-import type { PlatformEvent } from '../events/eventTypes.js';
 import type { ConnectorConfig, Prisma } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
 
+import type { PlatformEvent } from '../events/eventTypes.js';
 import { recordIntegrationExecution } from '../monitoring/telemetry.js';
-import { logAuditEvent } from '../services/auditService.js';
+import { createStructuredLogger } from '../observability/logger.js';
+import { logAuditEvent, logIntegrationEvent } from '../services/auditService.js';
 import {
   INTEGRATION_EXECUTION_STATUS,
   INTEGRATION_TRIGGER_MODE,
@@ -26,19 +27,22 @@ function createLogger(input: {
   tenantId: string;
   triggerMode: IntegrationTriggerMode;
 }) {
+  const logger = createStructuredLogger({
+    serviceName: 'api'
+  }).child({
+    adapterKey: input.adapterKey,
+    connectorId: input.connectorId,
+    tenantId: input.tenantId,
+    triggerMode: input.triggerMode,
+    subsystem: 'integration'
+  });
+
   function log(
     level: 'debug' | 'error' | 'info' | 'warn',
     message: string,
     metadata?: Record<string, unknown>
   ) {
-    console[level]('[integration]', {
-      adapterKey: input.adapterKey,
-      connectorId: input.connectorId,
-      message,
-      tenantId: input.tenantId,
-      triggerMode: input.triggerMode,
-      ...metadata
-    });
+    logger[level](message, metadata);
   }
 
   return {
@@ -112,11 +116,31 @@ async function markExecutionFinished(
     metadata?: Record<string, unknown>;
     recordsProcessed?: number;
     status: typeof INTEGRATION_EXECUTION_STATUS.FAILED | typeof INTEGRATION_EXECUTION_STATUS.SUCCEEDED;
-  }
+  },
+  tenantId?: string
 ) {
-  return prisma.integrationExecution.update({
+  const execution =
+    tenantId
+      ? await prisma.integrationExecution.findFirst({
+          where: {
+            id: executionId,
+            tenantId
+          }
+        })
+      : await prisma.integrationExecution.findFirst({
+          where: {
+            id: executionId
+          }
+        });
+
+  if (!execution) {
+    throw new Error('Integration execution not found');
+  }
+
+  const result = await prisma.integrationExecution.updateMany({
     where: {
-      id: executionId
+      id: executionId,
+      tenantId: execution.tenantId
     },
     data: {
       eventsPublished: input.eventsPublished,
@@ -127,6 +151,23 @@ async function markExecutionFinished(
       status: input.status
     }
   });
+
+  if (result.count === 0) {
+    throw new Error('Integration execution not found');
+  }
+
+  const updatedExecution = await prisma.integrationExecution.findFirst({
+    where: {
+      id: executionId,
+      tenantId: execution.tenantId
+    }
+  });
+
+  if (!updatedExecution) {
+    throw new Error('Integration execution not found');
+  }
+
+  return updatedExecution;
 }
 
 export async function executeIntegration(connectorId: string, input: {
@@ -137,7 +178,7 @@ export async function executeIntegration(connectorId: string, input: {
 } = {}) {
   registerDefaultIntegrations();
 
-  const connector = await prisma.connectorConfig.findUnique({
+  const connector = await prisma.connectorConfig.findFirst({
     where: {
       id: connectorId
     }
@@ -180,12 +221,12 @@ export async function executeIntegration(connectorId: string, input: {
     attempt: input.attempt ?? 1,
     audit: {
       record: async (auditInput) => {
-        await logAuditEvent({
+        await logIntegrationEvent({
           tenantId: connector.tenantId,
           actorUserId: auditInput.actorUserId ?? input.requestedByUserId ?? null,
           action: auditInput.action,
-          entityType: 'Integration',
-          entityId: connector.id,
+          resourceType: 'Integration',
+          resourceId: connector.id,
           metadata: auditInput.metadata
         });
       }
@@ -212,9 +253,10 @@ export async function executeIntegration(connectorId: string, input: {
       throw new Error(result.message ?? 'Integration sync failed');
     }
 
-    const updatedConnector = await prisma.connectorConfig.update({
+    const connectorUpdateResult = await prisma.connectorConfig.updateMany({
       where: {
-        id: connector.id
+        id: connector.id,
+        tenantId: connector.tenantId
       },
       data: {
         status: 'ACTIVE',
@@ -222,13 +264,28 @@ export async function executeIntegration(connectorId: string, input: {
       }
     });
 
+    if (connectorUpdateResult.count === 0) {
+      throw new Error('Connector config not found');
+    }
+
+    const updatedConnector = await prisma.connectorConfig.findFirst({
+      where: {
+        id: connector.id,
+        tenantId: connector.tenantId
+      }
+    });
+
+    if (!updatedConnector) {
+      throw new Error('Connector config not found');
+    }
+
     await markExecutionFinished(execution.id, {
       eventsPublished: result.eventsPublished,
       message: result.message,
       metadata: result.metadata,
       recordsProcessed: result.recordsProcessed,
       status: INTEGRATION_EXECUTION_STATUS.SUCCEEDED
-    });
+    }, connector.tenantId);
 
     await logAuditEvent({
       tenantId: connector.tenantId,
@@ -262,7 +319,7 @@ export async function executeIntegration(connectorId: string, input: {
     await markExecutionFinished(execution.id, {
       message,
       status: INTEGRATION_EXECUTION_STATUS.FAILED
-    });
+    }, connector.tenantId);
 
     await logAuditEvent({
       tenantId: connector.tenantId,
@@ -291,7 +348,7 @@ export async function executeIntegration(connectorId: string, input: {
 export async function runIntegrationHealthCheck(connectorId: string) {
   registerDefaultIntegrations();
 
-  const connector = await prisma.connectorConfig.findUnique({
+  const connector = await prisma.connectorConfig.findFirst({
     where: {
       id: connectorId
     }

@@ -1,9 +1,8 @@
 'use client';
 
 import { getTimeOfDayGreeting } from '../../lib/get-time-of-day-greeting';
-import type { BrokerAlert, BrokerGroup, BrokerTask } from '../../lib/broker-portfolio-data';
-import type { BrokerQuote, BrokerRenewal } from '../../lib/broker-sales-workspace-data';
-import { InlineButton, PageHeader, StatCard, SupportLink, SurfaceCard } from '../portal-ui';
+import { InlineButton, PageHeader, StatCard } from '../portal-ui';
+import { BrokerDashboardWorkspaceSection } from './BrokerDashboardWorkspaceSection';
 
 type BrokerCommandCenterDashboardProps = {
   agencyName: string;
@@ -19,17 +18,7 @@ type BrokerCommandCenterDashboardProps = {
     pendingTasks: number;
     mtdCommissions: number;
   };
-  renewalsNeedingAction: BrokerRenewal[];
-  openQuotes: BrokerQuote[];
-  enrollmentIssues: BrokerGroup[];
-  commissionSnapshot: {
-    mtdCommissions: number;
-    postedGroups: number;
-    exceptions: number;
-    pendingValue: number;
-  };
-  alerts: BrokerAlert[];
-  tasks: BrokerTask[];
+  sessionScopeKey: string;
 };
 
 function formatCurrency(value: number) {
@@ -40,13 +29,6 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-function formatShortDate(value: string) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric'
-  });
-}
-
 export function BrokerCommandCenterDashboard({
   agencyName,
   brokerName,
@@ -54,15 +36,10 @@ export function BrokerCommandCenterDashboard({
   canManage,
   primaryActionLabel,
   kpis,
-  renewalsNeedingAction,
-  openQuotes,
-  enrollmentIssues,
-  commissionSnapshot,
-  alerts,
-  tasks
+  sessionScopeKey
 }: BrokerCommandCenterDashboardProps) {
   const greeting = getTimeOfDayGreeting(new Date());
-  const heroDescription = `${agencyName} portfolio view for ${personaLabel.toLowerCase()} operations. Track renewal exposure, open quotes, enrollment blockers, and commission activity across your assigned groups.`;
+  const heroDescription = `${agencyName} portfolio view for ${personaLabel.toLowerCase()} operations. Review summary KPIs first, then open the broker workspaces you need for renewals, quotes, commissions, and book-of-business detail.`;
   const statCards = [
     {
       label: 'Assigned Groups',
@@ -71,10 +48,11 @@ export function BrokerCommandCenterDashboard({
       tone: 'info' as const,
       href: '/broker/book-of-business',
       ctaLabel: 'Open book of business',
-      previewItems: enrollmentIssues.slice(0, 3).map((group) => {
-        const pendingCount = group.enrollmentSummary.pendingItems.length;
-        return `${group.groupName}: ${group.status} with ${pendingCount} enrollment item${pendingCount === 1 ? '' : 's'} to review.`;
-      })
+      previewItems: [
+        'Open the book-of-business workspace to load assigned group detail.',
+        'Portfolio segmentation and filters stay behind explicit workspace activation.',
+        'Use the workspace when you need group-level enrollment context.'
+      ]
     },
     {
       label: 'Renewals Due',
@@ -83,9 +61,11 @@ export function BrokerCommandCenterDashboard({
       tone: 'warning' as const,
       href: '/broker/renewals',
       ctaLabel: 'Review renewal groups',
-      previewItems: renewalsNeedingAction.slice(0, 3).map((renewal) =>
-        `${renewal.groupName}: ${renewal.status} due ${formatShortDate(renewal.renewalDate)}.`
-      )
+      previewItems: [
+        'Renewal group detail loads only after you open the renewals workspace.',
+        'Keep first paint focused on KPI summary instead of full renewal datasets.',
+        'Use the renewals tab for expiring groups and due-date triage.'
+      ]
     },
     {
       label: 'Open Quotes',
@@ -94,9 +74,11 @@ export function BrokerCommandCenterDashboard({
       tone: 'default' as const,
       href: '/broker/quotes',
       ctaLabel: 'View quote activity',
-      previewItems: openQuotes.slice(0, 3).map((quote) =>
-        `${quote.prospectOrEmployerName}: ${quote.productsRequested.join(', ')}.`
-      )
+      previewItems: [
+        'Quote pipeline detail stays unloaded until the quotes workspace is selected.',
+        'Initial render keeps the dashboard summary-only for deterministic boot.',
+        'Open the quotes workspace for prospect and product-level context.'
+      ]
     },
     {
       label: 'Enrollments In Progress',
@@ -105,10 +87,11 @@ export function BrokerCommandCenterDashboard({
       tone: 'success' as const,
       href: '/broker/enrollments',
       ctaLabel: 'Open enrollment oversight',
-      previewItems: enrollmentIssues.slice(0, 3).map((group) => {
-        const nextItem = group.enrollmentSummary.pendingItems[0] ?? 'Review group setup';
-        return `${group.groupName}: ${nextItem}.`;
-      })
+      previewItems: [
+        'Enrollment follow-up remains available through broker workspaces and route-level pages.',
+        'The landing view keeps implementation detail out of the initial payload.',
+        'Use workspaces for case-specific enrollment follow-up.'
+      ]
     },
     {
       label: 'Pending Tasks',
@@ -117,7 +100,11 @@ export function BrokerCommandCenterDashboard({
       tone: 'warning' as const,
       href: '/broker/tasks',
       ctaLabel: 'Open work queue',
-      previewItems: tasks.slice(0, 3).map((task) => `${task.title}: due ${formatShortDate(task.dueDate)}.`)
+      previewItems: [
+        'Task lists remain route-level detail instead of initial dashboard payload.',
+        'Open the work queue only when operational follow-up is needed.',
+        'This keeps the broker landing page summary-focused.'
+      ]
     },
     {
       label: 'MTD Commissions',
@@ -127,9 +114,9 @@ export function BrokerCommandCenterDashboard({
       href: '/broker/commissions',
       ctaLabel: 'Review commission details',
       previewItems: [
-        `${commissionSnapshot.postedGroups} posted group statement${commissionSnapshot.postedGroups === 1 ? '' : 's'}.`,
-        `${commissionSnapshot.exceptions} exception${commissionSnapshot.exceptions === 1 ? '' : 's'} need reconciliation.`,
-        `${formatCurrency(commissionSnapshot.pendingValue)} is still pending.`
+        'Commission records and exception detail load only after workspace activation.',
+        'The dashboard keeps the first paint limited to summary KPI state.',
+        'Open the commissions workspace for reconciliation detail.'
       ]
     }
   ];
@@ -157,18 +144,10 @@ export function BrokerCommandCenterDashboard({
         ))}
       </section>
 
-      <SurfaceCard title="Broker alerts" description="Carrier, document, and operating alerts that need broker awareness.">
-        <div className="grid gap-3 xl:grid-cols-2">
-          {alerts.map((alert) => (
-            <SupportLink
-              key={alert.id}
-              href={alert.href}
-              label={alert.title}
-              description={alert.description}
-            />
-          ))}
-        </div>
-      </SurfaceCard>
+      <BrokerDashboardWorkspaceSection
+        sessionScopeKey={sessionScopeKey}
+        workspaceVariant={canManage ? 'brokerEmployer' : 'brokerIndividual'}
+      />
     </div>
   );
 }

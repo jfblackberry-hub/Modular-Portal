@@ -1,5 +1,5 @@
-import { after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { after, beforeEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';

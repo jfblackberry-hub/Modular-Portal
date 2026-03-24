@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
+import { uploadBrandingLogoForTenant } from '../services/branding-service';
 import {
   assertPlatformAdmin,
   AuthenticationError,
@@ -12,7 +13,6 @@ import {
   listTenants,
   updateTenant
 } from '../services/tenant-service';
-import { uploadBrandingLogoForTenant } from '../services/branding-service';
 
 type TenantBody = {
   name: string;
@@ -46,7 +46,7 @@ export async function tenantRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -77,7 +77,7 @@ export async function tenantRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -109,7 +109,7 @@ export async function tenantRoutes(app: FastifyInstance) {
 
         return reply.status(503).send({
           message:
-            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+            'Local database unavailable. Start PostgreSQL, run migrations.'
         });
       }
     }
@@ -145,7 +145,7 @@ export async function tenantRoutes(app: FastifyInstance) {
 
         return reply.status(503).send({
           message:
-            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+            'Local database unavailable. Start PostgreSQL, run migrations.'
         });
       }
     }
@@ -188,7 +188,7 @@ export async function tenantRoutes(app: FastifyInstance) {
 
         return reply.status(503).send({
           message:
-            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+            'Local database unavailable. Start PostgreSQL, run migrations.'
         });
       }
     }

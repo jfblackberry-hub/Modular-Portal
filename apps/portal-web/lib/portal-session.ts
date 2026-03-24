@@ -1,7 +1,9 @@
 import { cookies } from 'next/headers';
 
-import { readPortalSessionEnvelopeFromCookie } from './portal-session-cookie';
-import { PORTAL_SESSION_COOKIE } from './session-constants';
+import {
+  getPortalSessionCookieNames,
+  readPortalSessionEnvelopeFromCookie
+} from './portal-session-cookie';
 
 export interface PortalTenant {
   id: string;
@@ -11,12 +13,21 @@ export interface PortalTenant {
 
 export type PortalSessionType = 'tenant_admin' | 'end_user' | 'platform_admin';
 
-export interface PortalSessionScope {
-  type: PortalSessionType;
-  tenantId: string | null;
-  roles: string[];
-  permissions: string[];
-}
+export type PortalSessionScope =
+  | {
+      personaType: 'platform_admin';
+      type: 'platform_admin';
+      tenantId: null;
+      roles: string[];
+      permissions: string[];
+    }
+  | {
+      personaType: 'tenant_admin' | 'end_user';
+      type: 'tenant_admin' | 'end_user';
+      tenantId: string;
+      roles: string[];
+      permissions: string[];
+    };
 
 export interface PortalSessionUser {
   id: string;
@@ -53,8 +64,16 @@ export interface PortalSession {
 
 export async function getPortalSession() {
   const cookieStore = await cookies();
-  const rawSession = cookieStore.get(PORTAL_SESSION_COOKIE)?.value;
-  const sessionEnvelope = await readPortalSessionEnvelopeFromCookie(rawSession);
+  let sessionEnvelope = null;
+
+  for (const cookieName of getPortalSessionCookieNames()) {
+    const rawSession = cookieStore.get(cookieName)?.value;
+    sessionEnvelope = await readPortalSessionEnvelopeFromCookie(rawSession);
+
+    if (sessionEnvelope) {
+      break;
+    }
+  }
 
   if (!sessionEnvelope) {
     return null;

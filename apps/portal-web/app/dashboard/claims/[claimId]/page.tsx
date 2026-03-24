@@ -1,8 +1,5 @@
 import Link from 'next/link';
 
-import { getMemberClaims } from '../../../../lib/member-api';
-import { getPortalSessionUser } from '../../../../lib/portal-session';
-import { formatCurrency, formatDate } from '../../../../lib/portal-format';
 import {
   EmptyState,
   InlineButton,
@@ -10,6 +7,9 @@ import {
   StatusBadge,
   SurfaceCard
 } from '../../../../components/portal-ui';
+import { getMemberClaims } from '../../../../lib/member-api';
+import { formatCurrency, formatDate } from '../../../../lib/portal-format';
+import { getPortalSessionAccessToken } from '../../../../lib/portal-session';
 
 export default async function ClaimDetailPage({
   params
@@ -17,8 +17,8 @@ export default async function ClaimDetailPage({
   params: Promise<{ claimId: string }>;
 }) {
   const { claimId } = await params;
-  const sessionUser = await getPortalSessionUser();
-  const claims = await getMemberClaims(sessionUser?.id);
+  const accessToken = await getPortalSessionAccessToken();
+  const claims = await getMemberClaims(accessToken ?? undefined);
   const claim = claims?.items.find((item) => item.id === claimId) ?? claims?.items[0];
 
   if (!claim) {

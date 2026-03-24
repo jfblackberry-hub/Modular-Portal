@@ -8,6 +8,7 @@ import { prisma } from '@payer-portal/database';
 import Fastify from 'fastify';
 
 import { jobRoutes } from '../src/routes/jobs.js';
+import { createAccessToken } from '../src/services/access-token-service.js';
 
 const TEST_TYPE = 'test.api.retry';
 const TEST_PLATFORM_ADMIN_ROLE_CODE = 'platform_admin';
@@ -23,6 +24,8 @@ async function cleanupJobs() {
 }
 
 async function cleanupFixtureData() {
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
+
   await prisma.userRole.deleteMany({
     where: {
       user: {
@@ -83,7 +86,25 @@ async function createPlatformAdminUser() {
     }
   });
 
+  await prisma.userTenantMembership.create({
+    data: {
+      userId: user.id,
+      tenantId: tenant.id,
+      isDefault: true,
+      isTenantAdmin: true
+    }
+  });
+
   return user;
+}
+
+function createPlatformAdminToken(user: { id: string; email: string }) {
+  return createAccessToken({
+    userId: user.id,
+    email: user.email,
+    tenantId: 'platform',
+    sessionType: 'platform_admin'
+  });
 }
 
 beforeEach(async () => {
@@ -114,12 +135,13 @@ test('retry endpoint resets failed job to pending', async () => {
 
   const app = Fastify();
   await jobRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
 
   const response = await app.inject({
     method: 'POST',
     url: `/api/jobs/${job.id}/retry`,
     headers: {
-      'x-user-id': platformAdminUser.id
+      authorization: `Bearer ${platformToken}`
     }
   });
 

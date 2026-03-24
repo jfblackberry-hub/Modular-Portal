@@ -11,26 +11,16 @@ import {
   type MeResponse
 } from '@payer-portal/api-contracts';
 
-import { getPortalSessionAccessToken } from './portal-session';
-
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3002';
+import { buildPortalApiHeaders } from './api-request';
+import { config } from './server-runtime';
 
 async function buildRequestHeaders(accessToken?: string) {
-  const sessionAccessToken = await getPortalSessionAccessToken();
-  const resolvedAccessToken = sessionAccessToken ?? accessToken;
-
-  if (!resolvedAccessToken) {
-    return undefined;
-  }
-
-  return {
-    Authorization: `Bearer ${resolvedAccessToken}`
-  };
+  return buildPortalApiHeaders({}, { accessToken });
 }
 
 async function requestJson<T>(path: string, accessToken?: string): Promise<T | null> {
   try {
-    const response = await fetch(`${apiBaseUrl}${path}`, {
+    const response = await fetch(`${config.apiBaseUrl}${path}`, {
       headers: await buildRequestHeaders(accessToken),
       cache: 'no-store'
     });

@@ -1,0 +1,386 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Modular networking stack
+
+Parameters:
+  EnvironmentName:
+    Type: String
+  Owner:
+    Type: String
+  CostCenter:
+    Type: String
+  VpcCidr:
+    Type: String
+  PublicSubnet1Cidr:
+    Type: String
+  PublicSubnet2Cidr:
+    Type: String
+  PrivateSubnet1Cidr:
+    Type: String
+  PrivateSubnet2Cidr:
+    Type: String
+  FlowLogsRetentionDays:
+    Type: Number
+  EnableNatGateway:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: false
+
+Conditions:
+  UseNatGateway: !Equals [!Ref EnableNatGateway, 'true']
+
+Resources:
+  NetworkingVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-networking-vpc'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: networking
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  NetworkingInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-networking-internet-gateway'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: networking
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  NetworkingGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref NetworkingInternetGateway
+      VpcId: !Ref NetworkingVpc
+
+  NetworkingPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref NetworkingVpc
+      CidrBlock: !Ref PublicSubnet1Cidr
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-networking-public-subnet-1'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: networking
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  NetworkingPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref NetworkingVpc
+      CidrBlock: !Ref PublicSubnet2Cidr
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-networking-public-subnet-2'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: networking
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  NetworkingPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref NetworkingVpc
+      CidrBlock: !Ref PrivateSubnet1Cidr
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-networking-private-subnet-1'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: networking
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  NetworkingPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref NetworkingVpc
+      CidrBlock: !Ref PrivateSubnet2Cidr
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-networking-private-subnet-2'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: networking
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  NetworkingPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref NetworkingVpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-networking-public-route-table'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: networking
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  NetworkingPublicDefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: NetworkingGatewayAttachment
+    Properties:
+      RouteTableId: !Ref NetworkingPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref NetworkingInternetGateway
+
+  NetworkingPublicSubnet1RouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NetworkingPublicRouteTable
+      SubnetId: !Ref NetworkingPublicSubnet1
+
+  NetworkingPublicSubnet2RouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NetworkingPublicRouteTable
+      SubnetId: !Ref NetworkingPublicSubnet2
+
+  NetworkingNatElasticIp:
+    Condition: UseNatGateway
+    Type: AWS::EC2::EIP
+    DependsOn: NetworkingGatewayAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-networking-nat-elastic-ip'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: networking
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  NetworkingNatGateway:
+    Condition: UseNatGateway
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NetworkingNatElasticIp.AllocationId
+      ConnectivityType: public
+      SubnetId: !Ref NetworkingPublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-networking-nat-gateway'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: networking
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  NetworkingPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref NetworkingVpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-networking-private-route-table'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: networking
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  NetworkingFlowLogsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '${EnvironmentName}-networking-vpc-flow-logs'
+      RetentionInDays: !Ref FlowLogsRetentionDays
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-networking-vpc-flow-logs'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: networking
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  NetworkingFlowLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${EnvironmentName}-networking-flow-logs-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: vpc-flow-logs.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub '${EnvironmentName}-networking-flow-logs-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: PublishVpcFlowLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogStreams
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${EnvironmentName}-networking-vpc-flow-logs:*'
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-networking-flow-logs-role'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: networking
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  NetworkingVpcFlowLog:
+    Type: AWS::EC2::FlowLog
+    Properties:
+      DeliverLogsPermissionArn: !GetAtt NetworkingFlowLogsRole.Arn
+      LogDestinationType: cloud-watch-logs
+      LogGroupName: !Ref NetworkingFlowLogsLogGroup
+      ResourceId: !Ref NetworkingVpc
+      ResourceType: VPC
+      TrafficType: ALL
+
+  NetworkingPrivateDefaultRoute:
+    Condition: UseNatGateway
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NetworkingPrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NetworkingNatGateway
+
+  NetworkingPrivateSubnet1RouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NetworkingPrivateRouteTable
+      SubnetId: !Ref NetworkingPrivateSubnet1
+
+  NetworkingPrivateSubnet2RouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NetworkingPrivateRouteTable
+      SubnetId: !Ref NetworkingPrivateSubnet2
+
+Outputs:
+  VpcId:
+    Value: !Ref NetworkingVpc
+    Export:
+      Name: !Sub '${EnvironmentName}-networking-vpc-id'
+  PublicSubnet1Id:
+    Value: !Ref NetworkingPublicSubnet1
+    Export:
+      Name: !Sub '${EnvironmentName}-networking-public-subnet-1-id'
+  PublicSubnet2Id:
+    Value: !Ref NetworkingPublicSubnet2
+    Export:
+      Name: !Sub '${EnvironmentName}-networking-public-subnet-2-id'
+  PrivateSubnet1Id:
+    Value: !Ref NetworkingPrivateSubnet1
+    Export:
+      Name: !Sub '${EnvironmentName}-networking-private-subnet-1-id'
+  PrivateSubnet2Id:
+    Value: !Ref NetworkingPrivateSubnet2
+    Export:
+      Name: !Sub '${EnvironmentName}-networking-private-subnet-2-id'
+  PrivateSubnetIds:
+    Value: !Join [',', [!Ref NetworkingPrivateSubnet1, !Ref NetworkingPrivateSubnet2]]
+    Export:
+      Name: !Sub '${EnvironmentName}-networking-private-subnet-ids'
+  PublicSubnetIds:
+    Value: !Join [',', [!Ref NetworkingPublicSubnet1, !Ref NetworkingPublicSubnet2]]
+    Export:
+      Name: !Sub '${EnvironmentName}-networking-public-subnet-ids'
+  InternetGatewayId:
+    Value: !Ref NetworkingInternetGateway
+  PublicRouteTableId:
+    Value: !Ref NetworkingPublicRouteTable
+  PrivateRouteTableId:
+    Value: !Ref NetworkingPrivateRouteTable
+  NatEipAllocationId:
+    Condition: UseNatGateway
+    Value: !GetAtt NetworkingNatElasticIp.AllocationId
+  NatGatewayId:
+    Condition: UseNatGateway
+    Value: !Ref NetworkingNatGateway
+  AvailabilityZone1:
+    Value: !GetAtt NetworkingPublicSubnet1.AvailabilityZone
+  AvailabilityZone2:
+    Value: !GetAtt NetworkingPublicSubnet2.AvailabilityZone

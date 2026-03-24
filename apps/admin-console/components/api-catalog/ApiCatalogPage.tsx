@@ -2,16 +2,18 @@
 
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 
+import { fetchAdminJsonCached } from '../../lib/admin-client-data';
+import { apiBaseUrl, getAdminAuthHeaders } from '../../lib/api-auth';
 import {
-  API_MARKETPLACE_CATALOG,
-  DEFAULT_API_MARKETPLACE_FILTERS
-} from '../../lib/api-marketplace.data';
-import type { ApiMarketplaceFilters } from '../../lib/api-marketplace.types';
+  type ApiCatalogCategory,
+  type ApiCatalogEntry,
+  getApiCatalogVendors,
+  groupApiCatalogEntries,
+  sortApiCatalogEntries} from '../../lib/api-catalog-api';
+import { AdminErrorState, AdminLoadingState } from '../admin-ui';
 import {
-  filterMarketplaceEntries,
-  getMarketplaceFilterOptions
-} from '../../lib/api-marketplace.utils';
-import { ApiMarketplaceFiltersPanel } from './ApiMarketplaceFiltersPanel';
+  type ApiMarketplaceFilters,
+  ApiMarketplaceFiltersPanel} from './ApiMarketplaceFiltersPanel';
 import { ApiMarketplaceGrid } from './ApiMarketplaceGrid';
 import { ApiMarketplaceHeader } from './ApiMarketplaceHeader';
 import { ApiMarketplaceTable } from './ApiMarketplaceTable';
@@ -20,10 +22,24 @@ const VIEW_MODE_STORAGE_KEY = 'admin-api-marketplace-view-mode';
 
 type ViewMode = 'catalog' | 'table';
 
+const DEFAULT_FILTERS: ApiMarketplaceFilters = {
+  category: 'all',
+  sort: 'featured',
+  vendor: 'all'
+};
+
+function buildCategoryQuery(category: 'all' | ApiCatalogCategory) {
+  return category === 'all' ? '' : `?category=${category}`;
+}
+
 export function ApiCatalogPage() {
-  const [filters, setFilters] = useState<ApiMarketplaceFilters>(DEFAULT_API_MARKETPLACE_FILTERS);
+  const [allEntries, setAllEntries] = useState<ApiCatalogEntry[]>([]);
+  const [filters, setFilters] = useState<ApiMarketplaceFilters>(DEFAULT_FILTERS);
   const [viewMode, setViewMode] = useState<ViewMode>('catalog');
-  const deferredSearch = useDeferredValue(filters.search);
+  const [search, setSearch] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const deferredSearch = useDeferredValue(search);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -44,52 +60,120 @@ export function ApiCatalogPage() {
     window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
   }, [viewMode]);
 
-  const appliedFilters = useMemo(
-    () => ({
-      ...filters,
-      search: deferredSearch
-    }),
-    [deferredSearch, filters]
-  );
+  useEffect(() => {
+    let isCancelled = false;
 
-  const filteredEntries = useMemo(
-    () => filterMarketplaceEntries(API_MARKETPLACE_CATALOG, appliedFilters),
-    [appliedFilters]
+    async function loadEntries() {
+      setIsLoading(true);
+
+      try {
+        const payload = await fetchAdminJsonCached<ApiCatalogEntry[]>(
+          `${apiBaseUrl}/api-catalog${buildCategoryQuery(filters.category)}`,
+          {
+            headers: getAdminAuthHeaders(),
+            ttlMs: 20_000,
+            cacheKey: `api-catalog::${filters.category}`
+          }
+        );
+
+        if (isCancelled) {
+          return;
+        }
+
+        setAllEntries(payload);
+        setError('');
+      } catch (nextError) {
+        if (isCancelled) {
+          return;
+        }
+
+        setAllEntries([]);
+        setError(
+          nextError instanceof Error
+            ? nextError.message
+            : 'Unable to load the API catalog.'
+        );
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadEntries();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [filters.category]);
+
+  const vendorOptions = useMemo(() => getApiCatalogVendors(allEntries), [allEntries]);
+
+  const filteredEntries = useMemo(() => {
+    const normalizedSearch = deferredSearch.trim().toLowerCase();
+    const searchedEntries = normalizedSearch
+      ? allEntries.filter((entry) =>
+          [
+            entry.name,
+            entry.vendor,
+            entry.description,
+            entry.endpoint,
+            entry.version,
+            entry.inputModels.join(' '),
+            entry.outputModels.join(' ')
+          ]
+            .join(' ')
+            .toLowerCase()
+            .includes(normalizedSearch)
+        )
+      : allEntries;
+
+    const vendorEntries =
+      filters.vendor === 'all'
+        ? searchedEntries
+        : searchedEntries.filter((entry) => entry.vendor === filters.vendor);
+
+    return sortApiCatalogEntries(vendorEntries, filters.sort);
+  }, [allEntries, deferredSearch, filters.sort, filters.vendor]);
+
+  const groupedEntries = useMemo(
+    () => groupApiCatalogEntries(filteredEntries),
+    [filteredEntries]
   );
-  const filterOptions = useMemo(
-    () => getMarketplaceFilterOptions(API_MARKETPLACE_CATALOG, appliedFilters),
-    [appliedFilters]
+  const modelCount = filteredEntries.reduce(
+    (total, entry) => total + entry.inputModels.length + entry.outputModels.length,
+    0
   );
-  const availableCount = API_MARKETPLACE_CATALOG.filter(
-    (entry) => entry.lifecycleStatus === 'Available'
+  const tenantScopedCount = filteredEntries.filter(
+    (entry) => !entry.tenantAvailability.includes('*')
   ).length;
-  const sandboxCount = API_MARKETPLACE_CATALOG.filter((entry) => entry.sandboxAvailable).length;
 
   return (
     <div className="space-y-6">
       <ApiMarketplaceHeader
-        totalCount={API_MARKETPLACE_CATALOG.length}
-        availableCount={availableCount}
-        sandboxCount={sandboxCount}
-        search={filters.search}
-        onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+        totalCount={filteredEntries.length}
+        categoryCount={groupedEntries.length}
+        tenantScopedCount={tenantScopedCount}
+        modelCount={modelCount}
+        search={search}
+        onSearchChange={setSearch}
       />
 
       <section className="space-y-4">
         <ApiMarketplaceFiltersPanel
           filters={filters}
-          options={filterOptions}
           onChange={setFilters}
+          vendors={vendorOptions}
         />
 
-        <section className="rounded-[1.4rem] border border-slate-200/80 bg-white px-4 py-3.5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+        <section className="rounded-[1.6rem] border border-slate-200/80 bg-white px-5 py-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-900">
-                {filteredEntries.length} API{filteredEntries.length === 1 ? '' : 's'} available
+                {filteredEntries.length} API{filteredEntries.length === 1 ? '' : 's'} in catalog
               </p>
               <p className="mt-1 text-xs leading-5 text-slate-600">
-                Filter the catalog and open individual APIs for deeper integration details.
+                Browse the backend-driven catalog with vendor, category, and schema metadata in a marketplace layout.
               </p>
             </div>
 
@@ -103,7 +187,7 @@ export function ApiCatalogPage() {
                   type="button"
                   onClick={() => setViewMode(mode)}
                   className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
-                    viewMode === mode ? 'bg-slate-900 text-white' : 'text-slate-600'
+                    viewMode === mode ? 'bg-slate-950 text-white' : 'text-slate-600'
                   }`}
                 >
                   {label}
@@ -113,10 +197,20 @@ export function ApiCatalogPage() {
           </div>
         </section>
 
-        {viewMode === 'table' ? (
-          <ApiMarketplaceTable entries={filteredEntries} />
+        {isLoading ? (
+          <AdminLoadingState
+            title="Loading API catalog"
+            description="Fetching live catalog entries and metadata from the backend service."
+          />
+        ) : error ? (
+          <AdminErrorState
+            title="Unable to load API catalog"
+            description={error}
+          />
+        ) : viewMode === 'table' ? (
+          <ApiMarketplaceTable groups={groupedEntries} />
         ) : (
-          <ApiMarketplaceGrid entries={filteredEntries} />
+          <ApiMarketplaceGrid groups={groupedEntries} />
         )}
       </section>
     </div>

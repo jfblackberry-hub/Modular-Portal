@@ -1,6 +1,5 @@
-import type { FastifyInstance } from 'fastify';
-
 import { handlePrometheusMetrics } from '@payer-portal/server';
+import type { FastifyInstance } from 'fastify';
 
 export async function metricsRoutes(app: FastifyInstance) {
   app.get('/metrics', async (request, reply) => {

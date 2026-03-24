@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { buildAdminConsoleBoundaryUrl } from '../../lib/admin-boundary';
+
 export function LegacyTenantAdminReadOnly({
   title,
   description,
@@ -9,6 +11,8 @@ export function LegacyTenantAdminReadOnly({
   description: string;
   targetHref: string;
 }) {
+  const adminTargetHref = buildAdminConsoleBoundaryUrl(targetHref);
+
   return (
     <div className="space-y-5">
       <section className="portal-card p-6 sm:p-8">
@@ -23,13 +27,13 @@ export function LegacyTenantAdminReadOnly({
 
       <section className="portal-card p-5">
         <p className="text-sm leading-7 text-[var(--text-secondary)]">
-          Tenant administrative workflows now live in the dedicated tenant-admin workspace.
+          Tenant administrative workflows now live in the dedicated admin console.
         </p>
         <Link
-          href={targetHref}
+          href={adminTargetHref}
           className="mt-4 inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] px-4 py-2 text-sm font-semibold text-[var(--tenant-primary-color)]"
         >
-          Open Tenant Admin Workspace
+          Open Admin Console
         </Link>
       </section>
     </div>

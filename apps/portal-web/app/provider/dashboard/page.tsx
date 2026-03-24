@@ -1,6 +1,7 @@
 import { ProviderDashboardPage } from '../../../components/provider/provider-dashboard-page';
 import { getProviderPortalConfig } from '../../../config/providerPortalConfig';
 import { getPortalImageSrc } from '../../../lib/portal-image-registry';
+import { buildPortalWorkspaceSessionKey } from '../../../lib/portal-workspace-session';
 import {
   resolveProviderClinicLogoSrc,
   resolveProviderClinicName,
@@ -29,6 +30,10 @@ export default async function ProviderDashboardRoutePage() {
     lastName: user.lastName,
     configuredProviderName: config.providerContext.providerName
   });
+  const workspaceSessionKey = buildPortalWorkspaceSessionKey({
+    portal: 'provider',
+    user
+  });
 
   return (
     <ProviderDashboardPage
@@ -36,6 +41,7 @@ export default async function ProviderDashboardRoutePage() {
       clinicName={clinicName}
       imageSrc={providerHeroImage}
       providerName={providerName}
+      sessionScopeKey={workspaceSessionKey}
       variant={variant}
     />
   );

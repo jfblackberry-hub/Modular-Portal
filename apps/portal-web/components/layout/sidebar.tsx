@@ -1,8 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
   CircleHelp,
@@ -15,6 +12,10 @@ import {
   MessageSquare,
   X
 } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+
 import type { PortalSessionUser } from '../../lib/portal-session';
 import { prefixPreviewHref, stripPreviewHref } from '../../lib/preview-route';
 import type { TenantPortalModuleId } from '../../lib/tenant-modules';

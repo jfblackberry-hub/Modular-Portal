@@ -1,32 +1,28 @@
 import { NextResponse } from 'next/server';
 
-const apiBaseUrl =
-  process.env.API_BASE_URL ??
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  'http://localhost:3002';
+import {
+  ADMIN_SESSION_COOKIE,
+  readAdminSessionEnvelopeFromCookie
+} from '../../../../lib/admin-session-cookie';
 
 export async function GET(request: Request) {
   try {
-    const authorization = request.headers.get('authorization');
-    const response = await fetch(`${apiBaseUrl}/auth/me`, {
-      method: 'GET',
-      headers: authorization
-        ? {
-            Authorization: authorization
-          }
-        : {},
-      cache: 'no-store'
-    });
+    const sessionEnvelope = readAdminSessionEnvelopeFromCookie(
+      request.headers.get('cookie')
+        ?.split(';')
+        .map((entry) => entry.trim())
+        .find((entry) => entry.startsWith(`${ADMIN_SESSION_COOKIE}=`))
+        ?.slice(`${ADMIN_SESSION_COOKIE}=`.length)
+    );
 
-    const payload = await response.text();
+    if (!sessionEnvelope) {
+      return NextResponse.json(
+        { message: 'Authenticated admin session required.' },
+        { status: 401 }
+      );
+    }
 
-    return new NextResponse(payload, {
-      status: response.status,
-      headers: {
-        'Content-Type':
-          response.headers.get('content-type') ?? 'application/json'
-      }
-    });
+    return NextResponse.json(sessionEnvelope.session, { status: 200 });
   } catch {
     return NextResponse.json(
       { message: 'Local API unavailable. Start the API service and try again.' },

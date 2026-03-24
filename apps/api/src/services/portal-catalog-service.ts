@@ -1,5 +1,6 @@
-import mysql from 'mysql2/promise';
+import { loadApiServiceConfig, readProcessEnv } from '@payer-portal/config';
 import { PrismaClient } from '@payer-portal/database';
+import mysql from 'mysql2/promise';
 
 type CatalogContext = {
   tenantSlug: string;
@@ -133,13 +134,13 @@ function getDatabaseUrl(config: Record<string, unknown>) {
     typeof config.databaseUrlEnv === 'string'
       ? config.databaseUrlEnv.trim()
       : 'PORTAL_CATALOG_DATABASE_URL';
-  const fromEnv = process.env[envName]?.trim();
+  const fromEnv = readProcessEnv(envName);
 
   if (fromEnv) {
     return fromEnv;
   }
 
-  return process.env.PORTAL_CATALOG_DATABASE_URL?.trim() ?? '';
+  return loadApiServiceConfig().portalCatalogDatabaseUrl ?? '';
 }
 
 function getMemberLookup(

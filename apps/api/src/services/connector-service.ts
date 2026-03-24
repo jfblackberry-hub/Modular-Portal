@@ -198,9 +198,10 @@ export async function updateConnectorForTenant(
     tenantId
   });
 
-  const connector = await prisma.connectorConfig.update({
+  const updateResult = await prisma.connectorConfig.updateMany({
     where: {
-      id: existing.id
+      id: existing.id,
+      tenantId
     },
     data: {
       adapterKey,
@@ -209,6 +210,21 @@ export async function updateConnectorForTenant(
       config: config as Prisma.InputJsonValue
     }
   });
+
+  if (updateResult.count === 0) {
+    throw new Error('Connector not found');
+  }
+
+  const connector = await prisma.connectorConfig.findFirst({
+    where: {
+      id: existing.id,
+      tenantId
+    }
+  });
+
+  if (!connector) {
+    throw new Error('Connector not found');
+  }
 
   await logAuditEvent({
     tenantId,
@@ -325,15 +341,31 @@ export async function runConnectorHealthCheckForTenant(
   });
   const { result } = await runIntegrationHealthCheck(connector.id);
 
-  const updatedConnector = await prisma.connectorConfig.update({
+  const updateResult = await prisma.connectorConfig.updateMany({
     where: {
-      id: connector.id
+      id: connector.id,
+      tenantId
     },
     data: {
       lastHealthCheckAt: new Date(),
       status: result.ok ? 'ACTIVE' : 'ERROR'
     }
   });
+
+  if (updateResult.count === 0) {
+    throw new Error('Connector not found');
+  }
+
+  const updatedConnector = await prisma.connectorConfig.findFirst({
+    where: {
+      id: connector.id,
+      tenantId
+    }
+  });
+
+  if (!updatedConnector) {
+    throw new Error('Connector not found');
+  }
 
   await logAuditEvent({
     tenantId,

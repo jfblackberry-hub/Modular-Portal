@@ -4,7 +4,7 @@ import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 
 import { SectionCard } from '../../components/section-card';
-import { apiBaseUrl, getAdminAuthHeaders } from '../../lib/api-auth';
+import { config, getAdminAuthHeaders } from '../../lib/api-auth';
 
 type FeatureFlag = {
   id: string;
@@ -38,11 +38,11 @@ export function FeatureFlagManagement() {
 
     try {
       const [flagsResponse, tenantsResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/platform-admin/feature-flags`, {
+        fetch(`${config.apiBaseUrl}/platform-admin/feature-flags`, {
           cache: 'no-store',
           headers: getAdminAuthHeaders()
         }),
-        fetch(`${apiBaseUrl}/platform-admin/tenants`, {
+        fetch(`${config.apiBaseUrl}/platform-admin/tenants`, {
           cache: 'no-store',
           headers: getAdminAuthHeaders()
         })
@@ -89,7 +89,7 @@ export function FeatureFlagManagement() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/platform-admin/feature-flags`, {
+      const response = await fetch(`${config.apiBaseUrl}/platform-admin/feature-flags`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -128,7 +128,7 @@ export function FeatureFlagManagement() {
 
     try {
       const response = await fetch(
-        `${apiBaseUrl}/platform-admin/feature-flags/${featureFlag.id}`,
+        `${config.apiBaseUrl}/platform-admin/feature-flags/${featureFlag.id}`,
         {
           method: 'PATCH',
           headers: {

@@ -1,0 +1,16 @@
+[
+  {"ParameterKey":"EnvironmentName","ParameterValue":"qa"},
+  {"ParameterKey":"Owner","ParameterValue":"platform"},
+  {"ParameterKey":"CostCenter","ParameterValue":"ENG-2000"},
+  {"ParameterKey":"DbName","ParameterValue":"portal"},
+  {"ParameterKey":"DbMasterUsername","ParameterValue":"portaladmin"},
+  {"ParameterKey":"DbMasterUserPassword","ParameterValue":"ChangeMe123!"},
+  {"ParameterKey":"DbInstanceClass","ParameterValue":"db.t4g.small"},
+  {"ParameterKey":"DbAllocatedStorage","ParameterValue":"50"},
+  {"ParameterKey":"DbPort","ParameterValue":"5432"},
+  {"ParameterKey":"DbEngineVersion","ParameterValue":"17.6"},
+  {"ParameterKey":"DbStorageType","ParameterValue":"gp3"},
+  {"ParameterKey":"DbBackupRetentionDays","ParameterValue":"7"},
+  {"ParameterKey":"DbMultiAz","ParameterValue":"false"},
+  {"ParameterKey":"DbDeletionProtection","ParameterValue":"false"}
+]

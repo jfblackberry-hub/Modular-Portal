@@ -1,4 +1,5 @@
 import './globals.css';
+import '../lib/server-runtime';
 
 import type { Metadata } from 'next';
 import type { CSSProperties, ReactNode } from 'react';

@@ -1,0 +1,6 @@
+8c1bf55ea275d9587cf7ca22eee4262c05c08fd0fe93ae82da010bbea03e74fc  modular-portal.bundle
+3b38026217ce64c21af9bb57d9b7b38ef37cda7481a888433dac3b52f930be5e  database-snapshot.json
+1e2b8a7d2ca887ac6542c7efbe5826569a559984168a8245345dab18158d0976  manifest.json
+6c2146d608bd0aca28ffcb1da4dec11b3f3993f2932b9a12fd4855d03b53ca68  .env.golden.local
+a853581ee64beda3f2a9120ef516d566f6eaebd4fb5eb89f2f8a9c72751a859a  ../../../docs/qa/golden-baseline.md
+a389ff2845033fb089a0e4e90db34881b7a1e9ef98415ce462c5e13156b121be  ../../../scripts/testing/restore-golden-dataset.mjs

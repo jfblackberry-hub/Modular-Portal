@@ -1,17 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
 
+import { isReturnToPortalRequest } from '../../lib/admin-login-query';
+import { config } from '../../lib/public-runtime';
 import { AdminLoginForm } from './admin-login-form';
 
-const portalBaseUrl =
-  process.env.NEXT_PUBLIC_PORTAL_BASE_URL ?? 'http://localhost:3000';
+export const dynamic = 'force-dynamic';
 
-export default function AdminLoginPage() {
+function AdminLoginPageContent() {
   const searchParams = useSearchParams();
-  const returnToPortal = searchParams.get('returnToPortal') === '1';
+  const returnToPortal = isReturnToPortalRequest(searchParams);
 
   useEffect(() => {
     if (!returnToPortal) {
@@ -19,13 +20,13 @@ export default function AdminLoginPage() {
     }
 
     const timeoutId = window.setTimeout(() => {
-      window.location.assign(`${portalBaseUrl}/login`);
+      window.location.assign(`${config.serviceEndpoints.portal}/login`);
     }, 900);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, []);
+  }, [returnToPortal]);
 
   if (returnToPortal) {
     return (
@@ -43,7 +44,7 @@ export default function AdminLoginPage() {
             </p>
             <div className="mt-8">
               <Link
-                href={`${portalBaseUrl}/login`}
+                href={`${config.serviceEndpoints.portal}/login`}
                 className="inline-flex rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
               >
                 Go to portal login
@@ -62,12 +63,20 @@ export default function AdminLoginPage() {
           <AdminLoginForm />
           <div className="text-center text-sm text-admin-muted">
             Need member access instead?{' '}
-            <Link href={`${portalBaseUrl}/login`} className="font-semibold text-admin-accent hover:underline">
+            <Link href={`${config.serviceEndpoints.portal}/login`} className="font-semibold text-admin-accent hover:underline">
               Go to portal login
             </Link>
           </div>
         </div>
       </div>
     </main>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-admin-bg px-6 py-12 text-admin-text" />}>
+      <AdminLoginPageContent />
+    </Suspense>
   );
 }

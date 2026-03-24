@@ -2,15 +2,19 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: payer_portal
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: ${POSTGRES_DB:-payer_portal}
+      POSTGRES_USER: ${POSTGRES_USER:-dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev}
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U dev -d payer_portal']
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-dev} -d ${POSTGRES_DB:-payer_portal}'
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -18,41 +22,125 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile.workspace
+      dockerfile: apps/api/Dockerfile
     depends_on:
       postgres:
         condition: service_healthy
     environment:
+      APP_NAME: api
+      NODE_ENV: ${NODE_ENV:-production}
       HOST: 0.0.0.0
-      PORT: 3001
-      NODE_ENV: development
-      APP_NAME: payer-api
-      DATABASE_URL: postgres://dev:dev@postgres:5432/payer_portal
-    command: pnpm --filter api dev
+      PORT: 3002
+      DATABASE_URL: ${DATABASE_URL:-postgresql://dev:dev@postgres:5432/payer_portal?schema=public}
+      PORTAL_CATALOG_DATABASE_URL: ${PORTAL_CATALOG_DATABASE_URL:-mysql://portal_user:portal_pass@host.docker.internal:3306/portal_catalog}
+      API_PUBLIC_ORIGIN: ${API_PUBLIC_ORIGIN:-http://localhost:3002}
+      API_INTERNAL_ORIGIN: ${API_INTERNAL_ORIGIN:-http://api:3002}
+      PORTAL_PUBLIC_ORIGIN: ${PORTAL_PUBLIC_ORIGIN:-http://localhost:3000}
+      ADMIN_CONSOLE_PUBLIC_ORIGIN: ${ADMIN_CONSOLE_PUBLIC_ORIGIN:-http://localhost:3003}
+      API_AUTH_TOKEN_SECRET: ${API_AUTH_TOKEN_SECRET:-dev-api-auth-token-secret-20260316}
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      LOCAL_STORAGE_DIR: ${LOCAL_STORAGE_DIR:-storage}
+      BACKUP_STORAGE_DIR: ${BACKUP_STORAGE_DIR:-backups}
+      LOCAL_PUBLIC_ASSET_DIR: ${LOCAL_PUBLIC_ASSET_DIR:-apps/portal-web/public/tenant-assets}
+      LOCAL_PUBLIC_ASSET_BASE_PATH: ${LOCAL_PUBLIC_ASSET_BASE_PATH:-/tenant-assets}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-local-dev-backup-encryption-key}
     ports:
-      - '3001:3001'
+      - '${API_PORT:-3002}:3002'
+    volumes:
+      - tenant-assets:/workspace/apps/portal-web/public/tenant-assets
+      - storage-data:/workspace/storage
+      - backup-data:/workspace/backups
 
   portal-web:
     build:
       context: .
-      dockerfile: Dockerfile.workspace
+      dockerfile: apps/portal-web/Dockerfile
+      args:
+        PORTAL_PUBLIC_ORIGIN: ${PORTAL_PUBLIC_ORIGIN:-http://localhost:3000}
+        ADMIN_CONSOLE_PUBLIC_ORIGIN: ${ADMIN_CONSOLE_PUBLIC_ORIGIN:-http://localhost:3003}
+        API_PUBLIC_ORIGIN: ${API_PUBLIC_ORIGIN:-http://localhost:3002}
+    depends_on:
+      - api
     environment:
-      NODE_ENV: development
+      APP_NAME: portal-web
+      NODE_ENV: ${NODE_ENV:-production}
       PORT: 3000
-    command: pnpm --filter portal-web exec next dev --hostname 0.0.0.0 --port 3000
+      PORTAL_PUBLIC_ORIGIN: ${PORTAL_PUBLIC_ORIGIN:-http://localhost:3000}
+      ADMIN_CONSOLE_PUBLIC_ORIGIN: ${ADMIN_CONSOLE_PUBLIC_ORIGIN:-http://localhost:3003}
+      API_PUBLIC_ORIGIN: ${API_PUBLIC_ORIGIN:-http://localhost:3002}
+      API_INTERNAL_ORIGIN: ${API_INTERNAL_ORIGIN:-http://api:3002}
+      NEXT_PUBLIC_PORTAL_PUBLIC_ORIGIN: ${PORTAL_PUBLIC_ORIGIN:-http://localhost:3000}
+      NEXT_PUBLIC_ADMIN_CONSOLE_PUBLIC_ORIGIN: ${ADMIN_CONSOLE_PUBLIC_ORIGIN:-http://localhost:3003}
+      NEXT_PUBLIC_API_PUBLIC_ORIGIN: ${API_PUBLIC_ORIGIN:-http://localhost:3002}
+      PORTAL_SESSION_SECRET: ${PORTAL_SESSION_SECRET:-dev-portal-session-secret-20260316}
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      LOCAL_PUBLIC_ASSET_DIR: ${LOCAL_PUBLIC_ASSET_DIR:-apps/portal-web/public/tenant-assets}
+      LOCAL_PUBLIC_ASSET_BASE_PATH: ${LOCAL_PUBLIC_ASSET_BASE_PATH:-/tenant-assets}
     ports:
-      - '3000:3000'
+      - '${PORTAL_WEB_PORT:-3000}:3000'
+    volumes:
+      - tenant-assets:/workspace/apps/portal-web/public/tenant-assets
 
   admin-console:
     build:
       context: .
-      dockerfile: Dockerfile.workspace
+      dockerfile: apps/admin-console/Dockerfile
+      args:
+        PORTAL_PUBLIC_ORIGIN: ${PORTAL_PUBLIC_ORIGIN:-http://localhost:3000}
+        ADMIN_CONSOLE_PUBLIC_ORIGIN: ${ADMIN_CONSOLE_PUBLIC_ORIGIN:-http://localhost:3003}
+        API_PUBLIC_ORIGIN: ${API_PUBLIC_ORIGIN:-http://localhost:3002}
+    depends_on:
+      - api
     environment:
-      NODE_ENV: development
-      PORT: 3002
-    command: pnpm --filter admin-console exec next dev --hostname 0.0.0.0 --port 3002
+      APP_NAME: admin-console
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3003
+      PORTAL_PUBLIC_ORIGIN: ${PORTAL_PUBLIC_ORIGIN:-http://localhost:3000}
+      ADMIN_CONSOLE_PUBLIC_ORIGIN: ${ADMIN_CONSOLE_PUBLIC_ORIGIN:-http://localhost:3003}
+      API_PUBLIC_ORIGIN: ${API_PUBLIC_ORIGIN:-http://localhost:3002}
+      API_INTERNAL_ORIGIN: ${API_INTERNAL_ORIGIN:-http://api:3002}
+      NEXT_PUBLIC_PORTAL_PUBLIC_ORIGIN: ${PORTAL_PUBLIC_ORIGIN:-http://localhost:3000}
+      NEXT_PUBLIC_ADMIN_CONSOLE_PUBLIC_ORIGIN: ${ADMIN_CONSOLE_PUBLIC_ORIGIN:-http://localhost:3003}
+      NEXT_PUBLIC_API_PUBLIC_ORIGIN: ${API_PUBLIC_ORIGIN:-http://localhost:3002}
+      NEXT_PUBLIC_ADMIN_USER_ID: ${NEXT_PUBLIC_ADMIN_USER_ID:-}
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
     ports:
-      - '3002:3002'
+      - '${ADMIN_CONSOLE_PORT:-3003}:3003'
+
+  job-worker:
+    build:
+      context: .
+      dockerfile: packages/server/Dockerfile.worker
+    profiles: ['worker']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_NAME: job-worker
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://dev:dev@postgres:5432/payer_portal?schema=public}
+      JOB_WORKER_POLL_INTERVAL_MS: ${JOB_WORKER_POLL_INTERVAL_MS:-1000}
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      LOCAL_STORAGE_DIR: ${LOCAL_STORAGE_DIR:-storage}
+      BACKUP_STORAGE_DIR: ${BACKUP_STORAGE_DIR:-backups}
+      LOCAL_PUBLIC_ASSET_DIR: ${LOCAL_PUBLIC_ASSET_DIR:-apps/portal-web/public/tenant-assets}
+      LOCAL_PUBLIC_ASSET_BASE_PATH: ${LOCAL_PUBLIC_ASSET_BASE_PATH:-/tenant-assets}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-local-dev-backup-encryption-key}
+    volumes:
+      - tenant-assets:/workspace/apps/portal-web/public/tenant-assets
+      - storage-data:/workspace/storage
+      - backup-data:/workspace/backups
 
 volumes:
   postgres-data:
+  tenant-assets:
+  storage-data:
+  backup-data:

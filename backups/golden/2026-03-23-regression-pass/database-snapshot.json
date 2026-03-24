@@ -1,0 +1,3797 @@
+{
+  "generatedAt": "2026-03-23T03:53:34.819Z",
+  "databaseUrl": "postgresql://dev:dev@127.0.0.1:5432/payer_portal_eb_demo?schema=public",
+  "format": "prisma-json-snapshot",
+  "models": {
+    "Tenant": [
+      {
+        "id": "04f93aea-4ce1-419c-b281-149b6388624c",
+        "name": "Dbg Branding",
+        "slug": "dbg-branding-1774219350823",
+        "isActive": true,
+        "status": "ACTIVE",
+        "brandingConfig": {
+          "logoUrl": "/logos/test-logo.svg",
+          "faviconUrl": "https://cdn.example.com/favicon.ico",
+          "displayName": "Tenant Experience",
+          "primaryColor": "#112233",
+          "secondaryColor": "#ffffff"
+        },
+        "createdAt": "2026-03-22T22:42:30.850Z",
+        "updatedAt": "2026-03-22T22:42:30.887Z"
+      },
+      {
+        "id": "b14bcf7d-9b70-488d-a508-83ab27ca6cbc",
+        "name": "Dbg Connector",
+        "slug": "dbg-connector-1774219350896",
+        "isActive": true,
+        "status": "ACTIVE",
+        "brandingConfig": {},
+        "createdAt": "2026-03-22T22:42:30.898Z",
+        "updatedAt": "2026-03-22T22:42:30.898Z"
+      },
+      {
+        "id": "541ddb41-e9fe-4ad0-88d1-11a11ddfa374",
+        "name": "Connector Sync local-file",
+        "slug": "server-connector-sync-test-local-file-1774227920998-584ffd",
+        "isActive": true,
+        "status": "ACTIVE",
+        "brandingConfig": {},
+        "createdAt": "2026-03-23T01:05:21.000Z",
+        "updatedAt": "2026-03-23T01:05:21.000Z"
+      },
+      {
+        "id": "db02ebc4-79a5-44cd-a6aa-058cc81b5683",
+        "name": "Webhook delivery-success",
+        "slug": "server-webhook-test-delivery-success-1774227921031-b2233b",
+        "isActive": true,
+        "status": "ACTIVE",
+        "brandingConfig": {},
+        "createdAt": "2026-03-23T01:05:21.033Z",
+        "updatedAt": "2026-03-23T01:05:21.033Z"
+      },
+      {
+        "id": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "name": "Blue Horizon Health",
+        "slug": "blue-horizon-health",
+        "isActive": true,
+        "status": "ACTIVE",
+        "brandingConfig": {
+          "logoUrl": "/logos/blue-horizon-health.svg",
+          "primaryColor": "#0f6cbd",
+          "secondaryColor": "#ffffff"
+        },
+        "createdAt": "2026-03-22T23:23:33.560Z",
+        "updatedAt": "2026-03-23T02:27:25.890Z"
+      },
+      {
+        "id": "9df73a51-4d08-4740-9ad3-0360b56911c3",
+        "name": "Portal Handoff Tenant",
+        "slug": "auth-portal-handoff-tenant-single-use-1774232846280-97d5d3",
+        "isActive": true,
+        "status": "ACTIVE",
+        "brandingConfig": {},
+        "createdAt": "2026-03-23T02:27:26.304Z",
+        "updatedAt": "2026-03-23T02:27:26.304Z"
+      },
+      {
+        "id": "52950946-83ad-4ba8-99d2-aa8eb4a17f91",
+        "name": "Portal Handoff Tenant",
+        "slug": "auth-portal-handoff-tenant-validation-1774232846391-2e1042",
+        "isActive": true,
+        "status": "ACTIVE",
+        "brandingConfig": {},
+        "createdAt": "2026-03-23T02:27:26.392Z",
+        "updatedAt": "2026-03-23T02:27:26.392Z"
+      },
+      {
+        "id": "1e0a4b74-f04c-49c4-a3f9-ae3276d3e855",
+        "name": "Portal Handoff Tenant",
+        "slug": "auth-portal-handoff-tenant-admin-session-1774232846409-b3fe6f",
+        "isActive": true,
+        "status": "ACTIVE",
+        "brandingConfig": {},
+        "createdAt": "2026-03-23T02:27:26.410Z",
+        "updatedAt": "2026-03-23T02:27:26.410Z"
+      },
+      {
+        "id": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "name": "Test HP 1",
+        "slug": "test-hp-1",
+        "isActive": false,
+        "status": "ONBOARDING",
+        "brandingConfig": {
+          "logoUrl": "/tenant-assets/389878f0-eb9c-4313-8c2b-793801f19697-logo.svg",
+          "customCss": "@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;700&family=Bungee:wght@400&display=swap');\n\n:root {\n  color-scheme: light;\n\n  --text-primary: #240046;\n  --text-secondary: #5a189a;\n  --text-muted: #7b5ea7;\n  --bg-page: #fff7fd;\n  --bg-card: rgba(255, 255, 255, 0.8);\n  --border-subtle: rgba(255, 0, 170, 0.14);\n\n  --tenant-font: \"Outfit\", \"Space Grotesk\", sans-serif;\n  --tenant-primary-color: #ff006e;\n  --tenant-primary-soft-color: rgba(255, 0, 110, 0.12);\n  --tenant-secondary-color: #00f5d4;\n  --tenant-secondary-soft-color: rgba(0, 245, 212, 0.14);\n\n  --tenant-side-nav-bg: linear-gradient(180deg, rgba(33, 0, 61, 0.94) 0%, rgba(90, 24, 154, 0.92) 52%, rgba(255, 0, 110, 0.84) 100%);\n  --tenant-side-nav-border: rgba(255, 255, 255, 0.12);\n  --tenant-side-nav-title: #ffffff;\n  --tenant-side-nav-text: #f8ecff;\n  --tenant-side-nav-muted: rgba(255, 255, 255, 0.72);\n  --tenant-side-nav-item-bg: rgba(255, 255, 255, 0.08);\n  --tenant-side-nav-item-text: #ffffff;\n  --tenant-side-nav-item-description: rgba(255, 255, 255, 0.78);\n  --tenant-side-nav-item-hover-bg: rgba(255, 255, 255, 0.14);\n  --tenant-side-nav-item-hover-text: #ffffff);\n  --tenant-side-nav-item-active-bg: linear-gradient(135deg, #ff006e 0%, #8338ec 56%, #00f5d4 100%);\n  --tenant-side-nav-item-active-text: #ffffff;\n}\n\nbody {\n  background:\n    radial-gradient(circle at top left, rgba(255, 0, 110, 0.14), transparent 22rem),\n    radial-gradient(circle at top right, rgba(131, 56, 236, 0.12), transparent 24rem),\n    linear-gradient(135deg, #fff8fd 0%, #fff2fb 40%, #f5fcff 100%);\n  font-family: var(--tenant-font);\n  color: var(--text-primary);\n}\n\nh1,\nh2,\nh3,\nh4,\n.tenant-portal-header__title,\n.member-panel__headline,\n.member-panel__title {\n  font-family: \"Bungee\", \"Outfit\", sans-serif;\n  letter-spacing: 0.01em;\n}\n\n.portal-card,\n.member-panel,\n.member-support-tile,\n.tenant-progress-meter,\n.tenant-portal-header__shell {\n  background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.74)) !important;\n  border-color: rgba(255, 0, 170, 0.14) !important;\n  border-radius: 24px !important;\n  box-shadow:\n    0 18px 36px rgba(58, 12, 163, 0.1),\n    0 1px 0 rgba(255,255,255,0.72) inset !important;\n  backdrop-filter: blur(16px);\n}\n\n.tenant-portal-header__band {\n  background: linear-gradient(180deg, rgba(255, 0, 110, 0.08), rgba(131, 56, 236, 0.08)) !important;\n}\n\n.tenant-portal-header__logo-frame {\n  background: rgba(255,255,255,0.92) !important;\n  border-color: rgba(255, 0, 170, 0.12) !important;\n  border-radius: 28px !important;\n}\n\n.tenant-portal-header__title,\n.tenant-portal-header__meta,\n.tenant-portal-header__welcome,\n.tenant-portal-header__support,\n.member-panel__headline,\n.member-panel__subcopy,\n.member-panel__title,\n.member-snapshot-row__label,\n.member-snapshot-row__value,\n.member-action-card__value,\n.member-support-tile__title,\n.member-support-tile__detail,\n.tenant-progress-meter__title,\n.tenant-progress-meter__helper,\n.tenant-progress-meter__values {\n  color: var(--text-primary);\n}\n\n.tenant-portal-header__welcome,\n.tenant-portal-header__meta,\n.tenant-portal-header__support,\n.member-panel__subcopy,\n.member-action-card__detail,\n.member-support-tile__detail,\n.tenant-progress-meter__helper,\n.tenant-progress-meter__values {\n  color: var(--text-secondary) !important;\n}\n\n.member-panel__eyebrow,\n.tenant-progress-meter__percent,\n.member-panel__link {\n  color: var(--tenant-primary-color) !important;\n}\n\n.member-panel__status {\n  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(0, 245, 212, 0.14)) !important;\n  color: #047857 !important;\n}\n\n.member-action-card {\n  background: rgba(255, 248, 254, 0.9) !important;\n  border-color: rgba(255, 0, 170, 0.14) !important;\n  border-radius: 20px !important;\n}\n\n.member-action-card__label,\n.member-activity-item__timestamp,\n.member-support-tile__detail,\n.member-snapshot-row__label {\n  color: var(--text-muted) !important;\n}\n\n.member-action-card:hover,\n.member-support-tile:hover,\n.member-activity-item:hover {\n  border-color: rgba(255, 0, 110, 0.34) !important;\n  box-shadow: 0 10px 24px rgba(255, 0, 110, 0.1);\n}\n\n.tenant-progress-meter__track {\n  background: rgba(131, 56, 236, 0.1) !important;\n}\n\n.tenant-progress-meter__fill {\n  background: linear-gradient(90deg, #ff006e 0%, #8338ec 56%, #00f5d4 100%) !important;\n}\n\n.member-activity-item {\n  background: rgba(255,255,255,0.72) !important;\n  border-color: rgba(255, 0, 170, 0.12) !important;\n  border-radius: 18px !important;\n}\n\n.tenant-side-nav {\n  background: var(--tenant-side-nav-bg) !important;\n  border-color: var(--tenant-side-nav-border) !important;\n  box-shadow:\n    0 24px 48px rgba(58, 12, 163, 0.22),\n    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;\n  backdrop-filter: blur(18px);\n}\n\n.tenant-side-nav__header {\n  border-bottom-color: rgba(255,255,255,0.14) !important;\n}\n\n.tenant-side-nav__title {\n  color: var(--tenant-side-nav-title) !important;\n}\n\n.tenant-side-nav__description {\n  color: var(--tenant-side-nav-text) !important;\n}\n\n.tenant-side-nav__section-title {\n  color: var(--tenant-side-nav-muted) !important;\n  text-transform: uppercase;\n  letter-spacing: 0.08em;\n}\n\n.tenant-side-nav__item {\n  background: var(--tenant-side-nav-item-bg) !important;\n  color: var(--tenant-side-nav-item-text) !important;\n  border-color: rgba(255,255,255,0.08) !important;\n  border-radius: 18px !important;\n}\n\n.tenant-side-nav__item-label {\n  color: inherit !important;\n  font-family: \"Space Grotesk\", \"Outfit\", sans-serif !important;\n  font-weight: 700 !important;\n}\n\n.tenant-side-nav__item-description {\n  color: var(--tenant-side-nav-item-description) !important;\n}\n\n.tenant-side-nav__item:hover {\n  background: var(--tenant-side-nav-item-hover-bg) !important;\n  color: var(--tenant-side-nav-item-hover-text) !important;\n  border-color: rgba(0, 245, 212, 0.32) !important;\n}\n\n.tenant-side-nav__item:hover .tenant-side-nav__item-description {\n  color: #ffffff !important;\n}\n\n.tenant-side-nav__item--active {\n  background: var(--tenant-side-nav-item-active-bg) !important;\n  color: var(--tenant-side-nav-item-active-text) !important;\n  border-color: rgba(255,255,255,0.2) !important;\n  box-shadow: 0 10px 24px rgba(255, 0, 110, 0.24) !important;\n}\n\n.tenant-side-nav__item--active .tenant-side-nav__item-label,\n.tenant-side-nav__item--active .tenant-side-nav__item-description {\n  color: #ffffff !important;\n}\n\nbutton[class*=\"bg-[var(--tenant-primary-color)]\"],\na[class*=\"bg-[var(--tenant-primary-color)]\"] {\n  background: linear-gradient(135deg, #ff006e 0%, #ff4ecd 34%, #8338ec 68%, #00f5d4 100%) !important;\n  color: #ffffff !important;\n  border: 0 !important;\n  box-shadow: 0 14px 30px rgba(255, 0, 110, 0.24);\n}\n\nbutton[class*=\"border-[var(--tenant-primary-color)]\"],\na[class*=\"border-[var(--tenant-primary-color)]\"] {\n  border-color: #8338ec !important;\n  color: #5a189a !important;\n}",
+          "displayName": "Test HP 1",
+          "primaryColor": "#38bdf8",
+          "secondaryColor": "#ffffff"
+        },
+        "createdAt": "2026-03-20T00:37:03.186Z",
+        "updatedAt": "2026-03-20T01:09:06.073Z"
+      }
+    ],
+    "TenantBranding": [
+      {
+        "id": "6c368314-508c-47f6-9ce0-8cb0d7cbecf2",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "displayName": "Test HP 1",
+        "primaryColor": "#38bdf8",
+        "secondaryColor": "#ffffff",
+        "logoUrl": "/tenant-assets/389878f0-eb9c-4313-8c2b-793801f19697-logo.svg",
+        "faviconUrl": null,
+        "createdAt": "2026-03-20T00:49:53.109Z",
+        "updatedAt": "2026-03-20T01:09:06.069Z"
+      },
+      {
+        "id": "1a26992e-74da-4c40-8920-f4d4b66e3061",
+        "tenantId": "04f93aea-4ce1-419c-b281-149b6388624c",
+        "displayName": "Tenant Experience",
+        "primaryColor": "#112233",
+        "secondaryColor": "#ffffff",
+        "logoUrl": "/logos/test-logo.svg",
+        "faviconUrl": "https://cdn.example.com/favicon.ico",
+        "createdAt": "2026-03-22T22:42:30.886Z",
+        "updatedAt": "2026-03-22T22:42:30.886Z"
+      },
+      {
+        "id": "2e1d5f2f-01e8-4de4-99bb-99a3cc7adbf8",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "displayName": "Blue Horizon Health",
+        "primaryColor": "#0f6cbd",
+        "secondaryColor": "#ffffff",
+        "logoUrl": "/logos/blue-horizon-health.svg",
+        "faviconUrl": null,
+        "createdAt": "2026-03-22T23:23:33.580Z",
+        "updatedAt": "2026-03-23T02:27:25.891Z"
+      }
+    ],
+    "User": [
+      {
+        "id": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "employerGroupId": null,
+        "email": "jfrank@jfrank.com",
+        "firstName": "Joe",
+        "lastName": "Frank",
+        "isActive": true,
+        "lastLoginAt": "2026-03-20T01:22:00.148Z",
+        "createdAt": "2026-03-20T00:40:09.865Z",
+        "updatedAt": "2026-03-20T01:22:00.149Z"
+      },
+      {
+        "id": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "employerGroupId": null,
+        "email": "admin",
+        "firstName": "Platform",
+        "lastName": "Admin",
+        "isActive": true,
+        "lastLoginAt": "2026-03-23T03:34:39.169Z",
+        "createdAt": "2026-03-22T23:23:33.875Z",
+        "updatedAt": "2026-03-23T03:34:39.170Z"
+      },
+      {
+        "id": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "employerGroupId": null,
+        "email": "maria",
+        "firstName": "Maria",
+        "lastName": "Lopez",
+        "isActive": true,
+        "lastLoginAt": "2026-03-23T03:39:16.199Z",
+        "createdAt": "2026-03-16T19:21:41.795Z",
+        "updatedAt": "2026-03-23T03:39:16.200Z"
+      },
+      {
+        "id": "84b3080f-2f6e-4bbf-a173-3e91ae020dad",
+        "tenantId": null,
+        "employerGroupId": null,
+        "email": "william.schultz",
+        "firstName": "William",
+        "lastName": "Schultz",
+        "isActive": true,
+        "lastLoginAt": "2026-03-23T01:15:33.435Z",
+        "createdAt": "2026-03-19T18:04:19.202Z",
+        "updatedAt": "2026-03-23T01:15:33.437Z"
+      },
+      {
+        "id": "b8c2814d-0e06-4b43-8ee0-2c60009d91f5",
+        "tenantId": null,
+        "employerGroupId": null,
+        "email": "chris",
+        "firstName": "Chris",
+        "lastName": "Gallagher",
+        "isActive": true,
+        "lastLoginAt": "2026-03-23T01:15:43.520Z",
+        "createdAt": "2026-03-19T00:54:58.578Z",
+        "updatedAt": "2026-03-23T01:15:43.521Z"
+      },
+      {
+        "id": "26975f0c-9441-4e18-b349-74041b765d03",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "employerGroupId": null,
+        "email": "provider1",
+        "firstName": "Dr.",
+        "lastName": "Lee",
+        "isActive": true,
+        "lastLoginAt": "2026-03-23T02:27:25.882Z",
+        "createdAt": "2026-03-16T19:21:41.795Z",
+        "updatedAt": "2026-03-23T02:27:25.883Z"
+      },
+      {
+        "id": "363ffd91-f321-4b22-a74b-7ed1e07426ec",
+        "tenantId": null,
+        "employerGroupId": null,
+        "email": "broker",
+        "firstName": "Broker",
+        "lastName": "User",
+        "isActive": true,
+        "lastLoginAt": "2026-03-19T18:01:42.917Z",
+        "createdAt": "2026-03-16T19:21:41.795Z",
+        "updatedAt": "2026-03-19T18:01:42.918Z"
+      },
+      {
+        "id": "0168fcbc-8cf9-4989-8cae-9445ffa41c36",
+        "tenantId": null,
+        "employerGroupId": null,
+        "email": "ops",
+        "firstName": "Internal",
+        "lastName": "Operations",
+        "isActive": true,
+        "lastLoginAt": "2026-03-16T19:21:41.793Z",
+        "createdAt": "2026-03-16T19:21:41.795Z",
+        "updatedAt": "2026-03-16T19:21:41.795Z"
+      },
+      {
+        "id": "59ef89ef-2454-424c-ac67-512832f1cc5d",
+        "tenantId": null,
+        "employerGroupId": null,
+        "email": "benefits-admin@northstar-manufacturing.local",
+        "firstName": "Avery",
+        "lastName": "Turner",
+        "isActive": true,
+        "lastLoginAt": "2026-03-16T19:21:41.793Z",
+        "createdAt": "2026-03-16T19:21:41.795Z",
+        "updatedAt": "2026-03-16T19:21:41.795Z"
+      },
+      {
+        "id": "e68f9188-2cf9-4ec4-afa4-b6c39a8e8681",
+        "tenantId": null,
+        "employerGroupId": null,
+        "email": "billing-admin@northstar-manufacturing.local",
+        "firstName": "Jordan",
+        "lastName": "Reed",
+        "isActive": true,
+        "lastLoginAt": "2026-03-16T19:21:41.793Z",
+        "createdAt": "2026-03-16T19:21:41.795Z",
+        "updatedAt": "2026-03-16T19:21:41.795Z"
+      },
+      {
+        "id": "1bd47773-e0ac-4882-9cb4-3cf7006fa48a",
+        "tenantId": null,
+        "employerGroupId": null,
+        "email": "emp00001@northstar-manufacturing.local",
+        "firstName": "Alex",
+        "lastName": "Smith",
+        "isActive": true,
+        "lastLoginAt": "2026-03-15T19:21:41.800Z",
+        "createdAt": "2026-03-16T19:21:41.816Z",
+        "updatedAt": "2026-03-16T19:21:41.816Z"
+      },
+      {
+        "id": "e9813831-ce74-45d6-837d-fa8ea565ce20",
+        "tenantId": null,
+        "employerGroupId": null,
+        "email": "emp00002@northstar-manufacturing.local",
+        "firstName": "Jordan",
+        "lastName": "Johnson",
+        "isActive": true,
+        "lastLoginAt": "2026-03-14T19:21:41.800Z",
+        "createdAt": "2026-03-16T19:21:41.816Z",
+        "updatedAt": "2026-03-16T19:21:41.816Z"
+      },
+      {
+        "id": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "employerGroupId": null,
+        "email": "tenant",
+        "firstName": "Tenant",
+        "lastName": "Admin",
+        "isActive": true,
+        "lastLoginAt": "2026-03-23T03:39:17.800Z",
+        "createdAt": "2026-03-22T23:23:33.924Z",
+        "updatedAt": "2026-03-23T03:39:17.801Z"
+      },
+      {
+        "id": "9a25854c-0fdf-4716-8647-72dde4169672",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "employerGroupId": null,
+        "email": "employer",
+        "firstName": "Employer",
+        "lastName": "Admin",
+        "isActive": true,
+        "lastLoginAt": "2026-03-23T02:27:25.909Z",
+        "createdAt": "2026-03-23T02:27:25.903Z",
+        "updatedAt": "2026-03-23T02:27:25.910Z"
+      },
+      {
+        "id": "2482a761-2a2a-44eb-b26e-604853dcf48f",
+        "tenantId": "9df73a51-4d08-4740-9ad3-0360b56911c3",
+        "employerGroupId": null,
+        "email": "auth-portal-handoff-single-use-1774232846280-97d5d3@example.com",
+        "firstName": "Portal",
+        "lastName": "Handoff",
+        "isActive": true,
+        "lastLoginAt": null,
+        "createdAt": "2026-03-23T02:27:26.309Z",
+        "updatedAt": "2026-03-23T02:27:26.309Z"
+      },
+      {
+        "id": "46ae4b01-7ae4-46a3-911e-1fbf4e2fe2a9",
+        "tenantId": "52950946-83ad-4ba8-99d2-aa8eb4a17f91",
+        "employerGroupId": null,
+        "email": "auth-portal-handoff-validation-1774232846391-2e1042@example.com",
+        "firstName": "Portal",
+        "lastName": "Handoff",
+        "isActive": true,
+        "lastLoginAt": null,
+        "createdAt": "2026-03-23T02:27:26.394Z",
+        "updatedAt": "2026-03-23T02:27:26.394Z"
+      },
+      {
+        "id": "89fb1ad5-4120-4343-a6c6-2795e3799028",
+        "tenantId": "1e0a4b74-f04c-49c4-a3f9-ae3276d3e855",
+        "employerGroupId": null,
+        "email": "auth-portal-handoff-admin-admin-session-1774232846409-b3fe6f@example.com",
+        "firstName": "Platform",
+        "lastName": "Admin",
+        "isActive": true,
+        "lastLoginAt": null,
+        "createdAt": "2026-03-23T02:27:26.412Z",
+        "updatedAt": "2026-03-23T02:27:26.412Z"
+      },
+      {
+        "id": "29e3a1eb-520a-4152-89f0-bb91e434f604",
+        "tenantId": "04f93aea-4ce1-419c-b281-149b6388624c",
+        "employerGroupId": null,
+        "email": "dbg-branding-1774219350823@example.com",
+        "firstName": "Dbg",
+        "lastName": "Admin",
+        "isActive": true,
+        "lastLoginAt": null,
+        "createdAt": "2026-03-22T22:42:30.855Z",
+        "updatedAt": "2026-03-22T22:42:30.855Z"
+      },
+      {
+        "id": "f0746aca-9cf5-4194-b74b-6e26bfcc6e18",
+        "tenantId": "b14bcf7d-9b70-488d-a508-83ab27ca6cbc",
+        "employerGroupId": null,
+        "email": "dbg-connector-1774219350896@example.com",
+        "firstName": "Dbg",
+        "lastName": "Admin",
+        "isActive": true,
+        "lastLoginAt": null,
+        "createdAt": "2026-03-22T22:42:30.901Z",
+        "updatedAt": "2026-03-22T22:42:30.901Z"
+      },
+      {
+        "id": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "employerGroupId": null,
+        "email": "preview-platform-admin@example.com",
+        "firstName": "Preview",
+        "lastName": "Admin",
+        "isActive": true,
+        "lastLoginAt": "2026-03-23T03:39:18.780Z",
+        "createdAt": "2026-03-23T02:27:32.010Z",
+        "updatedAt": "2026-03-23T03:39:18.781Z"
+      },
+      {
+        "id": "b3a83d56-8c6e-418f-ad86-93b911f46859",
+        "tenantId": null,
+        "employerGroupId": null,
+        "email": "benefits-admin@lakeside-retail-group.local",
+        "firstName": "Avery",
+        "lastName": "Turner",
+        "isActive": true,
+        "lastLoginAt": "2026-03-19T16:46:05.189Z",
+        "createdAt": "2026-03-16T19:21:43.442Z",
+        "updatedAt": "2026-03-19T16:46:05.191Z"
+      },
+      {
+        "id": "05cb35c9-2e9a-492a-85c7-cb1e0590b79a",
+        "tenantId": null,
+        "employerGroupId": null,
+        "email": "billing-admin@lakeside-retail-group.local",
+        "firstName": "Jordan",
+        "lastName": "Reed",
+        "isActive": true,
+        "lastLoginAt": "2026-03-16T19:21:43.441Z",
+        "createdAt": "2026-03-16T19:21:43.442Z",
+        "updatedAt": "2026-03-16T19:21:43.442Z"
+      },
+      {
+        "id": "699633c1-adf9-4d41-a04d-258f76a6abfb",
+        "tenantId": null,
+        "employerGroupId": null,
+        "email": "emp00001@lakeside-retail-group.local",
+        "firstName": "Alex",
+        "lastName": "Smith",
+        "isActive": true,
+        "lastLoginAt": "2026-03-15T19:21:43.443Z",
+        "createdAt": "2026-03-16T19:21:43.453Z",
+        "updatedAt": "2026-03-16T19:21:43.453Z"
+      }
+    ],
+    "PreviewSession": [],
+    "PortalAuthHandoff": [
+      {
+        "id": "e48fd1a9-3d12-40e5-b94a-5f4c24b3a725",
+        "tenantId": "9df73a51-4d08-4740-9ad3-0360b56911c3",
+        "userId": "2482a761-2a2a-44eb-b26e-604853dcf48f",
+        "audience": "portal-web",
+        "redirectPath": "/dashboard",
+        "accessToken": "eyJ2IjoxLCJraW5kIjoicG9ydGFsLWFjY2VzcyIsInN1YiI6IjI0ODJhNzYxLTJhMmEtNDRlYi1iMjZlLTYwNDg1M2RjZjQ4ZiIsImVtYWlsIjoiYXV0aC1wb3J0YWwtaGFuZG9mZi1zaW5nbGUtdXNlLTE3NzQyMzI4NDYyODAtOTdkNWQzQGV4YW1wbGUuY29tIiwidGVuYW50SWQiOiI5ZGY3M2E1MS00ZDA4LTQ3NDAtOWFkMy0wMzYwYjU2OTExYzMiLCJzZXNzaW9uVHlwZSI6ImVuZF91c2VyIiwiaWF0IjoxNzc0MjMyODQ2LCJleHAiOjE3NzQyNjE2NDZ9.2McLxXOWkOvnPTvVm9jP0b1TjnVPX-EY2QM1hxv0EbE",
+        "userSnapshot": {
+          "id": "2482a761-2a2a-44eb-b26e-604853dcf48f",
+          "email": "auth-portal-handoff-single-use-1774232846280-97d5d3@example.com",
+          "roles": [],
+          "tenant": {
+            "id": "9df73a51-4d08-4740-9ad3-0360b56911c3",
+            "name": "Portal Handoff Tenant",
+            "brandingConfig": {}
+          },
+          "session": {
+            "type": "end_user",
+            "roles": [],
+            "tenantId": "9df73a51-4d08-4740-9ad3-0360b56911c3",
+            "permissions": [],
+            "personaType": "end_user"
+          },
+          "lastName": "Handoff",
+          "firstName": "Portal",
+          "permissions": [],
+          "landingContext": "member"
+        },
+        "expiresAt": "2026-03-23T02:28:26.372Z",
+        "consumedAt": "2026-03-23T02:27:26.385Z",
+        "createdAt": "2026-03-23T02:27:26.374Z"
+      },
+      {
+        "id": "a200fbfe-abda-4349-ac71-739883f5acaa",
+        "tenantId": "52950946-83ad-4ba8-99d2-aa8eb4a17f91",
+        "userId": "46ae4b01-7ae4-46a3-911e-1fbf4e2fe2a9",
+        "audience": "portal-web",
+        "redirectPath": "/dashboard",
+        "accessToken": "eyJ2IjoxLCJraW5kIjoicG9ydGFsLWFjY2VzcyIsInN1YiI6IjQ2YWU0YjAxLTdhZTQtNDZhMy05MTFlLTFmYmY0ZTJmZTJhOSIsImVtYWlsIjoiYXV0aC1wb3J0YWwtaGFuZG9mZi12YWxpZGF0aW9uLTE3NzQyMzI4NDYzOTEtMmUxMDQyQGV4YW1wbGUuY29tIiwidGVuYW50SWQiOiI1Mjk1MDk0Ni04M2FkLTRiYTgtOTlkMi1hYThlYjRhMTdmOTEiLCJzZXNzaW9uVHlwZSI6ImVuZF91c2VyIiwiaWF0IjoxNzc0MjMyODQ2LCJleHAiOjE3NzQyNjE2NDZ9.yLOayErnicOae2YGAFsmY3bP-g6nKUSYg9bmtIcpwVE",
+        "userSnapshot": {
+          "id": "46ae4b01-7ae4-46a3-911e-1fbf4e2fe2a9",
+          "email": "auth-portal-handoff-validation-1774232846391-2e1042@example.com",
+          "roles": [],
+          "tenant": {
+            "id": "52950946-83ad-4ba8-99d2-aa8eb4a17f91",
+            "name": "Portal Handoff Tenant",
+            "brandingConfig": {}
+          },
+          "session": {
+            "type": "end_user",
+            "roles": [],
+            "tenantId": "52950946-83ad-4ba8-99d2-aa8eb4a17f91",
+            "permissions": [],
+            "personaType": "end_user"
+          },
+          "lastName": "Handoff",
+          "firstName": "Portal",
+          "permissions": [],
+          "landingContext": "member"
+        },
+        "expiresAt": "2026-03-23T02:26:26.407Z",
+        "consumedAt": null,
+        "createdAt": "2026-03-23T02:27:26.403Z"
+      },
+      {
+        "id": "2e4c4f05-d7d2-4e5f-8ef3-000d67f6b634",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "userId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "audience": "portal-web",
+        "redirectPath": "/dashboard",
+        "accessToken": "eyJ2IjoxLCJraW5kIjoicG9ydGFsLWFjY2VzcyIsInN1YiI6IjA3MmZmMjM0LTYwMjUtNGQxYS04ZWMwLTRkMDMwNjFjMjE1MCIsImVtYWlsIjoiYWRtaW4iLCJ0ZW5hbnRJZCI6ImY3ODZkN2YwLTVhMGUtNDU4Zi05Yjc0LTJhMDY3M2IzYTgwOCIsInNlc3Npb25UeXBlIjoiZW5kX3VzZXIiLCJpYXQiOjE3NzQyMzY3MjksImV4cCI6MTc3NDI2NTUyOX0.uJk24S_DAAIYMAWqJp-g8kDpmuvN0czgA8mzJxO4QTQ",
+        "userSnapshot": {
+          "id": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+          "email": "admin",
+          "roles": [],
+          "tenant": {
+            "id": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+            "name": "Blue Horizon Health",
+            "brandingConfig": {
+              "logoUrl": "/logos/blue-horizon-health.svg",
+              "displayName": "Blue Horizon Health",
+              "primaryColor": "#0f6cbd",
+              "secondaryColor": "#ffffff"
+            }
+          },
+          "session": {
+            "type": "end_user",
+            "roles": [],
+            "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+            "permissions": [],
+            "personaType": "end_user"
+          },
+          "lastName": "Admin",
+          "firstName": "Platform",
+          "permissions": [],
+          "landingContext": "member"
+        },
+        "expiresAt": "2026-03-23T03:33:09.786Z",
+        "consumedAt": null,
+        "createdAt": "2026-03-23T03:32:09.790Z"
+      },
+      {
+        "id": "e31cf7c9-4994-4c8c-bf8e-bdb6f10656d3",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "userId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "audience": "portal-web",
+        "redirectPath": "/dashboard",
+        "accessToken": "eyJ2IjoxLCJraW5kIjoicG9ydGFsLWFjY2VzcyIsInN1YiI6IjA3MmZmMjM0LTYwMjUtNGQxYS04ZWMwLTRkMDMwNjFjMjE1MCIsImVtYWlsIjoiYWRtaW4iLCJ0ZW5hbnRJZCI6ImY3ODZkN2YwLTVhMGUtNDU4Zi05Yjc0LTJhMDY3M2IzYTgwOCIsInNlc3Npb25UeXBlIjoiZW5kX3VzZXIiLCJpYXQiOjE3NzQyMzY3ODMsImV4cCI6MTc3NDI2NTU4M30.b5vOQklldB9oA_MYtV0wvb9MfFuWzk6CooAYrXXEs3E",
+        "userSnapshot": {
+          "id": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+          "email": "admin",
+          "roles": [],
+          "tenant": {
+            "id": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+            "name": "Blue Horizon Health",
+            "brandingConfig": {
+              "logoUrl": "/logos/blue-horizon-health.svg",
+              "displayName": "Blue Horizon Health",
+              "primaryColor": "#0f6cbd",
+              "secondaryColor": "#ffffff"
+            }
+          },
+          "session": {
+            "type": "end_user",
+            "roles": [],
+            "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+            "permissions": [],
+            "personaType": "end_user"
+          },
+          "lastName": "Admin",
+          "firstName": "Platform",
+          "permissions": [],
+          "landingContext": "member"
+        },
+        "expiresAt": "2026-03-23T03:34:03.155Z",
+        "consumedAt": null,
+        "createdAt": "2026-03-23T03:33:03.155Z"
+      },
+      {
+        "id": "b5ebb6a3-1870-4d57-baf1-d44350f16222",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "userId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "audience": "portal-web",
+        "redirectPath": "/dashboard",
+        "accessToken": "eyJ2IjoxLCJraW5kIjoicG9ydGFsLWFjY2VzcyIsInN1YiI6IjA3MmZmMjM0LTYwMjUtNGQxYS04ZWMwLTRkMDMwNjFjMjE1MCIsImVtYWlsIjoiYWRtaW4iLCJ0ZW5hbnRJZCI6ImY3ODZkN2YwLTVhMGUtNDU4Zi05Yjc0LTJhMDY3M2IzYTgwOCIsInNlc3Npb25UeXBlIjoiZW5kX3VzZXIiLCJpYXQiOjE3NzQyMzY4NzksImV4cCI6MTc3NDI2NTY3OX0.Kbc7lYiROYdFdCOkT_mhqgNqktV2Bs-Z9ExpQ_GG0_A",
+        "userSnapshot": {
+          "id": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+          "email": "admin",
+          "roles": [],
+          "tenant": {
+            "id": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+            "name": "Blue Horizon Health",
+            "brandingConfig": {
+              "logoUrl": "/logos/blue-horizon-health.svg",
+              "displayName": "Blue Horizon Health",
+              "primaryColor": "#0f6cbd",
+              "secondaryColor": "#ffffff"
+            }
+          },
+          "session": {
+            "type": "end_user",
+            "roles": [],
+            "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+            "permissions": [],
+            "personaType": "end_user"
+          },
+          "lastName": "Admin",
+          "firstName": "Platform",
+          "permissions": [],
+          "landingContext": "member"
+        },
+        "expiresAt": "2026-03-23T03:35:39.239Z",
+        "consumedAt": null,
+        "createdAt": "2026-03-23T03:34:39.240Z"
+      }
+    ],
+    "UserTenantMembership": [
+      {
+        "id": "14dd8563-e44f-42ca-a929-ddf598958c90",
+        "userId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "isDefault": true,
+        "isTenantAdmin": false,
+        "createdAt": "2026-03-22T15:02:01.721Z",
+        "updatedAt": "2026-03-22T15:02:01.721Z"
+      },
+      {
+        "id": "78dd1e5d-8cba-4575-907a-04306d8fb622",
+        "userId": "29e3a1eb-520a-4152-89f0-bb91e434f604",
+        "tenantId": "04f93aea-4ce1-419c-b281-149b6388624c",
+        "isDefault": true,
+        "isTenantAdmin": true,
+        "createdAt": "2026-03-22T22:42:30.857Z",
+        "updatedAt": "2026-03-22T22:42:30.857Z"
+      },
+      {
+        "id": "98a95bb7-d88e-488b-9ddd-1f028ff172ba",
+        "userId": "f0746aca-9cf5-4194-b74b-6e26bfcc6e18",
+        "tenantId": "b14bcf7d-9b70-488d-a508-83ab27ca6cbc",
+        "isDefault": true,
+        "isTenantAdmin": true,
+        "createdAt": "2026-03-22T22:42:30.902Z",
+        "updatedAt": "2026-03-22T22:42:30.902Z"
+      },
+      {
+        "id": "3ab8d908-2f3b-4ec3-96b8-c264ada4552a",
+        "userId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "isDefault": true,
+        "isTenantAdmin": false,
+        "createdAt": "2026-03-23T02:27:25.779Z",
+        "updatedAt": "2026-03-23T02:27:25.779Z"
+      },
+      {
+        "id": "fb789cf2-b604-460b-aa32-6b6408e5646c",
+        "userId": "26975f0c-9441-4e18-b349-74041b765d03",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "isDefault": true,
+        "isTenantAdmin": false,
+        "createdAt": "2026-03-23T02:27:25.877Z",
+        "updatedAt": "2026-03-23T02:27:25.877Z"
+      },
+      {
+        "id": "8d1cf2c3-bcc8-4ab2-a5ec-9b0853ef7e7c",
+        "userId": "9a25854c-0fdf-4716-8647-72dde4169672",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "isDefault": true,
+        "isTenantAdmin": false,
+        "createdAt": "2026-03-23T02:27:25.904Z",
+        "updatedAt": "2026-03-23T02:27:25.904Z"
+      },
+      {
+        "id": "a4e6e269-caef-4c76-8583-341093a43fe9",
+        "userId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "isDefault": true,
+        "isTenantAdmin": false,
+        "createdAt": "2026-03-23T02:27:32.015Z",
+        "updatedAt": "2026-03-23T02:27:32.067Z"
+      },
+      {
+        "id": "2c68a3e5-916d-4d8e-bf01-72817f41ae9a",
+        "userId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "isDefault": true,
+        "isTenantAdmin": false,
+        "createdAt": "2026-03-22T23:23:33.915Z",
+        "updatedAt": "2026-03-22T23:23:33.915Z"
+      },
+      {
+        "id": "b229bd05-193f-4dd6-ad95-64091cef7f17",
+        "userId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "isDefault": true,
+        "isTenantAdmin": true,
+        "createdAt": "2026-03-22T23:23:33.999Z",
+        "updatedAt": "2026-03-22T23:23:33.999Z"
+      }
+    ],
+    "EmployerGroup": [],
+    "Notification": [
+      {
+        "id": "381cd2e6-3b42-462d-8931-562a4a07a21e",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "userId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+        "channel": "EMAIL",
+        "template": "user-welcome",
+        "subject": "Welcome to the portal",
+        "body": "Welcome Joe. Your portal account is ready.",
+        "status": "PENDING",
+        "sentAt": null,
+        "readAt": null,
+        "createdAt": "2026-03-20T00:40:09.880Z"
+      }
+    ],
+    "ConnectorConfig": [
+      {
+        "id": "333567a1-596e-4811-b73b-7f0f05472bfe",
+        "tenantId": "db02ebc4-79a5-44cd-a6aa-058cc81b5683",
+        "adapterKey": "webhook",
+        "name": "Webhook Subscriber",
+        "status": "ACTIVE",
+        "config": {
+          "timeout": 5000,
+          "trigger": {
+            "mode": "EVENT"
+          },
+          "event_types": [
+            "tenant.created"
+          ],
+          "endpoint_url": "http://127.0.0.1:56714/tenant-created",
+          "retry_policy": {
+            "max_attempts": 2
+          },
+          "authentication": {
+            "type": "bearer",
+            "token": "secret-token"
+          }
+        },
+        "lastSyncAt": "2026-03-23T01:05:21.190Z",
+        "lastHealthCheckAt": null,
+        "createdAt": "2026-03-23T01:05:21.047Z"
+      },
+      {
+        "id": "1eaee45c-aeef-4a61-b020-e16d5aa8aa16",
+        "tenantId": "541ddb41-e9fe-4ad0-88d1-11a11ddfa374",
+        "adapterKey": "local-file",
+        "name": "Test Local Connector",
+        "status": "ACTIVE",
+        "config": {
+          "directoryPath": "/var/folders/mj/hf7y18sj3yb4v5mwby9s2k240000gn/T/connector-sync-zD7ctW/records"
+        },
+        "lastSyncAt": "2026-03-23T01:05:21.231Z",
+        "lastHealthCheckAt": null,
+        "createdAt": "2026-03-23T01:05:21.020Z"
+      },
+      {
+        "id": "96119903-3c54-4abf-9256-87e20a706bda",
+        "tenantId": "b14bcf7d-9b70-488d-a508-83ab27ca6cbc",
+        "adapterKey": "local-file",
+        "name": "Conn",
+        "status": "DISABLED",
+        "config": {
+          "directoryPath": "/tmp"
+        },
+        "lastSyncAt": null,
+        "lastHealthCheckAt": null,
+        "createdAt": "2026-03-22T22:42:30.917Z"
+      }
+    ],
+    "IntegrationExecution": [
+      {
+        "id": "1889cc1e-236b-414b-ab0a-e921d13eb145",
+        "tenantId": "db02ebc4-79a5-44cd-a6aa-058cc81b5683",
+        "connectorConfigId": "333567a1-596e-4811-b73b-7f0f05472bfe",
+        "adapterKey": "webhook",
+        "triggerMode": "EVENT",
+        "status": "SUCCEEDED",
+        "startedAt": "2026-03-23T01:05:21.149Z",
+        "finishedAt": "2026-03-23T01:05:21.206Z",
+        "attempts": 1,
+        "recordsProcessed": 1,
+        "eventsPublished": null,
+        "message": "Webhook dispatched with 200",
+        "metadata": {
+          "url": "http://127.0.0.1:56714/tenant-created",
+          "method": "POST",
+          "eventType": "tenant.created",
+          "timeoutMs": 5000
+        }
+      },
+      {
+        "id": "9a94079e-711d-4a68-aeba-215b43f3bb63",
+        "tenantId": "541ddb41-e9fe-4ad0-88d1-11a11ddfa374",
+        "connectorConfigId": "1eaee45c-aeef-4a61-b020-e16d5aa8aa16",
+        "adapterKey": "local-file",
+        "triggerMode": "MANUAL",
+        "status": "SUCCEEDED",
+        "startedAt": "2026-03-23T01:05:21.113Z",
+        "finishedAt": "2026-03-23T01:05:21.248Z",
+        "attempts": 1,
+        "recordsProcessed": 3,
+        "eventsPublished": 3,
+        "message": "Processed 3 records",
+        "metadata": {
+          "directoryPath": "/var/folders/mj/hf7y18sj3yb4v5mwby9s2k240000gn/T/connector-sync-zD7ctW/records"
+        }
+      }
+    ],
+    "Document": [],
+    "Job": [
+      {
+        "id": "b9f17e08-104d-4771-ba40-744cced7157e",
+        "type": "notification.send",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "payload": {
+          "channel": "in_app",
+          "recipientId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+          "templateKey": "test-job-notification",
+          "notificationId": "583577d1-64d1-4cdf-847d-3705132ea00e"
+        },
+        "status": "PENDING",
+        "attempts": 0,
+        "maxAttempts": 3,
+        "runAt": "2026-03-24T00:49:05.343Z",
+        "lastError": null,
+        "createdAt": "2026-03-23T00:45:42.059Z",
+        "updatedAt": "2026-03-23T00:49:05.344Z"
+      },
+      {
+        "id": "1171b9ac-82e2-4847-bdff-f05f29fbc3d2",
+        "type": "notification.send",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "payload": {
+          "channel": "email",
+          "recipientId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+          "templateKey": "test-job-notification",
+          "notificationId": "58792298-7c08-42a7-8eb5-f431ca90fd0f"
+        },
+        "status": "PENDING",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "runAt": "2026-03-24T00:49:05.343Z",
+        "lastError": "provider unavailable",
+        "createdAt": "2026-03-23T00:45:42.173Z",
+        "updatedAt": "2026-03-23T00:49:05.344Z"
+      },
+      {
+        "id": "1dd69eb2-7a91-4916-8b3d-e0219818cf10",
+        "type": "notification.send",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "payload": {
+          "channel": "email",
+          "recipientId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+          "templateKey": "test-job-notification",
+          "notificationId": "0430feea-de82-49ef-9bcf-7fc32108160e"
+        },
+        "status": "SUCCEEDED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "runAt": "2026-03-23T00:45:41.828Z",
+        "lastError": null,
+        "createdAt": "2026-03-23T00:45:41.829Z",
+        "updatedAt": "2026-03-23T00:45:41.953Z"
+      },
+      {
+        "id": "e55e9ee2-bfa1-46e0-a389-b490a4ff00e6",
+        "type": "connector.sync",
+        "tenantId": "db02ebc4-79a5-44cd-a6aa-058cc81b5683",
+        "payload": {
+          "event": {
+            "id": "workflow-started-metrics",
+            "type": "workflow.started",
+            "payload": {
+              "input": {},
+              "workflowId": "wf-metrics",
+              "workflowType": "monitoring-test",
+              "initiatedByUserId": null
+            },
+            "tenantId": null,
+            "timestamp": "2026-03-14T10:00:00.000Z",
+            "correlationId": "workflow-metrics"
+          },
+          "connectorId": "333567a1-596e-4811-b73b-7f0f05472bfe",
+          "triggerMode": "EVENT",
+          "triggerEvent": "workflow.started",
+          "connectorType": "webhook"
+        },
+        "status": "PENDING",
+        "attempts": 0,
+        "maxAttempts": 2,
+        "runAt": "2026-03-23T02:27:30.861Z",
+        "lastError": null,
+        "createdAt": "2026-03-23T02:27:30.862Z",
+        "updatedAt": "2026-03-23T02:27:30.862Z"
+      },
+      {
+        "id": "d0f8f397-9414-497e-9b03-4e5ee363f167",
+        "type": "connector.sync",
+        "tenantId": "db02ebc4-79a5-44cd-a6aa-058cc81b5683",
+        "payload": {
+          "event": {
+            "id": "workflow-completed-metrics",
+            "type": "workflow.completed",
+            "payload": {
+              "result": {},
+              "status": "SUCCEEDED",
+              "workflowId": "wf-metrics",
+              "workflowType": "monitoring-test",
+              "completedByUserId": null
+            },
+            "tenantId": null,
+            "timestamp": "2026-03-14T10:00:01.500Z",
+            "correlationId": "workflow-metrics"
+          },
+          "connectorId": "333567a1-596e-4811-b73b-7f0f05472bfe",
+          "triggerMode": "EVENT",
+          "triggerEvent": "workflow.completed",
+          "connectorType": "webhook"
+        },
+        "status": "PENDING",
+        "attempts": 0,
+        "maxAttempts": 2,
+        "runAt": "2026-03-23T02:27:30.881Z",
+        "lastError": null,
+        "createdAt": "2026-03-23T02:27:30.882Z",
+        "updatedAt": "2026-03-23T02:27:30.882Z"
+      },
+      {
+        "id": "61049b12-5d54-42b1-88e9-79cfc070c172",
+        "type": "connector.sync",
+        "tenantId": "db02ebc4-79a5-44cd-a6aa-058cc81b5683",
+        "payload": {
+          "event": {
+            "id": "notification-sent-metrics",
+            "type": "notification.sent",
+            "payload": {
+              "sentAt": "2026-03-23T02:27:30.885Z",
+              "channel": "email",
+              "recipientId": "recipient-1",
+              "templateKey": "metrics-template",
+              "notificationId": "notification-metrics"
+            },
+            "tenantId": null,
+            "timestamp": "2026-03-23T02:27:30.885Z",
+            "correlationId": "notification-metrics"
+          },
+          "connectorId": "333567a1-596e-4811-b73b-7f0f05472bfe",
+          "triggerMode": "EVENT",
+          "triggerEvent": "notification.sent",
+          "connectorType": "webhook"
+        },
+        "status": "PENDING",
+        "attempts": 0,
+        "maxAttempts": 2,
+        "runAt": "2026-03-23T02:27:30.892Z",
+        "lastError": null,
+        "createdAt": "2026-03-23T02:27:30.893Z",
+        "updatedAt": "2026-03-23T02:27:30.893Z"
+      }
+    ],
+    "AuditLog": [
+      {
+        "id": "22258fa4-426d-4e71-a3f9-da68aa5d8840",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T02:27:32.055Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:32:06.995Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:32:07.015Z"
+      },
+      {
+        "id": "4bd3f750-d278-4037-a880-5911f3c2ea01",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.read",
+        "entityType": "member_profile",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "fields": [
+            "member",
+            "permissions"
+          ],
+          "request": {
+            "route": "/api/v1/me",
+            "method": "GET",
+            "correlationId": "da7487e9-dcc5-4d21-98c2-924c5305e405"
+          },
+          "sourceSystem": "local-portal-db"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:32:08.277Z"
+      },
+      {
+        "id": "2bfc3d98-a773-4f19-a1b8-e40983064811",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.coverage.read",
+        "entityType": "coverage",
+        "entityId": "coverage-f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "request": {
+            "route": "/api/v1/member/coverage",
+            "method": "GET",
+            "correlationId": "7fa451c6-29ac-4f28-8532-237bf4b73b5c"
+          }
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:32:08.277Z"
+      },
+      {
+        "id": "09c2f2ba-7df6-45c8-91b9-d7bd81088118",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.claims.read",
+        "entityType": "claim",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "request": {
+            "route": "/api/v1/member/claims",
+            "method": "GET",
+            "correlationId": "2608021f-e1f2-45df-bb76-736c5b7486e8"
+          },
+          "sourceSystem": "local-portal-db"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:32:08.278Z"
+      },
+      {
+        "id": "e1e22bda-9c4e-4019-be49-5e1a1dd33a04",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "beforeState": {
+          "lastLoginAt": "2026-03-22T23:28:41.317Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:32:08.466Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:32:08.479Z"
+      },
+      {
+        "id": "9ea6f6e6-2a2d-40f7-949e-c46fc9b553e4",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T02:27:25.727Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:32:09.567Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:32:09.661Z"
+      },
+      {
+        "id": "23498861-ac55-43d8-a3d8-6540db4931ce",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "action": "auth.portal_handoff.issued",
+        "entityType": "PortalAuthHandoff",
+        "entityId": "2e4c4f05-d7d2-4e5f-8ef3-000d67f6b634",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "audience": "portal-web",
+          "redirectPath": "/dashboard"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:32:09.805Z"
+      },
+      {
+        "id": "6ac32515-2ae4-4627-8b93-f387f753f062",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:32:06.995Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:33:00.872Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:33:00.892Z"
+      },
+      {
+        "id": "c0559e0c-fa16-47dd-8e03-12be91817bc4",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.coverage.read",
+        "entityType": "coverage",
+        "entityId": "coverage-f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "request": {
+            "route": "/api/v1/member/coverage",
+            "method": "GET",
+            "correlationId": "00d0c009-7f6e-4482-8302-d524bec95767"
+          }
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:33:02.167Z"
+      },
+      {
+        "id": "0ffbb8d6-5606-4b69-a603-c090de1f28f8",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.read",
+        "entityType": "member_profile",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "fields": [
+            "member",
+            "permissions"
+          ],
+          "request": {
+            "route": "/api/v1/me",
+            "method": "GET",
+            "correlationId": "4407da83-7e89-4278-9d7e-7445ee26291b"
+          },
+          "sourceSystem": "local-portal-db"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:33:02.168Z"
+      },
+      {
+        "id": "97444cd5-7e50-4acd-8124-fa4197ac2000",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.claims.read",
+        "entityType": "claim",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "request": {
+            "route": "/api/v1/member/claims",
+            "method": "GET",
+            "correlationId": "c1413289-7ebd-4e15-8063-b0b10a3283ec"
+          },
+          "sourceSystem": "local-portal-db"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:33:02.167Z"
+      },
+      {
+        "id": "cfbee669-2303-4bd2-8bde-3e1b8311797b",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:32:08.466Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:33:02.337Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:33:02.348Z"
+      },
+      {
+        "id": "6097e253-1536-4adf-ab71-ea39dc6b2e08",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:32:09.567Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:33:03.131Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:33:03.141Z"
+      },
+      {
+        "id": "8c48152d-1d5e-4691-a03c-176b2b72edeb",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "action": "auth.portal_handoff.issued",
+        "entityType": "PortalAuthHandoff",
+        "entityId": "e31cf7c9-4994-4c8c-bf8e-bdb6f10656d3",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "audience": "portal-web",
+          "redirectPath": "/dashboard"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:33:03.162Z"
+      },
+      {
+        "id": "f6c50c44-c1af-4374-acc1-95b1ed54c7f5",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:33:03.131Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:34:36.066Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "curl/8.7.1",
+        "createdAt": "2026-03-23T03:34:36.099Z"
+      },
+      {
+        "id": "3052084d-7070-4f6d-b601-ed3188a18b43",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:34:36.066Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:34:39.169Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:34:39.183Z"
+      },
+      {
+        "id": "de795565-e42e-4d06-bd79-4dd4a046367e",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "072ff234-6025-4d1a-8ec0-4d03061c2150",
+        "action": "auth.portal_handoff.issued",
+        "entityType": "PortalAuthHandoff",
+        "entityId": "b5ebb6a3-1870-4d57-baf1-d44350f16222",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "audience": "portal-web",
+          "redirectPath": "/dashboard"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:34:39.253Z"
+      },
+      {
+        "id": "17428056-9ef3-4ea5-a079-a9ac6880f33f",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T02:27:32.071Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:35:11.572Z",
+          "sessionType": "platform_admin"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "curl/8.7.1",
+        "createdAt": "2026-03-23T03:35:11.596Z"
+      },
+      {
+        "id": "75fec23f-e427-4e79-8dac-291b6664a277",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:35:11.572Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:35:11.637Z",
+          "sessionType": "platform_admin"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:11.653Z"
+      },
+      {
+        "id": "d6a83c95-a13f-49e9-bd6d-54df896923cb",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:35:11.637Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:35:11.670Z",
+          "sessionType": "platform_admin"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:11.678Z"
+      },
+      {
+        "id": "a3ae306a-2e97-4ac8-b19c-da78344028f7",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:35:11.637Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:35:11.671Z",
+          "sessionType": "platform_admin"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:11.684Z"
+      },
+      {
+        "id": "c3cc1197-82d2-4241-8621-085759e2e2f6",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:33:00.872Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:35:22.071Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:22.088Z"
+      },
+      {
+        "id": "e5d5a647-cf96-4aa4-9bdd-77395d22bdf8",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.read",
+        "entityType": "member_profile",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "fields": [
+            "member",
+            "permissions"
+          ],
+          "request": {
+            "route": "/api/v1/me",
+            "method": "GET",
+            "correlationId": "976d0104-5153-4940-9ac5-f0a99e666423"
+          },
+          "sourceSystem": "local-portal-db"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:23.435Z"
+      },
+      {
+        "id": "8435c6e9-df13-4b81-b6e7-36d5109eb9a5",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.coverage.read",
+        "entityType": "coverage",
+        "entityId": "coverage-f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "request": {
+            "route": "/api/v1/member/coverage",
+            "method": "GET",
+            "correlationId": "48849ffd-c209-4cf1-821b-7853218e9351"
+          }
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:23.436Z"
+      },
+      {
+        "id": "d1159f7b-1247-4164-8ee7-47874c563edd",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.claims.read",
+        "entityType": "claim",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "request": {
+            "route": "/api/v1/member/claims",
+            "method": "GET",
+            "correlationId": "e2a33a33-043e-4b9a-9040-2e6edf4c1794"
+          },
+          "sourceSystem": "local-portal-db"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:23.439Z"
+      },
+      {
+        "id": "e7ace899-a8eb-48cd-a666-3b1d29162920",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:33:02.337Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:35:23.633Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:23.644Z"
+      },
+      {
+        "id": "62e33c78-bd32-4fc2-ae32-b655786ad0d0",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:35:11.671Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:35:23.700Z",
+          "sessionType": "platform_admin"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:23.710Z"
+      },
+      {
+        "id": "9db369f3-ede0-450f-bbbd-3abd5682a509",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:35:22.071Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:35:25.418Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:25.427Z"
+      },
+      {
+        "id": "84017d35-f7fd-4ff6-87fa-114cb4ba6439",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.coverage.read",
+        "entityType": "coverage",
+        "entityId": "coverage-f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "request": {
+            "route": "/api/v1/member/coverage",
+            "method": "GET",
+            "correlationId": "f823a585-2896-4ce2-960f-c411e8082473"
+          }
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:25.584Z"
+      },
+      {
+        "id": "13e09c60-5a92-4299-abc1-89c614e4beee",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.read",
+        "entityType": "member_profile",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "fields": [
+            "member",
+            "permissions"
+          ],
+          "request": {
+            "route": "/api/v1/me",
+            "method": "GET",
+            "correlationId": "34bd75e9-afcc-4486-af59-e80cfe98fb43"
+          },
+          "sourceSystem": "local-portal-db"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:25.584Z"
+      },
+      {
+        "id": "8896ea54-c8e8-424c-95a1-35df26bb6877",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.claims.read",
+        "entityType": "claim",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "request": {
+            "route": "/api/v1/member/claims",
+            "method": "GET",
+            "correlationId": "0543e3c0-7604-43a9-b30b-e39561284edf"
+          },
+          "sourceSystem": "local-portal-db"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:25.586Z"
+      },
+      {
+        "id": "66f327e0-bbe6-4338-a13c-cb6bfd119333",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:35:23.633Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:35:25.690Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:25.700Z"
+      },
+      {
+        "id": "0b1b9e2f-4261-44c6-8b5f-7f6d8a2e271f",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:35:23.700Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:35:25.733Z",
+          "sessionType": "platform_admin"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:35:25.744Z"
+      },
+      {
+        "id": "7e04153a-5d46-4427-90e9-6fb064deea8c",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:35:25.418Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:37:17.125Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:37:17.168Z"
+      },
+      {
+        "id": "c12bfb2b-b453-4fd3-8959-8c9d1230d46d",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.read",
+        "entityType": "member_profile",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "fields": [
+            "member",
+            "permissions"
+          ],
+          "request": {
+            "route": "/api/v1/me",
+            "method": "GET",
+            "correlationId": "17a87328-3744-435a-95ad-9b16f3dad603"
+          },
+          "sourceSystem": "local-portal-db"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:37:19.098Z"
+      },
+      {
+        "id": "61a8d583-1a03-440f-a3dc-3c34d750a71c",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.coverage.read",
+        "entityType": "coverage",
+        "entityId": "coverage-f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "request": {
+            "route": "/api/v1/member/coverage",
+            "method": "GET",
+            "correlationId": "f00131de-060c-4511-9d55-274dd2dd5889"
+          }
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:37:19.101Z"
+      },
+      {
+        "id": "f5ede2bc-8b10-4bad-a8f7-ad1684aab836",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.claims.read",
+        "entityType": "claim",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "request": {
+            "route": "/api/v1/member/claims",
+            "method": "GET",
+            "correlationId": "7aae8c11-5c4c-444b-911e-ae6d0e964816"
+          },
+          "sourceSystem": "local-portal-db"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:37:19.102Z"
+      },
+      {
+        "id": "2123df36-f3a4-498b-9d79-17b15b57cc8a",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:35:25.690Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:37:19.411Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:37:19.445Z"
+      },
+      {
+        "id": "b4ff104d-dce1-45d9-94c6-374805142421",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:35:25.733Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:37:19.951Z",
+          "sessionType": "platform_admin"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:37:19.972Z"
+      },
+      {
+        "id": "0d58ff59-8125-4b74-9e60-eb9b4a29234a",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:37:17.125Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:38:44.023Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:38:44.056Z"
+      },
+      {
+        "id": "795f704d-45e9-4c4d-8174-484abdd99114",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:38:44.023Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:39:16.199Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:39:16.215Z"
+      },
+      {
+        "id": "842772a7-26c4-4cfd-92ba-eeea2bb6e01c",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.read",
+        "entityType": "member_profile",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "fields": [
+            "member",
+            "permissions"
+          ],
+          "request": {
+            "route": "/api/v1/me",
+            "method": "GET",
+            "correlationId": "4123cd0b-d87d-4646-ab7f-c31658ef0c6c"
+          },
+          "sourceSystem": "local-portal-db"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:39:17.498Z"
+      },
+      {
+        "id": "a7b900a0-b459-4815-a86c-fa838b2cfa80",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.coverage.read",
+        "entityType": "coverage",
+        "entityId": "coverage-f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "request": {
+            "route": "/api/v1/member/coverage",
+            "method": "GET",
+            "correlationId": "7a635ee2-60ad-48ed-a54a-f5705bb419af"
+          }
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:39:17.525Z"
+      },
+      {
+        "id": "fcfd0775-aefc-4a83-87c1-7abf3e10a4f1",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "action": "data.member.claims.read",
+        "entityType": "claim",
+        "entityId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "beforeState": null,
+        "afterState": null,
+        "metadata": {
+          "request": {
+            "route": "/api/v1/member/claims",
+            "method": "GET",
+            "correlationId": "4a8641a4-f070-450c-b8b7-0e8636d7f53d"
+          },
+          "sourceSystem": "local-portal-db"
+        },
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:39:17.526Z"
+      },
+      {
+        "id": "c635f1e7-31b1-48f3-961c-b30338382bda",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "a63c0b1f-ef8a-4531-9682-2843de4583c4",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:37:19.411Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:39:17.800Z",
+          "sessionType": "end_user"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:39:17.826Z"
+      },
+      {
+        "id": "1f0a3931-020f-4fce-8dd6-17c059f5ac5b",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "actorUserId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "action": "auth.login.success",
+        "entityType": "user",
+        "entityId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "beforeState": {
+          "lastLoginAt": "2026-03-23T03:37:19.951Z"
+        },
+        "afterState": {
+          "lastLoginAt": "2026-03-23T03:39:18.780Z",
+          "sessionType": "platform_admin"
+        },
+        "metadata": null,
+        "ipAddress": "127.0.0.1",
+        "userAgent": "node",
+        "createdAt": "2026-03-23T03:39:18.794Z"
+      }
+    ],
+    "ApiCatalogEntry": [
+      {
+        "id": "31d313ec-3a5a-47b1-a44b-a1817f6dfa01",
+        "slug": "claims-adjudication",
+        "name": "Claims Adjudication API",
+        "category": "CLAIMS",
+        "vendor": "Payer Platform",
+        "description": "Search claim status, adjudication history, and remittance outcomes across payer workflows.",
+        "endpoint": "/claims/v1/adjudications",
+        "version": "v1",
+        "inputModels": [
+          "ClaimSearchRequest",
+          "ClaimStatusRequest"
+        ],
+        "outputModels": [
+          "ClaimAdjudicationResponse",
+          "RemittanceSummary"
+        ],
+        "tenantAvailability": [
+          "*"
+        ],
+        "sortOrder": 10,
+        "createdAt": "2026-03-22T23:22:54.205Z",
+        "updatedAt": "2026-03-22T23:22:54.205Z"
+      },
+      {
+        "id": "31d313ec-3a5a-47b1-a44b-a1817f6dfa02",
+        "slug": "pharmacy-benefits",
+        "name": "Pharmacy Benefits API",
+        "category": "PHARMACY",
+        "vendor": "Payer Platform",
+        "description": "Retrieve formulary, benefit, and prior authorization context for pharmacy transactions.",
+        "endpoint": "/pharmacy/v1/benefits",
+        "version": "v2",
+        "inputModels": [
+          "PharmacyBenefitRequest",
+          "FormularyLookupRequest"
+        ],
+        "outputModels": [
+          "PharmacyBenefitResponse",
+          "PriorAuthorizationSummary"
+        ],
+        "tenantAvailability": [
+          "*"
+        ],
+        "sortOrder": 20,
+        "createdAt": "2026-03-22T23:22:54.205Z",
+        "updatedAt": "2026-03-22T23:22:54.205Z"
+      },
+      {
+        "id": "31d313ec-3a5a-47b1-a44b-a1817f6dfa03",
+        "slug": "eligibility-verification",
+        "name": "Eligibility Verification API",
+        "category": "ELIGIBILITY",
+        "vendor": "Payer Platform",
+        "description": "Validate member coverage, accumulators, and eligibility windows before service delivery.",
+        "endpoint": "/eligibility/v1/verifications",
+        "version": "v1",
+        "inputModels": [
+          "EligibilityRequest",
+          "CoverageWindowRequest"
+        ],
+        "outputModels": [
+          "EligibilityResponse",
+          "AccumulatorSummary"
+        ],
+        "tenantAvailability": [
+          "*"
+        ],
+        "sortOrder": 30,
+        "createdAt": "2026-03-22T23:22:54.205Z",
+        "updatedAt": "2026-03-22T23:22:54.205Z"
+      },
+      {
+        "id": "31d313ec-3a5a-47b1-a44b-a1817f6dfa04",
+        "slug": "clinical-data-exchange",
+        "name": "Clinical Data Exchange API",
+        "category": "CLINICAL",
+        "vendor": "HealthBridge Clinical",
+        "description": "Exchange encounter summaries, lab snapshots, and care events for clinical workflows and downstream analytics.",
+        "endpoint": "/clinical/v1/exchange",
+        "version": "v1",
+        "inputModels": [
+          "ClinicalEventRequest",
+          "EncounterSummaryRequest"
+        ],
+        "outputModels": [
+          "ClinicalEventResponse",
+          "CareGapSnapshot"
+        ],
+        "tenantAvailability": [
+          "*"
+        ],
+        "sortOrder": 40,
+        "createdAt": "2026-03-23T00:00:56.113Z",
+        "updatedAt": "2026-03-23T00:00:56.113Z"
+      },
+      {
+        "id": "31d313ec-3a5a-47b1-a44b-a1817f6dfa05",
+        "slug": "prior-authorization-hub",
+        "name": "Prior Authorization Hub API",
+        "category": "AUTHORIZATION",
+        "vendor": "AuthFlow Network",
+        "description": "Coordinate prior authorization intake, decisioning, and utilization review timelines across payer and provider touchpoints.",
+        "endpoint": "/authorizations/v1/requests",
+        "version": "v2",
+        "inputModels": [
+          "AuthorizationSubmission",
+          "AuthorizationStatusLookup"
+        ],
+        "outputModels": [
+          "AuthorizationDecision",
+          "AuthorizationTimeline"
+        ],
+        "tenantAvailability": [
+          "*"
+        ],
+        "sortOrder": 50,
+        "createdAt": "2026-03-23T00:00:56.113Z",
+        "updatedAt": "2026-03-23T00:00:56.113Z"
+      }
+    ],
+    "Role": [
+      {
+        "id": "4beab6c5-2a9e-47f3-b5d2-6a4519f863f6",
+        "code": "member",
+        "name": "Member",
+        "description": "Default member-facing access role.",
+        "createdAt": "2026-03-16T19:21:41.768Z",
+        "updatedAt": "2026-03-23T02:27:25.771Z"
+      },
+      {
+        "id": "3896b61d-9feb-4d26-9be2-f889e77bab87",
+        "code": "provider",
+        "name": "Provider",
+        "description": "Provider portal access role for practice workflows.",
+        "createdAt": "2026-03-16T19:21:41.767Z",
+        "updatedAt": "2026-03-23T02:27:25.872Z"
+      },
+      {
+        "id": "659aeec3-8658-45e8-adbc-57eababc01f5",
+        "code": "employer_group_admin",
+        "name": "Employer Group Admin",
+        "description": "Employer group admin role for enrollment and billing administration.",
+        "createdAt": "2026-03-16T19:21:41.766Z",
+        "updatedAt": "2026-03-23T02:27:25.896Z"
+      },
+      {
+        "id": "38a06a5f-dbfe-4e64-b101-527a7a99f3fd",
+        "code": "internal_operations",
+        "name": "Internal Operations",
+        "description": "Internal operations access.",
+        "createdAt": "2026-03-16T19:21:41.767Z",
+        "updatedAt": "2026-03-16T19:21:41.767Z"
+      },
+      {
+        "id": "ecfffca3-f23c-4a54-af78-48174ca196bc",
+        "code": "platform-admin",
+        "name": "Platform Admin",
+        "description": null,
+        "createdAt": "2026-03-22T22:35:59.492Z",
+        "updatedAt": "2026-03-23T02:27:27.164Z"
+      },
+      {
+        "id": "61fe65e7-5d98-44f3-9f60-7e9754dab5da",
+        "code": "dbg-admin-1774219350823",
+        "name": "Dbg Admin",
+        "description": null,
+        "createdAt": "2026-03-22T22:42:30.852Z",
+        "updatedAt": "2026-03-22T22:42:30.852Z"
+      },
+      {
+        "id": "14a4348f-c397-41f7-bff4-78a493c0a68e",
+        "code": "dbg-conn-admin-1774219350896",
+        "name": "Dbg Conn Admin",
+        "description": null,
+        "createdAt": "2026-03-22T22:42:30.899Z",
+        "updatedAt": "2026-03-22T22:42:30.899Z"
+      },
+      {
+        "id": "b0061118-14b6-4a21-8b2f-4b96d15e6781",
+        "code": "broker",
+        "name": "Broker",
+        "description": "Broker role for enrollment and billing support workflows.",
+        "createdAt": "2026-03-16T19:21:41.766Z",
+        "updatedAt": "2026-03-19T18:04:19.195Z"
+      },
+      {
+        "id": "9278405b-53f0-42eb-b09e-211168c75b8b",
+        "code": "tenant_admin",
+        "name": "Tenant Admin",
+        "description": null,
+        "createdAt": "2026-03-23T02:27:31.339Z",
+        "updatedAt": "2026-03-23T02:27:31.339Z"
+      },
+      {
+        "id": "3407f737-8dc0-45ee-9811-9e4b882e3f12",
+        "code": "platform_admin",
+        "name": "Platform Admin",
+        "description": "Platform administrator role.",
+        "createdAt": "2026-03-23T00:42:53.066Z",
+        "updatedAt": "2026-03-23T02:27:33.716Z"
+      }
+    ],
+    "Permission": [
+      {
+        "id": "2fb44cab-5ee3-43cb-9d8e-207509811680",
+        "code": "tenant.view",
+        "name": "View Tenants",
+        "description": "Allows viewing tenant records.",
+        "createdAt": "2026-03-16T19:21:41.757Z",
+        "updatedAt": "2026-03-23T02:27:25.892Z"
+      },
+      {
+        "id": "01941974-461a-4a42-984d-1382dc255d35",
+        "code": "member.view",
+        "name": "View Member Portal",
+        "description": "Allows access to member-facing portal experiences.",
+        "createdAt": "2026-03-16T19:21:41.757Z",
+        "updatedAt": "2026-03-23T02:27:25.893Z"
+      },
+      {
+        "id": "557fdaae-6984-4701-8bfa-3bf29d70d3d8",
+        "code": "provider.view",
+        "name": "View Provider Portal",
+        "description": "Allows access to provider-facing portal experiences.",
+        "createdAt": "2026-03-16T19:21:41.757Z",
+        "updatedAt": "2026-03-23T02:27:25.894Z"
+      },
+      {
+        "id": "8ed275c1-0e85-4917-a6e1-4fec04b7a840",
+        "code": "user.manage",
+        "name": "Manage Users",
+        "description": "Allows creating and updating user records.",
+        "createdAt": "2026-03-16T19:21:41.757Z",
+        "updatedAt": "2026-03-23T02:27:25.894Z"
+      },
+      {
+        "id": "6595e5eb-adc3-4f61-8007-ca526234479a",
+        "code": "billing_enrollment.view",
+        "name": "View Billing and Enrollment",
+        "description": "Allows access to billing and enrollment experiences.",
+        "createdAt": "2026-03-16T19:21:41.757Z",
+        "updatedAt": "2026-03-23T02:27:25.895Z"
+      },
+      {
+        "id": "ee267142-467c-4c16-ad57-889db3a2fe6a",
+        "code": "billing_enrollment.manage",
+        "name": "Manage Billing and Enrollment",
+        "description": "Allows operational and administrative updates in billing and enrollment.",
+        "createdAt": "2026-03-16T19:21:41.757Z",
+        "updatedAt": "2026-03-23T02:27:25.895Z"
+      },
+      {
+        "id": "551c0709-276c-485a-beef-6c60bd63a8ab",
+        "code": "admin.manage",
+        "name": "Manage Admin",
+        "description": "Allows access to administrative configuration workflows.",
+        "createdAt": "2026-03-16T19:21:41.757Z",
+        "updatedAt": "2026-03-23T02:27:33.715Z"
+      }
+    ],
+    "FeatureFlag": [],
+    "EventRecord": [
+      {
+        "id": "39eb1e8c-4a34-430e-b2b5-1d85a6290e77",
+        "type": "notification.requested",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "correlationId": "ff391e18-4e8e-4ec6-80f4-bb5c598ec9a7",
+        "payload": {
+          "id": "dc669d1d-d0d3-40ca-a4e5-5c677ad93ff4",
+          "type": "notification.requested",
+          "payload": {
+            "channel": "email",
+            "recipientId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+            "templateKey": "test-job-notification",
+            "notificationId": "0430feea-de82-49ef-9bcf-7fc32108160e"
+          },
+          "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+          "timestamp": "2026-03-23T00:45:41.786Z",
+          "correlationId": "ff391e18-4e8e-4ec6-80f4-bb5c598ec9a7"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:45:41.786Z",
+        "createdAt": "2026-03-23T00:45:41.790Z"
+      },
+      {
+        "id": "04cce118-7858-4d2b-a146-054801556d8c",
+        "type": "notification.sent",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "correlationId": "12c65380-0b03-4e36-8793-af1d6c24764b",
+        "payload": {
+          "id": "23f4d1aa-6cf5-476c-aa29-39bbff152a21",
+          "type": "notification.sent",
+          "payload": {
+            "sentAt": "2026-03-23T00:45:41.919Z",
+            "channel": "email",
+            "recipientId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+            "templateKey": "test-job-notification",
+            "notificationId": "0430feea-de82-49ef-9bcf-7fc32108160e"
+          },
+          "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+          "timestamp": "2026-03-23T00:45:41.919Z",
+          "correlationId": "12c65380-0b03-4e36-8793-af1d6c24764b"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:45:41.919Z",
+        "createdAt": "2026-03-23T00:45:41.948Z"
+      },
+      {
+        "id": "0f7393dc-dcf8-4fa5-b065-bfde565218c8",
+        "type": "integration.completed",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "32a22c76-c544-425f-9660-620ef77bf55d",
+        "payload": {
+          "id": "15595e35-fc17-4d3f-91e4-e6d0504ddba3",
+          "type": "integration.completed",
+          "payload": {
+            "status": "SUCCEEDED",
+            "completedAt": "2026-03-23T00:47:18.123Z",
+            "integrationId": "c08b4903-9a67-4220-bbf8-eef42c6dff5d",
+            "integrationKey": "local-file",
+            "recordsProcessed": 3
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:47:18.123Z",
+          "correlationId": "32a22c76-c544-425f-9660-620ef77bf55d"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:47:18.123Z",
+        "createdAt": "2026-03-23T00:47:18.178Z"
+      },
+      {
+        "id": "fbb5182e-ca1f-45ab-89d4-78cb92d6b20f",
+        "type": "connector.record.imported",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "claims.json:1",
+        "payload": {
+          "id": "claims.json:1",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "amount": 42.5,
+              "claimId": "CL-1"
+            },
+            "fileName": "claims.json",
+            "adapterKey": "local-file"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:48:21.757Z",
+          "correlationId": "claims.json:1"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:48:21.757Z",
+        "createdAt": "2026-03-23T00:48:21.759Z"
+      },
+      {
+        "id": "9d1709fd-7f2b-4af9-8457-b76055482831",
+        "type": "connector.record.imported",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "members.csv:2",
+        "payload": {
+          "id": "members.csv:2",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "lastName": "Stone",
+              "memberId": "2001",
+              "firstName": "Avery"
+            },
+            "fileName": "members.csv",
+            "adapterKey": "local-file"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:48:21.823Z",
+          "correlationId": "members.csv:2"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:48:21.823Z",
+        "createdAt": "2026-03-23T00:48:21.825Z"
+      },
+      {
+        "id": "e44e645b-1dcc-4797-bdfb-917a88ee4283",
+        "type": "connector.record.imported",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "members.csv:3",
+        "payload": {
+          "id": "members.csv:3",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "lastName": "Park",
+              "memberId": "2002",
+              "firstName": "Riley"
+            },
+            "fileName": "members.csv",
+            "adapterKey": "local-file"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:48:21.868Z",
+          "correlationId": "members.csv:3"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:48:21.868Z",
+        "createdAt": "2026-03-23T00:48:21.870Z"
+      },
+      {
+        "id": "3b60096e-5a57-46ac-875f-6dd289261731",
+        "type": "connector.record.imported",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "claims.json:1",
+        "payload": {
+          "id": "claims.json:1",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "amount": 42.5,
+              "claimId": "CL-1"
+            },
+            "fileName": "claims.json",
+            "adapterKey": "local-file"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:49:05.055Z",
+          "correlationId": "claims.json:1"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:49:05.055Z",
+        "createdAt": "2026-03-23T00:49:05.057Z"
+      },
+      {
+        "id": "818c98af-ba64-4339-bd99-76091fe5c91c",
+        "type": "connector.record.imported",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "members.csv:2",
+        "payload": {
+          "id": "members.csv:2",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "lastName": "Stone",
+              "memberId": "2001",
+              "firstName": "Avery"
+            },
+            "fileName": "members.csv",
+            "adapterKey": "local-file"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:49:05.099Z",
+          "correlationId": "members.csv:2"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:49:05.099Z",
+        "createdAt": "2026-03-23T00:49:05.100Z"
+      },
+      {
+        "id": "f08398b1-5dcc-4ae9-9762-9b6215f4d52b",
+        "type": "connector.record.imported",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "members.csv:3",
+        "payload": {
+          "id": "members.csv:3",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "lastName": "Park",
+              "memberId": "2002",
+              "firstName": "Riley"
+            },
+            "fileName": "members.csv",
+            "adapterKey": "local-file"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:49:05.131Z",
+          "correlationId": "members.csv:3"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:49:05.131Z",
+        "createdAt": "2026-03-23T00:49:05.132Z"
+      },
+      {
+        "id": "c63316af-d3d9-421f-acb7-59a64c50b95f",
+        "type": "integration.completed",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "59896bde-6653-490c-9a93-1e537f41302a",
+        "payload": {
+          "id": "22c68564-d7fd-4519-acfb-8d1651883ba2",
+          "type": "integration.completed",
+          "payload": {
+            "status": "SUCCEEDED",
+            "completedAt": "2026-03-23T00:49:05.161Z",
+            "integrationId": "f7da6f1d-3840-45c9-9a13-c6c3377ccd21",
+            "integrationKey": "local-file",
+            "recordsProcessed": 3
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:49:05.161Z",
+          "correlationId": "59896bde-6653-490c-9a93-1e537f41302a"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:49:05.161Z",
+        "createdAt": "2026-03-23T00:49:05.200Z"
+      },
+      {
+        "id": "cbb18a86-6ec2-4997-8234-23176bc96535",
+        "type": "integration.completed",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "fc01db0c-27bb-4ab1-968a-83c6b9003d65",
+        "payload": {
+          "id": "55d6a453-00b9-415d-aa47-636d33ab1018",
+          "type": "integration.completed",
+          "payload": {
+            "status": "SUCCEEDED",
+            "completedAt": "2026-03-23T00:49:05.449Z",
+            "integrationId": "a9ef3c60-6bb6-4fa1-8151-616904dd4e85",
+            "integrationKey": "rest-api",
+            "recordsProcessed": 1
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:49:05.449Z",
+          "correlationId": "fc01db0c-27bb-4ab1-968a-83c6b9003d65"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:49:05.449Z",
+        "createdAt": "2026-03-23T00:49:05.472Z"
+      },
+      {
+        "id": "af1fbd12-2927-47e6-afe2-665032b96892",
+        "type": "connector.record.imported",
+        "tenantId": "541ddb41-e9fe-4ad0-88d1-11a11ddfa374",
+        "correlationId": "claims.json:1",
+        "payload": {
+          "id": "claims.json:1",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "amount": 42.5,
+              "claimId": "CL-1"
+            },
+            "fileName": "claims.json",
+            "adapterKey": "local-file"
+          },
+          "tenantId": "541ddb41-e9fe-4ad0-88d1-11a11ddfa374",
+          "timestamp": "2026-03-23T01:05:21.123Z",
+          "correlationId": "claims.json:1"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T01:05:21.123Z",
+        "createdAt": "2026-03-23T01:05:21.125Z"
+      },
+      {
+        "id": "d3aaa2c7-b680-4491-a072-1e83937182d0",
+        "type": "connector.record.imported",
+        "tenantId": "541ddb41-e9fe-4ad0-88d1-11a11ddfa374",
+        "correlationId": "members.csv:2",
+        "payload": {
+          "id": "members.csv:2",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "lastName": "Stone",
+              "memberId": "2001",
+              "firstName": "Avery"
+            },
+            "fileName": "members.csv",
+            "adapterKey": "local-file"
+          },
+          "tenantId": "541ddb41-e9fe-4ad0-88d1-11a11ddfa374",
+          "timestamp": "2026-03-23T01:05:21.171Z",
+          "correlationId": "members.csv:2"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T01:05:21.171Z",
+        "createdAt": "2026-03-23T01:05:21.172Z"
+      },
+      {
+        "id": "d54fcbc1-dc40-494e-b0a4-57896b37e725",
+        "type": "connector.record.imported",
+        "tenantId": "541ddb41-e9fe-4ad0-88d1-11a11ddfa374",
+        "correlationId": "members.csv:3",
+        "payload": {
+          "id": "members.csv:3",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "lastName": "Park",
+              "memberId": "2002",
+              "firstName": "Riley"
+            },
+            "fileName": "members.csv",
+            "adapterKey": "local-file"
+          },
+          "tenantId": "541ddb41-e9fe-4ad0-88d1-11a11ddfa374",
+          "timestamp": "2026-03-23T01:05:21.202Z",
+          "correlationId": "members.csv:3"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T01:05:21.202Z",
+        "createdAt": "2026-03-23T01:05:21.202Z"
+      },
+      {
+        "id": "ed31af5e-f6a1-4d19-b9f5-45735ffbe0e4",
+        "type": "integration.completed",
+        "tenantId": "541ddb41-e9fe-4ad0-88d1-11a11ddfa374",
+        "correlationId": "a75ac541-c3ce-4ba9-97b2-4faf2e597e24",
+        "payload": {
+          "id": "20e5a9e2-21c1-4374-985d-5df93c856be6",
+          "type": "integration.completed",
+          "payload": {
+            "status": "SUCCEEDED",
+            "completedAt": "2026-03-23T01:05:21.231Z",
+            "integrationId": "1eaee45c-aeef-4a61-b020-e16d5aa8aa16",
+            "integrationKey": "local-file",
+            "recordsProcessed": 3
+          },
+          "tenantId": "541ddb41-e9fe-4ad0-88d1-11a11ddfa374",
+          "timestamp": "2026-03-23T01:05:21.231Z",
+          "correlationId": "a75ac541-c3ce-4ba9-97b2-4faf2e597e24"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T01:05:21.231Z",
+        "createdAt": "2026-03-23T01:05:21.284Z"
+      },
+      {
+        "id": "aed18e4d-cfc0-4c47-8338-9d5ce28fec16",
+        "type": "notification.requested",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "correlationId": "48728840-db36-49d6-a8b2-778929333578",
+        "payload": {
+          "id": "be9255a3-ce4c-4cb5-9b6d-d7afcd9690a4",
+          "type": "notification.requested",
+          "payload": {
+            "channel": "in_app",
+            "recipientId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+            "templateKey": "test-job-notification",
+            "notificationId": "583577d1-64d1-4cdf-847d-3705132ea00e"
+          },
+          "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+          "timestamp": "2026-03-23T00:45:42.044Z",
+          "correlationId": "48728840-db36-49d6-a8b2-778929333578"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:45:42.044Z",
+        "createdAt": "2026-03-23T00:45:42.046Z"
+      },
+      {
+        "id": "9ec38aea-4dd8-4f99-b89e-30a381f02cb5",
+        "type": "notification.requested",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "correlationId": "c5c5adc7-4276-4a16-b705-30b9eb158391",
+        "payload": {
+          "id": "8207c759-041a-4e32-9e13-b3a54dcc7763",
+          "type": "notification.requested",
+          "payload": {
+            "channel": "email",
+            "recipientId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+            "templateKey": "test-job-notification",
+            "notificationId": "58792298-7c08-42a7-8eb5-f431ca90fd0f"
+          },
+          "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+          "timestamp": "2026-03-23T00:45:42.160Z",
+          "correlationId": "c5c5adc7-4276-4a16-b705-30b9eb158391"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:45:42.160Z",
+        "createdAt": "2026-03-23T00:45:42.162Z"
+      },
+      {
+        "id": "1819df91-f2f8-4c5a-a6be-02101d6a7799",
+        "type": "document.uploaded",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "document-webhook-correlation",
+        "payload": {
+          "id": "document-webhook-event",
+          "type": "document.uploaded",
+          "payload": {
+            "fileName": "member.pdf",
+            "documentId": "doc-1",
+            "contentType": "application/pdf",
+            "uploadedByUserId": null
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:47:18.263Z",
+          "correlationId": "document-webhook-correlation"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:47:18.263Z",
+        "createdAt": "2026-03-23T00:47:18.266Z"
+      },
+      {
+        "id": "01493a6b-fa6f-48ef-a827-98a2c18535a0",
+        "type": "integration.completed",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "c1552263-9e01-4cfc-9dc8-d51a1f09af94",
+        "payload": {
+          "id": "429c7072-ec8c-4aa1-a446-9063222a4709",
+          "type": "integration.completed",
+          "payload": {
+            "status": "SUCCEEDED",
+            "completedAt": "2026-03-23T00:48:21.912Z",
+            "integrationId": "2618b777-2f8c-48d4-858f-a683597771af",
+            "integrationKey": "local-file",
+            "recordsProcessed": 3
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:48:21.912Z",
+          "correlationId": "c1552263-9e01-4cfc-9dc8-d51a1f09af94"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:48:21.912Z",
+        "createdAt": "2026-03-23T00:48:21.980Z"
+      },
+      {
+        "id": "e43f3ad2-aa6b-4574-b751-3919f40e8588",
+        "type": "document.uploaded",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "document-webhook-correlation",
+        "payload": {
+          "id": "document-webhook-event",
+          "type": "document.uploaded",
+          "payload": {
+            "fileName": "member.pdf",
+            "documentId": "doc-1",
+            "contentType": "application/pdf",
+            "uploadedByUserId": null
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:49:05.248Z",
+          "correlationId": "document-webhook-correlation"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:49:05.248Z",
+        "createdAt": "2026-03-23T00:49:05.250Z"
+      },
+      {
+        "id": "702149d6-b302-4c88-a143-286d1b03602d",
+        "type": "integration.completed",
+        "tenantId": "db02ebc4-79a5-44cd-a6aa-058cc81b5683",
+        "correlationId": "4fbc57bf-c94c-495c-8fe0-ac9bc56a6f69",
+        "payload": {
+          "id": "82219bba-07ca-4ffa-a9fa-6d1a19b5bafd",
+          "type": "integration.completed",
+          "payload": {
+            "status": "SUCCEEDED",
+            "completedAt": "2026-03-23T01:05:21.190Z",
+            "integrationId": "333567a1-596e-4811-b73b-7f0f05472bfe",
+            "integrationKey": "webhook",
+            "recordsProcessed": 1
+          },
+          "tenantId": "db02ebc4-79a5-44cd-a6aa-058cc81b5683",
+          "timestamp": "2026-03-23T01:05:21.190Z",
+          "correlationId": "4fbc57bf-c94c-495c-8fe0-ac9bc56a6f69"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T01:05:21.190Z",
+        "createdAt": "2026-03-23T01:05:21.231Z"
+      },
+      {
+        "id": "d356d1fb-db33-4331-b857-3ffacd3ab40b",
+        "type": "tenant.created",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "tenant-webhook-correlation",
+        "payload": {
+          "id": "tenant-webhook-event",
+          "type": "tenant.created",
+          "payload": {
+            "name": "Webhook Tenant",
+            "slug": "webhook-tenant",
+            "status": "ACTIVE",
+            "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-14T10:00:00.000Z",
+          "correlationId": "tenant-webhook-correlation"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-14T10:00:00.000Z",
+        "createdAt": "2026-03-23T00:47:17.907Z"
+      },
+      {
+        "id": "e8f66f8b-ae97-43dd-904e-c0ee56f2efbf",
+        "type": "integration.completed",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "2151a741-7626-432a-9d80-c007ce8eed1f",
+        "payload": {
+          "id": "6257e248-38ab-4310-8278-eba0906a9797",
+          "type": "integration.completed",
+          "payload": {
+            "status": "SUCCEEDED",
+            "completedAt": "2026-03-23T00:47:18.110Z",
+            "integrationId": "831ac074-a423-4812-a590-edc8b72a69d7",
+            "integrationKey": "webhook",
+            "recordsProcessed": 1
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:47:18.110Z",
+          "correlationId": "2151a741-7626-432a-9d80-c007ce8eed1f"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:47:18.110Z",
+        "createdAt": "2026-03-23T00:47:18.154Z"
+      },
+      {
+        "id": "64fcd90a-b204-4ee9-824d-945d574212a1",
+        "type": "document.uploaded",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "document-webhook-correlation",
+        "payload": {
+          "id": "document-webhook-event",
+          "type": "document.uploaded",
+          "payload": {
+            "fileName": "member.pdf",
+            "documentId": "doc-1",
+            "contentType": "application/pdf",
+            "uploadedByUserId": null
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:48:22.104Z",
+          "correlationId": "document-webhook-correlation"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:48:22.104Z",
+        "createdAt": "2026-03-23T00:48:22.107Z"
+      },
+      {
+        "id": "d3d525ff-c852-4bf7-936e-2f3bd770f14a",
+        "type": "connector.record.imported",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "rest:1",
+        "payload": {
+          "id": "rest:1",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "status": "active",
+              "externalId": "R-3"
+            },
+            "fileName": "/retry-records",
+            "adapterKey": "rest-api"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:49:05.443Z",
+          "correlationId": "rest:1"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:49:05.443Z",
+        "createdAt": "2026-03-23T00:49:05.444Z"
+      },
+      {
+        "id": "12360bf9-a99c-4b6a-9077-da40a0b89daa",
+        "type": "workflow.started",
+        "tenantId": null,
+        "correlationId": "workflow-metrics",
+        "payload": {
+          "id": "workflow-started-metrics",
+          "type": "workflow.started",
+          "payload": {
+            "input": {},
+            "workflowId": "wf-metrics",
+            "workflowType": "monitoring-test",
+            "initiatedByUserId": null
+          },
+          "tenantId": null,
+          "timestamp": "2026-03-14T10:00:00.000Z",
+          "correlationId": "workflow-metrics"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-14T10:00:00.000Z",
+        "createdAt": "2026-03-23T02:27:30.809Z"
+      },
+      {
+        "id": "186bbbd3-693d-4610-923f-38f5871684b9",
+        "type": "notification.sent",
+        "tenantId": null,
+        "correlationId": "notification-metrics",
+        "payload": {
+          "id": "notification-sent-metrics",
+          "type": "notification.sent",
+          "payload": {
+            "sentAt": "2026-03-23T02:27:30.885Z",
+            "channel": "email",
+            "recipientId": "recipient-1",
+            "templateKey": "metrics-template",
+            "notificationId": "notification-metrics"
+          },
+          "tenantId": null,
+          "timestamp": "2026-03-23T02:27:30.885Z",
+          "correlationId": "notification-metrics"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T02:27:30.885Z",
+        "createdAt": "2026-03-23T02:27:30.885Z"
+      },
+      {
+        "id": "d67d76d5-9f1d-4e50-9879-bda920e120c3",
+        "type": "connector.record.imported",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "claims.json:1",
+        "payload": {
+          "id": "claims.json:1",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "amount": 42.5,
+              "claimId": "CL-1"
+            },
+            "fileName": "claims.json",
+            "adapterKey": "local-file"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:47:17.988Z",
+          "correlationId": "claims.json:1"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:47:17.988Z",
+        "createdAt": "2026-03-23T00:47:17.990Z"
+      },
+      {
+        "id": "257f2ac5-b8ff-4e31-aa1b-9cafc5219c9b",
+        "type": "connector.record.imported",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "members.csv:2",
+        "payload": {
+          "id": "members.csv:2",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "lastName": "Stone",
+              "memberId": "2001",
+              "firstName": "Avery"
+            },
+            "fileName": "members.csv",
+            "adapterKey": "local-file"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:47:18.047Z",
+          "correlationId": "members.csv:2"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:47:18.047Z",
+        "createdAt": "2026-03-23T00:47:18.050Z"
+      },
+      {
+        "id": "82bf14e9-da75-4883-b5d9-2f5f99e55dad",
+        "type": "connector.record.imported",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "members.csv:3",
+        "payload": {
+          "id": "members.csv:3",
+          "type": "connector.record.imported",
+          "payload": {
+            "record": {
+              "lastName": "Park",
+              "memberId": "2002",
+              "firstName": "Riley"
+            },
+            "fileName": "members.csv",
+            "adapterKey": "local-file"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:47:18.087Z",
+          "correlationId": "members.csv:3"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:47:18.087Z",
+        "createdAt": "2026-03-23T00:47:18.088Z"
+      },
+      {
+        "id": "51324a72-ae2f-4286-b61f-05fab87c5cc8",
+        "type": "tenant.created",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "tenant-webhook-correlation",
+        "payload": {
+          "id": "tenant-webhook-event",
+          "type": "tenant.created",
+          "payload": {
+            "name": "Webhook Tenant",
+            "slug": "webhook-tenant",
+            "status": "ACTIVE",
+            "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-14T10:00:00.000Z",
+          "correlationId": "tenant-webhook-correlation"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-14T10:00:00.000Z",
+        "createdAt": "2026-03-23T00:48:21.703Z"
+      },
+      {
+        "id": "de8f6f51-f98e-4f14-9491-a1eea9b3a907",
+        "type": "integration.completed",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "a526a637-42dc-4ada-9bbf-2acbcfb9543f",
+        "payload": {
+          "id": "63fdb825-5421-4fa9-b0b1-5eef19a0a24d",
+          "type": "integration.completed",
+          "payload": {
+            "status": "SUCCEEDED",
+            "completedAt": "2026-03-23T00:48:21.890Z",
+            "integrationId": "5def8c43-f68c-4039-a319-a73559337162",
+            "integrationKey": "webhook",
+            "recordsProcessed": 1
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:48:21.890Z",
+          "correlationId": "a526a637-42dc-4ada-9bbf-2acbcfb9543f"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:48:21.890Z",
+        "createdAt": "2026-03-23T00:48:21.954Z"
+      },
+      {
+        "id": "c13247ee-279d-4cca-b0b6-2d66ba5dea94",
+        "type": "tenant.created",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "tenant-webhook-correlation",
+        "payload": {
+          "id": "tenant-webhook-event",
+          "type": "tenant.created",
+          "payload": {
+            "name": "Webhook Tenant",
+            "slug": "webhook-tenant",
+            "status": "ACTIVE",
+            "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808"
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-14T10:00:00.000Z",
+          "correlationId": "tenant-webhook-correlation"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-14T10:00:00.000Z",
+        "createdAt": "2026-03-23T00:49:04.994Z"
+      },
+      {
+        "id": "8e3bd116-7668-4718-930d-47c4f41a2d6f",
+        "type": "integration.completed",
+        "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+        "correlationId": "a6df8710-776a-4b43-9c20-218fd4f4eef9",
+        "payload": {
+          "id": "75d0c26e-2027-4adf-8208-0fc2cc3de5b7",
+          "type": "integration.completed",
+          "payload": {
+            "status": "SUCCEEDED",
+            "completedAt": "2026-03-23T00:49:05.124Z",
+            "integrationId": "e8102028-f729-4640-acb8-b11c55106e9f",
+            "integrationKey": "webhook",
+            "recordsProcessed": 1
+          },
+          "tenantId": "f786d7f0-5a0e-458f-9b74-2a0673b3a808",
+          "timestamp": "2026-03-23T00:49:05.124Z",
+          "correlationId": "a6df8710-776a-4b43-9c20-218fd4f4eef9"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-23T00:49:05.124Z",
+        "createdAt": "2026-03-23T00:49:05.161Z"
+      },
+      {
+        "id": "63018701-95a2-46ca-8ea4-96cdc1696a2b",
+        "type": "tenant.created",
+        "tenantId": "db02ebc4-79a5-44cd-a6aa-058cc81b5683",
+        "correlationId": "tenant-webhook-correlation",
+        "payload": {
+          "id": "tenant-webhook-event",
+          "type": "tenant.created",
+          "payload": {
+            "name": "Webhook Tenant",
+            "slug": "webhook-tenant",
+            "status": "ACTIVE",
+            "tenantId": "db02ebc4-79a5-44cd-a6aa-058cc81b5683"
+          },
+          "tenantId": "db02ebc4-79a5-44cd-a6aa-058cc81b5683",
+          "timestamp": "2026-03-14T10:00:00.000Z",
+          "correlationId": "tenant-webhook-correlation"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-14T10:00:00.000Z",
+        "createdAt": "2026-03-23T01:05:21.057Z"
+      },
+      {
+        "id": "9fb36bff-45b1-4705-a8ab-2035ad3e8074",
+        "type": "workflow.completed",
+        "tenantId": null,
+        "correlationId": "workflow-metrics",
+        "payload": {
+          "id": "workflow-completed-metrics",
+          "type": "workflow.completed",
+          "payload": {
+            "result": {},
+            "status": "SUCCEEDED",
+            "workflowId": "wf-metrics",
+            "workflowType": "monitoring-test",
+            "completedByUserId": null
+          },
+          "tenantId": null,
+          "timestamp": "2026-03-14T10:00:01.500Z",
+          "correlationId": "workflow-metrics"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-14T10:00:01.500Z",
+        "createdAt": "2026-03-23T02:27:30.871Z"
+      },
+      {
+        "id": "cd81b0e5-3911-451b-900e-089a1f0aab40",
+        "type": "notification.requested",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "correlationId": "0df86b25-05eb-492d-87e4-2e6ef0c85c0d",
+        "payload": {
+          "id": "1caab004-d53e-4ee3-be8e-ca3ec47b8c38",
+          "type": "notification.requested",
+          "payload": {
+            "channel": "email",
+            "recipientId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+            "templateKey": "test-job-notification",
+            "notificationId": "c3d4e95e-0566-4e3d-b7c9-ea9cb90b2ae0"
+          },
+          "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+          "timestamp": "2026-03-22T22:50:58.632Z",
+          "correlationId": "0df86b25-05eb-492d-87e4-2e6ef0c85c0d"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-22T22:50:58.632Z",
+        "createdAt": "2026-03-22T22:50:58.633Z"
+      },
+      {
+        "id": "41db2a3e-b31b-4fb3-ab6d-a85ccd4664ae",
+        "type": "notification.sent",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "correlationId": "382b9467-d758-4eb7-acde-8735d8274143",
+        "payload": {
+          "id": "be6d2a63-0186-4cb7-92be-fec3258341d3",
+          "type": "notification.sent",
+          "payload": {
+            "sentAt": "2026-03-22T22:50:58.673Z",
+            "channel": "email",
+            "recipientId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+            "templateKey": "test-job-notification",
+            "notificationId": "c3d4e95e-0566-4e3d-b7c9-ea9cb90b2ae0"
+          },
+          "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+          "timestamp": "2026-03-22T22:50:58.673Z",
+          "correlationId": "382b9467-d758-4eb7-acde-8735d8274143"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-22T22:50:58.673Z",
+        "createdAt": "2026-03-22T22:50:58.678Z"
+      },
+      {
+        "id": "321793ae-ef03-48c3-abf3-b2149e1a27af",
+        "type": "notification.requested",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "correlationId": "543249c1-4688-4bfe-bed9-bb72bd325328",
+        "payload": {
+          "id": "d1245b72-bd1e-4768-8c79-ec829761b5f5",
+          "type": "notification.requested",
+          "payload": {
+            "channel": "in_app",
+            "recipientId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+            "templateKey": "test-job-notification",
+            "notificationId": "d97f5d79-cd84-41d9-85fe-d171bcfa043b"
+          },
+          "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+          "timestamp": "2026-03-22T22:50:58.694Z",
+          "correlationId": "543249c1-4688-4bfe-bed9-bb72bd325328"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-22T22:50:58.694Z",
+        "createdAt": "2026-03-22T22:50:58.696Z"
+      },
+      {
+        "id": "9611c9f1-55f1-4d04-8351-84b55b809660",
+        "type": "notification.requested",
+        "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+        "correlationId": "7372c8af-b05b-4437-a73f-325e7167f6af",
+        "payload": {
+          "id": "da0cfe28-fd22-4106-848a-f72b795371b9",
+          "type": "notification.requested",
+          "payload": {
+            "channel": "email",
+            "recipientId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+            "templateKey": "test-job-notification",
+            "notificationId": "8f31c144-f463-4c10-8557-667948a715f0"
+          },
+          "tenantId": "389878f0-eb9c-4313-8c2b-793801f19697",
+          "timestamp": "2026-03-22T22:50:58.734Z",
+          "correlationId": "7372c8af-b05b-4437-a73f-325e7167f6af"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-22T22:50:58.734Z",
+        "createdAt": "2026-03-22T22:50:58.736Z"
+      },
+      {
+        "id": "437860cf-3c3f-419e-af2f-640a08f325e3",
+        "type": "workflow.started",
+        "tenantId": null,
+        "correlationId": "workflow-metrics",
+        "payload": {
+          "id": "workflow-started-metrics",
+          "type": "workflow.started",
+          "payload": {
+            "input": {},
+            "workflowId": "wf-metrics",
+            "workflowType": "monitoring-test",
+            "initiatedByUserId": null
+          },
+          "tenantId": null,
+          "timestamp": "2026-03-14T10:00:00.000Z",
+          "correlationId": "workflow-metrics"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-14T10:00:00.000Z",
+        "createdAt": "2026-03-22T22:51:02.749Z"
+      },
+      {
+        "id": "ad493701-9dfc-4f39-85b1-3856ab3c5d3f",
+        "type": "workflow.completed",
+        "tenantId": null,
+        "correlationId": "workflow-metrics",
+        "payload": {
+          "id": "workflow-completed-metrics",
+          "type": "workflow.completed",
+          "payload": {
+            "result": {},
+            "status": "SUCCEEDED",
+            "workflowId": "wf-metrics",
+            "workflowType": "monitoring-test",
+            "completedByUserId": null
+          },
+          "tenantId": null,
+          "timestamp": "2026-03-14T10:00:01.500Z",
+          "correlationId": "workflow-metrics"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-14T10:00:01.500Z",
+        "createdAt": "2026-03-22T22:51:02.778Z"
+      },
+      {
+        "id": "26c6619a-80e9-482c-89dc-839523c6294c",
+        "type": "notification.sent",
+        "tenantId": null,
+        "correlationId": "notification-metrics",
+        "payload": {
+          "id": "notification-sent-metrics",
+          "type": "notification.sent",
+          "payload": {
+            "sentAt": "2026-03-22T22:51:02.789Z",
+            "channel": "email",
+            "recipientId": "recipient-1",
+            "templateKey": "metrics-template",
+            "notificationId": "notification-metrics"
+          },
+          "tenantId": null,
+          "timestamp": "2026-03-22T22:51:02.789Z",
+          "correlationId": "notification-metrics"
+        },
+        "metadata": null,
+        "occurredAt": "2026-03-22T22:51:02.789Z",
+        "createdAt": "2026-03-22T22:51:02.790Z"
+      }
+    ],
+    "EventDelivery": [
+      {
+        "id": "5a80effa-cab8-4947-964e-87b64fda55cd",
+        "eventId": "12360bf9-a99c-4b6a-9077-da40a0b89daa",
+        "subscriberId": "monitoring.workflow.started",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T02:27:30.833Z",
+        "createdAt": "2026-03-23T02:27:30.815Z",
+        "updatedAt": "2026-03-23T02:27:30.835Z"
+      },
+      {
+        "id": "fe66056b-4709-493c-9644-5bdb026b3a7d",
+        "eventId": "12360bf9-a99c-4b6a-9077-da40a0b89daa",
+        "subscriberId": "integrations.workflow.started.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T02:27:30.868Z",
+        "createdAt": "2026-03-23T02:27:30.815Z",
+        "updatedAt": "2026-03-23T02:27:30.869Z"
+      },
+      {
+        "id": "8e311299-29e2-482e-b6ed-03cdc41c4a27",
+        "eventId": "9fb36bff-45b1-4705-a8ab-2035ad3e8074",
+        "subscriberId": "monitoring.workflow.completed",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T02:27:30.880Z",
+        "createdAt": "2026-03-23T02:27:30.872Z",
+        "updatedAt": "2026-03-23T02:27:30.881Z"
+      },
+      {
+        "id": "82179401-b5d3-45a7-a3b4-e4e6e09b5d33",
+        "eventId": "9fb36bff-45b1-4705-a8ab-2035ad3e8074",
+        "subscriberId": "integrations.workflow.completed.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T02:27:30.883Z",
+        "createdAt": "2026-03-23T02:27:30.872Z",
+        "updatedAt": "2026-03-23T02:27:30.884Z"
+      },
+      {
+        "id": "90567957-1662-4eac-a780-4e4d7ff41072",
+        "eventId": "d356d1fb-db33-4331-b857-3ffacd3ab40b",
+        "subscriberId": "integrations.tenant.created.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:47:17.993Z",
+        "createdAt": "2026-03-23T00:47:17.915Z",
+        "updatedAt": "2026-03-23T00:47:17.995Z"
+      },
+      {
+        "id": "cbfadd12-48b9-4929-a53d-d7b5a6fa5fad",
+        "eventId": "d67d76d5-9f1d-4e50-9879-bda920e120c3",
+        "subscriberId": "connector.record.imported:a261dc1a-ca56-4f4e-8688-6d57c7ff0063",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:47:18.040Z",
+        "createdAt": "2026-03-23T00:47:18.003Z",
+        "updatedAt": "2026-03-23T00:47:18.041Z"
+      },
+      {
+        "id": "ec38db4b-7370-49e5-85d5-35a3d598055e",
+        "eventId": "186bbbd3-693d-4610-923f-38f5871684b9",
+        "subscriberId": "monitoring.notification.sent",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T02:27:30.891Z",
+        "createdAt": "2026-03-23T02:27:30.887Z",
+        "updatedAt": "2026-03-23T02:27:30.892Z"
+      },
+      {
+        "id": "18afa15f-c873-48c9-b9cc-b1e3790257c7",
+        "eventId": "186bbbd3-693d-4610-923f-38f5871684b9",
+        "subscriberId": "integrations.notification.sent.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T02:27:30.894Z",
+        "createdAt": "2026-03-23T02:27:30.887Z",
+        "updatedAt": "2026-03-23T02:27:30.894Z"
+      },
+      {
+        "id": "029c2b45-c629-4f89-90c3-9ee8cfeb17ef",
+        "eventId": "257f2ac5-b8ff-4e31-aa1b-9cafc5219c9b",
+        "subscriberId": "connector.record.imported:a261dc1a-ca56-4f4e-8688-6d57c7ff0063",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:47:18.080Z",
+        "createdAt": "2026-03-23T00:47:18.055Z",
+        "updatedAt": "2026-03-23T00:47:18.081Z"
+      },
+      {
+        "id": "81261008-abd1-4a15-995a-c07c98cda315",
+        "eventId": "82bf14e9-da75-4883-b5d9-2f5f99e55dad",
+        "subscriberId": "connector.record.imported:a261dc1a-ca56-4f4e-8688-6d57c7ff0063",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:47:18.119Z",
+        "createdAt": "2026-03-23T00:47:18.093Z",
+        "updatedAt": "2026-03-23T00:47:18.120Z"
+      },
+      {
+        "id": "6bbe202e-ef8f-4b5e-8898-5438ae711e52",
+        "eventId": "e8f66f8b-ae97-43dd-904e-c0ee56f2efbf",
+        "subscriberId": "integrations.integration.completed.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:47:18.243Z",
+        "createdAt": "2026-03-23T00:47:18.158Z",
+        "updatedAt": "2026-03-23T00:47:18.244Z"
+      },
+      {
+        "id": "b3d3c4f4-7075-49c6-b38d-4e8efaa0729d",
+        "eventId": "1819df91-f2f8-4c5a-a6be-02101d6a7799",
+        "subscriberId": "integrations.document.uploaded.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:47:18.326Z",
+        "createdAt": "2026-03-23T00:47:18.274Z",
+        "updatedAt": "2026-03-23T00:47:18.327Z"
+      },
+      {
+        "id": "46059027-47df-4bbb-84e3-818fe96d1acb",
+        "eventId": "51324a72-ae2f-4286-b61f-05fab87c5cc8",
+        "subscriberId": "integrations.tenant.created.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:48:21.770Z",
+        "createdAt": "2026-03-23T00:48:21.711Z",
+        "updatedAt": "2026-03-23T00:48:21.774Z"
+      },
+      {
+        "id": "d54f93f5-d8ac-49cf-a12a-9ef06afca843",
+        "eventId": "fbb5182e-ca1f-45ab-89d4-78cb92d6b20f",
+        "subscriberId": "connector.record.imported:8d523f5a-b1b7-4813-9fa0-d0bdfa8ed0f3",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:48:21.813Z",
+        "createdAt": "2026-03-23T00:48:21.770Z",
+        "updatedAt": "2026-03-23T00:48:21.814Z"
+      },
+      {
+        "id": "31796161-e554-4805-ad63-8392962dbc31",
+        "eventId": "9d1709fd-7f2b-4af9-8457-b76055482831",
+        "subscriberId": "connector.record.imported:8d523f5a-b1b7-4813-9fa0-d0bdfa8ed0f3",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:48:21.861Z",
+        "createdAt": "2026-03-23T00:48:21.829Z",
+        "updatedAt": "2026-03-23T00:48:21.862Z"
+      },
+      {
+        "id": "b02d9427-4e15-4a61-924f-ac341b2965ff",
+        "eventId": "e44e645b-1dcc-4797-bdfb-917a88ee4283",
+        "subscriberId": "connector.record.imported:8d523f5a-b1b7-4813-9fa0-d0bdfa8ed0f3",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:48:21.906Z",
+        "createdAt": "2026-03-23T00:48:21.875Z",
+        "updatedAt": "2026-03-23T00:48:21.908Z"
+      },
+      {
+        "id": "15713fa6-eb12-488c-9615-853688e6d5a1",
+        "eventId": "de8f6f51-f98e-4f14-9491-a1eea9b3a907",
+        "subscriberId": "integrations.integration.completed.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:48:22.084Z",
+        "createdAt": "2026-03-23T00:48:21.968Z",
+        "updatedAt": "2026-03-23T00:48:22.086Z"
+      },
+      {
+        "id": "2d477823-503c-4ced-be97-734f2e9ad4af",
+        "eventId": "64fcd90a-b204-4ee9-824d-945d574212a1",
+        "subscriberId": "integrations.document.uploaded.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:48:22.175Z",
+        "createdAt": "2026-03-23T00:48:22.115Z",
+        "updatedAt": "2026-03-23T00:48:22.176Z"
+      },
+      {
+        "id": "dc835101-74d8-4543-91cd-a67316e61fcd",
+        "eventId": "c13247ee-279d-4cca-b0b6-2d66ba5dea94",
+        "subscriberId": "integrations.tenant.created.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:49:05.040Z",
+        "createdAt": "2026-03-23T00:49:05.005Z",
+        "updatedAt": "2026-03-23T00:49:05.041Z"
+      },
+      {
+        "id": "28d2f9c7-55bb-4f93-adaf-ae25e8dc80cd",
+        "eventId": "3b60096e-5a57-46ac-875f-6dd289261731",
+        "subscriberId": "connector.record.imported:8ad51917-f8e9-4d25-b1c2-49c70cb60dbd",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:49:05.090Z",
+        "createdAt": "2026-03-23T00:49:05.063Z",
+        "updatedAt": "2026-03-23T00:49:05.091Z"
+      },
+      {
+        "id": "c71f839c-249b-4ec5-9afb-ce8065553b83",
+        "eventId": "818c98af-ba64-4339-bd99-76091fe5c91c",
+        "subscriberId": "connector.record.imported:8ad51917-f8e9-4d25-b1c2-49c70cb60dbd",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:49:05.125Z",
+        "createdAt": "2026-03-23T00:49:05.104Z",
+        "updatedAt": "2026-03-23T00:49:05.126Z"
+      },
+      {
+        "id": "b2806cec-f13b-423f-acf2-f98aa2368aeb",
+        "eventId": "f08398b1-5dcc-4ae9-9762-9b6215f4d52b",
+        "subscriberId": "connector.record.imported:8ad51917-f8e9-4d25-b1c2-49c70cb60dbd",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:49:05.157Z",
+        "createdAt": "2026-03-23T00:49:05.137Z",
+        "updatedAt": "2026-03-23T00:49:05.158Z"
+      },
+      {
+        "id": "58d3893c-92f8-456b-ab0f-28191466243d",
+        "eventId": "8e3bd116-7668-4718-930d-47c4f41a2d6f",
+        "subscriberId": "integrations.integration.completed.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:49:05.222Z",
+        "createdAt": "2026-03-23T00:49:05.167Z",
+        "updatedAt": "2026-03-23T00:49:05.223Z"
+      },
+      {
+        "id": "4643612d-8ee9-4680-a73a-d9f12751d4ac",
+        "eventId": "e43f3ad2-aa6b-4574-b751-3919f40e8588",
+        "subscriberId": "integrations.document.uploaded.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T00:49:05.291Z",
+        "createdAt": "2026-03-23T00:49:05.258Z",
+        "updatedAt": "2026-03-23T00:49:05.292Z"
+      },
+      {
+        "id": "80213c8f-6575-4754-ab75-8631926fbb73",
+        "eventId": "63018701-95a2-46ca-8ea4-96cdc1696a2b",
+        "subscriberId": "integrations.tenant.created.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T01:05:21.118Z",
+        "createdAt": "2026-03-23T01:05:21.065Z",
+        "updatedAt": "2026-03-23T01:05:21.119Z"
+      },
+      {
+        "id": "456e6a71-af1b-4bcf-b798-3fc27e093859",
+        "eventId": "af1fbd12-2927-47e6-afe2-665032b96892",
+        "subscriberId": "connector.record.imported:62cb2aae-2e6b-4494-9a43-f0982c1ca5ad",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T01:05:21.156Z",
+        "createdAt": "2026-03-23T01:05:21.132Z",
+        "updatedAt": "2026-03-23T01:05:21.157Z"
+      },
+      {
+        "id": "0748d631-ea75-4b9b-b298-412d9c0d652b",
+        "eventId": "d3aaa2c7-b680-4491-a072-1e83937182d0",
+        "subscriberId": "connector.record.imported:62cb2aae-2e6b-4494-9a43-f0982c1ca5ad",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T01:05:21.198Z",
+        "createdAt": "2026-03-23T01:05:21.177Z",
+        "updatedAt": "2026-03-23T01:05:21.199Z"
+      },
+      {
+        "id": "ae2d807e-4433-401c-8636-4463861ad9cc",
+        "eventId": "d54fcbc1-dc40-494e-b0a4-57896b37e725",
+        "subscriberId": "connector.record.imported:62cb2aae-2e6b-4494-9a43-f0982c1ca5ad",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-23T01:05:21.226Z",
+        "createdAt": "2026-03-23T01:05:21.206Z",
+        "updatedAt": "2026-03-23T01:05:21.228Z"
+      },
+      {
+        "id": "37985ff3-e361-4b9e-9581-077c9a3d0de6",
+        "eventId": "437860cf-3c3f-419e-af2f-640a08f325e3",
+        "subscriberId": "integrations.workflow.started.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-22T22:51:02.772Z",
+        "createdAt": "2026-03-22T22:51:02.754Z",
+        "updatedAt": "2026-03-22T22:51:02.773Z"
+      },
+      {
+        "id": "31175123-65d3-4c4d-8f36-457b1c19ff1e",
+        "eventId": "437860cf-3c3f-419e-af2f-640a08f325e3",
+        "subscriberId": "monitoring.workflow.started",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-22T22:51:02.775Z",
+        "createdAt": "2026-03-22T22:51:02.754Z",
+        "updatedAt": "2026-03-22T22:51:02.776Z"
+      },
+      {
+        "id": "fc88299a-11ba-4ff1-b641-7733d71be024",
+        "eventId": "ad493701-9dfc-4f39-85b1-3856ab3c5d3f",
+        "subscriberId": "monitoring.workflow.completed",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-22T22:51:02.787Z",
+        "createdAt": "2026-03-22T22:51:02.780Z",
+        "updatedAt": "2026-03-22T22:51:02.788Z"
+      },
+      {
+        "id": "e7a87f48-77fe-4c7c-9fb1-4a49a38b91c3",
+        "eventId": "ad493701-9dfc-4f39-85b1-3856ab3c5d3f",
+        "subscriberId": "integrations.workflow.completed.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-22T22:51:02.788Z",
+        "createdAt": "2026-03-22T22:51:02.780Z",
+        "updatedAt": "2026-03-22T22:51:02.789Z"
+      },
+      {
+        "id": "47129a42-e3ac-401e-b7d1-5a2bf9fdaf19",
+        "eventId": "26c6619a-80e9-482c-89dc-839523c6294c",
+        "subscriberId": "monitoring.notification.sent",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-22T22:51:02.800Z",
+        "createdAt": "2026-03-22T22:51:02.791Z",
+        "updatedAt": "2026-03-22T22:51:02.801Z"
+      },
+      {
+        "id": "87af6b2e-a95c-4913-a78d-5240a6b1f12a",
+        "eventId": "26c6619a-80e9-482c-89dc-839523c6294c",
+        "subscriberId": "integrations.notification.sent.trigger",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nextAttemptAt": null,
+        "lastError": null,
+        "deadLetteredAt": null,
+        "deliveredAt": "2026-03-22T22:51:02.801Z",
+        "createdAt": "2026-03-22T22:51:02.791Z",
+        "updatedAt": "2026-03-22T22:51:02.801Z"
+      }
+    ],
+    "UserRole": [
+      {
+        "userId": "b8c2814d-0e06-4b43-8ee0-2c60009d91f5",
+        "roleId": "4beab6c5-2a9e-47f3-b5d2-6a4519f863f6",
+        "assignedAt": "2026-03-19T00:54:58.582Z"
+      },
+      {
+        "userId": "84b3080f-2f6e-4bbf-a173-3e91ae020dad",
+        "roleId": "b0061118-14b6-4a21-8b2f-4b96d15e6781",
+        "assignedAt": "2026-03-19T18:04:19.205Z"
+      },
+      {
+        "userId": "225d8b53-c9e9-4f36-8aeb-40f2509125d8",
+        "roleId": "3896b61d-9feb-4d26-9be2-f889e77bab87",
+        "assignedAt": "2026-03-20T01:15:30.035Z"
+      },
+      {
+        "userId": "9a25854c-0fdf-4716-8647-72dde4169672",
+        "roleId": "659aeec3-8658-45e8-adbc-57eababc01f5",
+        "assignedAt": "2026-03-23T02:27:25.905Z"
+      },
+      {
+        "userId": "89fb1ad5-4120-4343-a6c6-2795e3799028",
+        "roleId": "3407f737-8dc0-45ee-9811-9e4b882e3f12",
+        "assignedAt": "2026-03-23T02:27:26.413Z"
+      },
+      {
+        "userId": "29e3a1eb-520a-4152-89f0-bb91e434f604",
+        "roleId": "61fe65e7-5d98-44f3-9f60-7e9754dab5da",
+        "assignedAt": "2026-03-22T22:42:30.856Z"
+      },
+      {
+        "userId": "f0746aca-9cf5-4194-b74b-6e26bfcc6e18",
+        "roleId": "14a4348f-c397-41f7-bff4-78a493c0a68e",
+        "assignedAt": "2026-03-22T22:42:30.901Z"
+      },
+      {
+        "userId": "356c920e-1967-43e5-aa3e-1932bdcf4460",
+        "roleId": "4beab6c5-2a9e-47f3-b5d2-6a4519f863f6",
+        "assignedAt": "2026-03-16T19:21:42.755Z"
+      },
+      {
+        "userId": "26975f0c-9441-4e18-b349-74041b765d03",
+        "roleId": "3896b61d-9feb-4d26-9be2-f889e77bab87",
+        "assignedAt": "2026-03-16T19:21:42.755Z"
+      },
+      {
+        "userId": "363ffd91-f321-4b22-a74b-7ed1e07426ec",
+        "roleId": "b0061118-14b6-4a21-8b2f-4b96d15e6781",
+        "assignedAt": "2026-03-16T19:21:42.755Z"
+      },
+      {
+        "userId": "0168fcbc-8cf9-4989-8cae-9445ffa41c36",
+        "roleId": "38a06a5f-dbfe-4e64-b101-527a7a99f3fd",
+        "assignedAt": "2026-03-16T19:21:42.755Z"
+      },
+      {
+        "userId": "59ef89ef-2454-424c-ac67-512832f1cc5d",
+        "roleId": "659aeec3-8658-45e8-adbc-57eababc01f5",
+        "assignedAt": "2026-03-16T19:21:42.755Z"
+      },
+      {
+        "userId": "e68f9188-2cf9-4ec4-afa4-b6c39a8e8681",
+        "roleId": "659aeec3-8658-45e8-adbc-57eababc01f5",
+        "assignedAt": "2026-03-16T19:21:42.755Z"
+      },
+      {
+        "userId": "1bd47773-e0ac-4882-9cb4-3cf7006fa48a",
+        "roleId": "4beab6c5-2a9e-47f3-b5d2-6a4519f863f6",
+        "assignedAt": "2026-03-16T19:21:42.755Z"
+      },
+      {
+        "userId": "e9813831-ce74-45d6-837d-fa8ea565ce20",
+        "roleId": "4beab6c5-2a9e-47f3-b5d2-6a4519f863f6",
+        "assignedAt": "2026-03-16T19:21:42.755Z"
+      },
+      {
+        "userId": "efd234ba-c690-434c-8d55-fe5d98f6dee2",
+        "roleId": "3407f737-8dc0-45ee-9811-9e4b882e3f12",
+        "assignedAt": "2026-03-23T02:27:32.012Z"
+      },
+      {
+        "userId": "b3a83d56-8c6e-418f-ad86-93b911f46859",
+        "roleId": "659aeec3-8658-45e8-adbc-57eababc01f5",
+        "assignedAt": "2026-03-16T19:21:43.674Z"
+      },
+      {
+        "userId": "05cb35c9-2e9a-492a-85c7-cb1e0590b79a",
+        "roleId": "659aeec3-8658-45e8-adbc-57eababc01f5",
+        "assignedAt": "2026-03-16T19:21:43.674Z"
+      },
+      {
+        "userId": "699633c1-adf9-4d41-a04d-258f76a6abfb",
+        "roleId": "4beab6c5-2a9e-47f3-b5d2-6a4519f863f6",
+        "assignedAt": "2026-03-16T19:21:43.674Z"
+      }
+    ],
+    "RolePermission": [
+      {
+        "roleId": "659aeec3-8658-45e8-adbc-57eababc01f5",
+        "permissionId": "2fb44cab-5ee3-43cb-9d8e-207509811680",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "659aeec3-8658-45e8-adbc-57eababc01f5",
+        "permissionId": "01941974-461a-4a42-984d-1382dc255d35",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "659aeec3-8658-45e8-adbc-57eababc01f5",
+        "permissionId": "6595e5eb-adc3-4f61-8007-ca526234479a",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "659aeec3-8658-45e8-adbc-57eababc01f5",
+        "permissionId": "ee267142-467c-4c16-ad57-889db3a2fe6a",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "b0061118-14b6-4a21-8b2f-4b96d15e6781",
+        "permissionId": "2fb44cab-5ee3-43cb-9d8e-207509811680",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "b0061118-14b6-4a21-8b2f-4b96d15e6781",
+        "permissionId": "6595e5eb-adc3-4f61-8007-ca526234479a",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "38a06a5f-dbfe-4e64-b101-527a7a99f3fd",
+        "permissionId": "2fb44cab-5ee3-43cb-9d8e-207509811680",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "38a06a5f-dbfe-4e64-b101-527a7a99f3fd",
+        "permissionId": "6595e5eb-adc3-4f61-8007-ca526234479a",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "38a06a5f-dbfe-4e64-b101-527a7a99f3fd",
+        "permissionId": "ee267142-467c-4c16-ad57-889db3a2fe6a",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "38a06a5f-dbfe-4e64-b101-527a7a99f3fd",
+        "permissionId": "8ed275c1-0e85-4917-a6e1-4fec04b7a840",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "3896b61d-9feb-4d26-9be2-f889e77bab87",
+        "permissionId": "557fdaae-6984-4701-8bfa-3bf29d70d3d8",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "3896b61d-9feb-4d26-9be2-f889e77bab87",
+        "permissionId": "2fb44cab-5ee3-43cb-9d8e-207509811680",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "4beab6c5-2a9e-47f3-b5d2-6a4519f863f6",
+        "permissionId": "01941974-461a-4a42-984d-1382dc255d35",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "4beab6c5-2a9e-47f3-b5d2-6a4519f863f6",
+        "permissionId": "6595e5eb-adc3-4f61-8007-ca526234479a",
+        "assignedAt": "2026-03-16T19:21:41.783Z"
+      },
+      {
+        "roleId": "9278405b-53f0-42eb-b09e-211168c75b8b",
+        "permissionId": "551c0709-276c-485a-beef-6c60bd63a8ab",
+        "assignedAt": "2026-03-23T02:27:31.353Z"
+      },
+      {
+        "roleId": "61fe65e7-5d98-44f3-9f60-7e9754dab5da",
+        "permissionId": "551c0709-276c-485a-beef-6c60bd63a8ab",
+        "assignedAt": "2026-03-22T22:42:30.853Z"
+      },
+      {
+        "roleId": "14a4348f-c397-41f7-bff4-78a493c0a68e",
+        "permissionId": "551c0709-276c-485a-beef-6c60bd63a8ab",
+        "assignedAt": "2026-03-22T22:42:30.900Z"
+      }
+    ]
+  }
+}

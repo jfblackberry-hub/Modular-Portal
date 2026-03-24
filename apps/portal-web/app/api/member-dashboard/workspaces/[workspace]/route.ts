@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
 
+import { getEstimatorBootstrap } from '../../../../../lib/care-cost-estimator/service';
+import {
+  createDashboardSessionCacheKey,
+  getCachedDashboardSessionValue
+} from '../../../../../lib/dashboard-session-cache';
 import {
   getMe,
   getMemberAuthorizations,
@@ -7,8 +12,7 @@ import {
   getMemberCoverage,
   getMemberProfile
 } from '../../../../../lib/member-api';
-import { getEstimatorBootstrap } from '../../../../../lib/care-cost-estimator/service';
-import { getPortalSessionUser } from '../../../../../lib/portal-session';
+import { getPortalSession } from '../../../../../lib/portal-session';
 import { getTenantBranding } from '../../../../../lib/tenant-branding';
 
 function toGroupNumber(value?: string) {
@@ -70,19 +74,113 @@ const memberFindCareProviders = [
   }
 ];
 
+async function getCachedMemberCoverage(input: {
+  accessToken: string;
+  userId: string;
+  tenantId: string;
+}) {
+  return getCachedDashboardSessionValue(
+    createDashboardSessionCacheKey([
+      'member-dashboard',
+      input.tenantId,
+      input.userId,
+      'coverage'
+    ]),
+    async () => getMemberCoverage(input.accessToken)
+  );
+}
+
+async function getCachedMemberClaims(input: {
+  accessToken: string;
+  userId: string;
+  tenantId: string;
+}) {
+  return getCachedDashboardSessionValue(
+    createDashboardSessionCacheKey([
+      'member-dashboard',
+      input.tenantId,
+      input.userId,
+      'claims'
+    ]),
+    async () => getMemberClaims(input.accessToken)
+  );
+}
+
+async function getCachedMemberAuthorizations(input: {
+  accessToken: string;
+  userId: string;
+  tenantId: string;
+}) {
+  return getCachedDashboardSessionValue(
+    createDashboardSessionCacheKey([
+      'member-dashboard',
+      input.tenantId,
+      input.userId,
+      'authorizations'
+    ]),
+    async () => getMemberAuthorizations(input.accessToken)
+  );
+}
+
+async function getCachedMemberIdCardDependencies(input: {
+  accessToken: string;
+  userId: string;
+  tenantId: string;
+  tenantName: string;
+}) {
+  return getCachedDashboardSessionValue(
+    createDashboardSessionCacheKey([
+      'member-dashboard',
+      input.tenantId,
+      input.userId,
+      'id-card'
+    ]),
+    async () => {
+      const [me, profile, coverage, tenantBranding] = await Promise.all([
+        getMe(input.accessToken),
+        getMemberProfile(input.accessToken),
+        getCachedMemberCoverage(input),
+        getTenantBranding(
+          {
+            id: input.tenantId,
+            name: input.tenantName
+          },
+          input.userId,
+          {
+            experience: 'member'
+          }
+        )
+      ]);
+
+      return {
+        coverage,
+        me,
+        profile,
+        tenantBranding
+      };
+    }
+  );
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ workspace: string }> }
 ) {
-  const sessionUser = await getPortalSessionUser();
+  const session = await getPortalSession();
+  const sessionUser = session?.user;
+  const accessToken = session?.accessToken;
   const workspace = (await params).workspace;
 
-  if (!sessionUser) {
+  if (!sessionUser || !accessToken) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   if (workspace === 'benefits') {
-    const coverage = await getMemberCoverage(sessionUser.id);
+    const coverage = await getCachedMemberCoverage({
+      accessToken,
+      tenantId: sessionUser.tenant.id,
+      userId: sessionUser.id
+    });
     const plan = coverage?.items[0];
 
     return NextResponse.json({
@@ -97,14 +195,22 @@ export async function GET(
   }
 
   if (workspace === 'claims') {
-    const claims = await getMemberClaims(sessionUser.id);
+    const claims = await getCachedMemberClaims({
+      accessToken,
+      tenantId: sessionUser.tenant.id,
+      userId: sessionUser.id
+    });
     return NextResponse.json({
       items: claims?.items ?? []
     });
   }
 
   if (workspace === 'authorizations') {
-    const authorizations = await getMemberAuthorizations(sessionUser.id);
+    const authorizations = await getCachedMemberAuthorizations({
+      accessToken,
+      tenantId: sessionUser.tenant.id,
+      userId: sessionUser.id
+    });
     return NextResponse.json({
       items: authorizations?.items ?? []
     });
@@ -123,16 +229,14 @@ export async function GET(
   }
 
   if (workspace === 'id-card') {
-    const [me, profile, coverage] = await Promise.all([
-      getMe(sessionUser.id),
-      getMemberProfile(sessionUser.id),
-      getMemberCoverage(sessionUser.id)
-    ]);
-    const tenantBranding = await getTenantBranding(sessionUser.tenant, sessionUser.id, {
-      experience: 'member'
+    const dependencies = await getCachedMemberIdCardDependencies({
+      accessToken,
+      tenantId: sessionUser.tenant.id,
+      tenantName: sessionUser.tenant.name,
+      userId: sessionUser.id
     });
-    const member = profile ?? me?.member;
-    const plan = coverage?.items[0];
+    const member = dependencies.profile ?? dependencies.me?.member;
+    const plan = dependencies.coverage?.items[0];
     const memberName = member
       ? `${member.firstName} ${member.lastName}`
       : [sessionUser.firstName, sessionUser.lastName].filter(Boolean).join(' ') || 'Unavailable';
@@ -144,16 +248,16 @@ export async function GET(
     return NextResponse.json({
       effectiveDate: plan?.effectiveDate,
       groupNumber,
-      issuerName: tenantBranding.displayName ?? sessionUser.tenant.name,
-      logoUrl: tenantBranding.logoUrl,
+      issuerName: dependencies.tenantBranding.displayName ?? sessionUser.tenant.name,
+      logoUrl: dependencies.tenantBranding.logoUrl,
       memberId,
       memberName,
       planName: plan?.planName ?? 'Coverage unavailable',
       rxBin: toRxSegment(groupNumber, 'bin'),
       rxGrp: toRxSegment(groupNumber, 'grp'),
       rxPcn: toRxSegment(groupNumber, 'pcn'),
-      supportEmail: tenantBranding.supportEmail ?? 'support@portal.local',
-      supportPhone: tenantBranding.supportPhone ?? '1-800-555-0199',
+      supportEmail: dependencies.tenantBranding.supportEmail ?? 'support@portal.local',
+      supportPhone: dependencies.tenantBranding.supportPhone ?? '1-800-555-0199',
       terminationDate: plan?.terminationDate,
       updatedAt: member?.updatedAt
     });

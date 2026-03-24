@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Modular data stack
+
+Parameters:
+  EnvironmentName:
+    Type: String
+  Owner:
+    Type: String
+  CostCenter:
+    Type: String
+  DbName:
+    Type: String
+  DbMasterUsername:
+    Type: String
+  DbMasterUserPassword:
+    Type: String
+    NoEcho: true
+  DbInstanceClass:
+    Type: String
+  DbAllocatedStorage:
+    Type: Number
+  DbPort:
+    Type: Number
+  DbEngineVersion:
+    Type: String
+  DbStorageType:
+    Type: String
+  DbBackupRetentionDays:
+    Type: Number
+  DbMultiAz:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+  DbDeletionProtection:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+
+Conditions:
+  EnableMultiAz: !Equals [!Ref DbMultiAz, 'true']
+  EnableDeletionProtection: !Equals [!Ref DbDeletionProtection, 'true']
+
+Resources:
+  DataDbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: !Sub '${EnvironmentName} data subnet group'
+      DBSubnetGroupName: !Sub '${EnvironmentName}-data-db-subnet-group'
+      SubnetIds:
+        - !ImportValue
+          Fn::Sub: '${EnvironmentName}-networking-private-subnet-1-id'
+        - !ImportValue
+          Fn::Sub: '${EnvironmentName}-networking-private-subnet-2-id'
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-data-db-subnet-group'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: data
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  DataPostgresInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub '${EnvironmentName}-data-postgres'
+      DBName: !Ref DbName
+      DBInstanceClass: !Ref DbInstanceClass
+      AllocatedStorage: !Ref DbAllocatedStorage
+      Engine: postgres
+      EngineVersion: !Ref DbEngineVersion
+      MasterUsername: !Ref DbMasterUsername
+      MasterUserPassword: !Ref DbMasterUserPassword
+      DBSubnetGroupName: !Ref DataDbSubnetGroup
+      VPCSecurityGroups:
+        - !ImportValue
+          Fn::Sub: '${EnvironmentName}-security-rds-sg-id'
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      StorageType: !Ref DbStorageType
+      Port: !Ref DbPort
+      BackupRetentionPeriod: !Ref DbBackupRetentionDays
+      MultiAZ: !If [EnableMultiAz, true, false]
+      DeletionProtection: !If [EnableDeletionProtection, true, false]
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-data-postgres'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: data
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+Outputs:
+  DbInstanceIdentifier:
+    Value: !Ref DataPostgresInstance
+    Export:
+      Name: !Sub '${EnvironmentName}-data-db-instance-identifier'
+  DbEndpointAddress:
+    Value: !GetAtt DataPostgresInstance.Endpoint.Address
+    Export:
+      Name: !Sub '${EnvironmentName}-data-db-endpoint-address'
+  DbEndpointPort:
+    Value: !GetAtt DataPostgresInstance.Endpoint.Port
+    Export:
+      Name: !Sub '${EnvironmentName}-data-db-endpoint-port'
+  DbSubnetGroupName:
+    Value: !Ref DataDbSubnetGroup

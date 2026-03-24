@@ -3,9 +3,8 @@ import { prisma } from '@payer-portal/database';
 
 import { subscribe } from '../events/eventBus.js';
 import {
-  type PlatformEvent,
-  PLATFORM_EVENT_TYPES
-} from '../events/eventTypes.js';
+  PLATFORM_EVENT_TYPES,
+  type PlatformEvent} from '../events/eventTypes.js';
 import { enqueueJob } from '../jobs/jobQueue.js';
 import { INTEGRATION_TRIGGER_MODE } from './integration.js';
 

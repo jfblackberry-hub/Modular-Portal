@@ -1,8 +1,6 @@
-import type { PortalSessionUser } from './portal-session';
-import { getBillingEnrollmentVariantConfig } from '../config/billingEnrollmentModuleConfig';
 import type { BillingEnrollmentRole } from '../config/billingEnrollmentModuleConfig';
-
-type BillingEnrollmentRoutePolicy = ReturnType<typeof getBillingEnrollmentRoutePolicy>[number];
+import { getBillingEnrollmentVariantConfig } from '../config/billingEnrollmentModuleConfig';
+import type { PortalSessionUser } from './portal-session';
 
 const BILLING_ENROLLMENT_ROLE_SET = new Set<BillingEnrollmentRole>([
   'member',

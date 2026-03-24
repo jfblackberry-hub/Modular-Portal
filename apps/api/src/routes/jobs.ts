@@ -1,14 +1,14 @@
-import type { FastifyInstance } from 'fastify';
 import type { Prisma } from '@payer-portal/database';
-
+import { prisma } from '@payer-portal/database';
 import {
   enqueueJob,
   getJobById,
   listJobs,
   retryFailedJob
 } from '@payer-portal/server';
-import { prisma } from '@payer-portal/database';
 import { logAuditEvent } from '@payer-portal/server';
+import type { FastifyInstance } from 'fastify';
+
 import {
   assertPlatformAdmin,
   AuthenticationError,
@@ -60,7 +60,7 @@ export async function jobRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -90,7 +90,7 @@ export async function jobRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -142,7 +142,7 @@ export async function jobRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -189,7 +189,7 @@ export async function jobRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });

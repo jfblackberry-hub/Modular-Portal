@@ -1,4 +1,5 @@
 import type { Job, Prisma } from '@payer-portal/database';
+
 import type { PlatformEventType } from '../events/eventTypes.js';
 
 export const JOB_STATUS = {

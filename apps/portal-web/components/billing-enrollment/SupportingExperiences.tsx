@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { EmptyState, StatusBadge } from '../portal-ui';
 
@@ -488,7 +488,21 @@ export function NoticesExperience() {
   const [selectedNoticeId, setSelectedNoticeId] = useState('');
   const [detail, setDetail] = useState<NoticeDetail | null>(null);
 
-  async function loadNotices(nextUnreadOnly: boolean) {
+  const loadNoticeDetail = useCallback(async function loadNoticeDetail(noticeId: string, markRead = true) {
+    const response = await fetch(`/api/billing-enrollment/notices/${noticeId}`, { cache: 'no-store' });
+    if (!response.ok) {
+      return;
+    }
+    const payload = (await response.json()) as NoticeDetail;
+    setDetail(payload);
+    if (markRead && !payload.isRead) {
+      await fetch(`/api/billing-enrollment/notices/${noticeId}/read`, { method: 'POST' });
+      setNotices((prev) => prev.map((item) => (item.id === noticeId ? { ...item, isRead: true } : item)));
+      setDetail({ ...payload, isRead: true });
+    }
+  }, []);
+
+  const loadNotices = useCallback(async function loadNotices(nextUnreadOnly: boolean) {
     setState('loading');
     setError('');
     try {
@@ -510,25 +524,11 @@ export function NoticesExperience() {
       setState('error');
       setError(nextError instanceof Error ? nextError.message : 'Unable to load correspondence center.');
     }
-  }
-
-  async function loadNoticeDetail(noticeId: string, markRead = true) {
-    const response = await fetch(`/api/billing-enrollment/notices/${noticeId}`, { cache: 'no-store' });
-    if (!response.ok) {
-      return;
-    }
-    const payload = (await response.json()) as NoticeDetail;
-    setDetail(payload);
-    if (markRead && !payload.isRead) {
-      await fetch(`/api/billing-enrollment/notices/${noticeId}/read`, { method: 'POST' });
-      setNotices((prev) => prev.map((item) => (item.id === noticeId ? { ...item, isRead: true } : item)));
-      setDetail({ ...payload, isRead: true });
-    }
-  }
+  }, [loadNoticeDetail]);
 
   useEffect(() => {
     void loadNotices(unreadOnly);
-  }, [unreadOnly]);
+  }, [loadNotices, unreadOnly]);
 
   return (
     <div className="space-y-5">

@@ -1,7 +1,11 @@
-import { PORTAL_SESSION_COOKIE } from './session-constants';
+import { loadPortalSessionConfig } from '@payer-portal/config';
+
+import {
+  LEGACY_PORTAL_SESSION_COOKIE,
+  PORTAL_SESSION_COOKIE
+} from './session-constants';
 
 const SESSION_COOKIE_VERSION = 1;
-const DEFAULT_SESSION_SECRET = 'local-dev-portal-session-secret-change-me';
 
 type SessionEnvelope = {
   accessToken: string;
@@ -69,21 +73,30 @@ function hasValidPortalSessionUser(user: Record<string, unknown>) {
   const session = user.session as Record<string, unknown>;
 
   if (
+    typeof session.personaType !== 'string' ||
+    !SESSION_TYPES.has(session.personaType)
+  ) {
+    return false;
+  }
+
+  if (
     typeof session.type !== 'string' ||
     !SESSION_TYPES.has(session.type) ||
     !isStringArray(session.roles) ||
     !isStringArray(session.permissions) ||
     (session.tenantId !== null &&
-      (typeof session.tenantId !== 'string' || !(session.tenantId as string).trim()))
+      (typeof session.tenantId !== 'string' || !(session.tenantId as string).trim())) ||
+    session.personaType !== session.type
   ) {
     return false;
   }
 
-  if (session.type === 'tenant_admin') {
+  if (session.type === 'tenant_admin' || session.type === 'end_user') {
     if (
       session.tenantId === null ||
-      user.landingContext !== 'tenant_admin' ||
-      (user as Record<string, unknown>).previewSession !== undefined
+      (session.type === 'tenant_admin' &&
+        (user.landingContext !== 'tenant_admin' ||
+          (user as Record<string, unknown>).previewSession !== undefined))
     ) {
       return false;
     }
@@ -139,7 +152,7 @@ function hasValidPortalSessionUser(user: Record<string, unknown>) {
 }
 
 function getSessionSecret() {
-  return process.env.PORTAL_SESSION_SECRET ?? DEFAULT_SESSION_SECRET;
+  return loadPortalSessionConfig().portalSessionSecret;
 }
 
 function normalizeBase64(base64url: string) {
@@ -220,6 +233,10 @@ export async function createSignedPortalSessionCookieValue(input: {
   maxAgeSeconds: number;
   user: Record<string, unknown>;
 }) {
+  if (!hasValidPortalSessionUser(input.user)) {
+    throw new Error('Invalid portal session payload.');
+  }
+
   const now = Math.floor(Date.now() / 1000);
   const payload: SessionEnvelope = {
     v: SESSION_COOKIE_VERSION,
@@ -288,4 +305,35 @@ export async function readPortalSessionFromCookie(
 
 export function getPortalSessionCookieName() {
   return PORTAL_SESSION_COOKIE;
+}
+
+export function getPortalSessionCookieNames() {
+  return [PORTAL_SESSION_COOKIE, LEGACY_PORTAL_SESSION_COOKIE] as const;
+}
+
+export function getPortalSessionCookieOptions(input: {
+  maxAge: number;
+  path?: string;
+}) {
+  const { security } = loadPortalSessionConfig();
+
+  return {
+    httpOnly: true,
+    secure: security.secureCookies,
+    sameSite: security.portalSessionCookieSameSite,
+    path: input.path ?? '/',
+    maxAge: input.maxAge,
+    ...(security.portalSessionCookieDomain
+      ? {
+          domain: security.portalSessionCookieDomain
+        }
+      : {})
+  } as const;
+}
+
+export function getExpiredPortalSessionCookieOptions(input?: { path?: string }) {
+  return getPortalSessionCookieOptions({
+    maxAge: 0,
+    path: input?.path ?? '/'
+  });
 }

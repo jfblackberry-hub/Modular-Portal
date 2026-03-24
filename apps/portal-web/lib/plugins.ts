@@ -11,7 +11,7 @@ import {
   isPluginEnabled
 } from '@payer-portal/plugin-sdk';
 
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3002';
+import { config } from './server-runtime';
 
 const discoveredPlugins: PluginManifest[] = [
   memberPlugin,
@@ -31,7 +31,7 @@ export function discoverPlugins() {
 
 export async function getEnabledPlugins(tenantId?: string | null) {
   try {
-    const response = await fetch(`${apiBaseUrl}/api/v1/feature-flags`, {
+    const response = await fetch(`${config.apiBaseUrl}/api/v1/feature-flags`, {
       cache: 'no-store'
     });
 

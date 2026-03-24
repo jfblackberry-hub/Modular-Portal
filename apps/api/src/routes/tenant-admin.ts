@@ -1,6 +1,11 @@
+import { prisma } from '@payer-portal/database';
 import { listJobs } from '@payer-portal/server';
 import type { FastifyInstance } from 'fastify';
 
+import {
+  uploadBrandingLogoForTenant,
+  uploadEmployerGroupLogoAssetForTenant
+} from '../services/branding-service';
 import {
   assertTenantAdmin,
   AuthenticationError,
@@ -9,24 +14,19 @@ import {
   isPlatformAdmin,
   resolveTenantScope
 } from '../services/current-user-service';
-import { prisma } from '@payer-portal/database';
 import {
   assignRoleToTenantUser,
   createTenantScopedUser,
   deleteTenantScopedUser,
   getTenantAdminSettings,
   removeRoleFromTenantUser,
-  saveTenantEmployerGroupBrandingSettings,
-  saveTenantBrandingSettings,
   saveTenantBillingEnrollmentModuleConfig,
-  saveTenantPurchasedModules,
+  saveTenantBrandingSettings,
+  saveTenantEmployerGroupBrandingSettings,
   saveTenantNotificationSettings,
+  saveTenantPurchasedModules,
   updateTenantScopedUser
 } from '../services/tenant-admin-service';
-import {
-  uploadBrandingLogoForTenant,
-  uploadEmployerGroupLogoAssetForTenant
-} from '../services/branding-service';
 
 type NotificationSettingsBody = {
   emailEnabled?: boolean;
@@ -176,7 +176,7 @@ function handleRouteError(
 
   return reply.status(503).send({
     message:
-      'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+      'Local database unavailable. Start PostgreSQL, run migrations.'
   });
 }
 

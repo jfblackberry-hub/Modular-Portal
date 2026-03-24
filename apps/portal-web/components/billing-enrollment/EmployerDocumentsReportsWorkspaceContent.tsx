@@ -1,5 +1,5 @@
 import type { DocumentCategory, DocumentType, EmployerDocumentRecord } from '../../lib/employer-document-center-data';
-import type { ReportDefinition, ReportCategory, ReportFilters } from '../../lib/reports-analytics-data';
+import type { ReportCategory, ReportDefinition, ReportFilters } from '../../lib/reports-analytics-data';
 import { EmployerDocumentCenterLibrary } from './EmployerDocumentCenterLibrary';
 import { ReportsLibrary } from './ReportsLibrary';
 

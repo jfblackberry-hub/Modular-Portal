@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
 
+import { buildPortalApiHeaders } from '../../../../lib/api-request';
 import { getPortalSession } from '../../../../lib/portal-session';
-
-const apiBaseUrl =
-  process.env.API_BASE_URL ??
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  'http://localhost:3002';
+import { config } from '../../../../lib/server-runtime';
 
 export async function GET() {
   const session = await getPortalSession();
@@ -17,11 +14,12 @@ export async function GET() {
     );
   }
 
-  const response = await fetch(`${apiBaseUrl}/preview-sessions/current/state`, {
+  const response = await fetch(`${config.apiBaseUrl}/preview-sessions/current/state`, {
     cache: 'no-store',
-    headers: {
-      Authorization: `Bearer ${session.accessToken}`
-    }
+    headers: await buildPortalApiHeaders({}, {
+      accessToken: session.accessToken,
+      tenantId: session.user.session.tenantId ?? session.user.tenant.id
+    })
   });
 
   const payload = await response.json().catch(() => null);

@@ -4,7 +4,7 @@ import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 
 import { SectionCard } from '../../components/section-card';
-import { apiBaseUrl, getAdminAuthHeaders } from '../../lib/api-auth';
+import { config, getAdminAuthHeaders } from '../../lib/api-auth';
 
 type Role = {
   id: string;
@@ -55,11 +55,11 @@ export function RoleManagement() {
 
     try {
       const [rolesResponse, usersResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/platform-admin/roles`, {
+        fetch(`${config.apiBaseUrl}/platform-admin/roles`, {
           cache: 'no-store',
           headers: getAdminAuthHeaders()
         }),
-        fetch(`${apiBaseUrl}/platform-admin/users`, {
+        fetch(`${config.apiBaseUrl}/platform-admin/users`, {
           cache: 'no-store',
           headers: getAdminAuthHeaders()
         })
@@ -113,7 +113,7 @@ export function RoleManagement() {
         .map((permission) => permission.trim())
         .filter(Boolean);
 
-      const response = await fetch(`${apiBaseUrl}/platform-admin/roles`, {
+      const response = await fetch(`${config.apiBaseUrl}/platform-admin/roles`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ export function RoleManagement() {
 
     try {
       const response = await fetch(
-        `${apiBaseUrl}/platform-admin/users/${selectedUserId}/roles`,
+        `${config.apiBaseUrl}/platform-admin/users/${selectedUserId}/roles`,
         {
           method: 'POST',
           headers: {

@@ -4,7 +4,7 @@ import type { Permission, Role, User } from '@payer-portal/database';
 import { Prisma, prisma } from '@payer-portal/database';
 import {
   createNotification,
-  logAuditEvent,
+  logAdminAction,
   publishInBackground
 } from '@payer-portal/server';
 
@@ -115,13 +115,16 @@ function mapUser(
     lastName: user.lastName,
     isActive: user.isActive,
     lastLoginAt: user.lastLoginAt,
-    tenant:
-      user.tenant ?? user.memberships[0]?.tenant
+    tenant: (() => {
+      const resolvedTenant = user.tenant ?? user.memberships[0]?.tenant ?? null;
+
+      return resolvedTenant
         ? {
-            id: (user.tenant ?? user.memberships[0]?.tenant).id,
-            name: (user.tenant ?? user.memberships[0]?.tenant).name
+            id: resolvedTenant.id,
+            name: resolvedTenant.name
           }
-        : null,
+        : null;
+    })(),
     memberships: user.memberships.map((membership) => ({
       tenant: membership.tenant,
       isDefault: membership.isDefault,
@@ -327,12 +330,12 @@ export async function assignRoleToUser(userId: string, roleId: string, context: 
   });
 
   if (tenantId) {
-    await logAuditEvent({
+    await logAdminAction({
       tenantId,
       actorUserId: context.actorUserId ?? null,
       action: 'tenant.role-assignment.updated',
-      entityType: 'user-role',
-      entityId: `${userId}:${roleId}`,
+      resourceType: 'user-role',
+      resourceId: `${userId}:${roleId}`,
       beforeState: beforeState as unknown as Prisma.InputJsonValue,
       afterState: {
         roleIds: afterRoleIds.map((item) => item.roleId),
@@ -407,12 +410,12 @@ export async function removeRoleFromUser(userId: string, roleId: string, context
   });
 
   if (user.tenantId) {
-    await logAuditEvent({
+    await logAdminAction({
       tenantId: user.tenantId,
       actorUserId: context.actorUserId ?? null,
       action: 'tenant.role-assignment.removed',
-      entityType: 'user-role',
-      entityId: `${userId}:${roleId}`,
+      resourceType: 'user-role',
+      resourceId: `${userId}:${roleId}`,
       beforeState: {
         roleIds: beforeRoleIds.map((item) => item.roleId)
       } satisfies Prisma.InputJsonValue,
@@ -501,13 +504,13 @@ export async function createUser(
     }
 
     if (createdUser.tenantId) {
-      await logAuditEvent({
+      await logAdminAction({
         client: tx,
         tenantId: createdUser.tenantId,
         actorUserId: context.actorUserId ?? null,
         action: 'user.created',
-        entityType: 'user',
-        entityId: createdUser.id,
+        resourceType: 'user',
+        resourceId: createdUser.id,
         beforeState: Prisma.JsonNull as unknown as Prisma.InputJsonValue,
         afterState: {
           email,
@@ -649,13 +652,13 @@ export async function updateUser(id: string, input: UpdateUserInput, context: Au
     }
 
     if (tenantId) {
-      await logAuditEvent({
+      await logAdminAction({
         client: tx,
         tenantId,
         actorUserId: context.actorUserId ?? null,
         action: 'user.updated',
-        entityType: 'user',
-        entityId: id,
+        resourceType: 'user',
+        resourceId: id,
         beforeState: beforeState as Prisma.InputJsonValue,
         afterState: {
           tenantId: tenantId ?? null,
@@ -697,13 +700,13 @@ export async function deleteUser(id: string, context: AuditContext = {}) {
 
   await prisma.$transaction(async (tx) => {
     if (existingUser.tenantId) {
-      await logAuditEvent({
+      await logAdminAction({
         client: tx,
         tenantId: existingUser.tenantId,
         actorUserId: context.actorUserId ?? null,
         action: 'user.deleted',
-        entityType: 'user',
-        entityId: existingUser.id,
+        resourceType: 'user',
+        resourceId: existingUser.id,
         beforeState: {
           email: existingUser.email,
           firstName: existingUser.firstName,

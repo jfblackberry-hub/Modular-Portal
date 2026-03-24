@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { StatusBadge } from '../../../../../../components/portal-ui';
 import { getEmployerDashboard } from '../../../../../../lib/billing-enrollment-api';
 import { getEmployerDocumentByIdForTenant } from '../../../../../../lib/employer-document-center-data';
 import { getPortalSessionUser } from '../../../../../../lib/portal-session';
-import { StatusBadge } from '../../../../../../components/portal-ui';
 
 function formatDate(value?: string) {
   if (!value) {

@@ -5,9 +5,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_DIR="$ROOT_DIR/.local/services"
 PID_DIR="$STATE_DIR/pids"
 
-PORTAL_PORT=3000
-API_PORT=3002
-ADMIN_PORT=3003
+PORTAL_PORT="${PORTAL_WEB_PORT:-3000}"
+API_PORT="${API_PORT:-3002}"
+ADMIN_PORT="${ADMIN_CONSOLE_PORT:-3003}"
 
 is_pid_running() {
   local pid="$1"
@@ -116,6 +116,15 @@ stop_service() {
     stopped='true'
   fi
 
+  if [ "$port" = '0' ]; then
+    if [ "$stopped" = 'true' ]; then
+      echo "Stopped $label"
+    else
+      echo "$label was not running"
+    fi
+    return 0
+  fi
+
   for pass in $(seq 1 "$max_port_passes"); do
     if ! lsof -tiTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
       break
@@ -163,8 +172,10 @@ stop_stale_workspace_dev_processes() {
       *"$ROOT_DIR"*'pnpm dev:api'*|\
       *"$ROOT_DIR"*'pnpm dev:portal'*|\
       *"$ROOT_DIR"*'pnpm dev:admin'*|\
+      *"$ROOT_DIR"*'pnpm dev:worker'*|\
       *"$ROOT_DIR"*'next/dist/bin/next dev'*|\
-      *"$ROOT_DIR"*'tsx/dist/cli.mjs watch src/server.ts'*)
+      *"$ROOT_DIR"*'tsx/dist/cli.mjs watch src/server.ts'*|\
+      *"$ROOT_DIR"*'tsx/dist/cli.mjs src/jobs/runWorker.ts'*)
         stop_pid_tree "$pid" 'workspace-dev-process' 'stale process sweep'
         stopped_any='true'
         ;;
@@ -179,6 +190,7 @@ stop_stale_workspace_dev_processes() {
 stop_service 'portal-web' "$PORTAL_PORT"
 stop_service 'api' "$API_PORT"
 stop_service 'admin-console' "$ADMIN_PORT"
+stop_service 'job-worker' "0"
 stop_stale_workspace_dev_processes
 
 cd "$ROOT_DIR"
@@ -197,6 +209,14 @@ fi
 if lsof -tiTCP:"$ADMIN_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   echo "Admin console is still listening on port $ADMIN_PORT"
   exit 1
+fi
+
+if [ -f "$PID_DIR/job-worker.pid" ]; then
+  worker_pid="$(cat "$PID_DIR/job-worker.pid")"
+  if [ -n "${worker_pid:-}" ] && kill -0 "$worker_pid" >/dev/null 2>&1; then
+    echo "Job worker is still running with pid $worker_pid"
+    exit 1
+  fi
 fi
 
 if curl -fsS "http://127.0.0.1:$PORTAL_PORT/provider-login" >/dev/null 2>&1; then

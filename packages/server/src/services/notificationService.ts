@@ -125,15 +125,16 @@ export async function createNotification(
 
   await sendNotification(notification.id);
 
-  return prisma.notification.findUniqueOrThrow({
+  return prisma.notification.findFirstOrThrow({
     where: {
-      id: notification.id
+      id: notification.id,
+      tenantId: notification.tenantId
     }
   });
 }
 
 export async function sendNotification(notificationId: string) {
-  const notification = await prisma.notification.findUnique({
+  const notification = await prisma.notification.findFirst({
     where: {
       id: normalizeRequired(notificationId, 'notificationId')
     }
@@ -169,7 +170,7 @@ export async function sendNotification(notificationId: string) {
 }
 
 export async function deliverNotification(notificationId: string) {
-  const notification = await prisma.notification.findUnique({
+  const notification = await prisma.notification.findFirst({
     where: {
       id: normalizeRequired(notificationId, 'notificationId')
     }
@@ -310,12 +311,32 @@ export async function markNotificationRead(
     return notification;
   }
 
-  return prisma.notification.update({
-    where: { id: notification.id },
+  const result = await prisma.notification.updateMany({
+    where: {
+      id: notification.id,
+      tenantId: notification.tenantId
+    },
     data: {
       readAt: new Date()
     }
   });
+
+  if (result.count === 0) {
+    throw new Error('Notification not found');
+  }
+
+  const updatedNotification = await prisma.notification.findFirst({
+    where: {
+      id: notification.id,
+      tenantId: notification.tenantId
+    }
+  });
+
+  if (!updatedNotification) {
+    throw new Error('Notification not found');
+  }
+
+  return updatedNotification;
 }
 
 export async function markNotificationStatus(
@@ -325,13 +346,41 @@ export async function markNotificationStatus(
     sentAt?: Date | null;
   }
 ): Promise<Notification> {
-  return prisma.notification.update({
+  const notification = await prisma.notification.findFirst({
     where: {
       id: normalizeRequired(notificationId, 'notificationId')
+    }
+  });
+
+  if (!notification) {
+    throw new Error('Notification not found');
+  }
+
+  const result = await prisma.notification.updateMany({
+    where: {
+      id: notification.id,
+      tenantId: notification.tenantId
     },
     data: {
       status: input.status,
       sentAt: input.sentAt ?? null
     }
   });
+
+  if (result.count === 0) {
+    throw new Error('Notification not found');
+  }
+
+  const updatedNotification = await prisma.notification.findFirst({
+    where: {
+      id: notification.id,
+      tenantId: notification.tenantId
+    }
+  });
+
+  if (!updatedNotification) {
+    throw new Error('Notification not found');
+  }
+
+  return updatedNotification;
 }

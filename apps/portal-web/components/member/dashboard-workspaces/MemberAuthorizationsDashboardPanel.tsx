@@ -1,9 +1,13 @@
 'use client';
 
-import { MemberWorkspaceDataBoundary } from './MemberWorkspaceDataBoundary';
 import { MemberAuthorizationsWorkspaceContent } from './MemberAuthorizationsWorkspaceContent';
+import { MemberWorkspaceDataBoundary } from './MemberWorkspaceDataBoundary';
 
-export function MemberAuthorizationsDashboardPanel() {
+export function MemberAuthorizationsDashboardPanel({
+  sessionScopeKey
+}: {
+  sessionScopeKey: string;
+}) {
   return (
     <MemberWorkspaceDataBoundary<{
       items: Array<{
@@ -16,6 +20,7 @@ export function MemberAuthorizationsDashboardPanel() {
     }>
       endpoint="/api/member-dashboard/workspaces/authorizations"
       label="Authorizations and referrals"
+      sessionScopeKey={sessionScopeKey}
       render={(data) => <MemberAuthorizationsWorkspaceContent embedded items={data.items} />}
     />
   );

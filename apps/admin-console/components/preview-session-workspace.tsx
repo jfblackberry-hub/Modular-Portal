@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { config, getAdminAuthHeaders } from '../lib/api-auth';
 import { useAdminSession } from './admin-session-provider';
 import { AdminPageLayout } from './admin-ui';
 import { SectionCard } from './section-card';
-import { apiBaseUrl, getAdminAuthHeaders } from '../lib/api-auth';
 
 type PreviewMode = 'READ_ONLY' | 'FUNCTIONAL';
-type PortalType = 'member' | 'provider' | 'broker' | 'employer' | 'tenant_admin';
+type PortalType = 'member' | 'provider' | 'broker' | 'employer';
 type WorkspaceView = 'tabs' | 'split' | 'grid';
 
 type PersonaCandidate = {
@@ -58,13 +58,8 @@ function isPreviewSessionRecord(
   return Boolean(value && 'sessionId' in value);
 }
 
-const portalBaseUrl =
-  process.env.NEXT_PUBLIC_PORTAL_BASE_URL ?? 'http://localhost:3000';
-
 function labelPortalType(value: PortalType) {
   switch (value) {
-    case 'tenant_admin':
-      return 'Tenant Admin';
     case 'provider':
       return 'Provider';
     case 'broker':
@@ -77,8 +72,19 @@ function labelPortalType(value: PortalType) {
   }
 }
 
+function resolvePreviewFrameUrl(launchUrl: string) {
+  const resolved = new URL(launchUrl, config.serviceEndpoints.portal);
+  const portalOrigin = new URL(config.serviceEndpoints.portal).origin;
+
+  if (resolved.origin !== portalOrigin || !resolved.pathname.startsWith('/preview/')) {
+    throw new Error('Preview launch URL must remain inside the isolated portal preview surface.');
+  }
+
+  return resolved.toString();
+}
+
 export function PreviewSessionWorkspace() {
-  const { session } = useAdminSession();
+  useAdminSession();
   const [catalog, setCatalog] = useState<CatalogPayload>({ tenants: [] });
   const [sessions, setSessions] = useState<PreviewSessionRecord[]>([]);
   const [view, setView] = useState<WorkspaceView>('tabs');
@@ -92,18 +98,19 @@ export function PreviewSessionWorkspace() {
   const [mode, setMode] = useState<PreviewMode>('READ_ONLY');
   const [reloadKeys, setReloadKeys] = useState<Record<string, number>>({});
   const [draggingSessionId, setDraggingSessionId] = useState('');
+  const sessionsRef = useRef<PreviewSessionRecord[]>([]);
 
-  async function loadWorkspace() {
+  const loadWorkspace = useCallback(async function loadWorkspace() {
     setLoading(true);
     setError('');
 
     try {
       const [catalogResponse, sessionsResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/platform-admin/preview-sessions/catalog`, {
+        fetch(`${config.apiBaseUrl}/platform-admin/preview-sessions/catalog`, {
           cache: 'no-store',
           headers: getAdminAuthHeaders()
         }),
-        fetch(`${apiBaseUrl}/platform-admin/preview-sessions`, {
+        fetch(`${config.apiBaseUrl}/platform-admin/preview-sessions`, {
           cache: 'no-store',
           headers: getAdminAuthHeaders()
         })
@@ -131,11 +138,15 @@ export function PreviewSessionWorkspace() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    sessionsRef.current = sessions;
+  }, [sessions]);
 
   useEffect(() => {
     void loadWorkspace();
-  }, []);
+  }, [loadWorkspace]);
 
   const selectedTenant = useMemo(
     () => catalog.tenants.find((tenant) => tenant.id === tenantId) ?? null,
@@ -169,6 +180,57 @@ export function PreviewSessionWorkspace() {
     }
   }, [persona, personaOptions]);
 
+  const duplicateSession = useCallback(async function duplicateSession(sessionId: string) {
+    const response = await fetch(
+      `${config.apiBaseUrl}/platform-admin/preview-sessions/${sessionId}/duplicate`,
+      {
+        method: 'POST',
+        headers: getAdminAuthHeaders()
+      }
+    );
+
+    const payload = (await response.json().catch(() => null)) as
+      | PreviewSessionRecord
+      | { message?: string }
+      | null;
+
+    if (!response.ok || !isPreviewSessionRecord(payload)) {
+      setError(
+        payload && 'message' in payload
+          ? payload.message ?? 'Unable to duplicate preview session.'
+          : 'Unable to duplicate preview session.'
+      );
+      return;
+    }
+
+    setSessions((current) => [payload, ...current]);
+    setActiveSessionId(payload.sessionId);
+  }, []);
+
+  const endSession = useCallback(async function endSession(sessionId: string) {
+    const response = await fetch(
+      `${config.apiBaseUrl}/platform-admin/preview-sessions/${sessionId}`,
+      {
+        method: 'DELETE',
+        headers: getAdminAuthHeaders()
+      }
+    );
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as {
+        message?: string;
+      } | null;
+      setError(payload?.message ?? 'Unable to end preview session.');
+      return;
+    }
+
+    const nextSessions = sessionsRef.current.filter((item) => item.sessionId !== sessionId);
+    setSessions(nextSessions);
+    setActiveSessionId((current) =>
+      current === sessionId ? nextSessions[0]?.sessionId ?? '' : current
+    );
+  }, []);
+
   useEffect(() => {
     function onMessage(event: MessageEvent) {
       const data = event.data as
@@ -192,9 +254,9 @@ export function PreviewSessionWorkspace() {
       }
 
       if (data.action === 'popout') {
-        const targetSession = sessions.find((session) => session.sessionId === data.sessionId);
+        const targetSession = sessionsRef.current.find((session) => session.sessionId === data.sessionId);
         if (targetSession) {
-          window.open(`${portalBaseUrl}${targetSession.launchUrl}`, '_blank', 'noopener,noreferrer');
+          window.open(resolvePreviewFrameUrl(targetSession.launchUrl), '_blank', 'noopener,noreferrer');
         }
         return;
       }
@@ -211,14 +273,14 @@ export function PreviewSessionWorkspace() {
 
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [sessions]);
+  }, [duplicateSession, endSession]);
 
   async function createSession() {
     setSubmitting(true);
     setError('');
 
     try {
-      const response = await fetch(`${apiBaseUrl}/platform-admin/preview-sessions`, {
+      const response = await fetch(`${config.apiBaseUrl}/platform-admin/preview-sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -256,56 +318,6 @@ export function PreviewSessionWorkspace() {
     } finally {
       setSubmitting(false);
     }
-  }
-
-  async function duplicateSession(sessionId: string) {
-    const response = await fetch(
-      `${apiBaseUrl}/platform-admin/preview-sessions/${sessionId}/duplicate`,
-      {
-        method: 'POST',
-        headers: getAdminAuthHeaders()
-      }
-    );
-
-    const payload = (await response.json().catch(() => null)) as
-      | PreviewSessionRecord
-      | { message?: string }
-      | null;
-
-    if (!response.ok || !isPreviewSessionRecord(payload)) {
-      setError(
-        payload && 'message' in payload
-          ? payload.message ?? 'Unable to duplicate preview session.'
-          : 'Unable to duplicate preview session.'
-      );
-      return;
-    }
-
-    setSessions((current) => [payload, ...current]);
-    setActiveSessionId(payload.sessionId);
-  }
-
-  async function endSession(sessionId: string) {
-    const response = await fetch(
-      `${apiBaseUrl}/platform-admin/preview-sessions/${sessionId}`,
-      {
-        method: 'DELETE',
-        headers: getAdminAuthHeaders()
-      }
-    );
-
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as {
-        message?: string;
-      } | null;
-      setError(payload?.message ?? 'Unable to end preview session.');
-      return;
-    }
-
-    setSessions((current) => current.filter((item) => item.sessionId !== sessionId));
-    setActiveSessionId((current) =>
-      current === sessionId ? sessions.find((item) => item.sessionId !== sessionId)?.sessionId ?? '' : current
-    );
   }
 
   function moveSession(fromId: string, toId: string) {
@@ -354,7 +366,7 @@ export function PreviewSessionWorkspace() {
 
       <SectionCard
         title="Create preview session"
-        description="Choose a tenant, persona, portal, and mode. Each session launches in an isolated iframe container with its own preview token."
+        description="Choose a tenant, persona, portal, and mode. Each session launches in an isolated iframe container with its own opaque preview handoff."
       >
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,0.8fr)_auto]">
           <select className="admin-input" value={tenantId} onChange={(event) => setTenantId(event.target.value)}>
@@ -474,9 +486,10 @@ export function PreviewSessionWorkspace() {
 
                   <iframe
                     title={`${previewSession.tenantName} ${previewSession.portalType} preview`}
-                    src={`${portalBaseUrl}${previewSession.launchUrl}`}
+                    src={resolvePreviewFrameUrl(previewSession.launchUrl)}
                     className="h-[48rem] w-full border-0 bg-white"
                     loading="lazy"
+                    referrerPolicy="no-referrer"
                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads"
                   />
                 </article>

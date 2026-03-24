@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { portalNodeEnv } from '../lib/public-runtime';
 import styles from './admin-preview-bar.module.css';
 
 type PreviewSessionMeta = {
@@ -101,7 +102,7 @@ export function AdminPreviewBar({
   }, [now, previewSession.expiresAt]);
 
   const environmentLabel =
-    typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    portalNodeEnv !== 'production'
       ? 'Local'
       : 'Preview';
 

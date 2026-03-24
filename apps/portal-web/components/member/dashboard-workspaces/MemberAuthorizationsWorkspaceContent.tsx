@@ -1,7 +1,7 @@
 'use client';
 
-import { EmptyState, PageHeader, StatusBadge, SurfaceCard } from '../../portal-ui';
 import { formatDate } from '../../../lib/portal-format';
+import { EmptyState, PageHeader, StatusBadge, SurfaceCard } from '../../portal-ui';
 
 type AuthorizationItem = {
   detail?: string | null;

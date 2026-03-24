@@ -1,7 +1,9 @@
+import './types.js';
+
 import crypto from 'node:crypto';
 
 import multipart from '@fastify/multipart';
-import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
+import { prisma } from '@payer-portal/database';
 import {
   createNotification,
   getUserNotifications,
@@ -11,6 +13,7 @@ import {
   registerIntegrationEventSubscriptions,
   registerJobEventSubscriptions
 } from '@payer-portal/server';
+import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 
 // @ts-expect-error compiled service module has no local type declarations
 import * as authService from '../../../apps/api/dist/services/auth-service.js';
@@ -26,7 +29,7 @@ import * as searchService from '../../../apps/api/dist/services/search-service.j
 import * as tenantService from '../../../apps/api/dist/services/tenant-service.js';
 import { createGatewayToken, verifyGatewayToken } from './jwt.js';
 import { getOpenApiDocument } from './openapi.js';
-import './types.js';
+import { apiGatewayRuntimeConfig } from './runtime-config.js';
 
 type RateLimitEntry = {
   count: number;
@@ -101,6 +104,43 @@ function getOpenApiResponse() {
   };
 }
 
+async function getGatewayReadiness() {
+  const timestamp = new Date().toISOString();
+
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+
+    return {
+      ready: true,
+      response: {
+        checks: {
+          database: {
+            status: 'pass'
+          }
+        },
+        service: 'api-gateway',
+        status: 'ok',
+        timestamp
+      }
+    } as const;
+  } catch (error) {
+    return {
+      ready: false,
+      response: {
+        checks: {
+          database: {
+            error: error instanceof Error ? error.message : 'Database check failed',
+            status: 'fail'
+          }
+        },
+        service: 'api-gateway',
+        status: 'degraded',
+        timestamp
+      }
+    } as const;
+  }
+}
+
 async function enforceRateLimit(request: FastifyRequest, reply: FastifyReply) {
   const { max, windowMs } = getRateLimitConfig();
 
@@ -145,14 +185,44 @@ async function authenticateRequest(request: FastifyRequest, reply: FastifyReply)
 
   try {
     const token = verifyGatewayToken(authorization.slice('Bearer '.length));
-    request.headers['x-user-id'] = token.sub;
+    const isPlatformToken =
+      token.roles.includes('platform_admin') ||
+      token.roles.includes('platform-admin');
+    const headerTenantId =
+      typeof request.headers['x-tenant-id'] === 'string'
+        ? request.headers['x-tenant-id'].trim()
+        : undefined;
+    const requestedTenantId = headerTenantId || token.tenantId;
 
-    const currentUser = await currentUserService.getCurrentUserFromHeaders(request.headers);
+    if (!requestedTenantId) {
+      return reply.status(401).send({
+        message:
+          'Tenant context required. Provide x-tenant-id or a tenant-scoped bearer token.'
+      });
+    }
+
+    if (
+      headerTenantId &&
+      !isPlatformToken &&
+      token.tenantId !== currentUserService.PLATFORM_ROOT_SCOPE &&
+      headerTenantId !== token.tenantId
+    ) {
+      return reply.status(403).send({
+        message:
+          'Tenant context mismatch. x-tenant-id must match the authenticated tenant scope.'
+      });
+    }
+
+    const currentUser = await currentUserService.getCurrentUserFromGatewayClaims({
+      sub: token.sub,
+      email: token.email,
+      tenantId: isPlatformToken
+        ? currentUserService.PLATFORM_ROOT_SCOPE
+        : token.tenantId
+    });
     const tenantId = currentUserService.resolveTenantScope(
       currentUser,
-      typeof request.headers['x-tenant-id'] === 'string'
-        ? request.headers['x-tenant-id']
-        : undefined
+      requestedTenantId
     );
 
     request.headers['x-tenant-id'] = tenantId;
@@ -207,7 +277,7 @@ async function handleServiceError(reply: FastifyReply, error: unknown) {
 
   return reply.status(503).send({
     message:
-      'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+      'Local database unavailable. Start PostgreSQL, run migrations.'
   });
 }
 
@@ -341,7 +411,7 @@ function registerGatewayRoutes(app: FastifyInstance, prefix: '/api' | '/api/v1')
       } catch {
         return reply.status(503).send({
           message:
-            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+            'Local database unavailable. Start PostgreSQL, run migrations.'
         });
       }
     }
@@ -699,6 +769,30 @@ export function buildApiGateway() {
     );
   });
 
+  app.get('/liveness', async () => ({
+    checks: {
+      process: {
+        pid: process.pid,
+        uptimeSeconds: Math.round(process.uptime())
+      }
+    },
+    service: 'api-gateway',
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  }));
+
+  app.get('/readiness', async (_request, reply) => {
+    const result = await getGatewayReadiness();
+
+    return reply.status(result.ready ? 200 : 503).send(result.response);
+  });
+
+  app.get('/health', async (_request, reply) => {
+    const result = await getGatewayReadiness();
+
+    return reply.status(result.ready ? 200 : 503).send(result.response);
+  });
+
   app.register(multipart);
   registerGatewayRoutes(app, '/api');
   registerGatewayRoutes(app, '/api/v1');
@@ -708,8 +802,10 @@ export function buildApiGateway() {
 
 export async function startApiGateway() {
   const app = buildApiGateway();
-  const port = Number(process.env.PORT ?? 3010);
-  const host = process.env.HOST ?? '0.0.0.0';
+  const port =
+    apiGatewayRuntimeConfig.port ??
+    apiGatewayRuntimeConfig.runtimeModel.ports.apiGateway;
+  const host = apiGatewayRuntimeConfig.host;
   await app.listen({ port, host });
   return app;
 }

@@ -102,7 +102,7 @@ export async function createFeatureFlag(input: FeatureFlagInput) {
 }
 
 export async function updateFeatureFlag(id: string, input: FeatureFlagPatch) {
-  const existing = await prisma.featureFlag.findUnique({
+  const existing = await prisma.featureFlag.findFirst({
     where: { id }
   });
 
@@ -117,8 +117,11 @@ export async function updateFeatureFlag(id: string, input: FeatureFlagPatch) {
     await ensureGlobalKeyAvailable(existing.key, id);
   }
 
-  const featureFlag = await prisma.featureFlag.update({
-    where: { id },
+  const result = await prisma.featureFlag.updateMany({
+    where: {
+      id,
+      tenantId: existing.tenantId
+    },
     data: {
       enabled: input.enabled ?? existing.enabled,
       tenantId: nextTenantId,
@@ -126,6 +129,17 @@ export async function updateFeatureFlag(id: string, input: FeatureFlagPatch) {
         input.description === undefined
           ? existing.description
           : input.description?.trim() || null
+    }
+  });
+
+  if (result.count === 0) {
+    throw new Error('Feature flag not found');
+  }
+
+  const featureFlag = await prisma.featureFlag.findFirst({
+    where: {
+      id,
+      tenantId: nextTenantId
     },
     include: {
       tenant: {
@@ -137,5 +151,8 @@ export async function updateFeatureFlag(id: string, input: FeatureFlagPatch) {
     }
   });
 
-  return mapFeatureFlag(featureFlag);
+  if (!featureFlag) {
+    throw new Error('Feature flag not found');
+  }
+   return mapFeatureFlag(featureFlag);
 }

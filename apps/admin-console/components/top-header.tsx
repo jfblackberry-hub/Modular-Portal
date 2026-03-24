@@ -1,17 +1,16 @@
 'use client';
 
-import Link from 'next/link';
 import { ChevronRight, LogOut, Shield } from 'lucide-react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import type { AdminSession } from './admin-session-provider';
+import { portalPublicOrigin } from '../lib/public-runtime';
+import type { AdminSession } from '../lib/admin-session';
 import { getAdminRouteContext, getDefaultAdminHref } from './admin-route-config';
-
-const portalBaseUrl = process.env.NEXT_PUBLIC_PORTAL_BASE_URL ?? 'http://localhost:3000';
 
 type TopHeaderProps = {
   session: AdminSession | null;
-  signOut: () => void;
+  signOut: () => Promise<void>;
 };
 
 function getInitials(email: string) {
@@ -65,9 +64,13 @@ export function TopHeader({ session, signOut }: TopHeaderProps) {
           {session ? (
             <button
               type="button"
-              onClick={() => {
-                signOut();
-                window.location.assign(`${portalBaseUrl}/login`);
+              onClick={async () => {
+                try {
+                  await signOut();
+                  window.location.assign(`${portalPublicOrigin}/login`);
+                } catch {
+                  return;
+                }
               }}
               className="admin-button admin-button--header"
             >

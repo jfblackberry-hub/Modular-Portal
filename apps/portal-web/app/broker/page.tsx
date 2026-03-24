@@ -1,8 +1,8 @@
 import { BrokerCommandCenterDashboard } from '../../components/billing-enrollment/BrokerCommandCenterDashboard';
-import { getBrokerCases, getBrokerCommissionsSummary } from '../../lib/broker-operations-data';
 import { resolveBrokerPersona } from '../../lib/broker-portal-config';
-import { getBrokerCommandCenterData } from '../../lib/broker-sales-workspace-data';
+import { getBrokerCommandCenterSummary } from '../../lib/broker-sales-workspace-data';
 import { getPortalSessionUser } from '../../lib/portal-session';
+import { buildPortalWorkspaceSessionKey } from '../../lib/portal-workspace-session';
 
 export default async function BrokerPortalHomePage() {
   const sessionUser = await getPortalSessionUser();
@@ -14,9 +14,11 @@ export default async function BrokerPortalHomePage() {
       ? sessionUser.tenant.brandingConfig.brokerAgencyName
       : 'Northbridge Benefits Group';
   const brokerName = `${sessionUser?.firstName ?? 'Avery'} ${sessionUser?.lastName ?? 'Lee'}`;
-  const snapshot = getBrokerCommandCenterData();
-  const cases = getBrokerCases();
-  const commissionSummary = getBrokerCommissionsSummary();
+  const summary = getBrokerCommandCenterSummary();
+  const workspaceSessionKey = buildPortalWorkspaceSessionKey({
+    portal: 'broker',
+    user: sessionUser
+  });
 
   return (
     <BrokerCommandCenterDashboard
@@ -25,40 +27,8 @@ export default async function BrokerPortalHomePage() {
       personaLabel={persona.label}
       canManage={persona.canManage}
       primaryActionLabel={persona.dashboardCtaLabel}
-      kpis={{
-        ...snapshot.kpis,
-        pendingTasks: cases.filter((item) => item.status !== 'Resolved').length,
-        mtdCommissions: commissionSummary.total
-      }}
-      renewalsNeedingAction={snapshot.renewalsNeedingAction}
-      openQuotes={snapshot.openQuotes}
-      enrollmentIssues={snapshot.enrollmentIssues}
-      commissionSnapshot={{
-        mtdCommissions: commissionSummary.total,
-        postedGroups: commissionSummary.byGroup.length - commissionSummary.exceptions.length,
-        exceptions: commissionSummary.exceptions.length,
-        pendingValue: commissionSummary.pending
-      }}
-      alerts={snapshot.alerts}
-      tasks={cases
-        .filter((item) => item.status !== 'Resolved')
-        .slice(0, 5)
-        .map((item) => ({
-          id: item.id,
-          groupId: item.groupId ?? 'broker-case',
-          title: item.title,
-          detail: item.summary,
-          status: item.status,
-          dueDate: item.dueDate,
-          href: item.renewalId
-            ? `/broker/renewals/${item.renewalId}`
-            : item.quoteId
-              ? `/broker/quotes/${item.quoteId}`
-              : item.groupId
-                ? `/broker/book-of-business/${item.groupId}`
-                : '/broker/tasks',
-          category: 'document'
-        }))}
+      kpis={summary.kpis}
+      sessionScopeKey={workspaceSessionKey}
     />
   );
 }

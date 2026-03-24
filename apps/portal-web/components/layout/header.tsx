@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { Bell, Menu } from 'lucide-react';
+import Link from 'next/link';
 
 import type { PortalSessionUser } from '../../lib/portal-session';
 import { prefixPreviewHref } from '../../lib/preview-route';
@@ -39,11 +39,14 @@ export function Header({
         <Link href={homeHref} className="min-w-0">
           <div className="flex items-center gap-3">
             {branding.logoUrl ? (
-              <img
-                src={branding.logoUrl}
-                alt={`${branding.displayName} logo`}
-                className="h-9 w-auto max-w-[140px] object-contain"
-              />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element -- dynamic tenant branding URLs are runtime-configured and not safe to route through next/image without broad remote allowlists */}
+                <img
+                  src={branding.logoUrl}
+                  alt={`${branding.displayName} logo`}
+                  className="h-9 w-auto max-w-[140px] object-contain"
+                />
+              </>
             ) : (
               <div
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-white"

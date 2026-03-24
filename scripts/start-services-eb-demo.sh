@@ -8,6 +8,7 @@ export DATABASE_URL="postgresql://dev:dev@127.0.0.1:5432/${DB_NAME}?schema=publi
 
 echo "Starting services against E&B demo database:"
 echo "  DATABASE_URL=${DATABASE_URL}"
+echo "  NODE_ENV=${NODE_ENV:-development}"
 
 bash "$ROOT_DIR/scripts/verify-env-consistency.sh" --require-eb-demo
 

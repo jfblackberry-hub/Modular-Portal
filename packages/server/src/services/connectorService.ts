@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto';
 import type { ConnectorConfig } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
 
-import type { PlatformEvent } from '../events/eventTypes.js';
 import { publishInBackground } from '../events/eventBus.js';
+import type { PlatformEvent } from '../events/eventTypes.js';
 import {
   INTEGRATION_TRIGGER_MODE,
   type IntegrationTriggerMode
@@ -47,13 +47,31 @@ export async function runConnectorSync(
 export async function runConnectorHealthCheck(connectorId: string) {
   const result = await runIntegrationHealthCheck(connectorId);
 
-  return prisma.connectorConfig.update({
+  const updateResult = await prisma.connectorConfig.updateMany({
     where: {
-      id: result.connector.id
+      id: result.connector.id,
+      tenantId: result.connector.tenantId
     },
     data: {
       lastHealthCheckAt: new Date(),
       status: result.result.ok ? 'ACTIVE' : 'ERROR'
     }
   });
+
+  if (updateResult.count === 0) {
+    throw new Error('Connector config not found');
+  }
+
+  const updatedConnector = await prisma.connectorConfig.findFirst({
+    where: {
+      id: result.connector.id,
+      tenantId: result.connector.tenantId
+    }
+  });
+
+  if (!updatedConnector) {
+    throw new Error('Connector config not found');
+  }
+
+  return updatedConnector;
 }

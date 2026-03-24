@@ -1,7 +1,7 @@
 'use client';
 
+import { ClipboardList, Search, SlidersHorizontal, Sparkles, UserRound, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Search, SlidersHorizontal, UserRound, Sparkles, ClipboardList, X } from 'lucide-react';
 
 import type { ProviderPortalConfig } from '../../../config/providerPortalConfig';
 import { EmptyState, PageHeader, StatusBadge, SurfaceCard } from '../../portal-ui';
@@ -9,9 +9,8 @@ import { ProviderMetricsRow } from '../dashboard/ProviderMetricsRow';
 import {
   patientRecentSearches,
   patientSavedFilters,
-  providerPatients,
-  type ProviderPatientRecord
-} from './provider-patients-data';
+  type ProviderPatientRecord,
+  providerPatients} from './provider-patients-data';
 
 type DirectoryTab = 'all' | 'programs' | 'signals';
 

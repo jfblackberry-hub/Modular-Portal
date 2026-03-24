@@ -1,0 +1,364 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Modular security stack
+
+Parameters:
+  EnvironmentName:
+    Type: String
+  Owner:
+    Type: String
+  CostCenter:
+    Type: String
+  AppPort:
+    Type: Number
+  AdminPort:
+    Type: Number
+  ApiPort:
+    Type: Number
+  DbPort:
+    Type: Number
+  AlbIngressCidr:
+    Type: String
+  PortalIngressCidr:
+    Type: String
+    Default: 0.0.0.0/0
+  AdminIngressCidr:
+    Type: String
+    Default: 0.0.0.0/0
+  ApiIngressCidr:
+    Type: String
+    Default: 0.0.0.0/0
+  S3BucketArn1:
+    Type: String
+    Default: ''
+  S3BucketArn2:
+    Type: String
+    Default: ''
+  S3BucketArn3:
+    Type: String
+    Default: ''
+  SecretArn1:
+    Type: String
+    Default: ''
+  SecretArn2:
+    Type: String
+    Default: ''
+  SecretArn3:
+    Type: String
+    Default: ''
+
+Conditions:
+  HasS3BucketArn1: !Not [!Equals [!Ref S3BucketArn1, '']]
+  HasS3BucketArn2: !Not [!Equals [!Ref S3BucketArn2, '']]
+  HasS3BucketArn3: !Not [!Equals [!Ref S3BucketArn3, '']]
+  HasSecretArn1: !Not [!Equals [!Ref SecretArn1, '']]
+  HasSecretArn2: !Not [!Equals [!Ref SecretArn2, '']]
+  HasSecretArn3: !Not [!Equals [!Ref SecretArn3, '']]
+  HasAnyS3BucketArn: !Or
+    - !Condition HasS3BucketArn1
+    - !Condition HasS3BucketArn2
+    - !Condition HasS3BucketArn3
+  HasAnySecretArn: !Or
+    - !Condition HasSecretArn1
+    - !Condition HasSecretArn2
+    - !Condition HasSecretArn3
+
+Resources:
+  SecurityAlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${EnvironmentName}-security-alb-security-group'
+      GroupDescription: Allow HTTP and HTTPS inbound to the ALB
+      VpcId: !ImportValue
+        Fn::Sub: '${EnvironmentName}-networking-vpc-id'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref AlbIngressCidr
+          Description: HTTP
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref AlbIngressCidr
+          Description: HTTPS
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-security-alb-security-group'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: security
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SecurityEcsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${EnvironmentName}-security-ecs-security-group'
+      GroupDescription: Allow application traffic from the ALB security group
+      VpcId: !ImportValue
+        Fn::Sub: '${EnvironmentName}-networking-vpc-id'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref AppPort
+          ToPort: !Ref AppPort
+          SourceSecurityGroupId: !Ref SecurityAlbSecurityGroup
+          Description: App traffic from ALB
+        - IpProtocol: tcp
+          FromPort: !Ref AdminPort
+          ToPort: !Ref AdminPort
+          SourceSecurityGroupId: !Ref SecurityAlbSecurityGroup
+          Description: Admin traffic from ALB
+        - IpProtocol: tcp
+          FromPort: !Ref ApiPort
+          ToPort: !Ref ApiPort
+          SourceSecurityGroupId: !Ref SecurityAlbSecurityGroup
+          Description: API traffic from ALB
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-security-ecs-security-group'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: security
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SecurityRdsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${EnvironmentName}-security-rds-security-group'
+      GroupDescription: Allow database traffic from ECS only
+      VpcId: !ImportValue
+        Fn::Sub: '${EnvironmentName}-networking-vpc-id'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref DbPort
+          ToPort: !Ref DbPort
+          SourceSecurityGroupId: !Ref SecurityEcsSecurityGroup
+          Description: Database traffic from ECS
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-security-rds-security-group'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: security
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SecurityPortalInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${EnvironmentName}-security-portal-instance-security-group'
+      GroupDescription: Allow direct portal, admin, and API access to the single EC2 POC host
+      VpcId: !ImportValue
+        Fn::Sub: '${EnvironmentName}-networking-vpc-id'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref AppPort
+          ToPort: !Ref AppPort
+          CidrIp: !Ref PortalIngressCidr
+          Description: Portal web
+        - IpProtocol: tcp
+          FromPort: !Ref AdminPort
+          ToPort: !Ref AdminPort
+          CidrIp: !Ref AdminIngressCidr
+          Description: Admin console
+        - IpProtocol: tcp
+          FromPort: !Ref ApiPort
+          ToPort: !Ref ApiPort
+          CidrIp: !Ref ApiIngressCidr
+          Description: Public API
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-security-portal-instance-security-group'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: security
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SecurityEcsTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${EnvironmentName}-security-ecs-task-execution-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-security-ecs-task-execution-role'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: security
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SecurityEcsTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${EnvironmentName}-security-ecs-task-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub '${EnvironmentName}-security-ecs-task-access-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - !If
+                - HasAnySecretArn
+                - Sid: ReadAppSecrets
+                  Effect: Allow
+                  Action:
+                    - secretsmanager:DescribeSecret
+                    - secretsmanager:GetSecretValue
+                  Resource:
+                    - !If [HasSecretArn1, !Ref SecretArn1, !Ref AWS::NoValue]
+                    - !If [HasSecretArn2, !Ref SecretArn2, !Ref AWS::NoValue]
+                    - !If [HasSecretArn3, !Ref SecretArn3, !Ref AWS::NoValue]
+                - !Ref AWS::NoValue
+              - !If
+                - HasAnyS3BucketArn
+                - Sid: ListAppBuckets
+                  Effect: Allow
+                  Action:
+                    - s3:GetBucketLocation
+                    - s3:ListBucket
+                  Resource:
+                    - !If [HasS3BucketArn1, !Ref S3BucketArn1, !Ref AWS::NoValue]
+                    - !If [HasS3BucketArn2, !Ref S3BucketArn2, !Ref AWS::NoValue]
+                    - !If [HasS3BucketArn3, !Ref S3BucketArn3, !Ref AWS::NoValue]
+                - !Ref AWS::NoValue
+              - !If
+                - HasAnyS3BucketArn
+                - Sid: ReadWriteAppBuckets
+                  Effect: Allow
+                  Action:
+                    - s3:GetObject
+                    - s3:PutObject
+                    - s3:DeleteObject
+                  Resource:
+                    - !If [HasS3BucketArn1, !Sub '${S3BucketArn1}/*', !Ref AWS::NoValue]
+                    - !If [HasS3BucketArn2, !Sub '${S3BucketArn2}/*', !Ref AWS::NoValue]
+                    - !If [HasS3BucketArn3, !Sub '${S3BucketArn3}/*', !Ref AWS::NoValue]
+                - !Ref AWS::NoValue
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-security-ecs-task-role'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: security
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SecurityPortalInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${EnvironmentName}-security-portal-instance-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-security-portal-instance-role'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: security
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  SecurityPortalInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub '${EnvironmentName}-security-portal-instance-profile'
+      Roles:
+        - !Ref SecurityPortalInstanceRole
+
+Outputs:
+  AlbSecurityGroupId:
+    Value: !Ref SecurityAlbSecurityGroup
+    Export:
+      Name: !Sub '${EnvironmentName}-security-alb-sg-id'
+  EcsSecurityGroupId:
+    Value: !Ref SecurityEcsSecurityGroup
+    Export:
+      Name: !Sub '${EnvironmentName}-security-ecs-sg-id'
+  RdsSecurityGroupId:
+    Value: !Ref SecurityRdsSecurityGroup
+    Export:
+      Name: !Sub '${EnvironmentName}-security-rds-sg-id'
+  PortalInstanceSecurityGroupId:
+    Value: !Ref SecurityPortalInstanceSecurityGroup
+    Export:
+      Name: !Sub '${EnvironmentName}-security-portal-instance-sg-id'
+  EcsTaskExecutionRoleName:
+    Value: !Ref SecurityEcsTaskExecutionRole
+  EcsTaskExecutionRoleArn:
+    Value: !GetAtt SecurityEcsTaskExecutionRole.Arn
+    Export:
+      Name: !Sub '${EnvironmentName}-security-ecs-task-execution-role-arn'
+  EcsTaskRoleName:
+    Value: !Ref SecurityEcsTaskRole
+  EcsTaskRoleArn:
+    Value: !GetAtt SecurityEcsTaskRole.Arn
+    Export:
+      Name: !Sub '${EnvironmentName}-security-ecs-task-role-arn'
+  PortalInstanceRoleArn:
+    Value: !GetAtt SecurityPortalInstanceRole.Arn
+    Export:
+      Name: !Sub '${EnvironmentName}-security-portal-instance-role-arn'
+  PortalInstanceProfileName:
+    Value: !Ref SecurityPortalInstanceProfile
+    Export:
+      Name: !Sub '${EnvironmentName}-security-portal-instance-profile-name'

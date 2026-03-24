@@ -1,5 +1,5 @@
-import { after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { after, beforeEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
@@ -14,6 +14,8 @@ const TEST_TENANT_SLUG = 'tenant-settings-service-test';
 const TEST_USER_EMAIL = 'tenant-settings-user@example.com';
 
 async function cleanupTestData() {
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
+
   await prisma.job.deleteMany({
     where: {
       type: 'notification.send'

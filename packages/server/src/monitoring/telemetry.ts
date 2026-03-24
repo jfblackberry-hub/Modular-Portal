@@ -1,26 +1,26 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
+
 import { metrics } from '@opentelemetry/api';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { MeterProvider } from '@opentelemetry/sdk-metrics';
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import { loadObservabilityConfig } from '@payer-portal/config';
 
 import { subscribe } from '../events/eventBus.js';
 
-const prometheusPort = Number(process.env.OTEL_PROMETHEUS_PORT ?? 9464);
-const prometheusPath = process.env.OTEL_PROMETHEUS_PATH ?? '/metrics';
+const observabilityConfig = loadObservabilityConfig();
+const prometheusPort = observabilityConfig.prometheusPort;
+const prometheusPath = observabilityConfig.prometheusPath;
 
 let initialized = false;
 let subscriptionsRegistered = false;
-let exporterStarted = false;
 
 const exporter = new PrometheusExporter(
   {
     endpoint: prometheusPath,
-    host: '127.0.0.1',
+    host: observabilityConfig.prometheusHost,
     port: prometheusPort
   },
-  () => {
-    exporterStarted = true;
-  }
+  () => undefined
 );
 
 const meterProvider = new MeterProvider({
@@ -29,7 +29,7 @@ const meterProvider = new MeterProvider({
 
 metrics.setGlobalMeterProvider(meterProvider);
 
-const meter = metrics.getMeter('payer-portal-monitoring', '0.1.0');
+const meter = metrics.getMeter(observabilityConfig.serviceName, '0.1.0');
 
 const apiRequestCounter = meter.createCounter('platform_api_requests_total', {
   description: 'Total API requests processed by the platform API.'

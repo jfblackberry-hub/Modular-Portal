@@ -1,0 +1,36 @@
+{
+  "name": "modular-portal-golden-regression-pass",
+  "capturedAt": "2026-03-23T03:51:57Z",
+  "gitCommit": "12eeabe2e58ab6722b85e6b1bfd99b94d954f78d",
+  "gitStatus": "clean",
+  "database": {
+    "source": "payer_portal_eb_demo",
+    "format": "prisma-json-snapshot",
+    "snapshotFile": "database-snapshot.json",
+    "note": "Host pg_dump was unavailable during capture, so the validated database was exported as a Prisma JSON snapshot."
+  },
+  "code": {
+    "format": "git-bundle",
+    "bundleFile": "modular-portal.bundle"
+  },
+  "storage": {
+    "path": "storage",
+    "sourcePath": "apps/api/storage"
+  },
+  "validatedReleaseEnv": {
+    "RELEASE_ADMIN_EMAIL": "preview-platform-admin@example.com",
+    "RELEASE_PORTAL_MEMBER_EMAIL": "maria",
+    "RELEASE_PORTAL_TENANT_ADMIN_EMAIL": "tenant",
+    "RELEASE_VALIDATION_PASSWORD": "demo"
+  },
+  "validationStatus": {
+    "build": "pass",
+    "lint": "pass",
+    "typecheck": "pass",
+    "portalWebTests": "pass",
+    "adminConsoleTests": "pass",
+    "smoke": "pass",
+    "integration": "pass",
+    "releaseValidation": "pass"
+  }
+}

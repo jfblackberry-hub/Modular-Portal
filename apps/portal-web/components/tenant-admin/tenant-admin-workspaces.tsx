@@ -4,17 +4,17 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import type {
+  AccessLevel,
+  AdministratorUser,
+  AdminModule,
+  AdminRole,
+  RolePermissionMatrix
+} from '../../lib/employer-admin-settings-data';
+import type { TenantAdminAuditEventRecord } from '../../lib/tenant-admin-audit';
+import type {
   TenantAdminWorkspaceData,
   TenantSubtenant
 } from '../../lib/tenant-admin-data';
-import type { TenantAdminAuditEventRecord } from '../../lib/tenant-admin-audit';
-import type {
-  AccessLevel,
-  AdminModule,
-  AdminRole,
-  AdministratorUser,
-  RolePermissionMatrix
-} from '../../lib/employer-admin-settings-data';
 
 function formatDateTime(value?: string) {
   if (!value) {

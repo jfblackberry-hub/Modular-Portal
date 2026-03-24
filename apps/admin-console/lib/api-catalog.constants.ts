@@ -1,7 +1,7 @@
 import type {
-  ApiCategory,
   ApiCatalogFiltersState,
   ApiCatalogSortField,
+  ApiCategory,
   AuthType,
   AwsRelevance,
   DataStandard,

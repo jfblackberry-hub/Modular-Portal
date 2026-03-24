@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation';
 
 import { PortalShell } from '../../components/portal-shell';
 import { TenantTheme } from '../../components/tenant-theme';
-import { getBrokerNavigationSections } from '../../lib/broker-portal-config';
 import { hasBillingPortalAudienceAccess } from '../../lib/billing-portal-audience';
+import { getBrokerNavigationSections } from '../../lib/broker-portal-config';
 import { getPortalSessionUser } from '../../lib/portal-session';
 import { getTenantBranding } from '../../lib/tenant-branding';
 

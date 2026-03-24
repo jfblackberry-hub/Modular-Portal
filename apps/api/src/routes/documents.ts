@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify';
+
 import {
   AuthenticationError,
   getCurrentUserFromHeaders
 } from '../services/current-user-service';
-
 import {
   DocumentFileNotFoundError,
   downloadDocument,
@@ -47,7 +47,7 @@ export async function documentRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
@@ -96,7 +96,7 @@ export async function documentRoutes(app: FastifyInstance) {
 
         return reply.status(503).send({
           message:
-            'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+            'Local database unavailable. Start PostgreSQL, run migrations.'
         });
       }
     }
@@ -148,7 +148,7 @@ export async function documentRoutes(app: FastifyInstance) {
 
       return reply.status(503).send({
         message:
-          'Local database unavailable. Start PostgreSQL, run migrations, and seed data.'
+          'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });

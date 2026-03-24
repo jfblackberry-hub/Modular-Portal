@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 
-import { AdminPageLayout } from './admin-ui';
-import { SectionCard } from './section-card';
 import { fetchAdminJsonCached } from '../lib/admin-client-data';
 import { apiBaseUrl, getAdminAuthHeaders } from '../lib/api-auth';
+import { AdminPageLayout } from './admin-ui';
+import { SectionCard } from './section-card';
 
 type Scope = 'platform' | 'tenant';
 

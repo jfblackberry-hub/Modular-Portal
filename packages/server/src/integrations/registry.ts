@@ -1,11 +1,11 @@
+import { restAdapter } from './adapters/rest.adapter.js';
+import { localFileAdapter } from './adapters/sftp.adapter.js';
+import { webhookAdapter } from './adapters/webhook.adapter.js';
 import type {
   IntegrationAdapterModule,
   IntegrationCapabilities,
   RegisteredIntegrationAdapter
 } from './integration.js';
-import { localFileAdapter } from './adapters/sftp.adapter.js';
-import { restAdapter } from './adapters/rest.adapter.js';
-import { webhookAdapter } from './adapters/webhook.adapter.js';
 
 const adapters = new Map<string, RegisteredIntegrationAdapter>();
 let defaultsRegistered = false;

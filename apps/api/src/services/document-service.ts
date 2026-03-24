@@ -5,11 +5,10 @@ import type { MultipartFile } from '@fastify/multipart';
 import type { Document, Prisma } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
 import {
-  logAuditEvent,
-  publishInBackground,
-  readFile,
-  saveFile
-} from '@payer-portal/server';
+  buildTenantDocumentStorageKey,
+  getStorageService,
+  logSensitiveDataAccess,
+  publishInBackground} from '@payer-portal/server';
 
 import { createMockPdfBuffer, isPdfBuffer } from './pdf-utils';
 
@@ -53,10 +52,6 @@ function sanitizeFileName(fileName: string) {
   }
 
   return normalized.replace(/[^a-zA-Z0-9._-]+/g, '-');
-}
-
-function buildStorageKey(tenantSlug: string, fileName: string) {
-  return `documents/${tenantSlug}/${randomUUID()}-${fileName}`;
 }
 
 function mapDocument(document: Document) {
@@ -107,13 +102,21 @@ export async function uploadDocument(input: UploadDocumentInput) {
 
   const mimeType = normalizeRequired(input.file.mimetype, 'MIME type');
   const fileBuffer = await input.file.toBuffer();
-  const storageKey = buildStorageKey(user.tenant.slug, fileName);
+  const documentId = randomUUID();
+  const storageKey = buildTenantDocumentStorageKey({
+    tenantId: user.tenantId,
+    documentId,
+    fileName
+  });
 
-  await saveFile(fileBuffer, storageKey);
+  await getStorageService().put(storageKey, fileBuffer, {
+    contentType: mimeType
+  });
 
   const document = await prisma.$transaction(async (tx) => {
     const createdDocument = await tx.document.create({
       data: {
+        id: documentId,
         tenantId: user.tenantId,
         uploadedByUserId: user.id,
         filename: fileName,
@@ -125,13 +128,13 @@ export async function uploadDocument(input: UploadDocumentInput) {
       }
     });
 
-    await logAuditEvent({
+    await logSensitiveDataAccess({
       client: tx,
       tenantId: user.tenantId,
       actorUserId: user.id,
       action: 'document.uploaded',
-      entityType: 'Document',
-      entityId: createdDocument.id,
+      resourceType: 'Document',
+      resourceId: createdDocument.id,
       ipAddress: input.ipAddress,
       userAgent: input.userAgent,
       metadata: {
@@ -195,7 +198,7 @@ export async function downloadDocument(input: DocumentAccessContext & { document
   let fileBuffer: Buffer;
 
   try {
-    fileBuffer = await readFile(document.storageKey);
+    fileBuffer = await getStorageService().get(document.storageKey);
   } catch (error) {
     if (
       error instanceof Error &&
@@ -216,12 +219,12 @@ export async function downloadDocument(input: DocumentAccessContext & { document
     fileBuffer = createMockPdfBuffer(document.filename, placeholderLines);
   }
 
-  await logAuditEvent({
+  await logSensitiveDataAccess({
     tenantId: user.tenantId,
     actorUserId: user.id,
     action: 'document.downloaded',
-    entityType: 'Document',
-    entityId: document.id,
+    resourceType: 'Document',
+    resourceId: document.id,
     ipAddress: input.ipAddress,
     userAgent: input.userAgent,
     metadata: {

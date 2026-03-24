@@ -3,12 +3,12 @@ import { PortalHeroBanner } from '../../shared/portal-hero-banner';
 import { AuthorizationQueue } from './AuthorizationQueue';
 import { ClaimsFollowUpQueue } from './ClaimsFollowUpQueue';
 import { ProviderAlertsList } from './ProviderAlertsList';
-import { ProviderHeroBrandLockup } from './ProviderHeroBrandLockup';
 import { ProviderContextBar } from './ProviderContextBar';
+import { ProviderDashboardWorkspaceSection } from './ProviderDashboardWorkspaceSection';
+import { ProviderHeroBrandLockup } from './ProviderHeroBrandLockup';
 import { ProviderHeroOverlay } from './ProviderHeroOverlay';
 import { ProviderMetricsRow } from './ProviderMetricsRow';
 import { ProviderResourcesRow } from './ProviderResourcesRow';
-import { ProviderDashboardWorkspaceSection } from './ProviderDashboardWorkspaceSection';
 
 export function MedicalProviderDashboard({
   clinicLogoSrc,
@@ -16,6 +16,7 @@ export function MedicalProviderDashboard({
   config,
   imageSrc,
   providerName,
+  sessionScopeKey,
   variant
 }: {
   clinicLogoSrc: string;
@@ -23,6 +24,7 @@ export function MedicalProviderDashboard({
   config: ProviderPortalConfig;
   imageSrc: string;
   providerName: string;
+  sessionScopeKey: string;
   variant: 'medical' | 'pharmacy' | 'dental' | 'vision';
 }) {
   const metrics = [
@@ -198,7 +200,11 @@ export function MedicalProviderDashboard({
         priority
       />
       <ProviderMetricsRow metrics={metrics} />
-      <ProviderDashboardWorkspaceSection config={config} variant={variant} />
+      <ProviderDashboardWorkspaceSection
+        config={config}
+        sessionScopeKey={sessionScopeKey}
+        variant={variant}
+      />
 
       <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-3">

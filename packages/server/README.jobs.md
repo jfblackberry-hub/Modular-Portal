@@ -2,6 +2,8 @@
 
 The jobs layer provides a simple PostgreSQL-backed queue for background work that should not block API requests.
 
+`portal-web`, `admin-console`, and `api` may enqueue work, but only the dedicated `job-worker` process should execute the polling loop.
+
 ## What It Is For
 
 Use jobs for asynchronous work such as:
@@ -19,6 +21,12 @@ Run:
 
 ```bash
 pnpm --filter @payer-portal/server worker:jobs
+```
+
+For the built production runtime, use:
+
+```bash
+pnpm --filter @payer-portal/server worker:start
 ```
 
 The worker polls for the next eligible `PENDING` job where `runAt <= now`, executes the registered handler, and updates the job status.

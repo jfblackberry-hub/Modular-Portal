@@ -1,7 +1,13 @@
+import { createStructuredLogger } from '../observability/logger.js';
 import { createJobWorker } from './jobWorker.js';
+import { jobWorkerRuntimeConfig } from './runtime-config.js';
+
+const logger = createStructuredLogger({
+  serviceName: jobWorkerRuntimeConfig.observability.serviceName
+});
 
 const worker = createJobWorker({
-  pollIntervalMs: Number(process.env.JOB_WORKER_POLL_INTERVAL_MS ?? 1000)
+  pollIntervalMs: jobWorkerRuntimeConfig.jobWorkerPollIntervalMs
 });
 
 process.on('SIGINT', () => {
@@ -12,5 +18,9 @@ process.on('SIGTERM', () => {
   worker.stop();
 });
 
-console.log('[jobs] worker starting');
+logger.info('job worker starting', {
+  appName: jobWorkerRuntimeConfig.appName,
+  nodeEnv: jobWorkerRuntimeConfig.nodeEnv,
+  pollIntervalMs: jobWorkerRuntimeConfig.jobWorkerPollIntervalMs
+});
 await worker.start();

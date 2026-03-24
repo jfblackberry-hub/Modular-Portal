@@ -1,12 +1,12 @@
+import { loadTenantTheme } from '../theme/loadTenantTheme';
+import { buildPortalApiHeaders } from './api-request';
 import type { PortalExperience } from './portal-experience';
-import { getPortalSessionAccessToken } from './portal-session';
 import {
   getTenantImageOverrides,
   type TenantImageOverrides
 } from './portal-image-registry';
-import { loadTenantTheme } from '../theme/loadTenantTheme';
-
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3002';
+import { getPortalSessionAccessToken } from './portal-session';
+import { config } from './server-runtime';
 const DEFAULT_PRIMARY_COLOR = '#2A6FA8';
 const DEFAULT_SECONDARY_COLOR = '#EAF4FB';
 const DEFAULT_PAYER_BRANDING = {
@@ -299,11 +299,12 @@ export async function getTenantBranding(
     const resolvedAccessToken = sessionAccessToken ?? accessToken;
 
     if (resolvedAccessToken) {
-      const response = await fetch(`${apiBaseUrl}/api/branding`, {
+      const response = await fetch(`${config.apiBaseUrl}/api/branding`, {
         cache: 'no-store',
-        headers: {
-          Authorization: `Bearer ${resolvedAccessToken}`
-        }
+        headers: await buildPortalApiHeaders({}, {
+          accessToken: resolvedAccessToken,
+          tenantId: tenant.id
+        })
       });
 
       if (response.ok) {
