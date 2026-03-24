@@ -1,4 +1,4 @@
-import type { AdminSession } from './admin-session-provider';
+import type { AdminSession } from '../lib/admin-session';
 
 export type AdminRole = 'platform_admin' | 'tenant_admin';
 

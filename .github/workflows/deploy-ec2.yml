@@ -1,0 +1,111 @@
+name: Build And Deploy EC2 Apps
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/deploy-ec2.yml'
+      - 'apps/admin-console/**'
+      - 'apps/api/**'
+      - 'apps/portal-web/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.json'
+      - 'tenant-config.json'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - qa
+          - demo
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: us-east-1
+  ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }}
+
+jobs:
+  build-and-push:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: portal-web
+            repository_suffix: portal-web
+            dockerfile: apps/portal-web/Dockerfile
+          - service: admin-console
+            repository_suffix: admin-console
+            dockerfile: apps/admin-console/Dockerfile
+          - service: api
+            repository_suffix: api-server
+            dockerfile: apps/api/Dockerfile
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+
+      - name: Resolve AWS account id
+        id: aws-account
+        run: |
+          echo "account_id=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          tags: |
+            ${{ steps.aws-account.outputs.account_id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ENVIRONMENT }}-compute-${{ matrix.repository_suffix }}:latest
+            ${{ steps.aws-account.outputs.account_id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ENVIRONMENT }}-compute-${{ matrix.repository_suffix }}:${{ github.sha }}
+
+  deploy:
+    name: Deploy To EC2
+    runs-on: ubuntu-latest
+    needs:
+      - build-and-push
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+
+      - name: Refresh compose services on EC2
+        run: |
+          bash scripts/deploy/refresh-ec2-compose.sh "${ENVIRONMENT}" "${AWS_REGION}" portal-web admin-console api

@@ -5,6 +5,11 @@ import type { FormEvent } from 'react';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 import { buildAdminHandoffUrl } from '../../lib/admin-redirect';
+import {
+  LEGACY_PORTAL_SESSION_COOKIE,
+  LEGACY_PORTAL_TOKEN_COOKIE,
+  LEGACY_PORTAL_USER_COOKIE
+} from '../../lib/session-constants';
 
 function LoginFormContent({
   defaultUsername = '',
@@ -246,8 +251,9 @@ function LoginFormContent({
   }, [autoLogin, loginPath, performLogin, requestedRedirect, selectedUser]);
 
   function clearLegacyAuthStorage() {
-    localStorage.removeItem('portal-token');
-    localStorage.removeItem('portal-user');
+    localStorage.removeItem(LEGACY_PORTAL_TOKEN_COOKIE);
+    localStorage.removeItem(LEGACY_PORTAL_USER_COOKIE);
+    document.cookie = `${LEGACY_PORTAL_SESSION_COOKIE}=; Max-Age=0; path=/`;
   }
 
   return (

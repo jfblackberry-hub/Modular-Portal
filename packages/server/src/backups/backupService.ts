@@ -1,5 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes,randomUUID } from 'node:crypto';
 
+import { readProcessEnv } from '@payer-portal/config';
 import { prisma } from '@payer-portal/database';
 
 import { enqueueJob } from '../jobs/jobQueue.js';
@@ -52,7 +53,7 @@ function normalizeIntervalHours(value: string | undefined, fallback: number) {
 }
 
 function getEncryptionMaterial() {
-  const secret = process.env.BACKUP_ENCRYPTION_KEY?.trim();
+  const secret = readProcessEnv('BACKUP_ENCRYPTION_KEY');
 
   if (!secret) {
     throw new Error('BACKUP_ENCRYPTION_KEY is required for encrypted backups');
@@ -349,21 +350,21 @@ export async function configureBackupJobs(referenceTime = new Date()) {
     {
       coverage: BACKUP_COVERAGE.DATABASE,
       intervalHours: normalizeIntervalHours(
-        process.env.BACKUP_DATABASE_INTERVAL_HOURS,
+        readProcessEnv('BACKUP_DATABASE_INTERVAL_HOURS'),
         24
       )
     },
     {
       coverage: BACKUP_COVERAGE.DOCUMENTS,
       intervalHours: normalizeIntervalHours(
-        process.env.BACKUP_DOCUMENTS_INTERVAL_HOURS,
+        readProcessEnv('BACKUP_DOCUMENTS_INTERVAL_HOURS'),
         24
       )
     },
     {
       coverage: BACKUP_COVERAGE.AUDIT_LOGS,
       intervalHours: normalizeIntervalHours(
-        process.env.BACKUP_AUDIT_LOGS_INTERVAL_HOURS,
+        readProcessEnv('BACKUP_AUDIT_LOGS_INTERVAL_HOURS'),
         24
       )
     }

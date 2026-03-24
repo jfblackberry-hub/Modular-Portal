@@ -1,6 +1,6 @@
 import { buildAdminConsoleBoundaryUrl } from './admin-boundary';
 import type { PortalSessionUser } from './portal-session';
-import { adminConsolePublicOrigin as adminConsoleBaseUrl } from './server-runtime';
+import { config } from './server-runtime';
 
 export function getAdminDestination(
   user: Pick<PortalSessionUser, 'roles' | 'landingContext'>
@@ -36,7 +36,7 @@ export function buildAdminHandoffUrl(
   }
 
   if (destination === '/admin/tenant/health') {
-    return `${adminConsoleBaseUrl}/login`;
+    return `${config.serviceEndpoints.admin}/login`;
   }
 
   return buildAdminConsoleBoundaryUrl(destination);

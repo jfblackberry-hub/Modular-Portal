@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 
 import { isReturnToPortalRequest } from '../../lib/admin-login-query';
-import { portalPublicOrigin } from '../../lib/public-runtime';
+import { config } from '../../lib/public-runtime';
 import { AdminLoginForm } from './admin-login-form';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,7 @@ function AdminLoginPageContent() {
     }
 
     const timeoutId = window.setTimeout(() => {
-      window.location.assign(`${portalPublicOrigin}/login`);
+      window.location.assign(`${config.serviceEndpoints.portal}/login`);
     }, 900);
 
     return () => {
@@ -44,7 +44,7 @@ function AdminLoginPageContent() {
             </p>
             <div className="mt-8">
               <Link
-                href={`${portalPublicOrigin}/login`}
+                href={`${config.serviceEndpoints.portal}/login`}
                 className="inline-flex rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
               >
                 Go to portal login
@@ -63,7 +63,7 @@ function AdminLoginPageContent() {
           <AdminLoginForm />
           <div className="text-center text-sm text-admin-muted">
             Need member access instead?{' '}
-            <Link href={`${portalPublicOrigin}/login`} className="font-semibold text-admin-accent hover:underline">
+            <Link href={`${config.serviceEndpoints.portal}/login`} className="font-semibold text-admin-accent hover:underline">
               Go to portal login
             </Link>
           </div>

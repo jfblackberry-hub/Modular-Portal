@@ -2,8 +2,9 @@ import type { NextResponse } from 'next/server';
 
 import { portalWebSecurityConfig } from './server-runtime';
 import {
-  PORTAL_TOKEN_COOKIE,
-  PORTAL_USER_COOKIE
+  LEGACY_PORTAL_SESSION_COOKIE,
+  LEGACY_PORTAL_TOKEN_COOKIE,
+  LEGACY_PORTAL_USER_COOKIE
 } from './session-constants';
 
 export function clearLegacyPortalAuthCookies(response: NextResponse) {
@@ -15,6 +16,10 @@ export function clearLegacyPortalAuthCookies(response: NextResponse) {
     maxAge: 0
   };
 
-  response.cookies.set(PORTAL_TOKEN_COOKIE, '', options);
-  response.cookies.set(PORTAL_USER_COOKIE, '', options);
+  response.cookies.set(LEGACY_PORTAL_TOKEN_COOKIE, '', options);
+  response.cookies.set(LEGACY_PORTAL_USER_COOKIE, '', options);
+  response.cookies.set(LEGACY_PORTAL_SESSION_COOKIE, '', {
+    ...options,
+    httpOnly: true
+  });
 }

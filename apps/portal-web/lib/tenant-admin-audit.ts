@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { buildPortalApiHeaders } from './api-request';
-import { apiInternalOrigin as apiBaseUrl } from './server-runtime';
+import { config } from './server-runtime';
 
 export type TenantAdminAuditEventRecord = {
   id: string;
@@ -43,7 +43,7 @@ export async function getTenantAdminAuditEvents() {
   }
 
   try {
-    const response = await fetch(`${apiBaseUrl}/audit/events?page=1&page_size=50`, {
+    const response = await fetch(`${config.apiBaseUrl}/audit/events?page=1&page_size=50`, {
       headers,
       cache: 'no-store'
     });

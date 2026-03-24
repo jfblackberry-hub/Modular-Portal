@@ -19,7 +19,7 @@ import type {
   EnrollmentRequestType
 } from './enrollment-activity-data';
 import { getPortalSession } from './portal-session';
-import { apiInternalOrigin as apiBaseUrl } from './server-runtime';
+import { config } from './server-runtime';
 
 export type BillingEnrollmentOverview = {
   enrollmentCases: Array<Record<string, unknown>>;
@@ -130,7 +130,7 @@ async function buildBillingApiHeaders(
 export async function getBillingEnrollmentOverview(userId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/overview`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/overview`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -145,7 +145,7 @@ export async function getBillingEnrollmentOverview(userId: string) {
 export async function startBillingEnrollment(userId: string, input: { householdId: string; planId: string; effectiveDate: string }) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/enrollments/start`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/enrollments/start`, {
     method: 'POST',
     headers: await buildBillingApiHeaders(accessToken, {
       'content-type': 'application/json'
@@ -163,7 +163,7 @@ export async function startBillingEnrollment(userId: string, input: { householdI
 export async function getBillingEnrollmentPlans(userId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/plans`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/plans`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -178,7 +178,7 @@ export async function getBillingEnrollmentPlans(userId: string) {
 export async function compareBillingEnrollmentPlans(userId: string, input: { planIds: string[] }) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/plans/compare`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/plans/compare`, {
     method: 'POST',
     headers: await buildBillingApiHeaders(accessToken, {
       'content-type': 'application/json'
@@ -196,7 +196,7 @@ export async function compareBillingEnrollmentPlans(userId: string, input: { pla
 export async function getBillingSummary(userId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/billing/summary`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/billing/summary`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -211,7 +211,7 @@ export async function getBillingSummary(userId: string) {
 export async function getInvoiceDetail(userId: string, invoiceId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/billing/invoices/${invoiceId}`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/billing/invoices/${invoiceId}`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -229,7 +229,7 @@ export async function makeBillingPayment(
 ) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/billing/payments/make`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/billing/payments/make`, {
     method: 'POST',
     headers: await buildBillingApiHeaders(accessToken, {
       'content-type': 'application/json'
@@ -250,7 +250,7 @@ export async function updateBillingAutopay(
 ) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/billing/autopay`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/billing/autopay`, {
     method: 'PUT',
     headers: await buildBillingApiHeaders(accessToken, {
       'content-type': 'application/json'
@@ -268,7 +268,7 @@ export async function updateBillingAutopay(
 export async function getDependentsExperience(userId: string, householdId = 'hh-8843') {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/dependents?householdId=${encodeURIComponent(householdId)}`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/dependents?householdId=${encodeURIComponent(householdId)}`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -293,7 +293,7 @@ export async function addDependent(
 ) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/dependents`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/dependents`, {
     method: 'POST',
     headers: await buildBillingApiHeaders(accessToken, {
       'content-type': 'application/json'
@@ -322,7 +322,7 @@ export async function updateDependent(
 ) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/dependents/${dependentId}`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/dependents/${dependentId}`, {
     method: 'PATCH',
     headers: await buildBillingApiHeaders(accessToken, {
       'content-type': 'application/json'
@@ -341,7 +341,7 @@ export async function removeDependent(userId: string, dependentId: string, house
   const accessToken = await resolveAccessToken(userId);
 
   const response = await fetch(
-    `${apiBaseUrl}/api/v1/billing-enrollment/dependents/${dependentId}?householdId=${encodeURIComponent(householdId)}`,
+    `${config.apiBaseUrl}/api/v1/billing-enrollment/dependents/${dependentId}?householdId=${encodeURIComponent(householdId)}`,
     {
       method: 'DELETE',
       headers: await buildBillingApiHeaders(accessToken)
@@ -358,7 +358,7 @@ export async function removeDependent(userId: string, dependentId: string, house
 export async function getDocumentCenter(userId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/documents`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/documents`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -376,7 +376,7 @@ export async function uploadDocument(
 ) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/documents/upload`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/documents/upload`, {
     method: 'POST',
     headers: await buildBillingApiHeaders(accessToken, {
       'content-type': 'application/json'
@@ -395,7 +395,7 @@ export async function getCorrespondenceCenter(userId: string, unreadOnly = false
   const accessToken = await resolveAccessToken(userId);
 
   const response = await fetch(
-    `${apiBaseUrl}/api/v1/billing-enrollment/notices/correspondence?unreadOnly=${String(unreadOnly)}`,
+    `${config.apiBaseUrl}/api/v1/billing-enrollment/notices/correspondence?unreadOnly=${String(unreadOnly)}`,
     {
       cache: 'no-store',
       headers: await buildBillingApiHeaders(accessToken)
@@ -412,7 +412,7 @@ export async function getCorrespondenceCenter(userId: string, unreadOnly = false
 export async function getNoticeDetail(userId: string, noticeId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/notices/correspondence/${noticeId}`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/notices/correspondence/${noticeId}`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -427,7 +427,7 @@ export async function getNoticeDetail(userId: string, noticeId: string) {
 export async function markNoticeRead(userId: string, noticeId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/notices/correspondence/${noticeId}/read`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/notices/correspondence/${noticeId}/read`, {
     method: 'POST',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -442,7 +442,7 @@ export async function markNoticeRead(userId: string, noticeId: string) {
 export async function getSupportCenter(userId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/support`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/support`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -457,7 +457,7 @@ export async function getSupportCenter(userId: string) {
 export async function getBillingEnrollmentModuleConfig(userId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/module-config`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/module-config`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -497,7 +497,7 @@ export type EmployerDashboardResponse = {
 export async function getEmployerDashboard(userId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/dashboard`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/employer/dashboard`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -547,7 +547,7 @@ export type EmployerNotificationsResponse = {
 export async function getEmployerEmployees(userId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/employees`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/employer/employees`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -563,7 +563,7 @@ export async function getEmployerEmployeeById(userId: string, employeeId: string
   const accessToken = await resolveAccessToken(userId);
 
   const response = await fetch(
-    `${apiBaseUrl}/api/v1/billing-enrollment/employer/employees/${encodeURIComponent(employeeId)}`,
+    `${config.apiBaseUrl}/api/v1/billing-enrollment/employer/employees/${encodeURIComponent(employeeId)}`,
     {
       cache: 'no-store',
       headers: await buildBillingApiHeaders(accessToken)
@@ -585,7 +585,7 @@ export async function getEmployerEmployeeById(userId: string, employeeId: string
 export async function getEmployerEnrollmentActivity(userId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/enrollment-activity`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/employer/enrollment-activity`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -601,7 +601,7 @@ export async function getEmployerEnrollmentActivityById(userId: string, requestI
   const accessToken = await resolveAccessToken(userId);
 
   const response = await fetch(
-    `${apiBaseUrl}/api/v1/billing-enrollment/employer/enrollment-activity/${encodeURIComponent(requestId)}`,
+    `${config.apiBaseUrl}/api/v1/billing-enrollment/employer/enrollment-activity/${encodeURIComponent(requestId)}`,
     {
       cache: 'no-store',
       headers: await buildBillingApiHeaders(accessToken)
@@ -623,7 +623,7 @@ export async function getEmployerEnrollmentActivityById(userId: string, requestI
 export async function getEmployerTasks(userId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/tasks`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/employer/tasks`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -639,7 +639,7 @@ export async function getEmployerTaskById(userId: string, taskId: string) {
   const accessToken = await resolveAccessToken(userId);
 
   const response = await fetch(
-    `${apiBaseUrl}/api/v1/billing-enrollment/employer/tasks/${encodeURIComponent(taskId)}`,
+    `${config.apiBaseUrl}/api/v1/billing-enrollment/employer/tasks/${encodeURIComponent(taskId)}`,
     {
       cache: 'no-store',
       headers: await buildBillingApiHeaders(accessToken)
@@ -661,7 +661,7 @@ export async function getEmployerTaskById(userId: string, taskId: string) {
 export async function getEmployerNotifications(userId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/notifications`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/employer/notifications`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });
@@ -676,7 +676,7 @@ export async function getEmployerNotifications(userId: string) {
 export async function getEmployerNotificationPreferences(userId: string) {
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/notification-preferences`, {
+  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/employer/notification-preferences`, {
     cache: 'no-store',
     headers: await buildBillingApiHeaders(accessToken)
   });

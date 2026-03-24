@@ -6,14 +6,11 @@ import {
   getPortalSessionCookieOptions,
   getSessionMaxAge
 } from '../../../../lib/portal-session-cookie';
-import {
-  adminConsolePublicOrigin,
-  apiInternalOrigin
-} from '../../../../lib/server-runtime';
+import { config } from '../../../../lib/server-runtime';
 import { PORTAL_SESSION_COOKIE } from '../../../../lib/session-constants';
 
 function buildCorsHeaders(origin: string | null) {
-  if (!origin || origin !== adminConsolePublicOrigin) {
+  if (!origin || origin !== config.serviceEndpoints.admin) {
     return null;
   }
 
@@ -64,7 +61,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const response = await fetch(`${apiInternalOrigin}/auth/portal-handoffs/consume`, {
+    const response = await fetch(`${config.serviceEndpoints.auth}/auth/portal-handoffs/consume`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

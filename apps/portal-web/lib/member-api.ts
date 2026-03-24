@@ -12,7 +12,7 @@ import {
 } from '@payer-portal/api-contracts';
 
 import { buildPortalApiHeaders } from './api-request';
-import { apiInternalOrigin as apiBaseUrl } from './server-runtime';
+import { config } from './server-runtime';
 
 async function buildRequestHeaders(accessToken?: string) {
   return buildPortalApiHeaders({}, { accessToken });
@@ -20,7 +20,7 @@ async function buildRequestHeaders(accessToken?: string) {
 
 async function requestJson<T>(path: string, accessToken?: string): Promise<T | null> {
   try {
-    const response = await fetch(`${apiBaseUrl}${path}`, {
+    const response = await fetch(`${config.apiBaseUrl}${path}`, {
       headers: await buildRequestHeaders(accessToken),
       cache: 'no-store'
     });

@@ -1,22 +1,25 @@
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 
-import { adminConsolePublicOrigin } from '../lib/server-runtime';
+import { DemoGate } from '../components/demo-gate';
+import { DEMO_ACCESS_COOKIE, findDemoUser } from '../lib/demo-access';
+import { config } from '../lib/public-runtime';
 
 const adminOptions = [
   {
     label: 'Blue Horizon Tenant Admin',
     description: 'Open tenant operations for the Blue Horizon Health payer tenant.',
-    href: `${adminConsolePublicOrigin}/login`
+    href: `${config.serviceEndpoints.admin}/login`
   },
   {
     label: 'Real Health Tenant Admin',
     description: 'Open tenant operations for the Real Health payer tenant.',
-    href: `${adminConsolePublicOrigin}/login`
+    href: `${config.serviceEndpoints.admin}/login`
   },
   {
     label: 'Platform Admin',
     description: 'Open platform-wide operations for tenants, governance, and system health.',
-    href: `${adminConsolePublicOrigin}/login`
+    href: `${config.serviceEndpoints.admin}/login`
   }
 ];
 
@@ -68,11 +71,18 @@ const portalSignInLinks = [
   }
 ];
 
-export default function HomePage() {
+async function PortalLandingPage() {
+  const cookieStore = await cookies();
+  const demoAccessUser = cookieStore.get(DEMO_ACCESS_COOKIE)?.value ?? '';
+  const matchedDemoUser = findDemoUser(demoAccessUser);
+
   return (
     <main className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)]">
       <section className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-4 py-16 sm:px-6">
         <div className="max-w-3xl">
+          <p className="inline-flex rounded-full border border-[var(--border-subtle)] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--tenant-primary-color)]">
+            Demo Access: {matchedDemoUser?.username ?? demoAccessUser}
+          </p>
           <h1 className="mt-6 text-5xl font-semibold tracking-tight sm:text-6xl">
             A modern healthcare member portal experience for local development.
           </h1>
@@ -186,4 +196,15 @@ export default function HomePage() {
       </section>
     </main>
   );
+}
+
+export default async function HomePage() {
+  const cookieStore = await cookies();
+  const demoAccessCookie = cookieStore.get(DEMO_ACCESS_COOKIE)?.value ?? '';
+
+  if (!findDemoUser(demoAccessCookie)) {
+    return <DemoGate />;
+  }
+
+  return <PortalLandingPage />;
 }

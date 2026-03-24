@@ -10,6 +10,7 @@ import {
   markJobSucceeded
 } from './jobQueue.js';
 import { getJobHandler, registerDefaultJobHandlers } from './jobRegistry.js';
+import { jobWorkerRuntimeConfig } from './runtime-config.js';
 import { JOB_STATUS } from './jobTypes.js';
 
 export type JobWorkerOptions = {
@@ -27,7 +28,7 @@ export async function runNextJob(options: { tenantId?: string } = {}) {
   clearTenantContext();
   registerDefaultJobHandlers();
   const logger = createStructuredLogger({
-    serviceName: process.env.APP_NAME ?? 'job-worker'
+    serviceName: jobWorkerRuntimeConfig.observability.serviceName
   });
 
   const pendingJob = options.tenantId

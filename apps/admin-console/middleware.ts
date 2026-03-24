@@ -6,23 +6,13 @@ import { NextResponse } from 'next/server';
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  if (pathname === '/api/auth/login') {
+  if (
+    pathname === '/api/auth/login' ||
+    pathname === '/api/auth/me' ||
+    pathname === '/api/auth/session/handoff' ||
+    pathname === '/api/auth/logout'
+  ) {
     return NextResponse.next();
-  }
-
-  if (pathname === '/api/auth/me') {
-    const authorization = request.headers.get('authorization');
-    const tenantId = request.headers.get('x-tenant-id');
-
-    if (!authorization && !tenantId) {
-      return NextResponse.json(
-        {
-          message:
-            'Tenant context required. Provide x-tenant-id or an authenticated bearer token.'
-        },
-        { status: 401 }
-      );
-    }
   }
 
   return NextResponse.next();

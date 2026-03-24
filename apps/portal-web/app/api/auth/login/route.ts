@@ -6,7 +6,7 @@ import {
   getPortalSessionCookieOptions,
   getSessionMaxAge
 } from '../../../../lib/portal-session-cookie';
-import { apiInternalOrigin as apiBaseUrl } from '../../../../lib/server-runtime';
+import { config } from '../../../../lib/server-runtime';
 import { PORTAL_SESSION_COOKIE } from '../../../../lib/session-constants';
 
 export async function POST(request: Request) {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       rememberMe?: boolean;
     };
     const rememberMe = body.rememberMe !== false;
-    const response = await fetch(`${apiBaseUrl}/auth/login`, {
+    const response = await fetch(`${config.serviceEndpoints.auth}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

@@ -1,4 +1,4 @@
-import { adminConsolePublicOrigin } from './public-runtime';
+import { config } from './public-runtime';
 
 export function isDeprecatedPortalAdminPath(pathname: string) {
   return pathname === '/tenant-admin' || pathname.startsWith('/tenant-admin/');
@@ -23,5 +23,5 @@ export function canonicalizePortalAdminBoundaryPath(path: string | null | undefi
 
 export function buildAdminConsoleBoundaryUrl(path: string | null | undefined) {
   const canonicalPath = canonicalizePortalAdminBoundaryPath(path);
-  return new URL(canonicalPath, adminConsolePublicOrigin).toString();
+  return new URL(canonicalPath, config.serviceEndpoints.admin).toString();
 }

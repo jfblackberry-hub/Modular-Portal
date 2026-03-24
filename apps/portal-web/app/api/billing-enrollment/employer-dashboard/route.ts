@@ -5,7 +5,7 @@ import {
   getPortalSession,
   getPortalSessionUser
 } from '../../../../lib/portal-session';
-import { apiInternalOrigin as apiBaseUrl } from '../../../../lib/server-runtime';
+import { config } from '../../../../lib/server-runtime';
 
 export async function GET() {
   const user = await getPortalSessionUser();
@@ -16,7 +16,7 @@ export async function GET() {
   }
 
   try {
-    const response = await fetch(`${apiBaseUrl}/api/v1/billing-enrollment/employer/dashboard`, {
+    const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/employer/dashboard`, {
       cache: 'no-store',
       headers: await buildPortalApiHeaders({}, {
         accessToken: session.accessToken,

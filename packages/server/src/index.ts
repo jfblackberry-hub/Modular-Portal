@@ -5,6 +5,7 @@ export * from './adapters/restApiAdapter.js';
 export * from './backups/backupService.js';
 export * from './events/eventBus.js';
 export * from './events/eventTypes.js';
+export * from './health/runtimeHealth.js';
 export * from './integrations/adapters/rest.adapter.js';
 export * from './integrations/adapters/sftp.adapter.js';
 export * from './integrations/adapters/webhook.adapter.js';

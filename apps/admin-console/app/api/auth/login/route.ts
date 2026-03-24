@@ -1,23 +1,40 @@
 import { NextResponse } from 'next/server';
 
-import { apiInternalOrigin, portalPublicOrigin } from '../../../../lib/server-runtime';
+import { createAdminSessionFromAuthUser } from '../../../../lib/admin-session';
+import { storePendingAdminSession } from '../../../../lib/admin-session-handoff';
+import { config } from '../../../../lib/server-runtime';
 
-function isAdminUser(roles: unknown) {
+type AuthUserPayload = {
+  id: string;
+  email: string;
+  permissions: string[];
+  roles: string[];
+  tenant?: {
+    id?: string;
+  };
+};
+
+function isAuthUserPayload(value: unknown): value is AuthUserPayload {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const user = value as Record<string, unknown>;
+
   return (
-    Array.isArray(roles) &&
-    roles.some(
-      (role) =>
-        role === 'tenant_admin' ||
-        role === 'platform_admin' ||
-        role === 'platform-admin'
-    )
+    typeof user.id === 'string' &&
+    typeof user.email === 'string' &&
+    Array.isArray(user.roles) &&
+    user.roles.every((role) => typeof role === 'string') &&
+    Array.isArray(user.permissions) &&
+    user.permissions.every((permission) => typeof permission === 'string')
   );
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.text();
-    const response = await fetch(`${apiInternalOrigin}/auth/login`, {
+    const response = await fetch(`${config.serviceEndpoints.auth}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -29,9 +46,7 @@ export async function POST(request: Request) {
     const payload = (await response.json().catch(() => null)) as
       | {
           token?: string;
-          user?: {
-            roles?: string[];
-          };
+          user?: AuthUserPayload;
           message?: string;
         }
       | null;
@@ -42,8 +57,12 @@ export async function POST(request: Request) {
       });
     }
 
-    if (payload.token && payload.user && !isAdminUser(payload.user.roles)) {
-      const handoffResponse = await fetch(`${apiInternalOrigin}/auth/portal-handoffs`, {
+    const authUser = isAuthUserPayload(payload?.user) ? payload.user : null;
+    const adminSession =
+      payload?.token && authUser ? createAdminSessionFromAuthUser(authUser) : null;
+
+    if (payload?.token && authUser && !adminSession) {
+      const handoffResponse = await fetch(`${config.serviceEndpoints.auth}/auth/portal-handoffs`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${payload.token}`,
@@ -78,13 +97,36 @@ export async function POST(request: Request) {
         {
           handoffRequired: true,
           artifact: handoffPayload.artifact,
-          handoffUrl: `${portalPublicOrigin}/api/auth/handoff`
+          handoffUrl: `${config.serviceEndpoints.portal}/api/auth/handoff`
         },
         { status: 200 }
       );
     }
 
-    return NextResponse.json(payload, { status: response.status });
+    if (!payload?.token || !authUser || !adminSession) {
+      return NextResponse.json(
+        { message: payload.message ?? 'Unable to establish secure admin session.' },
+        { status: 401 }
+      );
+    }
+
+    const artifact = storePendingAdminSession({
+      accessToken: payload.token,
+      session: adminSession
+    });
+    const redirectPath = adminSession.isPlatformAdmin
+      ? '/admin/platform/health'
+      : '/admin/tenant/health';
+
+    return NextResponse.json(
+      {
+        sessionHandoff: true,
+        artifact,
+        handoffPath: '/api/auth/session/handoff',
+        redirectPath
+      },
+      { status: response.status }
+    );
   } catch {
     return NextResponse.json(
       { message: 'Local API unavailable. Start the API service and try again.' },

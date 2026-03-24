@@ -1,0 +1,12 @@
+[
+  {"ParameterKey":"EnvironmentName","ParameterValue":"qa"},
+  {"ParameterKey":"Owner","ParameterValue":"platform"},
+  {"ParameterKey":"CostCenter","ParameterValue":"ENG-2000"},
+  {"ParameterKey":"VpcCidr","ParameterValue":"10.20.0.0/16"},
+  {"ParameterKey":"PublicSubnet1Cidr","ParameterValue":"10.20.0.0/24"},
+  {"ParameterKey":"PublicSubnet2Cidr","ParameterValue":"10.20.1.0/24"},
+  {"ParameterKey":"PrivateSubnet1Cidr","ParameterValue":"10.20.10.0/24"},
+  {"ParameterKey":"PrivateSubnet2Cidr","ParameterValue":"10.20.11.0/24"},
+  {"ParameterKey":"FlowLogsRetentionDays","ParameterValue":"30"},
+  {"ParameterKey":"EnableNatGateway","ParameterValue":"false"}
+]

@@ -2,7 +2,7 @@
 
 import { AdminNav } from './admin-nav';
 import { getAdminMenu } from './admin-route-config';
-import type { AdminSession } from './admin-session-provider';
+import type { AdminSession } from '../lib/admin-session';
 
 type LeftAdminMenuProps = {
   session: AdminSession | null;

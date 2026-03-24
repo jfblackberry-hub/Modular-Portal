@@ -1,0 +1,22 @@
+[
+  {"ParameterKey":"EnvironmentName","ParameterValue":"demo"},
+  {"ParameterKey":"Owner","ParameterValue":"platform"},
+  {"ParameterKey":"CostCenter","ParameterValue":"ENG-3000"},
+  {"ParameterKey":"InstanceType","ParameterValue":"t4g.small"},
+  {"ParameterKey":"RootVolumeSize","ParameterValue":"32"},
+  {"ParameterKey":"PortalImageUri","ParameterValue":"773617529976.dkr.ecr.us-east-1.amazonaws.com/demo-compute-portal-web:latest"},
+  {"ParameterKey":"AdminImageUri","ParameterValue":"773617529976.dkr.ecr.us-east-1.amazonaws.com/demo-compute-admin-console:latest"},
+  {"ParameterKey":"ApiImageUri","ParameterValue":"773617529976.dkr.ecr.us-east-1.amazonaws.com/demo-compute-api-server:latest"},
+  {"ParameterKey":"DatabaseName","ParameterValue":"portal"},
+  {"ParameterKey":"DatabaseUser","ParameterValue":"portaladmin"},
+  {"ParameterKey":"DatabasePassword","ParameterValue":"ChangeMe123!"},
+  {"ParameterKey":"SessionSecret","ParameterValue":"replace-with-strong-random-secret"},
+  {"ParameterKey":"PortalSessionSecret","ParameterValue":"replace-with-strong-random-secret"},
+  {"ParameterKey":"AdminConsoleSessionSecret","ParameterValue":"replace-with-strong-random-secret"},
+  {"ParameterKey":"ApiAuthTokenSecret","ParameterValue":"replace-with-strong-random-secret"},
+  {"ParameterKey":"BackupEncryptionKey","ParameterValue":"replace-with-strong-random-secret"},
+  {"ParameterKey":"LogLevel","ParameterValue":"info"},
+  {"ParameterKey":"AllowInsecurePublicOrigins","ParameterValue":"true"},
+  {"ParameterKey":"SecureCookies","ParameterValue":"false"},
+  {"ParameterKey":"TrustProxy","ParameterValue":"true"}
+]

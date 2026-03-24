@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { buildPortalApiHeaders } from '../../../../lib/api-request';
 import { getPortalSession } from '../../../../lib/portal-session';
-import { apiInternalOrigin as apiBaseUrl } from '../../../../lib/server-runtime';
+import { config } from '../../../../lib/server-runtime';
 
 export async function POST(request: Request) {
   const session = await getPortalSession();
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
 
-  const response = await fetch(`${apiBaseUrl}/preview-sessions/current/events`, {
+  const response = await fetch(`${config.apiBaseUrl}/preview-sessions/current/events`, {
     method: 'POST',
     headers: await buildPortalApiHeaders(
       {

@@ -12,23 +12,11 @@ import {
 import { requestAdminLogout } from '../lib/admin-logout';
 import {
   clearAdminSession,
-  getAdminAuthHeaders,
-  getStoredAdminAuthToken,
-  getStoredAdminEmail,
   getStoredAdminSessionSnapshot,
-  storeAdminSession,
   storeAdminSessionSnapshot
 } from '../lib/api-auth';
-
-export type AdminSession = {
-  id: string;
-  email: string;
-  tenantId: string;
-  roles: string[];
-  permissions: string[];
-  isPlatformAdmin: boolean;
-  isTenantAdmin: boolean;
-};
+import type { AdminSession } from '../lib/admin-session';
+import { hasAdminConsoleAccess } from '../lib/admin-session';
 
 type AdminSessionContextValue = {
   session: AdminSession | null;
@@ -38,13 +26,6 @@ type AdminSessionContextValue = {
   signOut: () => Promise<void>;
   applySession: (session: AdminSession) => void;
 };
-
-function hasAdminConsoleAccess(session: Pick<
-  AdminSession,
-  'isPlatformAdmin' | 'isTenantAdmin'
->) {
-  return session.isPlatformAdmin || session.isTenantAdmin;
-}
 
 const AdminSessionContext = createContext<AdminSessionContextValue>({
   session: null,
@@ -60,90 +41,11 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const bootstrapAdminToken = useCallback(async () => {
-    const snapshot = getStoredAdminSessionSnapshot() as AdminSession | null;
-    const fallbackEmail = getStoredAdminEmail();
-    const email = snapshot?.email || fallbackEmail;
-
-    if (!email) {
-      return false;
-    }
-
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email,
-        password: 'demo'
-      })
-    });
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const payload = (await response.json()) as {
-      token?: string;
-      user?: {
-        id: string;
-        email: string;
-        roles: string[];
-        permissions: string[];
-      };
-    };
-
-    if (!payload.token || !payload.user) {
-      return false;
-    }
-
-    storeAdminSession(
-      {
-        id: payload.user.id,
-        email: payload.user.email
-      },
-      payload.token
-    );
-
-    const nextSession: AdminSession = {
-      id: payload.user.id,
-      email: payload.user.email,
-      tenantId: '',
-      roles: payload.user.roles,
-      permissions: payload.user.permissions,
-      isPlatformAdmin:
-        payload.user.roles.includes('platform_admin') ||
-        payload.user.roles.includes('platform-admin'),
-      isTenantAdmin:
-        payload.user.roles.includes('tenant_admin') ||
-        payload.user.roles.includes('platform_admin') ||
-        payload.user.roles.includes('platform-admin')
-    };
-
-    if (!hasAdminConsoleAccess(nextSession)) {
-      return false;
-    }
-
-    setSession(nextSession);
-    storeAdminSessionSnapshot(nextSession);
-    return true;
-  }, []);
-
   const loadSession = useCallback(async function loadSession() {
-    if (!getStoredAdminAuthToken()) {
-      const bootstrapped = await bootstrapAdminToken().catch(() => false);
-      if (!bootstrapped) {
-        setIsLoading(false);
-        return;
-      }
-    }
-
     setIsLoading(true);
     try {
       const response = await fetch('/api/auth/me', {
-        cache: 'no-store',
-        headers: getAdminAuthHeaders()
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -173,7 +75,7 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [bootstrapAdminToken]);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -201,15 +103,7 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async function signOut() {
     try {
-      await requestAdminLogout((input, init) =>
-        fetch(input, {
-          ...init,
-          headers: {
-            ...(init?.headers ?? {}),
-            ...getAdminAuthHeaders()
-          }
-        })
-      );
+      await requestAdminLogout();
       clearAdminSession();
       setSession(null);
       setError('');

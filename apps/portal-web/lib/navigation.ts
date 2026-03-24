@@ -2,7 +2,7 @@ import type { PluginManifest } from '@payer-portal/plugin-sdk';
 
 import { getBrokerNavigationSections } from './broker-portal-config';
 import type { PortalSessionUser } from './portal-session';
-import { adminConsolePublicOrigin } from './server-runtime';
+import { config } from './server-runtime';
 import type { TenantPortalModuleId } from './tenant-modules';
 import { isTenantModuleEnabledForUser } from './tenant-modules';
 
@@ -254,7 +254,7 @@ export function buildPortalNavigation(
   ) {
     adminItems.push({
       label: 'Tenant admin',
-      href: `${adminConsolePublicOrigin}/admin/tenant/health`,
+      href: `${config.serviceEndpoints.admin}/admin/tenant/health`,
       description: 'Manage members, documents, notifications, and tenant settings.',
       external: true
     });
@@ -266,7 +266,7 @@ export function buildPortalNavigation(
   ) {
     adminItems.push({
       label: 'Platform admin',
-      href: `${adminConsolePublicOrigin}/admin/platform/health`,
+      href: `${config.serviceEndpoints.admin}/admin/platform/health`,
       description: 'Open platform tools for tenants, users, and compliance.',
       external: true
     });

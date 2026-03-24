@@ -11,6 +11,7 @@ export interface BaseConfig {
 }
 
 export interface RuntimeModel {
+  apiBaseUrl: string;
   host: string;
   nodeEnv: AppEnvironment;
   ports: {
@@ -27,9 +28,35 @@ export interface RuntimeModel {
     apiPublic: string;
     portalPublic: string;
   };
+  serviceEndpoints: ServiceEndpoints;
+}
+
+export interface ServiceEndpoints {
+  admin: string;
+  api: string;
+  auth: string;
+  portal: string;
+}
+
+export interface SharedSecretsConfig {
+  adminConsoleSession: string;
+  apiAuthToken: string;
+  apiGatewayJwt: string;
+  portalSession: string;
+  session: string;
+}
+
+export interface PlatformConfig extends RuntimeModel {
+  security: ServiceSecurityConfig;
+  secrets: SharedSecretsConfig;
+}
+
+export interface NextRuntimeConfig {
+  distDir: string;
 }
 
 export interface ApiServiceConfig extends BaseConfig {
+  apiBaseUrl: string;
   apiAuthTokenSecret: string;
   databaseUrl: string;
   host: string;
@@ -39,21 +66,26 @@ export interface ApiServiceConfig extends BaseConfig {
   publicOrigin: string;
   runtimeModel: RuntimeModel;
   security: ServiceSecurityConfig;
+  serviceEndpoints: ServiceEndpoints;
 }
 
 export interface PortalWebServiceConfig extends BaseConfig {
+  apiBaseUrl: string;
   host: string;
   publicOrigin: string;
   portalSessionSecret: string;
   runtimeModel: RuntimeModel;
   security: ServiceSecurityConfig;
+  serviceEndpoints: ServiceEndpoints;
 }
 
 export interface AdminConsoleServiceConfig extends BaseConfig {
+  apiBaseUrl: string;
   defaultAdminUserId: string;
   host: string;
   publicOrigin: string;
   runtimeModel: RuntimeModel;
+  serviceEndpoints: ServiceEndpoints;
   sessionSecret: string;
   security: ServiceSecurityConfig;
 }
@@ -73,11 +105,13 @@ export interface PortalSessionConfig {
 }
 
 export interface ApiGatewayConfig extends BaseConfig {
+  apiBaseUrl: string;
   apiGatewayJwtSecret: string;
   host: string;
   jwtTtlSeconds: number;
   publicOrigin: string;
   runtimeModel: RuntimeModel;
+  serviceEndpoints: ServiceEndpoints;
   databaseUrl?: string;
 }
 
@@ -127,8 +161,41 @@ const DEFAULT_PORTS = {
   postgres: 5432
 } as const;
 
+const PORTAL_PUBLIC_ORIGIN_KEYS = [
+  'PORTAL_PUBLIC_ORIGIN',
+  'NEXT_PUBLIC_PORTAL_PUBLIC_ORIGIN',
+  'NEXT_PUBLIC_PORTAL_BASE_URL'
+] as const;
+
+const ADMIN_PUBLIC_ORIGIN_KEYS = [
+  'ADMIN_PUBLIC_ORIGIN',
+  'ADMIN_CONSOLE_PUBLIC_ORIGIN',
+  'NEXT_PUBLIC_ADMIN_PUBLIC_ORIGIN',
+  'NEXT_PUBLIC_ADMIN_CONSOLE_PUBLIC_ORIGIN',
+  'NEXT_PUBLIC_ADMIN_CONSOLE_URL'
+] as const;
+
+const API_PUBLIC_ORIGIN_KEYS = [
+  'API_PUBLIC_ORIGIN',
+  'NEXT_PUBLIC_API_PUBLIC_ORIGIN',
+  'NEXT_PUBLIC_API_BASE_URL'
+] as const;
+
+const API_INTERNAL_ORIGIN_KEYS = [
+  'API_INTERNAL_ORIGIN',
+  'API_BASE_URL',
+  ...API_PUBLIC_ORIGIN_KEYS
+] as const;
+
+const SESSION_SECRET_KEYS = ['SESSION_SECRET'] as const;
+
 function shouldSkipRuntimeConfigValidation(source: EnvSource) {
   return readOptionalBoolean(source, 'SKIP_RUNTIME_CONFIG_VALIDATION') === true;
+}
+
+function shouldRequireExplicitRuntimeConfig(source: EnvSource) {
+  const nodeEnv = normalizeNodeEnv(source.NODE_ENV);
+  return !isDevelopmentLike(nodeEnv) && !shouldSkipRuntimeConfigValidation(source);
 }
 
 function readFirstDefined(source: EnvSource, keys: string[]) {
@@ -141,6 +208,10 @@ function readFirstDefined(source: EnvSource, keys: string[]) {
   }
 
   return undefined;
+}
+
+function hasAnyValue(source: EnvSource, keys: readonly string[]) {
+  return readFirstDefined(source, [...keys]) !== undefined;
 }
 
 function normalizeNodeEnv(value: string | undefined): AppEnvironment {
@@ -318,34 +389,43 @@ function readServicePublicOrigin(
   });
 }
 
+function validateRequiredRuntimeConfig(source: EnvSource) {
+  if (!shouldRequireExplicitRuntimeConfig(source)) {
+    return;
+  }
+
+  if (!hasAnyValue(source, PORTAL_PUBLIC_ORIGIN_KEYS)) {
+    throw new Error(
+      'Missing required environment variable: PORTAL_PUBLIC_ORIGIN. Set PORTAL_PUBLIC_ORIGIN outside development/test.'
+    );
+  }
+
+  if (!hasAnyValue(source, ADMIN_PUBLIC_ORIGIN_KEYS)) {
+    throw new Error(
+      'Missing required environment variable: ADMIN_PUBLIC_ORIGIN. Set ADMIN_PUBLIC_ORIGIN outside development/test.'
+    );
+  }
+
+  if (!hasAnyValue(source, SESSION_SECRET_KEYS)) {
+    throw new Error(
+      'Missing required environment variable: SESSION_SECRET. Set SESSION_SECRET outside development/test.'
+    );
+  }
+}
+
 function validateFrontendServiceConfig(
   source: EnvSource,
   options: {
     publicOriginKeys: string[];
-    sessionSecretKeys: string[];
   }
 ) {
-  const nodeEnv = normalizeNodeEnv(source.NODE_ENV);
-
-  if (isDevelopmentLike(nodeEnv) || shouldSkipRuntimeConfigValidation(source)) {
+  if (!shouldRequireExplicitRuntimeConfig(source)) {
     return;
   }
 
-  if (!readFirstDefined(source, [...options.publicOriginKeys, 'PUBLIC_ORIGIN'])) {
+  if (!hasAnyValue(source, options.publicOriginKeys)) {
     throw new Error(
-      `Missing required environment variable: PUBLIC_ORIGIN. Set one of ${[
-        ...options.publicOriginKeys,
-        'PUBLIC_ORIGIN'
-      ].join(', ')} for ${nodeEnv} deployments.`
-    );
-  }
-
-  if (!readFirstDefined(source, [...options.sessionSecretKeys, 'SESSION_SECRET'])) {
-    throw new Error(
-      `Missing required environment variable: SESSION_SECRET. Set one of ${[
-        ...options.sessionSecretKeys,
-        'SESSION_SECRET'
-      ].join(', ')} for ${nodeEnv} deployments.`
+      `Missing required environment variable: ${options.publicOriginKeys[0]}. Set ${options.publicOriginKeys[0]} outside development/test.`
     );
   }
 }
@@ -380,6 +460,20 @@ function readServiceSecret(
   );
 }
 
+function createServiceEndpoints(input: {
+  adminBaseUrl: string;
+  apiBaseUrl: string;
+  authBaseUrl?: string;
+  portalBaseUrl: string;
+}): ServiceEndpoints {
+  return {
+    admin: input.adminBaseUrl,
+    api: input.apiBaseUrl,
+    auth: input.authBaseUrl ?? input.apiBaseUrl,
+    portal: input.portalBaseUrl
+  };
+}
+
 function buildBaseConfig(
   source: EnvSource,
   appNameFallback: string,
@@ -404,8 +498,8 @@ export function loadBaseConfig(source: EnvSource = process.env): BaseConfig {
 
 export function loadRuntimeModel(source: EnvSource = process.env): RuntimeModel {
   const nodeEnv = normalizeNodeEnv(source.NODE_ENV);
-  const requireExplicitOrigins =
-    !isDevelopmentLike(nodeEnv) && !shouldSkipRuntimeConfigValidation(source);
+  const requireExplicitOrigins = shouldRequireExplicitRuntimeConfig(source);
+  validateRequiredRuntimeConfig(source);
   const portalWebPort = readNumberWithFallback(
     source,
     ['PORTAL_WEB_PORT'],
@@ -430,11 +524,7 @@ export function loadRuntimeModel(source: EnvSource = process.env): RuntimeModel 
 
   const portalPublic = readUrlWithFallback(
     source,
-    [
-      'PORTAL_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_PORTAL_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_PORTAL_BASE_URL'
-    ],
+    [...PORTAL_PUBLIC_ORIGIN_KEYS],
     `http://localhost:${portalWebPort}`,
     {
       requiredInNonDevelopment: requireExplicitOrigins
@@ -442,11 +532,7 @@ export function loadRuntimeModel(source: EnvSource = process.env): RuntimeModel 
   );
   const adminConsolePublic = readUrlWithFallback(
     source,
-    [
-      'ADMIN_CONSOLE_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_ADMIN_CONSOLE_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_ADMIN_CONSOLE_URL'
-    ],
+    [...ADMIN_PUBLIC_ORIGIN_KEYS],
     `http://localhost:${adminConsolePort}`,
     {
       requiredInNonDevelopment: requireExplicitOrigins
@@ -454,11 +540,7 @@ export function loadRuntimeModel(source: EnvSource = process.env): RuntimeModel 
   );
   const apiPublic = readUrlWithFallback(
     source,
-    [
-      'API_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_API_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_API_BASE_URL'
-    ],
+    [...API_PUBLIC_ORIGIN_KEYS],
     `http://localhost:${apiPort}`,
     {
       requiredInNonDevelopment: requireExplicitOrigins
@@ -474,13 +556,7 @@ export function loadRuntimeModel(source: EnvSource = process.env): RuntimeModel 
   );
   const apiInternal = readUrlWithFallback(
     source,
-    [
-      'API_INTERNAL_ORIGIN',
-      'API_BASE_URL',
-      'API_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_API_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_API_BASE_URL'
-    ],
+    [...API_INTERNAL_ORIGIN_KEYS],
     apiPublic,
     {
       requiredInNonDevelopment: requireExplicitOrigins
@@ -501,6 +577,7 @@ export function loadRuntimeModel(source: EnvSource = process.env): RuntimeModel 
   }
 
   return {
+    apiBaseUrl: apiInternal,
     host: source.HOST?.trim() || '0.0.0.0',
     nodeEnv,
     ports: {
@@ -516,7 +593,13 @@ export function loadRuntimeModel(source: EnvSource = process.env): RuntimeModel 
       apiGatewayPublic,
       apiPublic,
       portalPublic
-    }
+    },
+    serviceEndpoints: createServiceEndpoints({
+      adminBaseUrl: adminConsolePublic,
+      apiBaseUrl: apiInternal,
+      authBaseUrl: apiInternal,
+      portalBaseUrl: portalPublic
+    })
   };
 }
 
@@ -578,6 +661,39 @@ export function loadObservabilityConfig(
   };
 }
 
+export function loadSharedSecretsConfig(
+  source: EnvSource = process.env
+): SharedSecretsConfig {
+  validateRequiredRuntimeConfig(source);
+
+  const session = readServiceSecret(source, ['SESSION_SECRET'], 'session');
+
+  return {
+    adminConsoleSession:
+      readFirstDefined(source, ['ADMIN_CONSOLE_SESSION_SECRET']) ?? session,
+    apiAuthToken: readFirstDefined(source, ['API_AUTH_TOKEN_SECRET']) ?? session,
+    apiGatewayJwt: readFirstDefined(source, ['API_GATEWAY_JWT_SECRET']) ?? session,
+    portalSession: readFirstDefined(source, ['PORTAL_SESSION_SECRET']) ?? session,
+    session
+  };
+}
+
+export function loadPlatformConfig(source: EnvSource = process.env): PlatformConfig {
+  return {
+    ...loadRuntimeModel(source),
+    security: loadServiceSecurityConfig(source),
+    secrets: loadSharedSecretsConfig(source)
+  };
+}
+
+export function loadNextRuntimeConfig(
+  source: EnvSource = process.env
+): NextRuntimeConfig {
+  return {
+    distDir: source.NEXT_DIST_DIR?.trim() || '.next'
+  };
+}
+
 export function loadApiServiceConfig(
   source: EnvSource = process.env
 ): ApiServiceConfig {
@@ -594,6 +710,7 @@ export function loadApiServiceConfig(
 
   return {
     ...buildBaseConfig(source, 'api', runtimeModel.ports.api),
+    apiBaseUrl: runtimeModel.apiBaseUrl,
     apiAuthTokenSecret: readServiceSecret(
       source,
       ['API_AUTH_TOKEN_SECRET', 'SESSION_SECRET'],
@@ -611,7 +728,13 @@ export function loadApiServiceConfig(
         apiPublic: publicOrigin
       }
     },
-    security: loadServiceSecurityConfig(source)
+    security: loadServiceSecurityConfig(source),
+    serviceEndpoints: createServiceEndpoints({
+      adminBaseUrl: runtimeModel.origins.adminConsolePublic,
+      apiBaseUrl: runtimeModel.origins.apiInternal,
+      authBaseUrl: runtimeModel.origins.apiInternal,
+      portalBaseUrl: runtimeModel.origins.portalPublic
+    })
   };
 }
 
@@ -619,33 +742,22 @@ export function loadPortalWebServiceConfig(
   source: EnvSource = process.env
 ): PortalWebServiceConfig {
   validateFrontendServiceConfig(source, {
-    publicOriginKeys: [
-      'PORTAL_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_PORTAL_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_PORTAL_BASE_URL'
-    ],
-    sessionSecretKeys: ['PORTAL_SESSION_SECRET']
+    publicOriginKeys: [...PORTAL_PUBLIC_ORIGIN_KEYS]
   });
 
   const runtimeModel = loadRuntimeModel(source);
+  const secrets = loadSharedSecretsConfig(source);
   const publicOrigin = readServicePublicOrigin(
     source,
-    [
-      'PORTAL_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_PORTAL_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_PORTAL_BASE_URL'
-    ],
+    [...PORTAL_PUBLIC_ORIGIN_KEYS],
     runtimeModel.origins.portalPublic
   );
 
   return {
     ...buildBaseConfig(source, 'portal-web', runtimeModel.ports.portalWeb),
+    apiBaseUrl: runtimeModel.apiBaseUrl,
     host: source.HOST?.trim() || runtimeModel.host,
-    portalSessionSecret: readServiceSecret(
-      source,
-      ['PORTAL_SESSION_SECRET', 'SESSION_SECRET'],
-      'portal-session'
-    ),
+    portalSessionSecret: secrets.portalSession,
     publicOrigin,
     runtimeModel: {
       ...runtimeModel,
@@ -654,7 +766,8 @@ export function loadPortalWebServiceConfig(
         portalPublic: publicOrigin
       }
     },
-    security: loadServiceSecurityConfig(source)
+    security: loadServiceSecurityConfig(source),
+    serviceEndpoints: runtimeModel.serviceEndpoints
   };
 }
 
@@ -662,27 +775,20 @@ export function loadAdminConsoleServiceConfig(
   source: EnvSource = process.env
 ): AdminConsoleServiceConfig {
   validateFrontendServiceConfig(source, {
-    publicOriginKeys: [
-      'ADMIN_CONSOLE_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_ADMIN_CONSOLE_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_ADMIN_CONSOLE_URL'
-    ],
-    sessionSecretKeys: ['ADMIN_CONSOLE_SESSION_SECRET']
+    publicOriginKeys: [...ADMIN_PUBLIC_ORIGIN_KEYS]
   });
 
   const runtimeModel = loadRuntimeModel(source);
+  const secrets = loadSharedSecretsConfig(source);
   const publicOrigin = readServicePublicOrigin(
     source,
-    [
-      'ADMIN_CONSOLE_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_ADMIN_CONSOLE_PUBLIC_ORIGIN',
-      'NEXT_PUBLIC_ADMIN_CONSOLE_URL'
-    ],
+    [...ADMIN_PUBLIC_ORIGIN_KEYS],
     runtimeModel.origins.adminConsolePublic
   );
 
   return {
     ...buildBaseConfig(source, 'admin-console', runtimeModel.ports.adminConsole),
+    apiBaseUrl: runtimeModel.apiBaseUrl,
     defaultAdminUserId:
       readFirstDefined(source, ['ADMIN_DEFAULT_USER_ID', 'NEXT_PUBLIC_ADMIN_USER_ID']) || '',
     host: source.HOST?.trim() || runtimeModel.host,
@@ -694,25 +800,20 @@ export function loadAdminConsoleServiceConfig(
         adminConsolePublic: publicOrigin
       }
     },
-    sessionSecret: readServiceSecret(
-      source,
-      ['ADMIN_CONSOLE_SESSION_SECRET', 'SESSION_SECRET'],
-      'admin-console-session'
-    ),
-    security: loadServiceSecurityConfig(source)
+    sessionSecret: secrets.adminConsoleSession,
+    security: loadServiceSecurityConfig(source),
+    serviceEndpoints: runtimeModel.serviceEndpoints
   };
 }
 
 export function loadPortalSessionConfig(
   source: EnvSource = process.env
 ): PortalSessionConfig {
+  const secrets = loadSharedSecretsConfig(source);
+
   return {
     nodeEnv: normalizeNodeEnv(source.NODE_ENV),
-    portalSessionSecret: readServiceSecret(
-      source,
-      ['PORTAL_SESSION_SECRET', 'SESSION_SECRET'],
-      'portal-session'
-    ),
+    portalSessionSecret: secrets.portalSession,
     security: loadServiceSecurityConfig(source)
   };
 }
@@ -721,6 +822,7 @@ export function loadApiGatewayConfig(
   source: EnvSource = process.env
 ): ApiGatewayConfig {
   const runtimeModel = loadRuntimeModel(source);
+  const secrets = loadSharedSecretsConfig(source);
   const publicOrigin = readServicePublicOrigin(
     source,
     ['API_GATEWAY_PUBLIC_ORIGIN'],
@@ -729,11 +831,8 @@ export function loadApiGatewayConfig(
 
   return {
     ...buildBaseConfig(source, 'api-gateway', runtimeModel.ports.apiGateway),
-    apiGatewayJwtSecret: readServiceSecret(
-      source,
-      ['API_GATEWAY_JWT_SECRET', 'SESSION_SECRET'],
-      'api-gateway-jwt'
-    ),
+    apiBaseUrl: runtimeModel.apiBaseUrl,
+    apiGatewayJwtSecret: secrets.apiGatewayJwt,
     databaseUrl: source.DATABASE_URL?.trim() || undefined,
     host: source.HOST?.trim() || runtimeModel.host,
     jwtTtlSeconds:
@@ -745,7 +844,8 @@ export function loadApiGatewayConfig(
         ...runtimeModel.origins,
         apiGatewayPublic: publicOrigin
       }
-    }
+    },
+    serviceEndpoints: runtimeModel.serviceEndpoints
   };
 }
 
@@ -818,3 +918,10 @@ export function loadStorageConfig(source: EnvSource = process.env): StorageConfi
 export function getEnv(source: EnvSource, key: string, fallback?: string) {
   return source[key] ?? fallback;
 }
+
+export function readProcessEnv(key: string, fallback?: string) {
+  const value = process.env[key]?.trim();
+  return value || fallback;
+}
+
+export const platformConfig = loadPlatformConfig();

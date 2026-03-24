@@ -1,5 +1,5 @@
 import {
-  apiBaseUrl,
+  config,
   getTenantScopedAdminAuthHeaders
 } from './api-auth';
 
@@ -17,7 +17,7 @@ type PersonaSessionAuditEventInput = {
 export async function recordPersonaSessionAuditEvent(
   input: PersonaSessionAuditEventInput
 ) {
-  const response = await fetch(`${apiBaseUrl}/platform-admin/persona-sessions/events`, {
+  const response = await fetch(`${config.apiBaseUrl}/platform-admin/persona-sessions/events`, {
     method: 'POST',
     headers: {
       ...getTenantScopedAdminAuthHeaders(input.tenantId),

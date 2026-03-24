@@ -1,8 +1,9 @@
 import { createStructuredLogger } from '../observability/logger.js';
+import { jobWorkerRuntimeConfig } from '../jobs/runtime-config.js';
 import { configureBackupJobs } from './backupService.js';
 
 const logger = createStructuredLogger({
-  serviceName: process.env.APP_NAME ?? 'job-worker'
+  serviceName: jobWorkerRuntimeConfig.observability.serviceName
 });
 
 async function main() {

@@ -1,11 +1,15 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
+import { readProcessEnv } from '@payer-portal/config';
+
 import type { EmailProvider } from './emailProvider.js';
 
 function getDevLogPath() {
-  return process.env.EMAIL_DEV_LOG_PATH
-    ? path.resolve(process.env.EMAIL_DEV_LOG_PATH)
+  const configuredPath = readProcessEnv('EMAIL_DEV_LOG_PATH');
+
+  return configuredPath
+    ? path.resolve(configuredPath)
     : path.resolve(process.cwd(), '.local', 'email-dev.log');
 }
 

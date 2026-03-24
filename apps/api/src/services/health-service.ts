@@ -1,8 +1,11 @@
 import net from 'node:net';
 
+import { readProcessEnv } from '@payer-portal/config';
 import type { Prisma } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
 import {
+  buildRuntimeHealthResponse,
+  buildRuntimeLivenessResponse,
   get,
   getStorageService,
   registerDefaultAdapters
@@ -29,6 +32,8 @@ type HealthResponse = {
   timestamp: string;
 };
 
+type RuntimeReadinessResponse = ReturnType<typeof buildRuntimeHealthResponse>;
+
 function toConfigRecord(value: Prisma.JsonValue): Record<string, unknown> | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return null;
@@ -45,6 +50,14 @@ function summarizeStatus(checks: HealthResponse['checks']) {
 
 function isReady(checks: HealthResponse['checks']) {
   return !Object.values(checks).some((check) => check.status === 'fail');
+}
+
+function getApiConfigStatus(): RuntimeReadinessResponse['checks'][string] {
+  return readProcessEnv('DATABASE_URL') &&
+    readProcessEnv('API_PUBLIC_ORIGIN') &&
+    readProcessEnv('SESSION_SECRET')
+    ? 'ok'
+    : 'down';
 }
 
 async function checkDatabaseConnectivity(): Promise<HealthCheckResult> {
@@ -67,7 +80,7 @@ async function checkDatabaseConnectivity(): Promise<HealthCheckResult> {
 }
 
 async function checkRedisConnectivity(): Promise<HealthCheckResult> {
-  const redisUrl = process.env.REDIS_URL?.trim();
+  const redisUrl = readProcessEnv('REDIS_URL');
 
   if (!redisUrl) {
     return {
@@ -234,20 +247,23 @@ async function checkIntegrationServices(): Promise<HealthCheckResult> {
 }
 
 export function getLiveStatus() {
-  return {
-    checks: {
-      process: {
-        pid: process.pid,
-        uptimeSeconds: Math.round(process.uptime())
-      }
-    },
-    service: 'api' as const,
-    status: 'ok' as const,
-    timestamp: new Date().toISOString()
-  };
+  return buildRuntimeLivenessResponse();
 }
 
 export async function getReadinessStatus() {
+  const database = await checkDatabaseConnectivity();
+  const response = buildRuntimeHealthResponse({
+    config: getApiConfigStatus(),
+    db: database.status === 'pass' ? 'ok' : 'down'
+  });
+
+  return {
+    ready: response.status === 'ok',
+    response
+  };
+}
+
+export async function getHealthStatus() {
   const checks = {
     database: await checkDatabaseConnectivity(),
     redis: await checkRedisConnectivity(),
@@ -266,8 +282,4 @@ export async function getReadinessStatus() {
     ready: isReady(checks),
     response
   };
-}
-
-export async function getHealthStatus() {
-  return getReadinessStatus();
 }

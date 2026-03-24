@@ -6,7 +6,7 @@ import {
   type TenantImageOverrides
 } from './portal-image-registry';
 import { getPortalSessionAccessToken } from './portal-session';
-import { apiInternalOrigin as apiBaseUrl } from './server-runtime';
+import { config } from './server-runtime';
 const DEFAULT_PRIMARY_COLOR = '#2A6FA8';
 const DEFAULT_SECONDARY_COLOR = '#EAF4FB';
 const DEFAULT_PAYER_BRANDING = {
@@ -299,7 +299,7 @@ export async function getTenantBranding(
     const resolvedAccessToken = sessionAccessToken ?? accessToken;
 
     if (resolvedAccessToken) {
-      const response = await fetch(`${apiBaseUrl}/api/branding`, {
+      const response = await fetch(`${config.apiBaseUrl}/api/branding`, {
         cache: 'no-store',
         headers: await buildPortalApiHeaders({}, {
           accessToken: resolvedAccessToken,

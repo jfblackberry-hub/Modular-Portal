@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
+import { loadNextRuntimeConfig } from '@payer-portal/config';
 
-const distDir = process.env.NEXT_DIST_DIR?.trim() || '.next';
+const distDir = loadNextRuntimeConfig().distDir;
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,

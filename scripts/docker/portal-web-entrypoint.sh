@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
 export APP_NAME="${APP_NAME:-portal-web}"
 export NODE_ENV="${NODE_ENV:-production}"

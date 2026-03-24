@@ -1,11 +1,15 @@
-import { apiPublicOrigin, defaultAdminUserId } from './public-runtime';
+import { config, defaultAdminUserId } from './public-runtime';
 
-export const apiBaseUrl = apiPublicOrigin;
+export { config };
+export const apiBaseUrl = config.apiBaseUrl;
 
-export const ADMIN_USER_ID_STORAGE_KEY = 'admin-console-user-id';
-export const ADMIN_USER_EMAIL_STORAGE_KEY = 'admin-console-user-email';
-export const ADMIN_AUTH_TOKEN_STORAGE_KEY = 'admin-console-auth-token';
-export const ADMIN_SESSION_STORAGE_KEY = 'admin-console-session';
+export const LEGACY_ADMIN_USER_ID_STORAGE_KEY = 'admin-console-user-id';
+export const LEGACY_ADMIN_USER_EMAIL_STORAGE_KEY = 'admin-console-user-email';
+export const LEGACY_ADMIN_AUTH_TOKEN_STORAGE_KEY = 'admin-console-auth-token';
+export const LEGACY_ADMIN_SESSION_STORAGE_KEY = 'admin-console-session';
+export const ADMIN_USER_ID_STORAGE_KEY = 'admin_session:user_id';
+export const ADMIN_USER_EMAIL_STORAGE_KEY = 'admin_session:user_email';
+export const ADMIN_SESSION_STORAGE_KEY = 'admin_session:snapshot';
 
 function getAdminBrowserStorage() {
   if (typeof window === 'undefined') {
@@ -22,7 +26,12 @@ export function getStoredAdminUserId() {
     return defaultAdminUserId;
   }
 
-  return storage.getItem(ADMIN_USER_ID_STORAGE_KEY) ?? defaultAdminUserId ?? '';
+  return (
+    storage.getItem(ADMIN_USER_ID_STORAGE_KEY) ??
+    storage.getItem(LEGACY_ADMIN_USER_ID_STORAGE_KEY) ??
+    defaultAdminUserId ??
+    ''
+  );
 }
 
 export function getStoredAdminEmail() {
@@ -32,18 +41,15 @@ export function getStoredAdminEmail() {
     return '';
   }
 
-  return storage.getItem(ADMIN_USER_EMAIL_STORAGE_KEY) ?? '';
+  return (
+    storage.getItem(ADMIN_USER_EMAIL_STORAGE_KEY) ??
+    storage.getItem(LEGACY_ADMIN_USER_EMAIL_STORAGE_KEY) ??
+    ''
+  );
 }
 
 export function getAdminAuthHeaders() {
-  const headers: Record<string, string> = {};
-  const adminAuthToken = getStoredAdminAuthToken();
-
-  if (adminAuthToken) {
-    headers.Authorization = `Bearer ${adminAuthToken}`;
-  }
-
-  return headers;
+  return {} as Record<string, string>;
 }
 
 export function getTenantScopedAdminAuthHeaders(tenantId?: string | null) {
@@ -75,20 +81,7 @@ export function getTenantScopedAdminAuthHeaders(tenantId?: string | null) {
   return headers;
 }
 
-export function getStoredAdminAuthToken() {
-  const storage = getAdminBrowserStorage();
-
-  if (!storage) {
-    return '';
-  }
-
-  return storage.getItem(ADMIN_AUTH_TOKEN_STORAGE_KEY) ?? '';
-}
-
-export function storeAdminSession(
-  user: { id: string; email: string },
-  token?: string
-) {
+export function storeAdminSession(user: { id: string; email: string }) {
   const storage = getAdminBrowserStorage();
 
   if (!storage) {
@@ -97,9 +90,6 @@ export function storeAdminSession(
 
   storage.setItem(ADMIN_USER_ID_STORAGE_KEY, user.id);
   storage.setItem(ADMIN_USER_EMAIL_STORAGE_KEY, user.email);
-  if (token) {
-    storage.setItem(ADMIN_AUTH_TOKEN_STORAGE_KEY, token);
-  }
 }
 
 export function storeAdminSessionSnapshot(session: unknown) {
@@ -119,7 +109,9 @@ export function getStoredAdminSessionSnapshot() {
     return null;
   }
 
-  const rawSession = storage.getItem(ADMIN_SESSION_STORAGE_KEY);
+  const rawSession =
+    storage.getItem(ADMIN_SESSION_STORAGE_KEY) ??
+    storage.getItem(LEGACY_ADMIN_SESSION_STORAGE_KEY);
 
   if (!rawSession) {
     return null;
@@ -141,6 +133,9 @@ export function clearAdminSession() {
 
   storage.removeItem(ADMIN_USER_ID_STORAGE_KEY);
   storage.removeItem(ADMIN_USER_EMAIL_STORAGE_KEY);
-  storage.removeItem(ADMIN_AUTH_TOKEN_STORAGE_KEY);
   storage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+  storage.removeItem(LEGACY_ADMIN_USER_ID_STORAGE_KEY);
+  storage.removeItem(LEGACY_ADMIN_USER_EMAIL_STORAGE_KEY);
+  storage.removeItem(LEGACY_ADMIN_AUTH_TOKEN_STORAGE_KEY);
+  storage.removeItem(LEGACY_ADMIN_SESSION_STORAGE_KEY);
 }

@@ -1,0 +1,13 @@
+[
+  {"ParameterKey":"EnvironmentName","ParameterValue":"demo"},
+  {"ParameterKey":"Owner","ParameterValue":"platform"},
+  {"ParameterKey":"CostCenter","ParameterValue":"ENG-3000"},
+  {"ParameterKey":"RetentionDays","ParameterValue":"14"},
+  {"ParameterKey":"CloudTrailBucketName","ParameterValue":"modularportal-demo-cloudtrail-773617529976"},
+  {"ParameterKey":"CloudTrailLogGroupName","ParameterValue":"demo-shared-services-cloudtrail"},
+  {"ParameterKey":"CloudTrailName","ParameterValue":"demo-shared-services-cloudtrail"},
+  {"ParameterKey":"CloudTrailLogRetentionDays","ParameterValue":"30"},
+  {"ParameterKey":"LogGroupName1","ParameterValue":"portal-web"},
+  {"ParameterKey":"LogGroupName2","ParameterValue":"admin-console"},
+  {"ParameterKey":"LogGroupName3","ParameterValue":"api-server"}
+]

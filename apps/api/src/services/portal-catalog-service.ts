@@ -1,4 +1,4 @@
-import { loadApiServiceConfig } from '@payer-portal/config';
+import { loadApiServiceConfig, readProcessEnv } from '@payer-portal/config';
 import { PrismaClient } from '@payer-portal/database';
 import mysql from 'mysql2/promise';
 
@@ -134,7 +134,7 @@ function getDatabaseUrl(config: Record<string, unknown>) {
     typeof config.databaseUrlEnv === 'string'
       ? config.databaseUrlEnv.trim()
       : 'PORTAL_CATALOG_DATABASE_URL';
-  const fromEnv = process.env[envName]?.trim();
+  const fromEnv = readProcessEnv(envName);
 
   if (fromEnv) {
     return fromEnv;

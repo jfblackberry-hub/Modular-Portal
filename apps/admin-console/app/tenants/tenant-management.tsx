@@ -4,8 +4,7 @@ import type { FormEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { SectionCard } from '../../components/section-card';
-import { apiBaseUrl, getAdminAuthHeaders } from '../../lib/api-auth';
-import { portalPublicOrigin } from '../../lib/public-runtime';
+import { config, getAdminAuthHeaders } from '../../lib/api-auth';
 
 type Tenant = {
   id: string;
@@ -105,7 +104,7 @@ export function TenantManagement() {
     setError('');
 
     try {
-      const response = await fetch(`${apiBaseUrl}/platform-admin/tenants`, {
+      const response = await fetch(`${config.apiBaseUrl}/platform-admin/tenants`, {
         cache: 'no-store',
         headers: getAdminAuthHeaders()
       });
@@ -167,7 +166,7 @@ export function TenantManagement() {
 
     try {
       const response = await fetch(
-        `${apiBaseUrl}/platform-admin/tenants/${selectedTenant.id}`,
+        `${config.apiBaseUrl}/platform-admin/tenants/${selectedTenant.id}`,
         {
           method: 'PATCH',
           headers: {
@@ -220,7 +219,7 @@ export function TenantManagement() {
       formData.append('logo', file);
 
       const response = await fetch(
-        `${apiBaseUrl}/platform-admin/tenants/${tenantId}/logo`,
+        `${config.apiBaseUrl}/platform-admin/tenants/${tenantId}/logo`,
         {
           method: 'POST',
           headers: getAdminAuthHeaders(),
@@ -595,7 +594,7 @@ export function TenantManagement() {
                         <div className="mt-4 flex items-center gap-4 rounded-2xl border border-admin-border bg-slate-50 p-4">
                           {/* eslint-disable-next-line @next/next/no-img-element -- dynamic tenant branding URLs are runtime-configured and not suitable for next/image without broad remote allowlists */}
                           <img
-                            src={`${portalPublicOrigin}${selectedTenant.brandingConfig.logoUrl}`}
+                            src={`${config.serviceEndpoints.portal}${selectedTenant.brandingConfig.logoUrl}`}
                             alt={`${selectedTenant.name} logo`}
                             className="h-16 w-16 rounded-xl border border-admin-border bg-white object-contain p-2"
                           />

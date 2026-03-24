@@ -8,6 +8,7 @@ import { runConnectorSync } from '../services/connectorService.js';
 import {
   deliverNotification
 } from '../services/notificationService.js';
+import { jobWorkerRuntimeConfig } from './runtime-config.js';
 import type { JobRecord, RegisteredJobPayloads, RegisteredJobType } from './jobTypes.js';
 
 function hydrateQueuedEvent(event: RegisteredJobPayloads['connector.sync']['event']) {
@@ -55,7 +56,7 @@ export function registerDefaultJobHandlers() {
   defaultsRegistered = true;
   registerDefaultAdapters();
   const logger = createStructuredLogger({
-    serviceName: process.env.APP_NAME ?? 'job-worker'
+    serviceName: jobWorkerRuntimeConfig.observability.serviceName
   });
 
   registerJobHandler('backup.run', async ({ payload, job }) => {

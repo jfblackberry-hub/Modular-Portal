@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { apiBaseUrl, getAdminAuthHeaders } from '../lib/api-auth';
-import { portalPublicOrigin } from '../lib/public-runtime';
+import { config, getAdminAuthHeaders } from '../lib/api-auth';
 import { useAdminSession } from './admin-session-provider';
 import { AdminPageLayout } from './admin-ui';
 import { SectionCard } from './section-card';
@@ -73,6 +72,17 @@ function labelPortalType(value: PortalType) {
   }
 }
 
+function resolvePreviewFrameUrl(launchUrl: string) {
+  const resolved = new URL(launchUrl, config.serviceEndpoints.portal);
+  const portalOrigin = new URL(config.serviceEndpoints.portal).origin;
+
+  if (resolved.origin !== portalOrigin || !resolved.pathname.startsWith('/preview/')) {
+    throw new Error('Preview launch URL must remain inside the isolated portal preview surface.');
+  }
+
+  return resolved.toString();
+}
+
 export function PreviewSessionWorkspace() {
   useAdminSession();
   const [catalog, setCatalog] = useState<CatalogPayload>({ tenants: [] });
@@ -96,11 +106,11 @@ export function PreviewSessionWorkspace() {
 
     try {
       const [catalogResponse, sessionsResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/platform-admin/preview-sessions/catalog`, {
+        fetch(`${config.apiBaseUrl}/platform-admin/preview-sessions/catalog`, {
           cache: 'no-store',
           headers: getAdminAuthHeaders()
         }),
-        fetch(`${apiBaseUrl}/platform-admin/preview-sessions`, {
+        fetch(`${config.apiBaseUrl}/platform-admin/preview-sessions`, {
           cache: 'no-store',
           headers: getAdminAuthHeaders()
         })
@@ -172,7 +182,7 @@ export function PreviewSessionWorkspace() {
 
   const duplicateSession = useCallback(async function duplicateSession(sessionId: string) {
     const response = await fetch(
-      `${apiBaseUrl}/platform-admin/preview-sessions/${sessionId}/duplicate`,
+      `${config.apiBaseUrl}/platform-admin/preview-sessions/${sessionId}/duplicate`,
       {
         method: 'POST',
         headers: getAdminAuthHeaders()
@@ -199,7 +209,7 @@ export function PreviewSessionWorkspace() {
 
   const endSession = useCallback(async function endSession(sessionId: string) {
     const response = await fetch(
-      `${apiBaseUrl}/platform-admin/preview-sessions/${sessionId}`,
+      `${config.apiBaseUrl}/platform-admin/preview-sessions/${sessionId}`,
       {
         method: 'DELETE',
         headers: getAdminAuthHeaders()
@@ -246,7 +256,7 @@ export function PreviewSessionWorkspace() {
       if (data.action === 'popout') {
         const targetSession = sessionsRef.current.find((session) => session.sessionId === data.sessionId);
         if (targetSession) {
-          window.open(`${portalPublicOrigin}${targetSession.launchUrl}`, '_blank', 'noopener,noreferrer');
+          window.open(resolvePreviewFrameUrl(targetSession.launchUrl), '_blank', 'noopener,noreferrer');
         }
         return;
       }
@@ -270,7 +280,7 @@ export function PreviewSessionWorkspace() {
     setError('');
 
     try {
-      const response = await fetch(`${apiBaseUrl}/platform-admin/preview-sessions`, {
+      const response = await fetch(`${config.apiBaseUrl}/platform-admin/preview-sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -476,9 +486,10 @@ export function PreviewSessionWorkspace() {
 
                   <iframe
                     title={`${previewSession.tenantName} ${previewSession.portalType} preview`}
-                    src={`${portalPublicOrigin}${previewSession.launchUrl}`}
+                    src={resolvePreviewFrameUrl(previewSession.launchUrl)}
                     className="h-[48rem] w-full border-0 bg-white"
                     loading="lazy"
+                    referrerPolicy="no-referrer"
                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads"
                   />
                 </article>

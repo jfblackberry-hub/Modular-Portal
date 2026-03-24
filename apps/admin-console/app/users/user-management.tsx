@@ -4,7 +4,7 @@ import type { FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { SectionCard } from '../../components/section-card';
-import { apiBaseUrl, getAdminAuthHeaders } from '../../lib/api-auth';
+import { config, getAdminAuthHeaders } from '../../lib/api-auth';
 
 type User = {
   id: string;
@@ -61,11 +61,11 @@ export function UserManagement() {
 
     try {
       const [usersResponse, tenantsResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/platform-admin/users`, {
+        fetch(`${config.apiBaseUrl}/platform-admin/users`, {
           cache: 'no-store',
           headers: getAdminAuthHeaders()
         }),
-        fetch(`${apiBaseUrl}/platform-admin/tenants`, {
+        fetch(`${config.apiBaseUrl}/platform-admin/tenants`, {
           cache: 'no-store',
           headers: getAdminAuthHeaders()
         })
@@ -138,8 +138,8 @@ export function UserManagement() {
     try {
       const response = await fetch(
         editingUserId
-          ? `${apiBaseUrl}/platform-admin/users/${editingUserId}`
-          : `${apiBaseUrl}/platform-admin/users`,
+          ? `${config.apiBaseUrl}/platform-admin/users/${editingUserId}`
+          : `${config.apiBaseUrl}/platform-admin/users`,
         {
           method: editingUserId ? 'PATCH' : 'POST',
           headers: {
@@ -175,7 +175,7 @@ export function UserManagement() {
     setDeletingUserId(user.id);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/platform-admin/users/${user.id}`, {
+      const response = await fetch(`${config.apiBaseUrl}/platform-admin/users/${user.id}`, {
         method: 'DELETE',
         headers: getAdminAuthHeaders()
       });
@@ -203,7 +203,7 @@ export function UserManagement() {
     setError('');
 
     try {
-      const response = await fetch(`${apiBaseUrl}/platform-admin/users/${user.id}`, {
+      const response = await fetch(`${config.apiBaseUrl}/platform-admin/users/${user.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

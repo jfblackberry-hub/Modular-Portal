@@ -1,0 +1,19 @@
+[
+  {"ParameterKey":"EnvironmentName","ParameterValue":"dev"},
+  {"ParameterKey":"Owner","ParameterValue":"platform"},
+  {"ParameterKey":"CostCenter","ParameterValue":"ENG-1000"},
+  {"ParameterKey":"AppPort","ParameterValue":"3000"},
+  {"ParameterKey":"AdminPort","ParameterValue":"3003"},
+  {"ParameterKey":"ApiPort","ParameterValue":"3002"},
+  {"ParameterKey":"DbPort","ParameterValue":"5432"},
+  {"ParameterKey":"AlbIngressCidr","ParameterValue":"0.0.0.0/0"},
+  {"ParameterKey":"PortalIngressCidr","ParameterValue":"0.0.0.0/0"},
+  {"ParameterKey":"AdminIngressCidr","ParameterValue":"0.0.0.0/0"},
+  {"ParameterKey":"ApiIngressCidr","ParameterValue":"0.0.0.0/0"},
+  {"ParameterKey":"S3BucketArn1","ParameterValue":"arn:aws:s3:::dev-portal-documents"},
+  {"ParameterKey":"S3BucketArn2","ParameterValue":""},
+  {"ParameterKey":"S3BucketArn3","ParameterValue":""},
+  {"ParameterKey":"SecretArn1","ParameterValue":"arn:aws:secretsmanager:us-east-1:123456789012:secret:dev-portal-app"},
+  {"ParameterKey":"SecretArn2","ParameterValue":""},
+  {"ParameterKey":"SecretArn3","ParameterValue":""}
+]

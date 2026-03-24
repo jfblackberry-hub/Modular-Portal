@@ -4,15 +4,8 @@ import type { FormEvent } from 'react';
 import { Suspense, useRef, useState } from 'react';
 
 import { useAdminSession } from '../../components/admin-session-provider';
-import { clearAdminSession, storeAdminSession } from '../../lib/api-auth';
-
-function isAdminUser(roles: string[]) {
-  return (
-    roles.includes('tenant_admin') ||
-    roles.includes('platform_admin') ||
-    roles.includes('platform-admin')
-  );
-}
+import { clearAdminSession } from '../../lib/api-auth';
+import type { AdminSession } from '../../lib/admin-session';
 
 async function establishPortalHandoffSession(input: {
   artifact: string;
@@ -41,6 +34,44 @@ async function establishPortalHandoffSession(input: {
   }
 
   return payload.redirectPath;
+}
+
+async function establishAdminHandoffSession(input: {
+  artifact: string;
+  handoffPath: string;
+  redirectPath?: string;
+}): Promise<{
+  redirectPath?: string;
+  session: AdminSession;
+}> {
+  const response = await fetch(input.handoffPath, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      artifact: input.artifact,
+      redirectPath: input.redirectPath
+    })
+  });
+
+  const payload = (await response.json().catch(() => null)) as
+    | {
+        redirectPath?: string;
+        session?: AdminSession;
+        message?: string;
+      }
+    | null;
+
+  if (!response.ok || !payload?.session) {
+    throw new Error(payload?.message ?? 'Admin session handoff failed.');
+  }
+
+  return {
+    redirectPath: payload.redirectPath,
+    session: payload.session
+  };
 }
 
 function AdminLoginFormContent() {
@@ -86,20 +117,9 @@ function AdminLoginFormContent() {
         handoffRequired?: boolean;
         artifact?: string;
         handoffUrl?: string;
-        token?: string;
-        user?: {
-          id: string;
-          firstName?: string;
-          lastName?: string;
-          email: string;
-          tenant?: {
-            id: string;
-            name: string;
-            brandingConfig?: Record<string, unknown>;
-          };
-          roles: string[];
-          permissions: string[];
-        };
+        handoffPath?: string;
+        redirectPath?: string;
+        sessionHandoff?: boolean;
       };
 
       if (payload.handoffRequired && payload.artifact && payload.handoffUrl) {
@@ -112,38 +132,25 @@ function AdminLoginFormContent() {
         return;
       }
 
-      if (!payload.token || !payload.user || !isAdminUser(payload.user.roles)) {
-        setError('Unable to establish a secure portal session handoff.');
+      if (!payload.sessionHandoff || !payload.artifact || !payload.handoffPath) {
+        setError('Unable to establish a secure admin session handoff.');
         return;
       }
 
-      storeAdminSession(payload.user, payload.token);
-      applySession({
-        id: payload.user.id,
-        email: payload.user.email,
-        tenantId: '',
-        roles: payload.user.roles,
-        permissions: payload.user.permissions,
-        isPlatformAdmin:
-          payload.user.roles.includes('platform_admin') ||
-          payload.user.roles.includes('platform-admin'),
-        isTenantAdmin:
-          payload.user.roles.includes('tenant_admin') ||
-          payload.user.roles.includes('platform_admin') ||
-          payload.user.roles.includes('platform-admin')
+      const handoffPayload = await establishAdminHandoffSession({
+        artifact: payload.artifact,
+        handoffPath: payload.handoffPath,
+        redirectPath: payload.redirectPath
       });
+      applySession(handoffPayload.session);
 
-      const destination =
-        payload.user.roles.includes('platform_admin') ||
-        payload.user.roles.includes('platform-admin')
-          ? '/admin/platform/health'
-          : payload.user.roles.includes('tenant_admin')
-            ? '/admin/tenant/health'
-            : '/admin';
-
-      window.location.assign(destination);
-    } catch {
-      setError('API unavailable. Start the local API and try again.');
+      window.location.assign(handoffPayload.redirectPath ?? payload.redirectPath ?? '/admin');
+    } catch (nextError) {
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : 'API unavailable. Start the local API and try again.'
+      );
     } finally {
       submitLockRef.current = false;
       setIsSubmitting(false);

@@ -1,6 +1,9 @@
 import { loadPortalSessionConfig } from '@payer-portal/config';
 
-import { PORTAL_SESSION_COOKIE } from './session-constants';
+import {
+  LEGACY_PORTAL_SESSION_COOKIE,
+  PORTAL_SESSION_COOKIE
+} from './session-constants';
 
 const SESSION_COOKIE_VERSION = 1;
 
@@ -302,6 +305,10 @@ export async function readPortalSessionFromCookie(
 
 export function getPortalSessionCookieName() {
   return PORTAL_SESSION_COOKIE;
+}
+
+export function getPortalSessionCookieNames() {
+  return [PORTAL_SESSION_COOKIE, LEGACY_PORTAL_SESSION_COOKIE] as const;
 }
 
 export function getPortalSessionCookieOptions(input: {

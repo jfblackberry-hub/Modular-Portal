@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { portalPublicOrigin } from '../lib/public-runtime';
+import type { AdminSession } from '../lib/admin-session';
 import { getAdminRouteContext, getDefaultAdminHref } from './admin-route-config';
-import type { AdminSession } from './admin-session-provider';
 
 type TopHeaderProps = {
   session: AdminSession | null;

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import { readProcessEnv } from '@payer-portal/config';
 import { clearTenantContext, setTenantContext } from '@payer-portal/database';
 import {
   createStructuredLogger,
@@ -78,6 +79,7 @@ function isTenantContextExemptRoute(url: string) {
     url === '/readiness' ||
     url === '/health' ||
     url.startsWith('/health/') ||
+    url.startsWith('/api/health/') ||
     url === '/metrics' ||
     url === '/auth/login' ||
     url === '/auth/login/provider' ||
@@ -332,9 +334,9 @@ async function start() {
 }
 
 function resolveStartupCorrelationId() {
-  return process.env.STARTUP_CORRELATION_ID?.trim() || randomUUID();
+  return readProcessEnv('STARTUP_CORRELATION_ID') || randomUUID();
 }
 
-if (process.env.PAYER_PORTAL_API_AUTOSTART !== 'false') {
+if (readProcessEnv('PAYER_PORTAL_API_AUTOSTART') !== 'false') {
   void start();
 }

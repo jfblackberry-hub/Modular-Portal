@@ -18,9 +18,12 @@ export type PersonaSessionDraft = {
   userId: string;
 };
 
-export const PERSONA_SESSION_STORAGE_KEY = 'admin-platform-persona-sessions';
-export const ACTIVE_PERSONA_SESSION_STORAGE_KEY =
+export const LEGACY_PERSONA_SESSION_STORAGE_KEY = 'admin-platform-persona-sessions';
+export const LEGACY_ACTIVE_PERSONA_SESSION_STORAGE_KEY =
   'admin-platform-active-persona-session';
+export const PERSONA_SESSION_STORAGE_KEY = 'admin_session:persona_sessions';
+export const ACTIVE_PERSONA_SESSION_STORAGE_KEY =
+  'admin_session:active_persona_session';
 
 function getPersonaSessionStorage() {
   if (typeof window === 'undefined') {
@@ -89,7 +92,9 @@ export function readStoredPersonaSessions() {
     return [] as PersonaSession[];
   }
 
-  const rawValue = storage.getItem(PERSONA_SESSION_STORAGE_KEY);
+  const rawValue =
+    storage.getItem(PERSONA_SESSION_STORAGE_KEY) ??
+    storage.getItem(LEGACY_PERSONA_SESSION_STORAGE_KEY);
 
   if (!rawValue) {
     return [] as PersonaSession[];
@@ -124,7 +129,11 @@ export function readActivePersonaSessionId() {
     return '';
   }
 
-  return getPersonaSessionStorage()?.getItem(ACTIVE_PERSONA_SESSION_STORAGE_KEY) ?? '';
+  return (
+    getPersonaSessionStorage()?.getItem(ACTIVE_PERSONA_SESSION_STORAGE_KEY) ??
+    getPersonaSessionStorage()?.getItem(LEGACY_ACTIVE_PERSONA_SESSION_STORAGE_KEY) ??
+    ''
+  );
 }
 
 export function storeActivePersonaSessionId(sessionId: string) {
@@ -134,6 +143,7 @@ export function storeActivePersonaSessionId(sessionId: string) {
 
   if (!sessionId) {
     getPersonaSessionStorage()?.removeItem(ACTIVE_PERSONA_SESSION_STORAGE_KEY);
+    getPersonaSessionStorage()?.removeItem(LEGACY_ACTIVE_PERSONA_SESSION_STORAGE_KEY);
     return;
   }
 

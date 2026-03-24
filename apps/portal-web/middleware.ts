@@ -9,8 +9,9 @@ import {
   mapLegacyBillingPortalPath,
   resolveBillingPortalAudience
 } from './lib/billing-portal-audience';
+import { DEMO_ACCESS_COOKIE, findDemoUser } from './lib/demo-access';
 import {
-  getPortalSessionCookieName,
+  getPortalSessionCookieNames,
   readPortalSessionEnvelopeFromCookie
 } from './lib/portal-session-cookie';
 import { isTenantModuleEnabled, type TenantPortalModuleId } from './lib/tenant-modules';
@@ -72,9 +73,54 @@ function toLoginRedirect(request: NextRequest) {
   return NextResponse.redirect(redirectUrl);
 }
 
+async function readPortalSessionFromRequest(request: NextRequest) {
+  for (const cookieName of getPortalSessionCookieNames()) {
+    const portalSession = await readPortalSessionEnvelopeFromCookie(
+      request.cookies.get(cookieName)?.value
+    );
+
+    if (portalSession) {
+      return portalSession;
+    }
+  }
+
+  return null;
+}
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isApiRoute = pathname === '/api' || pathname.startsWith('/api/');
+  const demoAccessCookie = request.cookies.get(DEMO_ACCESS_COOKIE)?.value ?? '';
+  const hasDemoAccess = Boolean(findDemoUser(demoAccessCookie));
+  const isDemoAccessApi = pathname === '/api/demo-access';
+  const isProtectedDemoPage =
+    pathname === '/login' ||
+    pathname.startsWith('/login') ||
+    pathname === '/provider-login' ||
+    pathname.startsWith('/provider-login') ||
+    pathname === '/employer-login' ||
+    pathname.startsWith('/employer-login');
+  const isProtectedDemoAuthApi =
+    pathname === '/api/auth/login' ||
+    pathname === '/api/auth/login/provider' ||
+    pathname === '/api/auth/login/employer' ||
+    pathname === '/api/auth/session' ||
+    pathname === '/api/auth/logout';
+
+  if (isDemoAccessApi) {
+    return NextResponse.next();
+  }
+
+  if (isProtectedDemoPage && !hasDemoAccess) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = '/';
+    redirectUrl.search = '';
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (isProtectedDemoAuthApi && !hasDemoAccess) {
+    return NextResponse.json({ message: 'Demo access required.' }, { status: 403 });
+  }
 
   if (
     isApiRoute &&
@@ -84,9 +130,7 @@ export async function middleware(request: NextRequest) {
     pathname !== '/api/auth/logout' &&
     pathname !== '/api/auth/session'
   ) {
-    const portalSession = await readPortalSessionEnvelopeFromCookie(
-      request.cookies.get(getPortalSessionCookieName())?.value
-    );
+    const portalSession = await readPortalSessionFromRequest(request);
     const portalUser = portalSession?.user as PortalUserCookie | null;
 
     if (!portalUser || !portalSession?.accessToken) {
@@ -116,9 +160,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const portalSession = await readPortalSessionEnvelopeFromCookie(
-    request.cookies.get(getPortalSessionCookieName())?.value
-  );
+  const portalSession = await readPortalSessionFromRequest(request);
   const portalUser = portalSession?.user as PortalUserCookie | null;
 
   if (!portalUser || !portalSession?.accessToken) {
@@ -210,6 +252,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
+    '/login',
+    '/provider-login',
+    '/employer-login',
     '/provider',
     '/provider/:path*',
     '/dashboard',

@@ -28,7 +28,7 @@ function createLogger(input: {
   triggerMode: IntegrationTriggerMode;
 }) {
   const logger = createStructuredLogger({
-    serviceName: process.env.APP_NAME ?? 'api'
+    serviceName: 'api'
   }).child({
     adapterKey: input.adapterKey,
     connectorId: input.connectorId,

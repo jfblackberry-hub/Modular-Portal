@@ -1,10 +1,7 @@
 import 'server-only';
 
 import { buildPortalApiHeaders } from './api-request';
-import {
-  adminConsolePublicOrigin as adminConsoleBaseUrl,
-  apiInternalOrigin as apiBaseUrl
-} from './server-runtime';
+import { config } from './server-runtime';
 
 export type SearchDocumentResult = {
   id: string;
@@ -49,7 +46,7 @@ export async function searchPlatformContent(accessToken: string, query: string) 
 
   try {
     const response = await fetch(
-      `${apiBaseUrl}/api/search?q=${encodeURIComponent(normalizedQuery)}`,
+      `${config.apiBaseUrl}/api/search?q=${encodeURIComponent(normalizedQuery)}`,
       {
         cache: 'no-store',
         headers: await buildPortalApiHeaders({}, { accessToken })
@@ -77,10 +74,10 @@ export function buildDocumentResultHref(searchBasePath: string, documentId: stri
 
 export function buildUserResultHref(userId: string) {
   const searchParams = new URLSearchParams({ userId });
-  return `${adminConsoleBaseUrl}/users?${searchParams.toString()}`;
+  return `${config.serviceEndpoints.admin}/users?${searchParams.toString()}`;
 }
 
 export function buildTenantResultHref(tenantId: string) {
   const searchParams = new URLSearchParams({ tenantId });
-  return `${adminConsoleBaseUrl}/tenants?${searchParams.toString()}`;
+  return `${config.serviceEndpoints.admin}/tenants?${searchParams.toString()}`;
 }

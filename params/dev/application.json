@@ -1,0 +1,22 @@
+[
+  {"ParameterKey":"EnvironmentName","ParameterValue":"dev"},
+  {"ParameterKey":"Owner","ParameterValue":"platform"},
+  {"ParameterKey":"CostCenter","ParameterValue":"ENG-1000"},
+  {"ParameterKey":"InstanceType","ParameterValue":"t4g.small"},
+  {"ParameterKey":"RootVolumeSize","ParameterValue":"32"},
+  {"ParameterKey":"PortalImageUri","ParameterValue":"773617529976.dkr.ecr.us-east-1.amazonaws.com/dev-compute-portal-web:latest"},
+  {"ParameterKey":"AdminImageUri","ParameterValue":"773617529976.dkr.ecr.us-east-1.amazonaws.com/dev-compute-admin-console:latest"},
+  {"ParameterKey":"ApiImageUri","ParameterValue":"773617529976.dkr.ecr.us-east-1.amazonaws.com/dev-compute-api-server:latest"},
+  {"ParameterKey":"DatabaseName","ParameterValue":"portal"},
+  {"ParameterKey":"DatabaseUser","ParameterValue":"portaladmin"},
+  {"ParameterKey":"DatabasePassword","ParameterValue":"ChangeMe123!"},
+  {"ParameterKey":"SessionSecret","ParameterValue":"4C-J2b05nfSJER9mtw7qwkUpn5XyToNBf4AOsW_PZ0I"},
+  {"ParameterKey":"PortalSessionSecret","ParameterValue":"GVMpO6WBa6tkVoMlWXg3t5Lj3f_2hBEKi3pQ3Q_bWLs"},
+  {"ParameterKey":"AdminConsoleSessionSecret","ParameterValue":"NqOT6TzkBBf7Rw1U5PSDIlcuTyAKUD1VzvIH-Q2JL2Y"},
+  {"ParameterKey":"ApiAuthTokenSecret","ParameterValue":"tRPOS2OvytVWmCBHvWFBs3hnrzCWkDCeyLcY9hh-JSQ"},
+  {"ParameterKey":"BackupEncryptionKey","ParameterValue":"dev-backup-key-change-me"},
+  {"ParameterKey":"LogLevel","ParameterValue":"info"},
+  {"ParameterKey":"AllowInsecurePublicOrigins","ParameterValue":"true"},
+  {"ParameterKey":"SecureCookies","ParameterValue":"false"},
+  {"ParameterKey":"TrustProxy","ParameterValue":"true"}
+]

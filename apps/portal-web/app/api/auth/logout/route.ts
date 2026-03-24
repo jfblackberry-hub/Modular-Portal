@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { buildPortalApiHeaders } from '../../../../lib/api-request';
 import { clearLegacyPortalAuthCookies } from '../../../../lib/legacy-auth-cookies';
 import { getExpiredPortalSessionCookieOptions } from '../../../../lib/portal-session-cookie';
-import { apiInternalOrigin as apiBaseUrl } from '../../../../lib/server-runtime';
+import { config } from '../../../../lib/server-runtime';
 import { PORTAL_SESSION_COOKIE } from '../../../../lib/session-constants';
 
 export async function POST() {
@@ -11,7 +11,7 @@ export async function POST() {
 
   if (headers.get('authorization')) {
     try {
-      const upstreamResponse = await fetch(`${apiBaseUrl}/auth/logout`, {
+      const upstreamResponse = await fetch(`${config.serviceEndpoints.auth}/auth/logout`, {
         method: 'POST',
         headers,
         cache: 'no-store'

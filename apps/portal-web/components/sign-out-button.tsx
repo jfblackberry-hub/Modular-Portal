@@ -3,6 +3,11 @@
 import { useState } from 'react';
 
 import { requestPortalLogout } from '../lib/portal-logout';
+import {
+  LEGACY_PORTAL_SESSION_COOKIE,
+  LEGACY_PORTAL_TOKEN_COOKIE,
+  LEGACY_PORTAL_USER_COOKIE
+} from '../lib/session-constants';
 
 export function SignOutButton() {
   const [error, setError] = useState('');
@@ -18,8 +23,9 @@ export function SignOutButton() {
       return;
     }
 
-    localStorage.removeItem('portal-token');
-    localStorage.removeItem('portal-user');
+    localStorage.removeItem(LEGACY_PORTAL_TOKEN_COOKIE);
+    localStorage.removeItem(LEGACY_PORTAL_USER_COOKIE);
+    document.cookie = `${LEGACY_PORTAL_SESSION_COOKIE}=; Max-Age=0; path=/`;
     window.location.assign('/');
   }
 

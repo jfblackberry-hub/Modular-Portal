@@ -40,10 +40,7 @@ export function createStructuredLogger(input: {
   context?: StructuredLoggerContext;
   serviceName?: string;
 }) {
-  const observability = loadObservabilityConfig(
-    process.env,
-    input.serviceName ?? process.env.APP_NAME ?? 'payer-portal-service'
-  );
+  const observability = loadObservabilityConfig(undefined, input.serviceName);
   const basePayload = {
     service: observability.serviceName,
     correlationId: resolveCorrelationId(input.correlationId),

@@ -1,0 +1,13 @@
+[
+  {"ParameterKey":"EnvironmentName","ParameterValue":"qa"},
+  {"ParameterKey":"Owner","ParameterValue":"platform"},
+  {"ParameterKey":"CostCenter","ParameterValue":"ENG-2000"},
+  {"ParameterKey":"RetentionDays","ParameterValue":"30"},
+  {"ParameterKey":"CloudTrailBucketName","ParameterValue":"modularportal-qa-cloudtrail-773617529976"},
+  {"ParameterKey":"CloudTrailLogGroupName","ParameterValue":"qa-shared-services-cloudtrail"},
+  {"ParameterKey":"CloudTrailName","ParameterValue":"qa-shared-services-cloudtrail"},
+  {"ParameterKey":"CloudTrailLogRetentionDays","ParameterValue":"90"},
+  {"ParameterKey":"LogGroupName1","ParameterValue":"portal-web"},
+  {"ParameterKey":"LogGroupName2","ParameterValue":"admin-console"},
+  {"ParameterKey":"LogGroupName3","ParameterValue":"api-server"}
+]

@@ -4,7 +4,7 @@ import {
   createSignedPortalSessionCookieValue,
   getPortalSessionCookieOptions
 } from '../../../../../lib/portal-session-cookie';
-import { apiInternalOrigin as apiBaseUrl } from '../../../../../lib/server-runtime';
+import { config } from '../../../../../lib/server-runtime';
 import { PORTAL_SESSION_COOKIE } from '../../../../../lib/session-constants';
 
 export async function GET(
@@ -22,7 +22,7 @@ export async function GET(
   }
 
   const response = await fetch(
-    `${apiBaseUrl}/preview-sessions/launch/${encodeURIComponent(launchArtifact)}`,
+    `${config.apiBaseUrl}/preview-sessions/launch/${encodeURIComponent(launchArtifact)}`,
     {
       cache: 'no-store'
     }

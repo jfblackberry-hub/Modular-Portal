@@ -1,59 +1,71 @@
-import { apiInternalOrigin } from './server-runtime';
+import { config } from './server-runtime';
 
-export async function getAdminReadiness() {
-  const timestamp = new Date().toISOString();
+type HealthCheckStatus = 'ok' | 'degraded' | 'down';
+
+type HealthResponse = {
+  checks: Record<string, HealthCheckStatus>;
+  status: HealthCheckStatus;
+};
+
+function buildRuntimeHealthResponse(
+  checks: Record<string, HealthCheckStatus>
+): HealthResponse {
+  const values = Object.values(checks);
+
+  return {
+    checks,
+    status: values.some((value) => value === 'down')
+      ? 'down'
+      : values.some((value) => value === 'degraded')
+        ? 'degraded'
+        : 'ok'
+  };
+}
+
+function buildRuntimeLivenessResponse(): HealthResponse {
+  return buildRuntimeHealthResponse({
+    process: 'ok'
+  });
+}
+
+async function probeHttpDependency(url: string, timeoutMs = 150) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
 
   try {
-    const response = await fetch(`${apiInternalOrigin}/readiness`, {
-      cache: 'no-store'
+    const response = await fetch(url, {
+      cache: 'no-store',
+      signal: controller.signal
     });
 
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-
-      return {
-        ready: false,
-        response: {
-          checks: {
-            api: {
-              details: body.slice(0, 300),
-              status: 'fail'
-            }
-          },
-          service: 'admin-console',
-          status: 'degraded',
-          timestamp
-        }
-      } as const;
-    }
-
-    return {
-      ready: true,
-      response: {
-        checks: {
-          api: {
-            status: 'pass'
-          }
-        },
-        service: 'admin-console',
-        status: 'ok',
-        timestamp
-      }
-    } as const;
-  } catch (error) {
-    return {
-      ready: false,
-      response: {
-        checks: {
-          api: {
-            error: error instanceof Error ? error.message : 'API readiness failed',
-            status: 'fail'
-          }
-        },
-        service: 'admin-console',
-        status: 'degraded',
-        timestamp
-      }
-    } as const;
+    return response.ok ? 'ok' : 'down';
+  } catch {
+    return 'down';
+  } finally {
+    clearTimeout(timeout);
   }
+}
+
+function getAdminConfigStatus() {
+  return config.serviceEndpoints.admin.trim() && config.serviceEndpoints.api.trim()
+    ? 'ok'
+    : 'down';
+}
+
+export function getAdminLiveness() {
+  return buildRuntimeLivenessResponse();
+}
+
+export async function getAdminReadiness() {
+  const response = buildRuntimeHealthResponse({
+    config: getAdminConfigStatus(),
+    api: await probeHttpDependency(`${config.serviceEndpoints.api}/api/health/ready`)
+  });
+
+  return {
+    ready: response.status === 'ok',
+    response
+  } as const;
 }

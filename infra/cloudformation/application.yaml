@@ -1,0 +1,331 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Modular single-instance application runtime stack
+
+Parameters:
+  EnvironmentName:
+    Type: String
+  Owner:
+    Type: String
+  CostCenter:
+    Type: String
+  AmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
+  InstanceType:
+    Type: String
+  RootVolumeSize:
+    Type: Number
+  PortalImageUri:
+    Type: String
+  AdminImageUri:
+    Type: String
+  ApiImageUri:
+    Type: String
+  DatabaseName:
+    Type: String
+  DatabaseUser:
+    Type: String
+  DatabasePassword:
+    Type: String
+    NoEcho: true
+  SessionSecret:
+    Type: String
+    NoEcho: true
+  PortalSessionSecret:
+    Type: String
+    NoEcho: true
+  AdminConsoleSessionSecret:
+    Type: String
+    NoEcho: true
+  ApiAuthTokenSecret:
+    Type: String
+    NoEcho: true
+  BackupEncryptionKey:
+    Type: String
+    NoEcho: true
+  LogLevel:
+    Type: String
+  AllowInsecurePublicOrigins:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+  SecureCookies:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+  TrustProxy:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+
+Resources:
+  ApplicationElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-application-elastic-ip'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: application
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  ApplicationInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !ImportValue
+        Fn::Sub: '${EnvironmentName}-security-portal-instance-profile-name'
+      Monitoring: false
+      SubnetId: !ImportValue
+        Fn::Sub: '${EnvironmentName}-networking-public-subnet-1-id'
+      SecurityGroupIds:
+        - !ImportValue
+          Fn::Sub: '${EnvironmentName}-security-portal-instance-sg-id'
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref RootVolumeSize
+            VolumeType: gp3
+            DeleteOnTermination: true
+            Encrypted: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-application-instance'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Application
+          Value: Modular_Portal_Pilot
+        - Key: Module
+          Value: application
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euo pipefail
+
+          exec > >(tee /var/log/modular-portal-bootstrap.log | logger -t modular-portal-bootstrap -s 2>/dev/console) 2>&1
+
+          dnf update -y
+          dnf install -y docker jq
+          systemctl enable --now docker
+
+          mkdir -p /usr/local/lib/docker/cli-plugins
+          curl -fsSL "https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-aarch64" \
+            -o /usr/local/lib/docker/cli-plugins/docker-compose
+          chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+          mkdir -p /opt/modular-portal
+          cd /opt/modular-portal
+
+          PUBLIC_BASE='${ApplicationElasticIp}'
+
+          if [[ -z "$PUBLIC_BASE" ]]; then
+            echo "Could not determine the reserved public endpoint for the EC2 instance." >&2
+            exit 1
+          fi
+
+          aws ecr get-login-password --region ${AWS::Region} \
+            | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+
+          if docker compose version >/dev/null 2>&1; then
+            cat > /usr/local/bin/modular-portal-compose <<'EOF'
+          #!/bin/bash
+          exec /usr/bin/docker compose "$@"
+          EOF
+          elif command -v docker-compose >/dev/null 2>&1; then
+            cat > /usr/local/bin/modular-portal-compose <<'EOF'
+          #!/bin/bash
+          exec /usr/bin/docker-compose "$@"
+          EOF
+          else
+            echo "Docker Compose is not available on the EC2 host." >&2
+            exit 1
+          fi
+          chmod +x /usr/local/bin/modular-portal-compose
+
+          cat > /opt/modular-portal/.env <<EOF
+          NODE_ENV=production
+          PORTAL_WEB_PORT=3000
+          API_PORT=3002
+          ADMIN_CONSOLE_PORT=3003
+          PORTAL_PUBLIC_ORIGIN=http://$PUBLIC_BASE:3000
+          API_PUBLIC_ORIGIN=http://$PUBLIC_BASE:3002
+          API_INTERNAL_ORIGIN=http://api:3002
+          ADMIN_CONSOLE_PUBLIC_ORIGIN=http://$PUBLIC_BASE:3003
+          API_GATEWAY_PUBLIC_ORIGIN=http://$PUBLIC_BASE:3002
+          DATABASE_URL=postgresql://${DatabaseUser}:${DatabasePassword}@postgres:5432/${DatabaseName}?schema=public
+          POSTGRES_DB=${DatabaseName}
+          POSTGRES_USER=${DatabaseUser}
+          POSTGRES_PASSWORD=${DatabasePassword}
+          PORTAL_CATALOG_DATABASE_URL=
+          SESSION_SECRET=${SessionSecret}
+          PORTAL_SESSION_SECRET=${PortalSessionSecret}
+          ADMIN_CONSOLE_SESSION_SECRET=${AdminConsoleSessionSecret}
+          API_AUTH_TOKEN_SECRET=${ApiAuthTokenSecret}
+          BACKUP_ENCRYPTION_KEY=${BackupEncryptionKey}
+          LOG_LEVEL=${LogLevel}
+          ALLOW_INSECURE_PUBLIC_ORIGINS=${AllowInsecurePublicOrigins}
+          SECURE_COOKIES=${SecureCookies}
+          TRUST_PROXY=${TrustProxy}
+          STORAGE_PROVIDER=local
+          LOCAL_STORAGE_DIR=storage
+          LOCAL_PUBLIC_ASSET_DIR=apps/portal-web/public/tenant-assets
+          LOCAL_PUBLIC_ASSET_BASE_PATH=/tenant-assets
+          BACKUP_STORAGE_DIR=backups
+          EOF
+
+          cat > /opt/modular-portal/docker-compose.yml <<EOF
+          services:
+            postgres:
+              image: postgres:16-alpine
+              restart: unless-stopped
+              environment:
+                POSTGRES_DB: ${DatabaseName}
+                POSTGRES_USER: ${DatabaseUser}
+                POSTGRES_PASSWORD: ${DatabasePassword}
+              ports:
+                - "5432:5432"
+              volumes:
+                - postgres-data:/var/lib/postgresql/data
+              healthcheck:
+                test: ["CMD-SHELL", "pg_isready -U ${DatabaseUser} -d ${DatabaseName}"]
+                interval: 10s
+                timeout: 5s
+                retries: 12
+
+            api:
+              image: ${ApiImageUri}
+              restart: unless-stopped
+              depends_on:
+                postgres:
+                  condition: service_healthy
+              env_file:
+                - /opt/modular-portal/.env
+              environment:
+                APP_NAME: api
+                HOST: 0.0.0.0
+                PORT: 3002
+              ports:
+                - "3002:3002"
+              volumes:
+                - tenant-assets:/workspace/apps/portal-web/public/tenant-assets
+                - storage-data:/workspace/storage
+                - backup-data:/workspace/backups
+
+            portal-web:
+              image: ${PortalImageUri}
+              restart: unless-stopped
+              depends_on:
+                - api
+              env_file:
+                - /opt/modular-portal/.env
+              environment:
+                APP_NAME: portal-web
+                PORT: 3000
+                NEXT_PUBLIC_PORTAL_PUBLIC_ORIGIN: http://$PUBLIC_BASE:3000
+                NEXT_PUBLIC_ADMIN_CONSOLE_PUBLIC_ORIGIN: http://$PUBLIC_BASE:3003
+                NEXT_PUBLIC_API_PUBLIC_ORIGIN: http://$PUBLIC_BASE:3002
+              ports:
+                - "3000:3000"
+              volumes:
+                - tenant-assets:/workspace/apps/portal-web/public/tenant-assets
+
+            admin-console:
+              image: ${AdminImageUri}
+              restart: unless-stopped
+              depends_on:
+                - api
+              env_file:
+                - /opt/modular-portal/.env
+              environment:
+                APP_NAME: admin-console
+                PORT: 3003
+                NEXT_PUBLIC_PORTAL_PUBLIC_ORIGIN: http://$PUBLIC_BASE:3000
+                NEXT_PUBLIC_ADMIN_CONSOLE_PUBLIC_ORIGIN: http://$PUBLIC_BASE:3003
+                NEXT_PUBLIC_API_PUBLIC_ORIGIN: http://$PUBLIC_BASE:3002
+              ports:
+                - "3003:3003"
+
+          volumes:
+            postgres-data:
+            tenant-assets:
+            storage-data:
+            backup-data:
+          EOF
+
+          cat > /usr/local/bin/modular-portal-init-db <<'EOF'
+          #!/bin/bash
+          set -euo pipefail
+
+          cd /opt/modular-portal
+
+          /usr/local/bin/modular-portal-compose up -d postgres
+
+          until /usr/local/bin/modular-portal-compose exec -T postgres pg_isready -U "${DatabaseUser}" -d "${DatabaseName}" >/dev/null 2>&1; do
+            sleep 2
+          done
+
+          /usr/local/bin/modular-portal-compose run --rm --entrypoint sh api -lc \
+            "cd /workspace && pnpm --filter @payer-portal/database exec prisma migrate deploy && pnpm --filter @payer-portal/database db:seed"
+          EOF
+          chmod +x /usr/local/bin/modular-portal-init-db
+
+          cat > /etc/systemd/system/modular-portal.service <<'EOF'
+          [Unit]
+          Description=Modular Portal POC
+          Requires=docker.service
+          After=docker.service network-online.target
+
+          [Service]
+          Type=oneshot
+          WorkingDirectory=/opt/modular-portal
+          RemainAfterExit=yes
+          EnvironmentFile=/opt/modular-portal/.env
+          ExecStart=/bin/bash -lc '/usr/local/bin/modular-portal-init-db && /usr/local/bin/modular-portal-compose up -d api portal-web admin-console'
+          ExecStop=/usr/local/bin/modular-portal-compose down
+          TimeoutStartSec=0
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+          systemctl daemon-reload
+          systemctl enable modular-portal.service
+          systemctl start modular-portal.service
+
+  ApplicationElasticIpAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt ApplicationElasticIp.AllocationId
+      InstanceId: !Ref ApplicationInstance
+
+Outputs:
+  InstanceId:
+    Value: !Ref ApplicationInstance
+  ElasticIpAllocationId:
+    Value: !GetAtt ApplicationElasticIp.AllocationId
+  PublicDnsName:
+    Value: !GetAtt ApplicationInstance.PublicDnsName
+  PublicIp:
+    Value: !Ref ApplicationElasticIp
+  PortalUrl:
+    Value: !Sub 'http://${ApplicationElasticIp}:3000'
+  AdminUrl:
+    Value: !Sub 'http://${ApplicationElasticIp}:3003'
+  ApiUrl:
+    Value: !Sub 'http://${ApplicationElasticIp}:3002'

@@ -4,7 +4,7 @@ import type { FormEvent } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { SectionCard } from '../../components/section-card';
-import { apiBaseUrl, getAdminAuthHeaders } from '../../lib/api-auth';
+import { config, getAdminAuthHeaders } from '../../lib/api-auth';
 
 type User = {
   id: string;
@@ -57,7 +57,7 @@ export function DocumentManagement() {
   const [downloadingDocumentId, setDownloadingDocumentId] = useState('');
 
   const loadUsers = useCallback(async function loadUsers() {
-    const response = await fetch(`${apiBaseUrl}/api/tenant-admin/settings`, {
+    const response = await fetch(`${config.apiBaseUrl}/api/tenant-admin/settings`, {
       cache: 'no-store',
       headers: getAdminAuthHeaders()
     });
@@ -81,7 +81,7 @@ export function DocumentManagement() {
       return;
     }
 
-    const response = await fetch(`${apiBaseUrl}/api/documents`, {
+    const response = await fetch(`${config.apiBaseUrl}/api/documents`, {
       cache: 'no-store',
       headers: {
         'x-user-id': userId
@@ -173,7 +173,7 @@ export function DocumentManagement() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await fetch(`${apiBaseUrl}/api/documents/upload`, {
+      const response = await fetch(`${config.apiBaseUrl}/api/documents/upload`, {
         method: 'POST',
         headers: {
           'x-user-id': selectedUserId
@@ -211,7 +211,7 @@ export function DocumentManagement() {
 
     try {
       const response = await fetch(
-        `${apiBaseUrl}/api/documents/${record.id}/download`,
+        `${config.apiBaseUrl}/api/documents/${record.id}/download`,
         {
           headers: {
             'x-user-id': selectedUserId

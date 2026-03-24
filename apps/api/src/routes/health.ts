@@ -14,8 +14,14 @@ export async function healthRoutes(app: FastifyInstance) {
     return reply.status(result.ready ? 200 : 503).send(result.response);
   });
   app.get('/health/live', async () => getLiveStatus());
+  app.get('/api/health/live', async () => getLiveStatus());
 
   app.get('/health/ready', async (_request, reply) => {
+    const result = await getReadinessStatus();
+
+    return reply.status(result.ready ? 200 : 503).send(result.response);
+  });
+  app.get('/api/health/ready', async (_request, reply) => {
     const result = await getReadinessStatus();
 
     return reply.status(result.ready ? 200 : 503).send(result.response);
