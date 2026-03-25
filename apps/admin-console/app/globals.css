@@ -830,6 +830,133 @@ textarea {
   line-height: 1.6;
 }
 
+.admin-panel,
+.admin-panel-muted,
+.admin-table-shell,
+.admin-link-tile,
+.admin-notice {
+  border: 1px solid var(--admin-border);
+  border-radius: 1rem;
+}
+
+.admin-panel {
+  background: var(--admin-surface);
+}
+
+.admin-panel-muted,
+.admin-table-shell,
+.admin-link-tile {
+  background: var(--admin-surface-muted);
+}
+
+.averra-admin .admin-panel,
+.averra-admin .admin-panel-muted,
+.averra-admin .admin-table-shell,
+.averra-admin .admin-link-tile {
+  backdrop-filter: blur(18px);
+  box-shadow: var(--portal-shadow-sm);
+}
+
+.admin-panel-muted,
+.admin-link-tile {
+  padding: 1rem;
+}
+
+.admin-link-tile {
+  display: block;
+  color: inherit;
+  transition:
+    border-color var(--portal-transition-fast),
+    transform var(--portal-transition-fast),
+    background-color var(--portal-transition-fast);
+}
+
+.admin-link-tile:hover {
+  border-color: var(--admin-active-accent);
+  transform: translateY(-1px);
+}
+
+.admin-table-shell {
+  overflow: hidden;
+}
+
+.admin-table-head {
+  background: var(--admin-surface-muted);
+}
+
+.admin-table-head th {
+  color: var(--admin-muted);
+}
+
+.admin-table-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-table-row:last-child {
+  border-bottom: 0;
+}
+
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.admin-badge--success {
+  background: rgba(74, 222, 128, 0.14);
+  border-color: rgba(74, 222, 128, 0.24);
+  color: #86efac;
+}
+
+.admin-badge--warning {
+  background: rgba(251, 191, 36, 0.14);
+  border-color: rgba(251, 191, 36, 0.24);
+  color: #fcd34d;
+}
+
+.admin-badge--danger {
+  background: rgba(251, 113, 133, 0.14);
+  border-color: rgba(251, 113, 133, 0.24);
+  color: #fda4af;
+}
+
+.admin-badge--info {
+  background: rgba(96, 165, 250, 0.14);
+  border-color: rgba(96, 165, 250, 0.24);
+  color: #93c5fd;
+}
+
+.admin-badge--neutral {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--admin-text);
+}
+
+.admin-notice {
+  padding: 0.9rem 1rem;
+  font-size: 0.95rem;
+}
+
+.admin-notice--danger {
+  border-color: rgba(251, 113, 133, 0.34);
+  background: rgba(127, 29, 29, 0.22);
+  color: #fecdd3;
+}
+
+.admin-notice--success {
+  border-color: rgba(74, 222, 128, 0.3);
+  background: rgba(20, 83, 45, 0.22);
+  color: #bbf7d0;
+}
+
 .admin-stat-card {
   padding: 1.25rem;
 }

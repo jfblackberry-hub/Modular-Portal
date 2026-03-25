@@ -42,17 +42,17 @@ function getHealthTone(healthStatus: Tenant['healthStatus']) {
     case 'HEALTHY':
       return {
         dot: 'bg-emerald-500',
-        badge: 'bg-emerald-50 text-emerald-700'
+        badge: 'admin-badge admin-badge--success'
       };
     case 'PROVISIONING':
       return {
         dot: 'bg-amber-500',
-        badge: 'bg-amber-50 text-amber-700'
+        badge: 'admin-badge admin-badge--warning'
       };
     default:
       return {
         dot: 'bg-rose-500',
-        badge: 'bg-rose-50 text-rose-700'
+        badge: 'admin-badge admin-badge--danger'
       };
   }
 }
@@ -60,11 +60,11 @@ function getHealthTone(healthStatus: Tenant['healthStatus']) {
 function getStatusTone(status: Tenant['status']) {
   switch (status) {
     case 'ACTIVE':
-      return 'bg-sky-50 text-sky-700';
+      return 'admin-badge admin-badge--info';
     case 'ONBOARDING':
-      return 'bg-violet-50 text-violet-700';
+      return 'admin-badge admin-badge--warning';
     default:
-      return 'bg-slate-100 text-slate-700';
+      return 'admin-badge admin-badge--neutral';
   }
 }
 
@@ -359,12 +359,12 @@ export function TenantManagement() {
       </div>
 
       {error ? (
-        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <p className="admin-notice admin-notice--danger">
           {error}
         </p>
       ) : null}
       {success ? (
-        <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <p className="admin-notice admin-notice--success">
           {success}
         </p>
       ) : null}
@@ -396,8 +396,8 @@ export function TenantManagement() {
                       aria-pressed={isSelected}
                       className={`rounded-3xl border p-5 text-left transition ${
                         isSelected
-                          ? 'border-admin-accent bg-sky-50 shadow-sm'
-                          : 'border-admin-border bg-slate-50 hover:border-admin-accent/50 hover:bg-white'
+                          ? 'admin-panel border-admin-accent shadow-sm'
+                          : 'admin-panel-muted hover:border-admin-accent/50'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-4">
@@ -415,21 +415,21 @@ export function TenantManagement() {
                           </p>
                         </div>
                         <div className="flex flex-col items-end gap-2">
-                          <span className="rounded-full bg-slate-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-700">
+                          <span className="admin-badge admin-badge--neutral">
                             {tenant.type}
                           </span>
                           <span
-                            className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${healthTone.badge}`}
+                            className={healthTone.badge}
                           >
                             {tenant.healthStatus}
                           </span>
                           <span
-                            className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${statusTone}`}
+                            className={statusTone}
                           >
                             {tenant.status}
                           </span>
                           {tenant.isArchived ? (
-                            <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">
+                            <span className="admin-badge admin-badge--warning">
                               Archived
                             </span>
                           ) : null}
@@ -437,7 +437,7 @@ export function TenantManagement() {
                       </div>
 
                       <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-2xl bg-white px-4 py-3">
+                        <div className="admin-panel px-4 py-3">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-admin-muted">
                             Members
                           </p>
@@ -445,7 +445,7 @@ export function TenantManagement() {
                             {tenant.quotaMembers ?? 'Uncapped'}
                           </p>
                         </div>
-                        <div className="rounded-2xl bg-white px-4 py-3">
+                        <div className="admin-panel px-4 py-3">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-admin-muted">
                             Storage
                           </p>
@@ -453,7 +453,7 @@ export function TenantManagement() {
                             {tenant.quotaStorageGb ? `${tenant.quotaStorageGb} GB` : 'Uncapped'}
                           </p>
                         </div>
-                        <div className="rounded-2xl bg-white px-4 py-3">
+                        <div className="admin-panel px-4 py-3">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-admin-muted">
                             Created
                           </p>
@@ -491,14 +491,14 @@ export function TenantManagement() {
                   setSelectedTenantId('');
                   setTenantDetailForm(emptyTenantDetailForm);
                 }}
-                className="rounded-full border border-admin-border bg-white px-4 py-2 text-sm font-medium text-admin-text transition hover:border-admin-accent hover:text-admin-accent"
+                className="admin-button admin-button--secondary text-sm"
               >
                 Close detail view
               </button>
             </div>
 
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.6fr))]">
-              <div className="rounded-2xl bg-slate-50 p-5">
+              <div className="admin-panel-muted p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
@@ -512,28 +512,28 @@ export function TenantManagement() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full bg-slate-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-700">
+                    <span className="admin-badge admin-badge--neutral">
                       {selectedTenant.type}
                     </span>
                     <span
-                      className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${getHealthTone(selectedTenant.healthStatus).badge}`}
+                      className={getHealthTone(selectedTenant.healthStatus).badge}
                     >
                       {selectedTenant.healthStatus}
                     </span>
                     <span
-                      className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${getStatusTone(selectedTenant.status)}`}
+                      className={getStatusTone(selectedTenant.status)}
                     >
                       {selectedTenant.status}
                     </span>
                     {selectedTenant.isArchived ? (
-                      <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">
+                      <span className="admin-badge admin-badge--warning">
                         Archived
                       </span>
                     ) : null}
                   </div>
                 </div>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="admin-panel-muted p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
                   Created
                 </p>
@@ -541,7 +541,7 @@ export function TenantManagement() {
                   {new Date(selectedTenant.createdAt).toLocaleDateString()}
                 </p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="admin-panel-muted p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
                   Member limit
                 </p>
@@ -549,7 +549,7 @@ export function TenantManagement() {
                   {selectedTenant.quotaMembers ?? 'Uncapped'}
                 </p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="admin-panel-muted p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
                   Storage limit
                 </p>
@@ -558,7 +558,7 @@ export function TenantManagement() {
                   {selectedTenant.quotaStorageGb ? ' GB' : ''}
                 </p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="admin-panel-muted p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
                   Archived
                 </p>
@@ -573,7 +573,7 @@ export function TenantManagement() {
             <form className="space-y-6" onSubmit={handleSaveTenantDetails}>
               <div className="grid gap-6 xl:grid-cols-[minmax(320px,1.08fr)_minmax(320px,0.92fr)]">
                 <div className="space-y-6">
-                  <div className="rounded-3xl border border-admin-border bg-slate-50 p-5">
+                  <div className="admin-panel-muted rounded-3xl p-5">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
                         <p className="text-base font-semibold text-admin-text">
@@ -587,7 +587,7 @@ export function TenantManagement() {
                       <button
                         type="submit"
                         disabled={isSavingTenant}
-                        className="w-full rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70 lg:w-auto"
+                        className="admin-button admin-button--primary w-full text-sm lg:w-auto"
                       >
                         {isSavingTenant ? 'Saving tenant...' : 'Save tenant details'}
                       </button>
@@ -599,7 +599,7 @@ export function TenantManagement() {
                           Tenant status
                         </span>
                         <select
-                          className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                          className="admin-input mt-2"
                           value={tenantDetailForm.status}
                           onChange={(event) =>
                             setTenantDetailForm((current) => ({
@@ -622,7 +622,7 @@ export function TenantManagement() {
                           <input
                             type="number"
                             min="0"
-                            className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                            className="admin-input mt-2"
                             value={tenantDetailForm.quotaMembers}
                             onChange={(event) =>
                               setTenantDetailForm((current) => ({
@@ -641,7 +641,7 @@ export function TenantManagement() {
                           <input
                             type="number"
                             min="0"
-                            className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                            className="admin-input mt-2"
                             value={tenantDetailForm.quotaStorageGb}
                             onChange={(event) =>
                               setTenantDetailForm((current) => ({
@@ -654,7 +654,7 @@ export function TenantManagement() {
                         </label>
                       </div>
 
-                      <div className="rounded-2xl border border-admin-border bg-white p-4">
+                      <div className="admin-panel p-4">
                         <p className="text-sm font-medium text-admin-text">
                           Quota policy
                         </p>
@@ -666,7 +666,7 @@ export function TenantManagement() {
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-admin-border bg-slate-50 p-5">
+                  <div className="admin-panel-muted rounded-3xl p-5">
                     <p className="text-base font-semibold text-admin-text">
                       Tenant lifecycle
                     </p>
@@ -683,7 +683,7 @@ export function TenantManagement() {
                           }))
                         }
                         disabled={selectedTenant.status === 'INACTIVE'}
-                        className="w-full rounded-full border border-admin-border bg-white px-5 py-3 text-sm font-semibold text-admin-text transition hover:border-admin-accent disabled:cursor-not-allowed disabled:opacity-60"
+                        className="admin-button admin-button--secondary w-full text-sm"
                       >
                         {selectedTenant.status === 'INACTIVE'
                           ? 'Tenant already inactive'
@@ -697,7 +697,12 @@ export function TenantManagement() {
                           selectedTenant.status !== 'INACTIVE' ||
                           Boolean(selectedTenant.isArchived)
                         }
-                        className="w-full rounded-full border border-amber-300 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="admin-button w-full text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        style={{
+                          borderColor: 'rgba(251, 191, 36, 0.28)',
+                          background: 'rgba(251, 191, 36, 0.14)',
+                          color: '#fcd34d'
+                        }}
                       >
                         {isArchivingTenant
                           ? 'Archiving tenant...'
@@ -713,7 +718,11 @@ export function TenantManagement() {
                           selectedTenant.status !== 'INACTIVE' ||
                           !selectedTenant.isArchived
                         }
-                        className="w-full rounded-full bg-rose-600 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="admin-button w-full text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        style={{
+                          background: 'linear-gradient(135deg, #be123c 0%, #fb7185 100%)',
+                          color: '#fff'
+                        }}
                       >
                         {isDeletingTenant ? 'Deleting tenant...' : 'Delete tenant'}
                       </button>
@@ -725,7 +734,7 @@ export function TenantManagement() {
                 </div>
 
                 <div className="space-y-6">
-                  <div className="rounded-3xl border border-admin-border bg-slate-50 p-5">
+                  <div className="admin-panel-muted rounded-3xl p-5">
                     <p className="text-base font-semibold text-admin-text">
                       Tenant logo
                     </p>
@@ -733,7 +742,7 @@ export function TenantManagement() {
                       Upload a logo used by the member portal and tenant-branded
                       surfaces.
                     </p>
-                    <div className="mt-5 rounded-2xl border border-dashed border-admin-border bg-white p-4">
+                    <div className="admin-panel mt-5 border border-dashed p-4">
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                         <input
                           type="file"
@@ -750,7 +759,7 @@ export function TenantManagement() {
                           type="button"
                           onClick={() => void handleLogoUpload(selectedTenant.id)}
                           disabled={uploadingTenantId === selectedTenant.id}
-                          className="shrink-0 rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+                          className="admin-button admin-button--primary shrink-0 text-sm"
                         >
                           {uploadingTenantId === selectedTenant.id
                             ? 'Uploading logo...'
@@ -759,12 +768,12 @@ export function TenantManagement() {
                       </div>
 
                       {typeof selectedTenant.brandingConfig.logoUrl === 'string' ? (
-                        <div className="mt-4 flex items-center gap-4 rounded-2xl border border-admin-border bg-slate-50 p-4">
+                        <div className="admin-panel-muted mt-4 flex items-center gap-4 p-4">
                           {/* eslint-disable-next-line @next/next/no-img-element -- dynamic tenant branding URLs are runtime-configured and not suitable for next/image without broad remote allowlists */}
                           <img
                             src={`${config.serviceEndpoints.portal}${selectedTenant.brandingConfig.logoUrl}`}
                             alt={`${selectedTenant.name} logo`}
-                            className="h-16 w-16 rounded-xl border border-admin-border bg-white object-contain p-2"
+                            className="h-16 w-16 rounded-xl border border-admin-border bg-[rgba(255,255,255,0.08)] object-contain p-2"
                           />
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-admin-text">
@@ -781,14 +790,14 @@ export function TenantManagement() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-admin-border bg-slate-50 p-5">
+              <div className="admin-panel-muted rounded-3xl p-5">
                 <p className="text-base font-semibold text-admin-text">
                   Branding config snapshot
                 </p>
                 <p className="mt-1 text-sm text-admin-muted">
                   Current branding configuration stored for this tenant.
                 </p>
-                <pre className="mt-4 max-h-[360px] overflow-auto rounded-2xl bg-white p-4 text-xs text-admin-muted">
+                <pre className="admin-panel mt-4 max-h-[360px] overflow-auto p-4 text-xs text-admin-muted">
                   {JSON.stringify(selectedTenant.brandingConfig, null, 2)}
                 </pre>
               </div>

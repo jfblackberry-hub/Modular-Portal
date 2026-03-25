@@ -117,18 +117,18 @@ function getStatusTone(status: string) {
   const normalized = status.toLowerCase();
 
   if (normalized.includes('healthy') || normalized === 'active' || normalized === 'configured') {
-    return 'bg-emerald-100 text-emerald-700';
+    return 'admin-badge admin-badge--success';
   }
 
   if (normalized.includes('warning') || normalized.includes('provision') || normalized.includes('%')) {
-    return 'bg-amber-100 text-amber-700';
+    return 'admin-badge admin-badge--warning';
   }
 
   if (normalized.includes('critical') || normalized.includes('inactive') || normalized.includes('suspended')) {
-    return 'bg-rose-100 text-rose-700';
+    return 'admin-badge admin-badge--danger';
   }
 
-  return 'bg-slate-100 text-slate-700';
+  return 'admin-badge admin-badge--neutral';
 }
 
 function buildTenantLogHref(tenantId: string, event?: { eventType: string; resourceType: string; resourceId: string | null }) {
@@ -306,7 +306,7 @@ export function TenantListPage() {
       </div>
 
       {error ? (
-        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <p className="admin-notice admin-notice--danger">
           {error}
         </p>
       ) : null}
@@ -320,9 +320,9 @@ export function TenantListPage() {
         ) : rows.length === 0 ? (
           <p className="text-sm text-admin-muted">No tenants available.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="admin-table-shell overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-admin-border text-xs uppercase tracking-[0.2em] text-admin-muted">
+              <thead className="admin-table-head border-b border-admin-border text-xs uppercase tracking-[0.2em] text-admin-muted">
                 <tr>
                   <th className="px-3 py-3">Tenant Name</th>
                   <th className="px-3 py-3">Type</th>
@@ -336,7 +336,7 @@ export function TenantListPage() {
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.tenant.id} className="border-b border-admin-border/70">
+                  <tr key={row.tenant.id} className="admin-table-row">
                     <td className="px-3 py-4">
                       <div>
                         <Link
@@ -350,15 +350,15 @@ export function TenantListPage() {
                     </td>
                     <td className="px-3 py-4 text-admin-text">{row.tenant.type}</td>
                     <td className="px-3 py-4">
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusTone(row.tenant.healthStatus)}`}>
-                        {row.tenant.healthStatus}
-                      </span>
+                        <span className={getStatusTone(row.tenant.healthStatus)}>
+                          {row.tenant.healthStatus}
+                        </span>
                     </td>
                     <td className="px-3 py-4 text-admin-text">{row.users}</td>
                     <td className="px-3 py-4">
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusTone(row.connectivity)}`}>
-                        {row.connectivity}
-                      </span>
+                        <span className={getStatusTone(row.connectivity)}>
+                          {row.connectivity}
+                        </span>
                     </td>
                     <td className="px-3 py-4 text-admin-text">{row.configuration}</td>
                     <td className="px-3 py-4 text-admin-text">{row.alerts}</td>
@@ -366,7 +366,7 @@ export function TenantListPage() {
                       <div className="flex gap-2">
                         <Link
                           href={`/admin/platform/tenants/${row.tenant.id}`}
-                          className="rounded-full border border-admin-border bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-admin-text transition hover:border-admin-accent hover:text-admin-accent"
+                          className="admin-button admin-button--secondary text-xs uppercase tracking-[0.18em]"
                         >
                           Open
                         </Link>
@@ -498,14 +498,14 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
 
         <Link
           href="/admin/platform/tenants"
-          className="rounded-full border border-admin-border bg-white px-4 py-2 text-sm font-medium text-admin-text transition hover:border-admin-accent hover:text-admin-accent"
+          className="admin-button admin-button--secondary text-sm"
         >
           Back to tenants
         </Link>
       </div>
 
       {error ? (
-        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <p className="admin-notice admin-notice--danger">
           {error}
         </p>
       ) : null}
@@ -531,10 +531,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                   value: tenant.quotaStorageGb ? `${tenant.quotaStorageGb} GB` : 'Uncapped'
                 }
               ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4"
-                >
+                <div key={item.label} className="admin-panel-muted">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
                     {item.label}
                   </p>
@@ -557,7 +554,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             ) : (
               <div className="space-y-3">
                 <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                  <div className="admin-panel-muted">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
                       Total Units
                     </p>
@@ -565,7 +562,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                       {orderedOrganizationUnits.length}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                  <div className="admin-panel-muted">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
                       Root Nodes
                     </p>
@@ -573,7 +570,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                       {orderedOrganizationUnits.filter((unit) => !unit.parentId).length}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                  <div className="admin-panel-muted">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
                       Types Present
                     </p>
@@ -585,9 +582,9 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-2xl border border-admin-border">
+                <div className="admin-table-shell overflow-x-auto">
                   <table className="min-w-full text-left text-sm">
-                    <thead className="border-b border-admin-border bg-slate-50 text-xs uppercase tracking-[0.18em] text-admin-muted">
+                    <thead className="admin-table-head border-b border-admin-border text-xs uppercase tracking-[0.18em] text-admin-muted">
                       <tr>
                         <th className="px-4 py-3">Name</th>
                         <th className="px-4 py-3">Type</th>
@@ -602,7 +599,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                         );
 
                         return (
-                          <tr key={unit.id} className="border-b border-admin-border/70">
+                          <tr key={unit.id} className="admin-table-row">
                             <td className="px-4 py-4 text-admin-text">
                               <div
                                 className="flex items-center gap-3"
@@ -618,7 +615,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                               </div>
                             </td>
                             <td className="px-4 py-4">
-                              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                              <span className="admin-badge admin-badge--neutral">
                                 {unit.type}
                               </span>
                             </td>
@@ -649,7 +646,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4 transition hover:border-admin-accent"
+                  className="admin-link-tile"
                 >
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
                     {item.label}
@@ -671,7 +668,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
               {configurationItems.map((item) => (
                 <div
                   key={item.label}
-                  className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4"
+                  className="admin-panel-muted"
                 >
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
                     {item.label}
@@ -699,21 +696,21 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             <div className="grid gap-4 md:grid-cols-3">
               <Link
                 href={`/admin/platform/tenants/configuration?tenantId=${tenant.id}&moduleScope=member`}
-                className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4 transition hover:border-admin-accent"
+                className="admin-link-tile"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">Member Modules</p>
                 <p className="mt-2 text-2xl font-semibold text-admin-text">{memberModuleCount}</p>
               </Link>
               <Link
                 href={`/admin/platform/tenants/configuration?tenantId=${tenant.id}&moduleScope=provider`}
-                className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4 transition hover:border-admin-accent"
+                className="admin-link-tile"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">Provider Modules</p>
                 <p className="mt-2 text-2xl font-semibold text-admin-text">{providerModuleCount}</p>
               </Link>
               <Link
                 href={`/admin/platform/tenants/configuration?tenantId=${tenant.id}&moduleScope=all`}
-                className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4 transition hover:border-admin-accent"
+                className="admin-link-tile"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">Total Purchased</p>
                 <p className="mt-2 text-2xl font-semibold text-admin-text">{purchasedModules.length}</p>
@@ -741,7 +738,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                   {settings.integrations.map((connector) => (
                     <article
                       key={connector.id}
-                      className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4"
+                      className="admin-panel-muted"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -781,7 +778,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                   {settings.users.map((user) => (
                     <article
                       key={user.id}
-                      className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4"
+                      className="admin-panel-muted"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -790,7 +787,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                           </p>
                           <p className="mt-1 text-sm text-admin-muted">{user.email}</p>
                         </div>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${user.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                        <span className={user.isActive ? 'admin-badge admin-badge--success' : 'admin-badge admin-badge--neutral'}>
                           {user.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </div>
@@ -817,16 +814,16 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             description="Deep links into platform workspaces for this tenant."
           >
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <Link href={`/admin/platform/operations/jobs?tenantId=${tenant.id}`} className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-3 text-sm font-medium text-admin-text transition hover:border-admin-accent">
+              <Link href={`/admin/platform/operations/jobs?tenantId=${tenant.id}`} className="admin-link-tile text-sm font-medium">
                 Tenant jobs
               </Link>
-              <Link href={buildTenantLogHref(tenant.id)} className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-3 text-sm font-medium text-admin-text transition hover:border-admin-accent">
+              <Link href={buildTenantLogHref(tenant.id)} className="admin-link-tile text-sm font-medium">
                 Tenant logs
               </Link>
-              <Link href={`/admin/platform/audit?tenantId=${tenant.id}`} className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-3 text-sm font-medium text-admin-text transition hover:border-admin-accent">
+              <Link href={`/admin/platform/audit?tenantId=${tenant.id}`} className="admin-link-tile text-sm font-medium">
                 Tenant audit
               </Link>
-              <Link href="/admin/platform/tenants/configuration" className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-3 text-sm font-medium text-admin-text transition hover:border-admin-accent">
+              <Link href="/admin/platform/tenants/configuration" className="admin-link-tile text-sm font-medium">
                 Tenant configuration
               </Link>
             </div>
@@ -852,8 +849,8 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                         <Link
                           key={event.id}
                           href={buildTenantLogHref(tenant.id, event)}
-                          className="block rounded-2xl border border-admin-border bg-rose-50/40 px-4 py-3 transition hover:border-admin-accent"
-                        >
+                        className="admin-link-tile"
+                      >
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <p className="text-sm font-semibold text-admin-text">{event.eventType}</p>
@@ -862,7 +859,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                                 {event.resourceId ? ` • ${event.resourceId}` : ''}
                               </p>
                             </div>
-                            <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
+                            <span className="admin-badge admin-badge--danger">
                               Warning
                             </span>
                           </div>
@@ -874,7 +871,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                     {events.filter((event) =>
                       alertKeywords.some((keyword) => event.eventType.toLowerCase().includes(keyword))
                     ).length === 0 ? (
-                      <p className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-3 text-sm text-admin-muted">
+                      <p className="admin-panel-muted text-sm text-admin-muted">
                         No active warning alerts.
                       </p>
                     ) : null}
@@ -888,7 +885,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                       <Link
                         key={`log-${event.id}`}
                         href={buildTenantLogHref(tenant.id, event)}
-                        className="block rounded-2xl border border-admin-border bg-slate-50 px-4 py-3 transition hover:border-admin-accent"
+                        className="admin-link-tile"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div>
@@ -899,11 +896,11 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                             </p>
                           </div>
                           <span
-                            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
+                            className={
                               alertKeywords.some((keyword) => event.eventType.toLowerCase().includes(keyword))
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-sky-100 text-sky-700'
-                            }`}
+                                ? 'admin-badge admin-badge--warning'
+                                : 'admin-badge admin-badge--info'
+                            }
                           >
                             {alertKeywords.some((keyword) => event.eventType.toLowerCase().includes(keyword)) ? 'Alert' : 'Info'}
                           </span>

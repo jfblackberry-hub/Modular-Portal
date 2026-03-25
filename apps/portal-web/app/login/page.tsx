@@ -86,10 +86,28 @@ export default async function LoginPage() {
 
               <div className="relative max-w-2xl">
                 <div className="averra-platform-pill px-4 py-2">
-                  <span className="averra-platform-mark">AV</span>
+                  <span className="averra-platform-logo averra-platform-logo--pill" aria-hidden="true">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- static platform branding asset is served from local public storage */}
+                    <img src="/branding/averra_logo_cutout.svg" alt="" />
+                  </span>
                   <span className="text-sm font-semibold tracking-wide text-white">
                     Averra Portal
                   </span>
+                </div>
+
+                <div className="averra-platform-lockup mt-8">
+                  <span className="averra-platform-logo averra-platform-logo--hero" aria-hidden="true">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- static platform branding asset is served from local public storage */}
+                    <img src="/branding/averra_logo_cutout.svg" alt="" />
+                  </span>
+                  <div>
+                    <p className="averra-platform-kicker text-xs font-semibold text-[var(--averra-platform-muted)]">
+                      Averra Access
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-white">
+                      Unified platform sign-in
+                    </p>
+                  </div>
                 </div>
 
                 <h1 className="mt-8 text-4xl font-semibold leading-tight sm:text-5xl">

@@ -4,16 +4,9 @@ import { useRouter } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 
-const demoAccounts = [
-  { label: 'Anorth', username: 'Anorth' },
-  { label: 'Cgallagher', username: 'Cgallagher' },
-  { label: 'Mshuster', username: 'Mshuster' },
-  { label: 'Jfrank', username: 'Jfrank' }
-];
-
 export function DemoGate() {
   const router = useRouter();
-  const [username, setUsername] = useState(demoAccounts[0]?.username ?? '');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,71 +39,72 @@ export function DemoGate() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)]">
+    <main className="averra-platform-screen">
       <section className="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(440px,0.9fr)]">
-          <section className="overflow-hidden rounded-[32px] border border-[var(--border-subtle)] bg-white shadow-sm">
+          <section className="averra-platform-card overflow-hidden">
             <div className="relative px-10 py-12 sm:px-12 sm:py-16">
               <div
-                className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(15,108,189,0.16),_transparent_45%),linear-gradient(135deg,rgba(255,255,255,1),rgba(240,247,255,0.92))]"
+                className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(216,79,163,0.18),transparent_24%),radial-gradient(circle_at_85%_0%,rgba(76,159,204,0.16),transparent_26%)]"
                 aria-hidden="true"
               />
-              <div className="absolute -right-12 top-6 h-32 w-32 rounded-full bg-sky-100/80 blur-2xl" aria-hidden="true" />
-              <div className="absolute bottom-0 left-0 h-28 w-28 rounded-full bg-[var(--tenant-primary-soft-color)] blur-2xl" aria-hidden="true" />
+              <div className="absolute -right-12 top-6 h-32 w-32 rounded-full bg-[rgba(216,79,163,0.24)] blur-2xl" aria-hidden="true" />
+              <div className="absolute bottom-0 left-0 h-28 w-28 rounded-full bg-[rgba(76,159,204,0.2)] blur-2xl" aria-hidden="true" />
 
               <div className="relative max-w-2xl">
-                <div className="inline-flex items-center gap-3 rounded-full border border-[var(--border-subtle)] bg-white/95 px-4 py-2">
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] text-xs font-bold text-white">
-                    D
+                <div className="averra-platform-pill px-4 py-2">
+                  <span className="averra-platform-logo averra-platform-logo--pill" aria-hidden="true">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- static platform branding asset is served from local public storage */}
+                    <img src="/branding/averra_logo_cutout.svg" alt="" />
                   </span>
-                  <span className="text-sm font-semibold tracking-[0.08em] text-[var(--text-primary)]">
-                    Modular Portal Pilot Demo Access
+                  <span className="text-sm font-semibold tracking-[0.08em] text-white">
+                    Averra Demo Access
                   </span>
                 </div>
 
+                <div className="averra-platform-lockup mt-8">
+                  <span className="averra-platform-logo averra-platform-logo--hero" aria-hidden="true">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- static platform branding asset is served from local public storage */}
+                    <img src="/branding/averra_logo_cutout.svg" alt="" />
+                  </span>
+                  <div>
+                    <p className="averra-platform-kicker text-xs font-semibold text-[var(--averra-platform-muted)]">
+                      Approved Users
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-white">
+                      Demo environment access
+                    </p>
+                  </div>
+                </div>
+
                 <h1 className="mt-8 text-4xl font-semibold leading-tight sm:text-5xl">
-                  Controlled entry for the demo environment
+                  Controlled entry for the <span className="averra-platform-wordmark">Averra</span> demo environment
                 </h1>
-                <p className="mt-5 max-w-2xl text-base leading-7 text-[var(--text-secondary)]">
+                <p className="averra-platform-text-muted mt-5 max-w-2xl text-base leading-7">
                   This front-door screen keeps the pilot materials behind a lightweight
-                  demo gate before the portal’s auto-login shortcuts are exposed.
+                  brand-controlled gate before the portal’s auto-login shortcuts are exposed.
                 </p>
 
-                <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                  {demoAccounts.map((account) => (
-                    <button
-                      key={account.username}
-                      type="button"
-                      onClick={() => {
-                        setUsername(account.username);
-                        setPassword('');
-                      }}
-                      className="rounded-2xl border border-[var(--border-subtle)] bg-white/95 p-4 text-left transition hover:border-[var(--tenant-primary-color)] hover:shadow-sm"
-                    >
-                      <p className="text-sm font-semibold text-[var(--text-primary)]">
-                        {account.label}
-                      </p>
-                      <p className="mt-1 text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                        Approved demo user
-                      </p>
-                      <p className="mt-3 text-sm text-[var(--text-secondary)]">
-                        Username: <span className="font-semibold text-[var(--text-primary)]">{account.username}</span>
-                      </p>
-                    </button>
-                  ))}
+                <div className="mt-8 rounded-2xl border border-[var(--averra-border)] bg-[rgba(255,255,255,0.05)] p-5">
+                  <p className="text-sm font-semibold text-white">
+                    Access is granted by assigned credentials only.
+                  </p>
+                  <p className="averra-platform-text-muted mt-2 text-sm leading-6">
+                    Enter the username and password issued for your demo session. Approved user names are no longer listed on this screen.
+                  </p>
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="rounded-[32px] border border-[var(--border-subtle)] bg-white p-8 shadow-sm sm:p-10">
-            <p className="text-sm font-medium uppercase tracking-[0.18em] text-[var(--tenant-primary-color)]">
+          <section className="averra-platform-card p-8 sm:p-10">
+            <p className="text-sm font-medium uppercase tracking-[0.18em] text-[var(--averra-blue)]">
               Demo Sign-In
             </p>
-            <h2 className="mt-4 text-3xl font-semibold text-[var(--text-primary)]">
-              Enter the pilot portal
+            <h2 className="mt-4 text-3xl font-semibold text-white">
+              Enter the Averra pilot portal
             </h2>
-            <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
+            <p className="averra-platform-text-muted mt-3 text-sm leading-6">
               Use your assigned demo credentials to unlock the pilot environment.
             </p>
 
@@ -119,29 +113,29 @@ export function DemoGate() {
               className="mt-8 space-y-5"
             >
               <label className="block">
-                <span className="text-sm font-semibold text-[var(--text-primary)]">Username</span>
+                <span className="text-sm font-semibold text-white">Username</span>
                 <input
                   type="text"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
-                  className="mt-2 min-h-11 w-full rounded-2xl border border-[var(--border-subtle)] px-4 py-3 text-sm outline-none transition focus:border-[var(--tenant-primary-color)]"
+                  className="mt-2 min-h-11 w-full rounded-2xl border border-[var(--averra-border)] bg-[rgba(255,255,255,0.06)] px-4 py-3 text-sm text-white outline-none transition focus:border-[var(--averra-blue)]"
                   autoComplete="username"
                 />
               </label>
 
               <label className="block">
-                <span className="text-sm font-semibold text-[var(--text-primary)]">Password</span>
+                <span className="text-sm font-semibold text-white">Password</span>
                 <input
                   type="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="mt-2 min-h-11 w-full rounded-2xl border border-[var(--border-subtle)] px-4 py-3 text-sm outline-none transition focus:border-[var(--tenant-primary-color)]"
+                  className="mt-2 min-h-11 w-full rounded-2xl border border-[var(--averra-border)] bg-[rgba(255,255,255,0.06)] px-4 py-3 text-sm text-white outline-none transition focus:border-[var(--averra-blue)]"
                   autoComplete="current-password"
                 />
               </label>
 
               {error ? (
-                <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <p className="rounded-2xl border border-[rgba(251,113,133,0.34)] bg-[rgba(127,29,29,0.22)] px-4 py-3 text-sm text-rose-200">
                   {error}
                 </p>
               ) : null}
@@ -149,7 +143,7 @@ export function DemoGate() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+                className="averra-platform-button averra-platform-button--primary w-full text-sm disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isSubmitting ? 'Checking access...' : 'Unlock Demo'}
               </button>
