@@ -1,0 +1,105 @@
+// =============================================================================
+// Grafana Alloy — Modular Portal Observability Agent
+// Collects: application metrics, host metrics, container logs
+// Ships to:  Grafana Cloud (Mimir + Loki)
+// =============================================================================
+
+// ─── Application metrics (OpenTelemetry Prometheus exporter on api:9464) ──────
+prometheus.scrape "api" {
+  targets         = [{ __address__ = "api:9464" }]
+  scrape_interval = "30s"
+  metrics_path    = "/metrics"
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+// ─── Host system metrics (CPU, memory, disk, network) ─────────────────────────
+prometheus.exporter.unix "host" {
+  procfs_path = "/host/proc"
+  sysfs_path  = "/host/sys"
+  rootfs_path = "/rootfs"
+
+  // Only collect the collectors we actually need — keeps cardinality low
+  set_collectors = [
+    "cpu",
+    "diskstats",
+    "filesystem",
+    "loadavg",
+    "meminfo",
+    "netdev",
+  ]
+}
+
+prometheus.scrape "host" {
+  targets         = prometheus.exporter.unix.host.targets
+  scrape_interval = "60s"
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+// ─── Grafana Cloud — Prometheus remote write (Mimir) ──────────────────────────
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = env("GRAFANA_PROMETHEUS_URL")
+
+    basic_auth {
+      username = env("GRAFANA_USER_ID")
+      password = env("GRAFANA_API_TOKEN")
+    }
+  }
+
+  external_labels = {
+    env     = "dev",
+    service = "modular-portal",
+  }
+}
+
+// ─── Docker container log discovery ───────────────────────────────────────────
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  // Trim leading slash from container name  (e.g. /modular-portal-api-1 → modular-portal-api-1)
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  // Expose stdout vs stderr as a label
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "stream"
+  }
+
+  // Expose the Compose service name (api, portal-web, admin-console, postgres)
+  rule {
+    source_labels = ["__meta_docker_compose_service"]
+    target_label  = "service"
+  }
+}
+
+// ─── Loki — container log collection ──────────────────────────────────────────
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  forward_to = [loki.write.grafana_cloud.receiver]
+}
+
+// ─── Grafana Cloud — Loki remote write ────────────────────────────────────────
+loki.write "grafana_cloud" {
+  endpoint {
+    url = env("GRAFANA_LOKI_PUSH_URL")
+
+    basic_auth {
+      username = env("GRAFANA_LOKI_USER_ID")
+      password = env("GRAFANA_API_TOKEN")
+    }
+  }
+
+  external_labels = {
+    env     = "dev",
+    service = "modular-portal",
+  }
+}
