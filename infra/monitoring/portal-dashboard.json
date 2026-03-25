@@ -9,56 +9,426 @@
       "pluginName": "Prometheus"
     }
   ],
-  "__elements": {},
   "__requires": [
     { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
     { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
     { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" },
     { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
-    { "type": "panel", "id": "barchart", "name": "Bar chart", "version": "" }
+    { "type": "panel", "id": "state-timeline", "name": "State timeline", "version": "" },
+    { "type": "panel", "id": "bargauge", "name": "Bar gauge", "version": "" }
   ],
   "annotations": { "list": [] },
-  "description": "Modular Portal — API, Workflow, Integration & Notification metrics",
+  "description": "Visual control-tower view for Modular Portal health across host, service, API, and network layers.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
   "links": [],
   "panels": [
-
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "id": 100,
-      "title": "API Overview",
+      "title": "Health Banner",
       "type": "row"
     },
-
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Rollup status driven by host availability, API telemetry, API error rate, and core resource pressure.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            {
+              "options": {
+                "0": { "color": "red", "index": 0, "text": "Critical" },
+                "1": { "color": "yellow", "index": 1, "text": "Degraded" },
+                "2": { "color": "green", "index": 2, "text": "Healthy" }
+              },
+              "type": "value"
+            }
+          ],
+          "max": 2,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "green", "value": 2 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "2 - 2 * clamp_max(((max(up{job=\"integrations/unix\",env=\"dev\",service=\"modular-portal\"}) < bool 1) + (max(up{job=\"prometheus.scrape.api\",env=\"dev\",service=\"modular-portal\"}) < bool 1) + ((100 * sum(rate(platform_api_errors_total{env=\"dev\",service=\"modular-portal\"}[5m])) / clamp_min(sum(rate(platform_api_requests_total{env=\"dev\",service=\"modular-portal\"}[5m])), 0.001)) > bool 5) + ((100 * (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\",env=\"dev\",service=\"modular-portal\"}[5m])))) > bool 95) + ((100 * (1 - (sum(node_memory_MemAvailable_bytes{env=\"dev\",service=\"modular-portal\"}) / sum(node_memory_MemTotal_bytes{env=\"dev\",service=\"modular-portal\"})))) > bool 95) + ((100 * (1 - (sum(node_filesystem_avail_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",env=\"dev\",service=\"modular-portal\"}) / sum(node_filesystem_size_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",env=\"dev\",service=\"modular-portal\"})))) > bool 95), 1) - (1 - clamp_max(((max(up{job=\"integrations/unix\",env=\"dev\",service=\"modular-portal\"}) < bool 1) + (max(up{job=\"prometheus.scrape.api\",env=\"dev\",service=\"modular-portal\"}) < bool 1) + ((100 * sum(rate(platform_api_errors_total{env=\"dev\",service=\"modular-portal\"}[5m])) / clamp_min(sum(rate(platform_api_requests_total{env=\"dev\",service=\"modular-portal\"}[5m])), 0.001)) > bool 5) + ((100 * (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\",env=\"dev\",service=\"modular-portal\"}[5m])))) > bool 95) + ((100 * (1 - (sum(node_memory_MemAvailable_bytes{env=\"dev\",service=\"modular-portal\"}) / sum(node_memory_MemTotal_bytes{env=\"dev\",service=\"modular-portal\"})))) > bool 95) + ((100 * (1 - (sum(node_filesystem_avail_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",env=\"dev\",service=\"modular-portal\"}) / sum(node_filesystem_size_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",env=\"dev\",service=\"modular-portal\"})))) > bool 95), 1)) * clamp_max((((100 * sum(rate(platform_api_errors_total{env=\"dev\",service=\"modular-portal\"}[5m])) / clamp_min(sum(rate(platform_api_requests_total{env=\"dev\",service=\"modular-portal\"}[5m])), 0.001)) > bool 1) + ((100 * (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\",env=\"dev\",service=\"modular-portal\"}[5m])))) > bool 80) + ((100 * (1 - (sum(node_memory_MemAvailable_bytes{env=\"dev\",service=\"modular-portal\"}) / sum(node_memory_MemTotal_bytes{env=\"dev\",service=\"modular-portal\"})))) > bool 80) + ((100 * (1 - (sum(node_filesystem_avail_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",env=\"dev\",service=\"modular-portal\"}) / sum(node_filesystem_size_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",env=\"dev\",service=\"modular-portal\"})))) > bool 85), 1)",
+          "refId": "A"
+        }
+      ],
+      "title": "Platform Status"
+    },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "mappings": [
+            {
+              "options": {
+                "0": { "color": "red", "index": 0, "text": "Host Down" },
+                "1": { "color": "green", "index": 1, "text": "Host Up" }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 3, "x": 6, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "max(up{job=\"integrations/unix\",env=\"dev\",service=\"modular-portal\"})",
+          "refId": "A"
+        }
+      ],
+      "title": "EC2"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            {
+              "options": {
+                "0": { "color": "red", "index": 0, "text": "No Metrics" },
+                "1": { "color": "green", "index": 1, "text": "Streaming" }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 3, "x": 9, "y": 1 },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "max(up{job=\"prometheus.scrape.api\",env=\"dev\",service=\"modular-portal\"})",
+          "refId": "A"
+        }
+      ],
+      "title": "API Telemetry"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 20 }
+            ]
+          },
           "unit": "reqps"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
-      "id": 1,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "Request Rate",
-      "type": "stat",
+      "gridPos": { "h": 5, "w": 3, "x": 12, "y": 1 },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum(rate(platform_api_requests_total[5m]))",
-          "legendFormat": "req/s",
+          "expr": "sum(rate(platform_api_requests_total{env=\"dev\",service=\"modular-portal\"}[5m]))",
           "refId": "A"
         }
-      ]
+      ],
+      "title": "Throughput"
     },
-
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 3 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 3, "x": 15, "y": 1 },
+      "id": 5,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "100 * sum(rate(platform_api_errors_total{env=\"dev\",service=\"modular-portal\"}[5m])) / clamp_min(sum(rate(platform_api_requests_total{env=\"dev\",service=\"modular-portal\"}[5m])), 0.001)",
+          "refId": "A"
+        }
+      ],
+      "title": "Error Rate"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "red", "value": 500 }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 3, "x": 18, "y": 1 },
+      "id": 6,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(platform_api_latency_ms_bucket{env=\"dev\",service=\"modular-portal\"}[5m])))",
+          "refId": "A"
+        }
+      ],
+      "title": "P95 Latency"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.6 },
+              { "color": "red", "value": 0.85 }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 3, "x": 21, "y": 1 },
+      "id": 7,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\",env=\"dev\",service=\"modular-portal\"}[5m]))",
+          "refId": "A"
+        }
+      ],
+      "title": "CPU Gauge",
+      "type": "gauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+      "id": 101,
+      "title": "Platform Activity",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 25 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 7 },
+      "id": 8,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "platform_active_sessions{env=\"dev\",service=\"modular-portal\",session_type=\"all\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "Active Sessions",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 25 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 7 },
+      "id": 9,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "platform_active_users{env=\"dev\",service=\"modular-portal\",session_type=\"all\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "Active Users",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 25 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 7 },
+      "id": 10,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "platform_job_queue_depth{env=\"dev\",service=\"modular-portal\",status=\"PENDING\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "Pending Jobs",
+      "type": "stat"
+    },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
@@ -72,25 +442,30 @@
               { "color": "red", "value": 5 }
             ]
           },
-          "unit": "percent"
+          "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
-      "id": 2,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "Error Rate",
-      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 7 },
+      "id": 11,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "100 * sum(rate(platform_api_errors_total[5m])) / (sum(rate(platform_api_requests_total[5m])) > 0 or vector(1))",
-          "legendFormat": "error %",
+          "expr": "platform_job_queue_depth{env=\"dev\",service=\"modular-portal\",status=\"FAILED\"}",
           "refId": "A"
         }
-      ]
+      ],
+      "title": "Failed Jobs",
+      "type": "stat"
     },
-
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
@@ -100,29 +475,33 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 500 },
-              { "color": "red", "value": 1000 }
+              { "color": "yellow", "value": 300 },
+              { "color": "red", "value": 900 }
             ]
           },
-          "unit": "ms"
+          "unit": "s"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
-      "id": 3,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "P50 Latency",
-      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 12, "y": 7 },
+      "id": 17,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(platform_api_latency_ms_bucket[5m])))",
-          "legendFormat": "p50",
+          "expr": "platform_job_oldest_pending_age_seconds{env=\"dev\",service=\"modular-portal\"}",
           "refId": "A"
         }
-      ]
+      ],
+      "title": "Oldest Pending Job"
     },
-
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
@@ -132,29 +511,76 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 1000 },
-              { "color": "red", "value": 2000 }
+              { "color": "yellow", "value": 60 },
+              { "color": "red", "value": 180 }
             ]
           },
-          "unit": "ms"
+          "unit": "s"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
-      "id": 4,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "P95 Latency",
-      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 15, "y": 7 },
+      "id": 18,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(platform_api_latency_ms_bucket[5m])))",
-          "legendFormat": "p95",
+          "expr": "time() - platform_monitoring_snapshot_timestamp_seconds{env=\"dev\",service=\"modular-portal\"}",
           "refId": "A"
         }
-      ]
+      ],
+      "title": "Last Snapshot Age"
     },
-
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": { "color": "red", "index": 0, "text": "Stale" },
+                "1": { "color": "green", "index": 1, "text": "Fresh" }
+              },
+              "type": "value"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 18, "y": 7 },
+      "id": 19,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "platform_monitoring_snapshot_success{env=\"dev\",service=\"modular-portal\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "Snapshot Status"
+    },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
@@ -164,401 +590,395 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 2000 },
-              { "color": "red", "value": 4000 }
+              { "color": "yellow", "value": 86400 },
+              { "color": "red", "value": 259200 }
             ]
           },
-          "unit": "ms"
+          "unit": "s"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
-      "id": 5,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "P99 Latency",
-      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 21, "y": 7 },
+      "id": 20,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value"
+      },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(platform_api_latency_ms_bucket[5m])))",
-          "legendFormat": "p99",
+          "expr": "time() - platform_process_started_timestamp_seconds{env=\"dev\",service=\"modular-portal\"}",
           "refId": "A"
         }
-      ]
+      ],
+      "title": "API Uptime"
     },
-
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
+      "id": 103,
+      "title": "Resource Gauges",
+      "type": "row"
+    },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" },
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.75 },
+              { "color": "red", "value": 0.9 }
+            ]
+          },
+          "unit": "percentunit"
+        },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
-      "id": 6,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "Total Requests (24h)",
-      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 12 },
+      "id": 21,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
+      },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum(increase(platform_api_requests_total[24h]))",
-          "legendFormat": "total",
+          "expr": "1 - (sum(node_memory_MemAvailable_bytes{env=\"dev\",service=\"modular-portal\"}) / sum(node_memory_MemTotal_bytes{env=\"dev\",service=\"modular-portal\"}))",
           "refId": "A"
         }
-      ]
+      ],
+      "title": "Memory Gauge",
+      "type": "gauge"
     },
-
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.75 },
+              { "color": "red", "value": 0.9 }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 12 },
+      "id": 22,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "1 - (sum(node_filesystem_avail_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",env=\"dev\",service=\"modular-portal\"}) / sum(node_filesystem_size_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",env=\"dev\",service=\"modular-portal\"}))",
+          "refId": "A"
+        }
+      ],
+      "title": "Disk Gauge",
+      "type": "gauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "continuous-GrYlRd" },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 12 },
+      "id": 23,
+      "options": {
+        "displayMode": "gradient",
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showUnfilled": true,
+        "sizing": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum(rate(node_network_receive_bytes_total{device!=\"lo\",env=\"dev\",service=\"modular-portal\"}[5m]))",
+          "legendFormat": "Ingress",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum(rate(node_network_transmit_bytes_total{device!=\"lo\",env=\"dev\",service=\"modular-portal\"}[5m]))",
+          "legendFormat": "Egress",
+          "refId": "B"
+        }
+      ],
+      "title": "Network Flow",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "continuous-BlYlRd" },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 12 },
+      "id": 24,
+      "options": {
+        "displayMode": "gradient",
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showUnfilled": true,
+        "sizing": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "max(node_load1{env=\"dev\",service=\"modular-portal\"})",
+          "legendFormat": "Load 1m",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "max(node_load5{env=\"dev\",service=\"modular-portal\"})",
+          "legendFormat": "Load 5m",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "max(node_load15{env=\"dev\",service=\"modular-portal\"})",
+          "legendFormat": "Load 15m",
+          "refId": "C"
+        }
+      ],
+      "title": "EC2 Load",
+      "type": "bargauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
+      "id": 102,
+      "title": "Operational View",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "fillOpacity": 90,
+            "lineWidth": 0
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": { "color": "red", "index": 0, "text": "Down" },
+                "1": { "color": "green", "index": 1, "text": "Up" }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 21 },
+      "id": 12,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "auto",
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "max by (job) (up{env=\"dev\",service=\"modular-portal\"})",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Service State Timeline",
+      "type": "state-timeline"
+    },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": { "color": { "mode": "palette-classic" }, "unit": "reqps" },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "errors" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
-          }
-        ]
+        "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
-      "id": 7,
-      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
-      "title": "Request & Error Rate",
-      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 21 },
+      "id": 13,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum(rate(platform_api_requests_total[5m]))",
+          "expr": "sum(rate(platform_api_requests_total{env=\"dev\",service=\"modular-portal\"}[5m]))",
           "legendFormat": "requests",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum(rate(platform_api_errors_total[5m]))",
+          "expr": "sum(rate(platform_api_errors_total{env=\"dev\",service=\"modular-portal\"}[5m]))",
           "legendFormat": "errors",
           "refId": "B"
         }
-      ]
+      ],
+      "title": "API Volume Trend",
+      "type": "timeseries"
     },
-
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": { "color": { "mode": "palette-classic" }, "unit": "ms" },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
-      "id": 8,
-      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
-      "title": "API Latency Percentiles",
-      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 21 },
+      "id": 14,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(platform_api_latency_ms_bucket[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(platform_api_latency_ms_bucket{env=\"dev\",service=\"modular-portal\"}[5m])))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(platform_api_latency_ms_bucket[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(platform_api_latency_ms_bucket{env=\"dev\",service=\"modular-portal\"}[5m])))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(platform_api_latency_ms_bucket[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(platform_api_latency_ms_bucket{env=\"dev\",service=\"modular-portal\"}[5m])))",
           "legendFormat": "p99",
           "refId": "C"
         }
-      ]
+      ],
+      "title": "API Latency Trend",
+      "type": "timeseries"
     },
-
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "unit": "reqps" },
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "percent" },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 13 },
-      "id": 9,
-      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "right" }, "tooltip": { "mode": "multi" } },
-      "title": "Request Rate by Route",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum by (route, method) (rate(platform_api_requests_total[5m]))",
-          "legendFormat": "{{method}} {{route}}",
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
-      "id": 101,
-      "title": "Workflows",
-      "type": "row"
-    },
-
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "unit": "short" },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 22 },
-      "id": 10,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "Workflows Completed (24h)",
-      "type": "stat",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum(increase(platform_workflow_execution_duration_ms_count[24h]))",
-          "legendFormat": "completed",
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 5000 },
-              { "color": "red", "value": 15000 }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 22 },
-      "id": 11,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "Median Workflow Duration",
-      "type": "stat",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(platform_workflow_execution_duration_ms_bucket[30m])))",
-          "legendFormat": "p50",
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "unit": "ms" },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
-      "id": 12,
-      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
-      "title": "Workflow Duration by Type",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.95, sum by (le, workflow_type) (rate(platform_workflow_execution_duration_ms_bucket[10m])))",
-          "legendFormat": "p95 — {{workflow_type}}",
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
-      "id": 13,
-      "options": { "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
-      "title": "Workflow Completions by Status",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum by (status) (increase(platform_workflow_execution_duration_ms_count[10m]))",
-          "legendFormat": "{{status}}",
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 34 },
-      "id": 102,
-      "title": "Notifications",
-      "type": "row"
-    },
-
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "unit": "short" },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 35 },
-      "id": 14,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "Notifications Sent (24h)",
-      "type": "stat",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum(increase(platform_notification_sent_total[24h]))",
-          "legendFormat": "sent",
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 35 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 29 },
       "id": 15,
-      "options": { "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "right" }, "tooltip": { "mode": "multi" } },
-      "title": "Notification Rate by Channel",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum by (channel) (rate(platform_notification_sent_total[10m]))",
-          "legendFormat": "{{channel}}",
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 43 },
-      "id": 103,
-      "title": "Integrations",
-      "type": "row"
-    },
-
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "unit": "short" },
-        "overrides": []
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "single" }
       },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 44 },
-      "id": 16,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "Integration Executions (24h)",
-      "type": "stat",
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum(increase(platform_integration_activity_total[24h]))",
-          "legendFormat": "total",
+          "expr": "100 * (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\",env=\"dev\",service=\"modular-portal\"}[5m])))",
+          "legendFormat": "cpu",
           "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 5 },
-              { "color": "red", "value": 20 }
-            ]
-          },
-          "unit": "percent"
         },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 44 },
-      "id": 17,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "Integration Failure Rate",
-      "type": "stat",
-      "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "100 * sum(rate(platform_integration_activity_total{status=\"FAILED\"}[30m])) / (sum(rate(platform_integration_activity_total[30m])) > 0 or vector(1))",
-          "legendFormat": "failure %",
-          "refId": "A"
+          "expr": "100 * (1 - (sum(node_memory_MemAvailable_bytes{env=\"dev\",service=\"modular-portal\"}) / sum(node_memory_MemTotal_bytes{env=\"dev\",service=\"modular-portal\"})))",
+          "legendFormat": "memory",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "100 * (1 - (sum(node_filesystem_avail_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",env=\"dev\",service=\"modular-portal\"}) / sum(node_filesystem_size_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",env=\"dev\",service=\"modular-portal\"})))",
+          "legendFormat": "disk",
+          "refId": "C"
         }
-      ]
+      ],
+      "title": "Resource Trend",
+      "type": "timeseries"
     },
-
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" },
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "Bps" },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 44 },
-      "id": 18,
-      "options": { "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
-      "title": "Integration Activity by Adapter",
-      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 29 },
+      "id": 16,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "single" }
+      },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum by (adapter_key, status) (rate(platform_integration_activity_total[10m]))",
-          "legendFormat": "{{adapter_key}} — {{status}}",
+          "expr": "sum(rate(node_network_receive_bytes_total{device!=\"lo\",env=\"dev\",service=\"modular-portal\"}[5m]))",
+          "legendFormat": "ingress",
           "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "unit": "ms" },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 52 },
-      "id": 19,
-      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
-      "title": "Integration Duration by Adapter (p95)",
-      "type": "timeseries",
-      "targets": [
+        },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.95, sum by (le, adapter_key) (rate(platform_integration_execution_duration_ms_bucket[10m])))",
-          "legendFormat": "{{adapter_key}}",
-          "refId": "A"
+          "expr": "sum(rate(node_network_transmit_bytes_total{device!=\"lo\",env=\"dev\",service=\"modular-portal\"}[5m]))",
+          "legendFormat": "egress",
+          "refId": "B"
         }
-      ]
+      ],
+      "title": "Network Trend",
+      "type": "timeseries"
     }
-
   ],
   "refresh": "30s",
-  "schemaVersion": 38,
-  "tags": ["modular-portal", "platform"],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["modular-portal", "platform", "summary", "visual"],
   "templating": { "list": [] },
-  "time": { "from": "now-3h", "to": "now" },
+  "time": { "from": "now-6h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Modular Portal — Platform Overview",
-  "uid": "modular-portal-platform",
-  "version": 1
+  "title": "Modular Portal Health",
+  "uid": "modular-portal",
+  "version": 1,
+  "weekStart": ""
 }

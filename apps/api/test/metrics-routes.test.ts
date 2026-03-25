@@ -6,7 +6,7 @@ process.env.DATABASE_URL ??=
 process.env.PAYER_PORTAL_API_AUTOSTART = 'false';
 
 import { prisma } from '@payer-portal/database';
-import { publish, recordIntegrationExecution } from '@payer-portal/server';
+import { enqueueJob, publish, recordIntegrationExecution } from '@payer-portal/server';
 
 after(async () => {
   await prisma.$disconnect();
@@ -15,6 +15,28 @@ after(async () => {
 test('metrics endpoint exposes core platform metrics', async () => {
   const { buildServer } = await import('../src/server.js');
   const app = buildServer();
+
+  const loginResponse = await app.inject({
+    method: 'POST',
+    url: '/auth/login',
+    payload: {
+      email: 'admin',
+      password: 'dev'
+    }
+  });
+
+  assert.equal(loginResponse.statusCode, 200);
+  const loginPayload = loginResponse.json() as {
+    token: string;
+  };
+
+  await app.inject({
+    method: 'GET',
+    url: '/auth/me',
+    headers: {
+      authorization: `Bearer ${loginPayload.token}`
+    }
+  });
 
   await app.inject({
     method: 'GET',
@@ -77,6 +99,16 @@ test('metrics endpoint exposes core platform metrics', async () => {
     triggerMode: 'MANUAL'
   });
 
+  await enqueueJob({
+    type: 'search.index',
+    tenantId: null,
+    payload: {
+      entityType: 'tenant',
+      entityId: 'tenant-metrics',
+      sourceEvent: 'test.seed'
+    }
+  });
+
   const response = await app.inject({
     method: 'GET',
     url: '/metrics'
@@ -93,6 +125,15 @@ test('metrics endpoint exposes core platform metrics', async () => {
   assert.match(body, /platform_notification_sent_total/);
   assert.match(body, /platform_integration_activity_total/);
   assert.match(body, /platform_integration_execution_duration_ms/);
+  assert.match(body, /platform_active_sessions/);
+  assert.match(body, /platform_active_users/);
+  assert.match(body, /platform_job_queue_depth/);
+  assert.match(body, /platform_job_oldest_pending_age_seconds/);
+  assert.match(body, /platform_tenants_total/);
+  assert.match(body, /platform_users_total/);
+  assert.match(body, /platform_monitoring_snapshot_timestamp_seconds/);
+  assert.match(body, /platform_process_started_timestamp_seconds/);
+  assert.match(body, /platform_build_info/);
 
   await app.close();
 });

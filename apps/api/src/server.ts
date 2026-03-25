@@ -8,6 +8,7 @@ import {
   logAuthenticationEvent,
   logAuthorizationFailure,
   recordApiRequest,
+  recordAuthenticatedSessionActivity,
   registerBillingEnrollmentAdapters
 } from '@payer-portal/server';
 import Fastify from 'fastify';
@@ -177,6 +178,16 @@ export function buildServer() {
     const tokenPayload = verifyAccessToken(
       getBearerToken(request.headers.authorization)
     );
+
+    const bearerToken = getBearerToken(request.headers.authorization);
+    if (tokenPayload && bearerToken) {
+      recordAuthenticatedSessionActivity({
+        token: bearerToken,
+        userId: tokenPayload.sub,
+        tenantId: tokenPayload.tenantId,
+        sessionType: tokenPayload.sessionType
+      });
+    }
 
     request.log.info(
       {
