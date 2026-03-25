@@ -6,6 +6,8 @@ import type {
 } from '@prisma/client';
 
 export const ORGANIZATION_UNIT_TYPES = [
+  'ENTERPRISE',
+  'REGION',
   'LOCATION',
   'DEPARTMENT',
   'TEAM'

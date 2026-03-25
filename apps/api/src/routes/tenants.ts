@@ -9,7 +9,9 @@ import {
   getCurrentUserFromHeaders
 } from '../services/current-user-service';
 import {
+  archiveTenant,
   createTenant,
+  deleteTenant,
   getTenantById,
   listTenants,
   updateTenant
@@ -138,6 +140,78 @@ export async function tenantRoutes(app: FastifyInstance) {
         );
 
         return reply.send(tenant);
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error instanceof AuthenticationError) {
+            return reply.status(401).send({ message: error.message });
+          }
+
+          if (error instanceof AuthorizationError) {
+            return reply.status(403).send({ message: error.message });
+          }
+
+          const status = error.message === 'Tenant not found' ? 404 : 400;
+          return reply.status(status).send({ message: error.message });
+        }
+
+        return reply.status(503).send({
+          message:
+            'Local database unavailable. Start PostgreSQL, run migrations.'
+        });
+      }
+    }
+  );
+
+  app.post<{ Params: { id: string } }>(
+    '/platform-admin/tenants/:id/archive',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        const tenant = await archiveTenant(request.params.id, {
+          actorUserId: currentUser.id,
+          ipAddress: request.ip,
+          userAgent: request.headers['user-agent']
+        });
+
+        return reply.send(tenant);
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error instanceof AuthenticationError) {
+            return reply.status(401).send({ message: error.message });
+          }
+
+          if (error instanceof AuthorizationError) {
+            return reply.status(403).send({ message: error.message });
+          }
+
+          const status = error.message === 'Tenant not found' ? 404 : 400;
+          return reply.status(status).send({ message: error.message });
+        }
+
+        return reply.status(503).send({
+          message:
+            'Local database unavailable. Start PostgreSQL, run migrations.'
+        });
+      }
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/platform-admin/tenants/:id',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        const result = await deleteTenant(request.params.id, {
+          actorUserId: currentUser.id,
+          ipAddress: request.ip,
+          userAgent: request.headers['user-agent']
+        });
+
+        return reply.send(result);
       } catch (error) {
         if (error instanceof Error) {
           if (error instanceof AuthenticationError) {

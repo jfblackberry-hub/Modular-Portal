@@ -21,6 +21,8 @@
     "db:seed": "prisma db seed",
     "db:seed:employer-groups": "node --import tsx prisma/seed-employer-groups.ts",
     "db:seed:eb-demo": "node --import tsx prisma/seed-eb-demo.ts",
+    "db:seed:provider-tenant": "node --import tsx prisma/seed-provider-tenant.ts",
+    "db:validate:provider-tenant": "node --import tsx prisma/validate-provider-tenant.ts",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "node -e \"console.log('No tests configured for @payer-portal/database')\""

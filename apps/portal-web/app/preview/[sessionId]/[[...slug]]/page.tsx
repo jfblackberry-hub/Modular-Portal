@@ -4,7 +4,7 @@ import { PortalShell } from '../../../../components/portal-shell';
 import { PreviewRouteUnavailable } from '../../../../components/preview-route-unavailable';
 import { ProviderPortalLayout } from '../../../../components/provider/provider-portal-layout';
 import { TenantTheme } from '../../../../components/tenant-theme';
-import { getProviderPortalConfig } from '../../../../config/providerPortalConfig';
+import { resolveProviderPortalConfig } from '../../../../config/providerPortalConfig';
 import { resolvePortalNavigation } from '../../../../lib/navigation';
 import { getPluginNavigationById } from '../../../../lib/plugins';
 import { resolvePortalExperience } from '../../../../lib/portal-experience';
@@ -267,7 +267,7 @@ export default async function PreviewSessionCatchAllPage({
     const branding = await getTenantBranding(user.tenant, user.id, {
       experience: 'provider'
     });
-    const config = getProviderPortalConfig(variant);
+    const config = resolveProviderPortalConfig(variant, user.tenant.brandingConfig);
     const navigationItems = getPluginNavigationById('provider').filter((item) =>
       item.moduleKeys.length > 0
         ? item.moduleKeys.some((moduleKey) =>

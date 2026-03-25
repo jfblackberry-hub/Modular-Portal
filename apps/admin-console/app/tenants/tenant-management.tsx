@@ -11,10 +11,13 @@ type Tenant = {
   name: string;
   slug: string;
   status: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
+  type: 'PAYER' | 'EMPLOYER' | 'BROKER' | 'MEMBER' | 'PROVIDER';
   healthStatus: 'HEALTHY' | 'PROVISIONING' | 'SUSPENDED';
   brandingConfig: Record<string, unknown>;
   quotaMembers: number | null;
   quotaStorageGb: number | null;
+  isArchived?: boolean;
+  archivedAt?: string | null;
   createdAt: string;
 };
 
@@ -84,6 +87,8 @@ export function TenantManagement() {
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingTenant, setIsSavingTenant] = useState(false);
+  const [isArchivingTenant, setIsArchivingTenant] = useState(false);
+  const [isDeletingTenant, setIsDeletingTenant] = useState(false);
   const [uploadingTenantId, setUploadingTenantId] = useState('');
   const [logoFiles, setLogoFiles] = useState<LogoUploadState>({});
 
@@ -248,6 +253,86 @@ export function TenantManagement() {
     }
   }
 
+  async function handleArchiveTenant() {
+    if (!selectedTenant) {
+      setError('Select a tenant before archiving.');
+      return;
+    }
+
+    setError('');
+    setSuccess('');
+    setIsArchivingTenant(true);
+
+    try {
+      const response = await fetch(
+        `${config.apiBaseUrl}/platform-admin/tenants/${selectedTenant.id}/archive`,
+        {
+          method: 'POST',
+          headers: getAdminAuthHeaders()
+        }
+      );
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setError(payload?.message ?? 'Unable to archive tenant.');
+        return;
+      }
+
+      setSuccess('Tenant archived. It can now be deleted.');
+      await loadTenants(selectedTenant.id);
+    } catch {
+      setError('Unable to archive tenant.');
+    } finally {
+      setIsArchivingTenant(false);
+    }
+  }
+
+  async function handleDeleteTenant() {
+    if (!selectedTenant) {
+      setError('Select a tenant before deleting.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete ${selectedTenant.name}? This removes the tenant and its tenant-scoped data from this environment immediately.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError('');
+    setSuccess('');
+    setIsDeletingTenant(true);
+
+    try {
+      const response = await fetch(
+        `${config.apiBaseUrl}/platform-admin/tenants/${selectedTenant.id}`,
+        {
+          method: 'DELETE',
+          headers: getAdminAuthHeaders()
+        }
+      );
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setError(payload?.message ?? 'Unable to delete tenant.');
+        return;
+      }
+
+      setSuccess('Tenant deleted.');
+      await loadTenants();
+    } catch {
+      setError('Unable to delete tenant.');
+    } finally {
+      setIsDeletingTenant(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-4">
@@ -330,6 +415,9 @@ export function TenantManagement() {
                           </p>
                         </div>
                         <div className="flex flex-col items-end gap-2">
+                          <span className="rounded-full bg-slate-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-700">
+                            {tenant.type}
+                          </span>
                           <span
                             className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${healthTone.badge}`}
                           >
@@ -340,6 +428,11 @@ export function TenantManagement() {
                           >
                             {tenant.status}
                           </span>
+                          {tenant.isArchived ? (
+                            <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">
+                              Archived
+                            </span>
+                          ) : null}
                         </div>
                       </div>
 
@@ -419,6 +512,9 @@ export function TenantManagement() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <span className="rounded-full bg-slate-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-700">
+                      {selectedTenant.type}
+                    </span>
                     <span
                       className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${getHealthTone(selectedTenant.healthStatus).badge}`}
                     >
@@ -429,6 +525,11 @@ export function TenantManagement() {
                     >
                       {selectedTenant.status}
                     </span>
+                    {selectedTenant.isArchived ? (
+                      <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">
+                        Archived
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -455,6 +556,16 @@ export function TenantManagement() {
                 <p className="mt-2 text-sm font-semibold text-admin-text">
                   {selectedTenant.quotaStorageGb ?? 'Uncapped'}
                   {selectedTenant.quotaStorageGb ? ' GB' : ''}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
+                  Archived
+                </p>
+                <p className="mt-2 text-sm font-semibold text-admin-text">
+                  {selectedTenant.archivedAt
+                    ? new Date(selectedTenant.archivedAt).toLocaleDateString()
+                    : 'Not archived'}
                 </p>
               </div>
             </div>
@@ -553,6 +664,63 @@ export function TenantManagement() {
                         </p>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-admin-border bg-slate-50 p-5">
+                    <p className="text-base font-semibold text-admin-text">
+                      Tenant lifecycle
+                    </p>
+                    <p className="mt-1 text-sm text-admin-muted">
+                      The temporary admin flow is: set inactive, archive, then delete.
+                    </p>
+                    <div className="mt-5 space-y-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTenantDetailForm((current) => ({
+                            ...current,
+                            status: 'INACTIVE'
+                          }))
+                        }
+                        disabled={selectedTenant.status === 'INACTIVE'}
+                        className="w-full rounded-full border border-admin-border bg-white px-5 py-3 text-sm font-semibold text-admin-text transition hover:border-admin-accent disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {selectedTenant.status === 'INACTIVE'
+                          ? 'Tenant already inactive'
+                          : 'Mark tenant inactive'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleArchiveTenant()}
+                        disabled={
+                          isArchivingTenant ||
+                          selectedTenant.status !== 'INACTIVE' ||
+                          Boolean(selectedTenant.isArchived)
+                        }
+                        className="w-full rounded-full border border-amber-300 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isArchivingTenant
+                          ? 'Archiving tenant...'
+                          : selectedTenant.isArchived
+                            ? 'Tenant archived'
+                            : 'Archive tenant'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteTenant()}
+                        disabled={
+                          isDeletingTenant ||
+                          selectedTenant.status !== 'INACTIVE' ||
+                          !selectedTenant.isArchived
+                        }
+                        className="w-full rounded-full bg-rose-600 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isDeletingTenant ? 'Deleting tenant...' : 'Delete tenant'}
+                      </button>
+                    </div>
+                    <p className="mt-4 text-xs text-admin-muted">
+                      Deletion only unlocks after the tenant is inactive and archived.
+                    </p>
                   </div>
                 </div>
 

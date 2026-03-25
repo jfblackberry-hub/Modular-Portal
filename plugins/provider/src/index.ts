@@ -4,13 +4,13 @@ export const manifest: PluginManifest = {
   id: 'provider',
   name: 'Provider Services',
   version: '0.1.0',
-  requiredPermissions: ['tenant.view'],
   capabilities: [
     {
       id: 'provider_operations',
       label: 'Operations',
       description:
         'Provider operational dashboard and work queue entry points.',
+      requiredPermissions: ['tenant.view', 'provider.view'],
       moduleKeys: ['provider_dashboard'],
       routes: [
         {
@@ -30,6 +30,7 @@ export const manifest: PluginManifest = {
       id: 'provider_eligibility',
       label: 'Eligibility',
       description: 'Eligibility and benefits verification workflows.',
+      requiredPermissions: ['tenant.view', 'provider.eligibility.view'],
       moduleKeys: ['provider_eligibility'],
       routes: [
         {
@@ -49,6 +50,7 @@ export const manifest: PluginManifest = {
       id: 'provider_authorizations',
       label: 'Authorizations',
       description: 'Prior authorization and referral workflows.',
+      requiredPermissions: ['tenant.view', 'provider.authorizations.view'],
       moduleKeys: ['provider_authorizations'],
       routes: [
         {
@@ -68,6 +70,7 @@ export const manifest: PluginManifest = {
       id: 'provider_claims',
       label: 'Claims',
       description: 'Claim status, remittance, and payment workflows.',
+      requiredPermissions: ['tenant.view', 'provider.claims.view'],
       moduleKeys: ['provider_claims', 'provider_payments'],
       routes: [
         {
@@ -91,6 +94,7 @@ export const manifest: PluginManifest = {
       id: 'provider_patients',
       label: 'Patients',
       description: 'Patient roster and servicing workflows.',
+      requiredPermissions: ['tenant.view', 'provider.patients.view'],
       moduleKeys: ['provider_patients'],
       routes: [
         {
@@ -111,6 +115,7 @@ export const manifest: PluginManifest = {
       label: 'Documents',
       description:
         'Provider resources, forms, manuals, and operational documents.',
+      requiredPermissions: ['tenant.view', 'provider.documents.view'],
       moduleKeys: ['provider_documents'],
       routes: [
         {
@@ -130,6 +135,7 @@ export const manifest: PluginManifest = {
       id: 'provider_messages',
       label: 'Messages',
       description: 'Secure provider communications and notices.',
+      requiredPermissions: ['tenant.view', 'provider.messages.view'],
       moduleKeys: ['provider_messages'],
       routes: [
         {
@@ -150,6 +156,7 @@ export const manifest: PluginManifest = {
       label: 'Support',
       description:
         'Provider support resources and operational escalation paths.',
+      requiredPermissions: ['tenant.view', 'provider.support.view'],
       moduleKeys: ['provider_support'],
       routes: [
         {
@@ -170,6 +177,7 @@ export const manifest: PluginManifest = {
       label: 'Administration',
       description:
         'Practice administration, user access, and provider configuration.',
+      requiredPermissions: ['tenant.view', 'provider.admin.manage'],
       moduleKeys: ['provider_admin'],
       routes: [
         {

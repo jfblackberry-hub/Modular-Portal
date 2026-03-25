@@ -1,5 +1,5 @@
 import { ProviderDashboardPage } from '../../../components/provider/provider-dashboard-page';
-import { getProviderPortalConfig } from '../../../config/providerPortalConfig';
+import { resolveProviderPortalConfig } from '../../../config/providerPortalConfig';
 import { getPortalImageSrc } from '../../../lib/portal-image-registry';
 import { buildPortalWorkspaceSessionKey } from '../../../lib/portal-workspace-session';
 import {
@@ -11,7 +11,7 @@ import { getProviderPortalSessionContext } from '../../../lib/provider-portal-se
 
 export default async function ProviderDashboardRoutePage() {
   const { user, variant } = await getProviderPortalSessionContext();
-  const config = getProviderPortalConfig(variant);
+  const config = resolveProviderPortalConfig(variant, user.tenant.brandingConfig);
   const providerHeroImage =
     variant === 'medical'
       ? '/assets/portal-images/custom/provider-dashboard-physician-hero.png'

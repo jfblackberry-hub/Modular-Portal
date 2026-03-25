@@ -8,6 +8,7 @@ import { SectionCard } from '../../components/section-card';
 import { config, getAdminAuthHeaders } from '../../lib/api-auth';
 
 type TenantStatus = 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
+type TenantType = 'PAYER' | 'EMPLOYER' | 'BROKER' | 'MEMBER' | 'PROVIDER';
 type ModuleAudience = 'Member portal' | 'Provider portal' | 'Billing & Enrollment';
 type BillingVariant = 'commercial' | 'medicare' | 'medicaid' | 'employer_group';
 type StepId = 'basics' | 'modules' | 'connectivity' | 'accounts' | 'defaults' | 'review';
@@ -46,6 +47,10 @@ type AccountDraft = {
   email: string;
   roleCode: string;
   isActive: boolean;
+};
+
+type LogoUploadState = {
+  [scopeId: string]: File | null;
 };
 
 type CreatedTenant = {
@@ -171,11 +176,15 @@ export function CreateTenantPanel() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [status, setStatus] = useState<TenantStatus>('ONBOARDING');
+  const [tenantType, setTenantType] = useState<TenantType>('PAYER');
   const [displayName, setDisplayName] = useState('Example Health Plan');
   const [primaryColor, setPrimaryColor] = useState('#0f6cbd');
   const [secondaryColor, setSecondaryColor] = useState('#ffffff');
   const [logoUrl, setLogoUrl] = useState('/logos/example.svg');
   const [faviconUrl, setFaviconUrl] = useState('');
+  const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+  const [employerGroupLogoFiles, setEmployerGroupLogoFiles] =
+    useState<LogoUploadState>({});
   const [customCss, setCustomCss] = useState(defaultCssSnippet);
   const [brokerAgencyName, setBrokerAgencyName] = useState('Northbridge Benefits Group');
   const [selectedModules, setSelectedModules] = useState<string[]>(defaultModules);
@@ -391,6 +400,7 @@ export function CreateTenantPanel() {
           name: trimmedName,
           slug: normalizedSlug,
           status,
+          type: tenantType,
           brandingConfig: {
             displayName: displayName.trim() || trimmedName,
             primaryColor: primaryColor.trim(),
@@ -467,6 +477,28 @@ export function CreateTenantPanel() {
         throw new Error(await parseResponseError(brandingResponse, 'Unable to save tenant branding.'));
       }
       setActivityLog((current) => [...current, 'Saved branding and portal theme defaults.']);
+
+      if (selectedLogoFile) {
+        const logoFormData = new FormData();
+        logoFormData.append('logo', selectedLogoFile);
+
+        const logoUploadResponse = await fetch(
+          `${config.apiBaseUrl}/platform-admin/tenants/${tenantId}/logo`,
+          {
+            method: 'POST',
+            headers: getAdminAuthHeaders(),
+            body: logoFormData
+          }
+        );
+
+        if (!logoUploadResponse.ok) {
+          throw new Error(
+            await parseResponseError(logoUploadResponse, 'Unable to upload tenant logo.')
+          );
+        }
+
+        setActivityLog((current) => [...current, 'Uploaded tenant logo asset.']);
+      }
 
       const modulesResponse = await fetch(
         `${config.apiBaseUrl}/api/tenant-admin/purchased-modules${tenantQuery}`,
@@ -577,6 +609,31 @@ export function CreateTenantPanel() {
               `Unable to save employer group ${employerGroup.employerGroupName}.`
             )
           );
+        }
+
+        const employerGroupLogoFile = employerGroupLogoFiles[employerGroup.id];
+
+        if (employerGroupLogoFile) {
+          const employerLogoFormData = new FormData();
+          employerLogoFormData.append('file', employerGroupLogoFile);
+
+          const employerLogoResponse = await fetch(
+            `${config.apiBaseUrl}/api/tenant-admin/employer-group-branding/logo${employerQuery}`,
+            {
+              method: 'POST',
+              headers: getAdminAuthHeaders(),
+              body: employerLogoFormData
+            }
+          );
+
+          if (!employerLogoResponse.ok) {
+            throw new Error(
+              await parseResponseError(
+                employerLogoResponse,
+                `Unable to upload employer group logo for ${employerGroup.employerGroupName}.`
+              )
+            );
+          }
         }
       }
 
@@ -813,6 +870,20 @@ export function CreateTenantPanel() {
                 </select>
               </label>
               <label className="block">
+                <span className="text-sm font-medium text-admin-text">Tenant type</span>
+                <select
+                  className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                  value={tenantType}
+                  onChange={(event) => setTenantType(event.target.value as TenantType)}
+                >
+                  <option value="PAYER">Payer</option>
+                  <option value="EMPLOYER">Employer</option>
+                  <option value="BROKER">Broker</option>
+                  <option value="MEMBER">Member</option>
+                  <option value="PROVIDER">Provider</option>
+                </select>
+              </label>
+              <label className="block">
                 <span className="text-sm font-medium text-admin-text">Display name</span>
                 <input
                   className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
@@ -854,7 +925,21 @@ export function CreateTenantPanel() {
                 </label>
               </div>
               <label className="block">
-                <span className="text-sm font-medium text-admin-text">Logo URL</span>
+                <span className="text-sm font-medium text-admin-text">Logo upload</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                  className="mt-2 block w-full text-sm text-admin-text file:mr-4 file:rounded-full file:border-0 file:bg-admin-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+                  onChange={(event) => setSelectedLogoFile(event.target.files?.[0] ?? null)}
+                />
+                {selectedLogoFile ? (
+                  <p className="mt-2 text-xs text-admin-muted">
+                    Selected file: {selectedLogoFile.name}
+                  </p>
+                ) : null}
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-admin-text">Logo URL override</span>
                 <input
                   className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
                   value={logoUrl}
@@ -998,6 +1083,22 @@ export function CreateTenantPanel() {
                           }
                           placeholder="Northstar Manufacturing"
                         />
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                          className="w-full text-sm text-admin-text file:mr-4 file:rounded-full file:border-0 file:bg-admin-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+                          onChange={(event) =>
+                            setEmployerGroupLogoFiles((current) => ({
+                              ...current,
+                              [group.id]: event.target.files?.[0] ?? null
+                            }))
+                          }
+                        />
+                        {employerGroupLogoFiles[group.id] ? (
+                          <p className="text-xs text-admin-muted">
+                            Selected logo: {employerGroupLogoFiles[group.id]?.name}
+                          </p>
+                        ) : null}
                         <input
                           className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
                           value={group.employerGroupLogoUrl}
@@ -1295,6 +1396,7 @@ export function CreateTenantPanel() {
                 <p className="mt-2 text-base font-semibold text-admin-text">{displayName || name || 'Untitled tenant'}</p>
                 <p className="mt-1 text-sm text-admin-muted">Slug: {slug || 'not set'}</p>
                 <p className="mt-1 text-sm text-admin-muted">Status: {status}</p>
+                <p className="mt-1 text-sm text-admin-muted">Type: {tenantType}</p>
               </div>
               <div className="rounded-2xl border border-admin-border bg-slate-50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">Configuration scope</p>

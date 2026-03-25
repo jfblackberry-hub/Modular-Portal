@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import type {
+  ProviderClaimRow,
   ProviderPortalConfig,
   ProviderPortalVariant
 } from '../../../config/providerPortalConfig';
@@ -17,18 +18,7 @@ type ClaimStatus =
   | 'Denied'
   | 'Paid';
 
-type ClaimRow = {
-  claimNumber: string;
-  patient: string;
-  memberId: string;
-  serviceDate: string;
-  billedAmount: string;
-  allowedAmount: string;
-  paidAmount: string;
-  status: ClaimStatus;
-  billingProvider: string;
-  renderingProvider: string;
-};
+type ClaimRow = ProviderClaimRow & { status: ClaimStatus };
 
 const claimRows: ClaimRow[] = [
   {
@@ -246,6 +236,7 @@ export function ProviderClaimsPage({
   embedded?: boolean;
 }) {
   const [selectedClaim, setSelectedClaim] = useState<ClaimRow | null>(null);
+  const rows = (config.demoData?.claimsRows as ClaimRow[] | undefined) ?? claimRows;
 
   const searchStatusOptions = [
     'Any Status',
@@ -341,7 +332,7 @@ export function ProviderClaimsPage({
               </tr>
             </thead>
             <tbody>
-              {claimRows.map((claim) => (
+              {rows.map((claim) => (
                 <tr key={claim.claimNumber} className="border-t border-[var(--border-subtle)]">
                   <td className="px-4 py-3 text-[var(--text-primary)]">{claim.claimNumber}</td>
                   <td className="px-4 py-3 text-[var(--text-secondary)]">{claim.patient}</td>

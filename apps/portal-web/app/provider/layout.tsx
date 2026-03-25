@@ -1,6 +1,6 @@
 import { ProviderPortalLayout } from '../../components/provider/provider-portal-layout';
 import { TenantTheme } from '../../components/tenant-theme';
-import { getProviderPortalConfig } from '../../config/providerPortalConfig';
+import { resolveProviderPortalConfig } from '../../config/providerPortalConfig';
 import { getPluginNavigationById } from '../../lib/plugins';
 import { resolveProviderClinicLogoSrc } from '../../lib/provider-hero-branding';
 import { getProviderPortalSessionContext } from '../../lib/provider-portal-session';
@@ -17,7 +17,7 @@ export default async function ProviderLayout({
   const branding = await getTenantBranding(user.tenant, user.id, {
     experience: 'provider'
   });
-  const config = getProviderPortalConfig(variant);
+  const config = resolveProviderPortalConfig(variant, user.tenant.brandingConfig);
   const navigationItems = getPluginNavigationById('provider').filter((item) =>
     item.moduleKeys.length > 0
       ? item.moduleKeys.some((moduleKey) =>

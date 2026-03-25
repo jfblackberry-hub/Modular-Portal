@@ -35,6 +35,8 @@ enum ApiCatalogCategory {
 }
 
 enum OrganizationUnitType {
+  ENTERPRISE
+  REGION
   LOCATION
   DEPARTMENT
   TEAM

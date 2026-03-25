@@ -17,6 +17,8 @@ export const TENANT_TYPES = [
 export type TenantType = (typeof TENANT_TYPES)[number];
 
 export const ORGANIZATION_UNIT_TYPES = [
+  'ENTERPRISE',
+  'REGION',
   'LOCATION',
   'DEPARTMENT',
   'TEAM'

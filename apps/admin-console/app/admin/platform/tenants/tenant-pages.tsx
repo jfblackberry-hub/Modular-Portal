@@ -12,6 +12,7 @@ type Tenant = {
   name: string;
   slug: string;
   status: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
+  type: 'PAYER' | 'EMPLOYER' | 'BROKER' | 'MEMBER' | 'PROVIDER';
   healthStatus: 'HEALTHY' | 'PROVISIONING' | 'SUSPENDED';
   brandingConfig: Record<string, unknown>;
   quotaMembers: number | null;
@@ -48,6 +49,7 @@ type SettingsPayload = {
     name: string;
     slug: string;
     status: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
+    type: 'PAYER' | 'EMPLOYER' | 'BROKER' | 'MEMBER' | 'PROVIDER';
   };
   branding: {
     displayName: string;
@@ -248,6 +250,7 @@ export function TenantListPage() {
               <thead className="border-b border-admin-border text-xs uppercase tracking-[0.2em] text-admin-muted">
                 <tr>
                   <th className="px-3 py-3">Tenant Name</th>
+                  <th className="px-3 py-3">Type</th>
                   <th className="px-3 py-3">Status</th>
                   <th className="px-3 py-3">Users</th>
                   <th className="px-3 py-3">Connectivity</th>
@@ -270,6 +273,7 @@ export function TenantListPage() {
                         <p className="mt-1 text-xs text-admin-muted">{row.tenant.slug}</p>
                       </div>
                     </td>
+                    <td className="px-3 py-4 text-admin-text">{row.tenant.type}</td>
                     <td className="px-3 py-4">
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusTone(row.tenant.healthStatus)}`}>
                         {row.tenant.healthStatus}
@@ -436,6 +440,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {[
                 { label: 'Status', value: tenant.status },
+                { label: 'Tenant Type', value: tenant.type },
                 { label: 'Health', value: tenant.healthStatus },
                 { label: 'Member Limit', value: tenant.quotaMembers ? String(tenant.quotaMembers) : 'Uncapped' },
                 {

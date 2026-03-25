@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import type { MultipartFile } from '@fastify/multipart';
-import type { Prisma, Tenant, TenantType } from '@payer-portal/database';
-import { prisma } from '@payer-portal/database';
+import { Prisma, prisma } from '@payer-portal/database';
+import type { Tenant, TenantType } from '@payer-portal/database';
 import {
   buildTenantLogoStorageKey,
   getPublicAssetStorageService,
@@ -28,6 +28,11 @@ type TenantUpdateInput = {
 };
 
 type BrandingConfig = Record<string, unknown>;
+
+type TenantLifecycleConfig = {
+  archivedAt?: string;
+  archivedByUserId?: string | null;
+};
 
 type AuditContext = {
   actorUserId?: string | null;
@@ -58,6 +63,9 @@ function mapTenant(tenant: Tenant) {
   const platformQuota = isRecord(brandingConfig.platformQuota)
     ? brandingConfig.platformQuota
     : {};
+  const lifecycleConfig = isRecord(brandingConfig.lifecycle)
+    ? (brandingConfig.lifecycle as TenantLifecycleConfig)
+    : {};
 
   return {
     id: tenant.id,
@@ -80,6 +88,11 @@ function mapTenant(tenant: Tenant) {
       typeof platformQuota.storageGb === 'number'
         ? platformQuota.storageGb
         : null,
+    isArchived: typeof lifecycleConfig.archivedAt === 'string',
+    archivedAt:
+      typeof lifecycleConfig.archivedAt === 'string'
+        ? lifecycleConfig.archivedAt
+        : null,
     createdAt: tenant.createdAt,
     updatedAt: tenant.updatedAt
   };
@@ -93,6 +106,15 @@ function normalizeTenantType(value: TenantType | string) {
   }
 
   return normalized as TenantType;
+}
+
+function isTenantSlugConflict(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2002' &&
+    Array.isArray(error.meta?.target) &&
+    error.meta.target.includes('slug')
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -155,31 +177,41 @@ export async function createTenant(
 
   const type = normalizeTenantType(input.type);
 
-  const tenant = await prisma.$transaction(async (tx) => {
-    const createdTenant = await tx.tenant.create({
-      data: {
-        name,
-        slug,
-        status: input.status,
-        type,
-        isActive: input.status === 'ACTIVE',
-        brandingConfig: input.brandingConfig as Prisma.InputJsonValue
-      }
-    });
+  let tenant: Tenant;
 
-    await logAdminAction({
-      client: tx,
-      tenantId: createdTenant.id,
-      actorUserId: context.actorUserId ?? null,
-      action: 'tenant.created',
-      resourceType: 'tenant',
-      resourceId: createdTenant.id,
-      ipAddress: context.ipAddress,
-      userAgent: context.userAgent
-    });
+  try {
+    tenant = await prisma.$transaction(async (tx) => {
+      const createdTenant = await tx.tenant.create({
+        data: {
+          name,
+          slug,
+          status: input.status,
+          type,
+          isActive: input.status === 'ACTIVE',
+          brandingConfig: input.brandingConfig as Prisma.InputJsonValue
+        }
+      });
 
-    return createdTenant;
-  });
+      await logAdminAction({
+        client: tx,
+        tenantId: createdTenant.id,
+        actorUserId: context.actorUserId ?? null,
+        action: 'tenant.created',
+        resourceType: 'tenant',
+        resourceId: createdTenant.id,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent
+      });
+
+      return createdTenant;
+    });
+  } catch (error) {
+    if (isTenantSlugConflict(error)) {
+      throw new Error(`Tenant slug '${slug}' already exists.`);
+    }
+
+    throw error;
+  }
 
   publishInBackground('tenant.created', {
     capabilityId: 'platform.tenants',
@@ -381,4 +413,117 @@ export async function uploadTenantLogo(
   });
 
   return mapTenant(updatedTenant);
+}
+
+export async function archiveTenant(
+  id: string,
+  context: AuditContext = {}
+) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id }
+  });
+
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+
+  if (tenant.status !== 'INACTIVE') {
+    throw new Error('Tenant must be inactive before it can be archived');
+  }
+
+  const currentBrandingConfig: BrandingConfig = isRecord(tenant.brandingConfig)
+    ? tenant.brandingConfig
+    : {};
+  const currentLifecycle = isRecord(currentBrandingConfig.lifecycle)
+    ? (currentBrandingConfig.lifecycle as TenantLifecycleConfig)
+    : {};
+
+  if (typeof currentLifecycle.archivedAt === 'string') {
+    return mapTenant(tenant);
+  }
+
+  const updatedTenant = await prisma.$transaction(async (tx) => {
+    const nextTenant = await tx.tenant.update({
+      where: { id },
+      data: {
+        brandingConfig: {
+          ...currentBrandingConfig,
+          lifecycle: {
+            ...currentLifecycle,
+            archivedAt: new Date().toISOString(),
+            archivedByUserId: context.actorUserId ?? null
+          }
+        } satisfies Prisma.InputJsonValue
+      }
+    });
+
+    await logAdminAction({
+      client: tx,
+      tenantId: nextTenant.id,
+      actorUserId: context.actorUserId ?? null,
+      action: 'tenant.archived',
+      resourceType: 'tenant',
+      resourceId: nextTenant.id,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent
+    });
+
+    return nextTenant;
+  });
+
+  return mapTenant(updatedTenant);
+}
+
+export async function deleteTenant(
+  id: string,
+  context: AuditContext = {}
+) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id }
+  });
+
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+
+  const currentBrandingConfig: BrandingConfig = isRecord(tenant.brandingConfig)
+    ? tenant.brandingConfig
+    : {};
+  const currentLifecycle = isRecord(currentBrandingConfig.lifecycle)
+    ? (currentBrandingConfig.lifecycle as TenantLifecycleConfig)
+    : {};
+
+  if (tenant.status !== 'INACTIVE') {
+    throw new Error('Tenant must be inactive before it can be deleted');
+  }
+
+  if (typeof currentLifecycle.archivedAt !== 'string') {
+    throw new Error('Tenant must be archived before it can be deleted');
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await logAdminAction({
+      client: tx,
+      tenantId: tenant.id,
+      actorUserId: context.actorUserId ?? null,
+      action: 'tenant.deleted',
+      resourceType: 'tenant',
+      resourceId: tenant.id,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+      metadata: {
+        slug: tenant.slug,
+        status: tenant.status
+      }
+    });
+
+    await tx.tenant.delete({
+      where: { id: tenant.id }
+    });
+  });
+
+  return {
+    id: tenant.id,
+    deleted: true
+  };
 }

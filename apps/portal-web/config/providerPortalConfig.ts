@@ -132,6 +132,104 @@ export interface ProviderAnnouncementItem {
   date: string;
 }
 
+export interface ProviderEligibilityResultItem {
+  member: string;
+  memberId: string;
+  plan: string;
+  status: 'Active' | 'Inactive' | 'Pending Review';
+}
+
+export interface ProviderClaimRow {
+  claimNumber: string;
+  patient: string;
+  memberId: string;
+  serviceDate: string;
+  billedAmount: string;
+  allowedAmount: string;
+  paidAmount: string;
+  status: 'Draft' | 'Submitted' | 'In Review' | 'More Info Needed' | 'Approved' | 'Denied' | 'Paid';
+  billingProvider: string;
+  renderingProvider: string;
+}
+
+export interface ProviderPaymentRow {
+  remitId: string;
+  paymentDate: string;
+  paymentAmount: string;
+  method: 'EFT' | 'Check';
+  eftEra: string;
+  status: 'Posted' | 'In Transit' | 'Pending';
+}
+
+export interface ProviderTrackedAuthorizationItem {
+  status: string;
+  submittedDate: string;
+  referenceNumber: string;
+  patient: string;
+  service: string;
+  decision: string;
+  nextAction: string;
+}
+
+export interface ProviderReferralItem {
+  reference: string;
+  patient: string;
+  specialty: string;
+  status: string;
+  submittedDate: string;
+}
+
+export interface ProviderDashboardMetricItem {
+  label: string;
+  value: string;
+  trend: string;
+  trendTone: 'positive' | 'negative' | 'neutral';
+}
+
+export interface ProviderDashboardQueueItem {
+  authId?: string;
+  claimId?: string;
+  patientName: string;
+  date: string;
+  status: string;
+  nextAction: string;
+}
+
+export interface ProviderDashboardAlertItem {
+  id: string;
+  type: 'warning' | 'info' | 'success';
+  message: string;
+  status: string;
+  date: string;
+}
+
+export interface ProviderDashboardNoticeItem {
+  id: string;
+  title: string;
+  message: string;
+  date: string;
+}
+
+export interface ProviderDashboardResourceItem {
+  label: string;
+  href: string;
+  description: string;
+}
+
+export interface ProviderPortalDemoData {
+  eligibilityResults?: ProviderEligibilityResultItem[];
+  trackedAuthorizations?: ProviderTrackedAuthorizationItem[];
+  referrals?: ProviderReferralItem[];
+  claimsRows?: ProviderClaimRow[];
+  paymentRows?: ProviderPaymentRow[];
+  dashboardMetrics?: ProviderDashboardMetricItem[];
+  dashboardAuthorizationQueue?: ProviderDashboardQueueItem[];
+  dashboardClaimsQueue?: ProviderDashboardQueueItem[];
+  dashboardAlerts?: ProviderDashboardAlertItem[];
+  dashboardNotices?: ProviderDashboardNoticeItem[];
+  dashboardResources?: ProviderDashboardResourceItem[];
+}
+
 export interface ProviderMessagesModuleConfig {
   categories: ProviderMessageCategory[];
   inbox: ProviderMessageItem[];
@@ -282,6 +380,7 @@ export interface ProviderPortalConfig {
     selectedLocationId: string;
   };
   notifications: ProviderNotificationsAreaItem[];
+  demoData?: ProviderPortalDemoData;
 }
 
 const medicalConfig: ProviderPortalConfig = {
@@ -1673,6 +1772,170 @@ export function resolveProviderPortalVariant(
 
 export function getProviderPortalConfig(variant: ProviderPortalVariant): ProviderPortalConfig {
   return providerPortalConfigs[variant];
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+export function resolveProviderPortalConfig(
+  variant: ProviderPortalVariant,
+  brandingConfig?: Record<string, unknown>
+): ProviderPortalConfig {
+  const baseConfig = getProviderPortalConfig(variant);
+  const providerDemoData = asRecord(brandingConfig?.providerDemoData);
+
+  if (!providerDemoData) {
+    return baseConfig;
+  }
+
+  const messagesModule = asRecord(providerDemoData.messagesModule);
+  const supportModule = asRecord(providerDemoData.supportModule);
+  const providerContext = asRecord(providerDemoData.providerContext);
+  const adminModule = asRecord(providerDemoData.adminModule);
+  const demoData = asRecord(providerDemoData.demoData);
+
+  return {
+    ...baseConfig,
+    displayName:
+      typeof providerDemoData.displayName === 'string'
+        ? providerDemoData.displayName
+        : baseConfig.displayName,
+    dashboardSections: Array.isArray(providerDemoData.dashboardSections)
+      ? (providerDemoData.dashboardSections as ProviderDashboardSection[])
+      : baseConfig.dashboardSections,
+    quickActions: Array.isArray(providerDemoData.quickActions)
+      ? (providerDemoData.quickActions as ProviderQuickAction[])
+      : baseConfig.quickActions,
+    providerResources: Array.isArray(providerDemoData.providerResources)
+      ? (providerDemoData.providerResources as ProviderResourceItem[])
+      : baseConfig.providerResources,
+    notifications: Array.isArray(providerDemoData.notifications)
+      ? (providerDemoData.notifications as ProviderNotificationsAreaItem[])
+      : baseConfig.notifications,
+    messagesModule: messagesModule
+      ? {
+          ...baseConfig.messagesModule,
+          ...(Array.isArray(messagesModule.categories)
+            ? { categories: messagesModule.categories as ProviderMessageCategory[] }
+            : {}),
+          ...(Array.isArray(messagesModule.inbox)
+            ? { inbox: messagesModule.inbox as ProviderMessageItem[] }
+            : {}),
+          ...(Array.isArray(messagesModule.announcements)
+            ? { announcements: messagesModule.announcements as ProviderAnnouncementItem[] }
+            : {})
+        }
+      : baseConfig.messagesModule,
+    supportModule: supportModule
+      ? {
+          ...baseConfig.supportModule,
+          ...(typeof supportModule.title === 'string'
+            ? { title: supportModule.title }
+            : {}),
+          ...(typeof supportModule.description === 'string'
+            ? { description: supportModule.description }
+            : {}),
+          ...(Array.isArray(supportModule.categories)
+            ? { categories: supportModule.categories as ProviderSupportCategory[] }
+            : {}),
+          ...(Array.isArray(supportModule.cards)
+            ? { cards: supportModule.cards as ProviderSupportCard[] }
+            : {}),
+          ...(Array.isArray(supportModule.trainingBlocks)
+            ? { trainingBlocks: supportModule.trainingBlocks as ProviderTrainingBlock[] }
+            : {}),
+          ...(Array.isArray(supportModule.quickLinks)
+            ? { quickLinks: supportModule.quickLinks as ProviderSupportQuickLink[] }
+            : {})
+        }
+      : baseConfig.supportModule,
+    providerContext: providerContext
+      ? {
+          ...baseConfig.providerContext,
+          ...(typeof providerContext.practiceName === 'string'
+            ? { practiceName: providerContext.practiceName }
+            : {}),
+          ...(typeof providerContext.providerName === 'string'
+            ? { providerName: providerContext.providerName }
+            : {}),
+          ...(typeof providerContext.npi === 'string'
+            ? { npi: providerContext.npi }
+            : {}),
+          ...(typeof providerContext.tin === 'string'
+            ? { tin: providerContext.tin }
+            : {}),
+          ...(Array.isArray(providerContext.locations)
+            ? { locations: providerContext.locations as Array<{ id: string; label: string }> }
+            : {}),
+          ...(typeof providerContext.selectedLocationId === 'string'
+            ? { selectedLocationId: providerContext.selectedLocationId }
+            : {})
+        }
+      : baseConfig.providerContext,
+    adminModule: adminModule
+      ? {
+          ...baseConfig.adminModule,
+          ...(Array.isArray(adminModule.userAccessRoles)
+            ? { userAccessRoles: adminModule.userAccessRoles as ProviderAdminUserRole[] }
+            : {}),
+          ...(asRecord(adminModule.practiceInformation)
+            ? { practiceInformation: adminModule.practiceInformation as ProviderAdminPracticeInfo }
+            : {}),
+          ...(Array.isArray(adminModule.locations)
+            ? { locations: adminModule.locations as ProviderAdminLocationItem[] }
+            : {}),
+          ...(Array.isArray(adminModule.renderingProviders)
+            ? { renderingProviders: adminModule.renderingProviders as ProviderAdminRenderingProvider[] }
+            : {}),
+          ...(Array.isArray(adminModule.notificationPreferences)
+            ? { notificationPreferences: adminModule.notificationPreferences as ProviderAdminNotificationPreference[] }
+            : {}),
+          ...(Array.isArray(adminModule.linkedIdentifiers)
+            ? { linkedIdentifiers: adminModule.linkedIdentifiers as ProviderAdminLinkedIdentifier[] }
+            : {})
+        }
+      : baseConfig.adminModule,
+    demoData: demoData
+      ? {
+          ...(Array.isArray(demoData.eligibilityResults)
+            ? { eligibilityResults: demoData.eligibilityResults as ProviderEligibilityResultItem[] }
+            : {}),
+          ...(Array.isArray(demoData.trackedAuthorizations)
+            ? { trackedAuthorizations: demoData.trackedAuthorizations as ProviderTrackedAuthorizationItem[] }
+            : {}),
+          ...(Array.isArray(demoData.referrals)
+            ? { referrals: demoData.referrals as ProviderReferralItem[] }
+            : {}),
+          ...(Array.isArray(demoData.claimsRows)
+            ? { claimsRows: demoData.claimsRows as ProviderClaimRow[] }
+            : {}),
+          ...(Array.isArray(demoData.paymentRows)
+            ? { paymentRows: demoData.paymentRows as ProviderPaymentRow[] }
+            : {}),
+          ...(Array.isArray(demoData.dashboardMetrics)
+            ? { dashboardMetrics: demoData.dashboardMetrics as ProviderDashboardMetricItem[] }
+            : {}),
+          ...(Array.isArray(demoData.dashboardAuthorizationQueue)
+            ? { dashboardAuthorizationQueue: demoData.dashboardAuthorizationQueue as ProviderDashboardQueueItem[] }
+            : {}),
+          ...(Array.isArray(demoData.dashboardClaimsQueue)
+            ? { dashboardClaimsQueue: demoData.dashboardClaimsQueue as ProviderDashboardQueueItem[] }
+            : {}),
+          ...(Array.isArray(demoData.dashboardAlerts)
+            ? { dashboardAlerts: demoData.dashboardAlerts as ProviderDashboardAlertItem[] }
+            : {}),
+          ...(Array.isArray(demoData.dashboardNotices)
+            ? { dashboardNotices: demoData.dashboardNotices as ProviderDashboardNoticeItem[] }
+            : {}),
+          ...(Array.isArray(demoData.dashboardResources)
+            ? { dashboardResources: demoData.dashboardResources as ProviderDashboardResourceItem[] }
+            : {})
+        }
+      : baseConfig.demoData
+  };
 }
 
 export function getProviderQuickActionsByIds(config: ProviderPortalConfig, ids: string[]) {

@@ -66,6 +66,19 @@ const routeModuleMap: Array<{ prefix: string; moduleId: TenantPortalModuleId; fa
   { prefix: '/dashboard', moduleId: 'member_home', fallback: '/login' }
 ];
 
+const routePermissionMap: Array<{ prefix: string; requiredPermissions: string[]; fallback: string }> = [
+  { prefix: '/provider/admin', requiredPermissions: ['tenant.view', 'provider.admin.manage'], fallback: '/provider/dashboard' },
+  { prefix: '/provider/support', requiredPermissions: ['tenant.view', 'provider.support.view'], fallback: '/provider/dashboard' },
+  { prefix: '/provider/messages', requiredPermissions: ['tenant.view', 'provider.messages.view'], fallback: '/provider/dashboard' },
+  { prefix: '/provider/documents', requiredPermissions: ['tenant.view', 'provider.documents.view'], fallback: '/provider/dashboard' },
+  { prefix: '/provider/patients', requiredPermissions: ['tenant.view', 'provider.patients.view'], fallback: '/provider/dashboard' },
+  { prefix: '/provider/payments', requiredPermissions: ['tenant.view', 'provider.claims.view'], fallback: '/provider/dashboard' },
+  { prefix: '/provider/claims', requiredPermissions: ['tenant.view', 'provider.claims.view'], fallback: '/provider/dashboard' },
+  { prefix: '/provider/authorizations', requiredPermissions: ['tenant.view', 'provider.authorizations.view'], fallback: '/provider/dashboard' },
+  { prefix: '/provider/eligibility', requiredPermissions: ['tenant.view', 'provider.eligibility.view'], fallback: '/provider/dashboard' },
+  { prefix: '/provider/dashboard', requiredPermissions: ['tenant.view', 'provider.view'], fallback: '/login' }
+];
+
 function toLoginRedirect(request: NextRequest) {
   const redirectUrl = request.nextUrl.clone();
   redirectUrl.pathname = '/login';
@@ -85,6 +98,13 @@ async function readPortalSessionFromRequest(request: NextRequest) {
   }
 
   return null;
+}
+
+function hasRequiredPermissions(
+  currentPermissions: string[],
+  requiredPermissions: string[]
+) {
+  return requiredPermissions.every((permission) => currentPermissions.includes(permission));
 }
 
 export async function middleware(request: NextRequest) {
@@ -155,6 +175,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const route = routeModuleMap.find((item) => pathname === item.prefix || pathname.startsWith(`${item.prefix}/`));
+  const permissionRoute = routePermissionMap.find((item) => pathname === item.prefix || pathname.startsWith(`${item.prefix}/`));
 
   if (!route) {
     return NextResponse.next();
@@ -175,6 +196,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const brandingConfig = portalUser?.tenant?.brandingConfig;
+  const permissions = portalUser?.permissions ?? portalUser?.session?.permissions ?? [];
 
   if (pathname === '/employer' || pathname.startsWith('/employer/')) {
     if (!hasBillingPortalAudienceAccess(portalUser?.roles ?? [], 'employer')) {
@@ -238,6 +260,13 @@ export async function middleware(request: NextRequest) {
       redirectUrl.search = '';
       return NextResponse.redirect(redirectUrl);
     }
+  }
+
+  if (permissionRoute && !hasRequiredPermissions(permissions, permissionRoute.requiredPermissions)) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = permissionRoute.fallback;
+    redirectUrl.search = '';
+    return NextResponse.redirect(redirectUrl);
   }
 
   if (isTenantModuleEnabled(brandingConfig, route.moduleId)) {

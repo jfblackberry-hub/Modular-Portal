@@ -1,19 +1,13 @@
 'use client';
 
 import type {
+  ProviderPaymentRow,
   ProviderPortalConfig,
   ProviderPortalVariant
 } from '../../../config/providerPortalConfig';
 import { PageHeader, StatusBadge, SurfaceCard } from '../../portal-ui';
 
-type PaymentRow = {
-  remitId: string;
-  paymentDate: string;
-  paymentAmount: string;
-  method: 'EFT' | 'Check';
-  eftEra: string;
-  status: 'Posted' | 'In Transit' | 'Pending';
-};
+type PaymentRow = ProviderPaymentRow;
 
 const paymentRows: PaymentRow[] = [
   {
@@ -52,6 +46,7 @@ export function ProviderPaymentsPage({
   embedded?: boolean;
 }) {
   const pageTitle = variant === 'medical' ? 'Payments Workspace' : config.routeContent.payments.title;
+  const rows = config.demoData?.paymentRows ?? paymentRows;
 
   return (
     <div className="space-y-6">
@@ -101,7 +96,7 @@ export function ProviderPaymentsPage({
               </tr>
             </thead>
             <tbody>
-              {paymentRows.map((payment) => (
+              {rows.map((payment) => (
                 <tr key={payment.remitId} className="border-t border-[var(--border-subtle)]">
                   <td className="px-4 py-3 text-[var(--text-primary)]">{payment.remitId}</td>
                   <td className="px-4 py-3 text-[var(--text-secondary)]">{payment.paymentDate}</td>

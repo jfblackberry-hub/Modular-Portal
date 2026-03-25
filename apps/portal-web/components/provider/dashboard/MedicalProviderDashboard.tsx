@@ -1,7 +1,7 @@
 import type { ProviderPortalConfig } from '../../../config/providerPortalConfig';
 import { PortalHeroBanner } from '../../shared/portal-hero-banner';
-import { AuthorizationQueue } from './AuthorizationQueue';
-import { ClaimsFollowUpQueue } from './ClaimsFollowUpQueue';
+import { AuthorizationQueue, type AuthorizationQueueItem } from './AuthorizationQueue';
+import { ClaimsFollowUpQueue, type ClaimsFollowUpItem } from './ClaimsFollowUpQueue';
 import { ProviderAlertsList } from './ProviderAlertsList';
 import { ProviderContextBar } from './ProviderContextBar';
 import { ProviderDashboardWorkspaceSection } from './ProviderDashboardWorkspaceSection';
@@ -27,7 +27,7 @@ export function MedicalProviderDashboard({
   sessionScopeKey: string;
   variant: 'medical' | 'pharmacy' | 'dental' | 'vision';
 }) {
-  const metrics = [
+  const metrics = config.demoData?.dashboardMetrics ?? [
     {
       label: 'Eligibility Checks Today',
       value: '42',
@@ -54,7 +54,8 @@ export function MedicalProviderDashboard({
     }
   ];
 
-  const authorizationsQueue = [
+  const authorizationsQueue: AuthorizationQueueItem[] = (
+    config.demoData?.dashboardAuthorizationQueue ?? [
     {
       authId: 'PA-100233',
       patientName: 'Jordan Patel',
@@ -83,9 +84,17 @@ export function MedicalProviderDashboard({
       status: 'Denied',
       nextAction: 'Review denial and prepare appeal'
     }
-  ];
+  ]
+  ).map((item) => ({
+    authId: item.authId ?? 'AUTH-PLACEHOLDER',
+    patientName: item.patientName,
+    date: item.date,
+    status: item.status,
+    nextAction: item.nextAction
+  }));
 
-  const claimsQueue = [
+  const claimsQueue: ClaimsFollowUpItem[] = (
+    config.demoData?.dashboardClaimsQueue ?? [
     {
       claimId: 'CLM-100245',
       patientName: 'Taylor Morgan',
@@ -114,9 +123,16 @@ export function MedicalProviderDashboard({
       status: 'Denied',
       nextAction: 'Review denial and start appeal'
     }
-  ];
+  ]
+  ).map((item) => ({
+    claimId: item.claimId ?? 'CLAIM-PLACEHOLDER',
+    patientName: item.patientName,
+    date: item.date,
+    status: item.status,
+    nextAction: item.nextAction
+  }));
 
-  const alerts = [
+  const alerts = config.demoData?.dashboardAlerts ?? [
     {
       id: 'alert-auth',
       type: 'warning' as const,
@@ -140,7 +156,7 @@ export function MedicalProviderDashboard({
     }
   ];
 
-  const notices = [
+  const notices = config.demoData?.dashboardNotices ?? [
     {
       id: 'notice-maint-1',
       title: 'Maintenance',
@@ -155,7 +171,7 @@ export function MedicalProviderDashboard({
     }
   ];
 
-  const resources = [
+  const resources = config.demoData?.dashboardResources ?? [
     {
       label: 'Provider Manual',
       href: '/provider/documents',

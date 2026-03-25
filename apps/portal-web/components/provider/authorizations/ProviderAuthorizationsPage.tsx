@@ -4,7 +4,9 @@ import { useMemo, useState } from 'react';
 
 import type {
   ProviderPortalConfig,
-  ProviderPortalVariant
+  ProviderPortalVariant,
+  ProviderReferralItem,
+  ProviderTrackedAuthorizationItem
 } from '../../../config/providerPortalConfig';
 import { PageHeader, StatusBadge, SurfaceCard } from '../../portal-ui';
 
@@ -120,7 +122,8 @@ export function ProviderAuthorizationsPage({
     'Cancelled'
   ];
 
-  const trackedRequests = [
+  const trackedRequests: ProviderTrackedAuthorizationItem[] =
+    config.demoData?.trackedAuthorizations ?? [
     {
       status: 'Submitted',
       submittedDate: '2026-03-14',
@@ -150,7 +153,7 @@ export function ProviderAuthorizationsPage({
     }
   ];
 
-  const referrals = [
+  const referrals: ProviderReferralItem[] = config.demoData?.referrals ?? [
     {
       reference: 'RF-2201',
       patient: 'Taylor Morgan',

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { manifest as providerManifest } from '../../../plugins/provider/src/index';
 import type {
   PlatformFeatureFlag,
   PluginManifest
@@ -185,5 +186,226 @@ test('audience-specific capabilities only appear for the requested portal experi
   assert.deepEqual(
     navigation[0]?.items.map((item) => item.label),
     ['Billing']
+  );
+});
+
+test('provider tenant navigation is composed from plugin flags, permissions, and licensed modules', () => {
+  const tenantId = 'tenant-provider';
+  const navigation = buildPortalNavigation(
+    createUser({
+      landingContext: 'provider',
+      roles: ['clinic_manager'],
+      permissions: [
+        'tenant.view',
+        'provider.view',
+        'provider.eligibility.view',
+        'provider.authorizations.view',
+        'provider.claims.view',
+        'provider.documents.view',
+        'provider.messages.view',
+        'provider.support.view'
+      ],
+      tenant: {
+        id: tenantId,
+        name: 'NorthStar Medical Group',
+        brandingConfig: {
+          purchasedModules: [
+            'provider_dashboard',
+            'provider_eligibility',
+            'provider_authorizations',
+            'provider_claims',
+            'provider_payments',
+            'provider_documents',
+            'provider_messages',
+            'provider_support'
+          ]
+        }
+      },
+      session: {
+        personaType: 'end_user',
+        type: 'end_user',
+        tenantId,
+        roles: ['clinic_manager'],
+        permissions: [
+          'tenant.view',
+          'provider.view',
+          'provider.eligibility.view',
+          'provider.authorizations.view',
+          'provider.claims.view',
+          'provider.documents.view',
+          'provider.messages.view',
+          'provider.support.view'
+        ]
+      }
+    }),
+    [providerManifest],
+    [
+      {
+        id: 'flag-provider-plugin',
+        key: 'plugins.provider.enabled',
+        enabled: true,
+        tenantId
+      }
+    ],
+    { audience: 'provider' }
+  );
+
+  assert.deepEqual(
+    navigation.map((section) => ({
+      title: section.title,
+      items: section.items.map((item) => item.label)
+    })),
+    [
+      {
+        title: 'Provider Services',
+        items: [
+          'Dashboard',
+          'Eligibility',
+          'Authorizations',
+          'Claims & Payments',
+          'Documents',
+          'Messages',
+          'Support'
+        ]
+      }
+    ]
+  );
+});
+
+test('restricted provider users only see provider capabilities they are authorized for', () => {
+  const tenantId = 'tenant-provider';
+  const navigation = buildPortalNavigation(
+    createUser({
+      landingContext: 'provider',
+      roles: ['eligibility_coordinator'],
+      permissions: [
+        'tenant.view',
+        'provider.view',
+        'provider.eligibility.view',
+        'provider.messages.view',
+        'provider.support.view'
+      ],
+      tenant: {
+        id: tenantId,
+        name: 'NorthStar Medical Group',
+        brandingConfig: {
+          purchasedModules: [
+            'provider_dashboard',
+            'provider_eligibility',
+            'provider_authorizations',
+            'provider_claims',
+            'provider_payments',
+            'provider_documents',
+            'provider_messages',
+            'provider_support'
+          ]
+        }
+      },
+      session: {
+        personaType: 'end_user',
+        type: 'end_user',
+        tenantId,
+        roles: ['eligibility_coordinator'],
+        permissions: [
+          'tenant.view',
+          'provider.view',
+          'provider.eligibility.view',
+          'provider.messages.view',
+          'provider.support.view'
+        ]
+      }
+    }),
+    [providerManifest],
+    [
+      {
+        id: 'flag-provider-plugin',
+        key: 'plugins.provider.enabled',
+        enabled: true,
+        tenantId
+      }
+    ],
+    { audience: 'provider' }
+  );
+
+  assert.deepEqual(
+    navigation.map((section) => ({
+      title: section.title,
+      items: section.items.map((item) => item.label)
+    })),
+    [
+      {
+        title: 'Provider Services',
+        items: ['Dashboard', 'Eligibility', 'Messages', 'Support']
+      }
+    ]
+  );
+});
+
+test('provider end-user navigation does not leak admin-console routes', () => {
+  const tenantId = 'tenant-provider';
+  const navigation = buildPortalNavigation(
+    createUser({
+      landingContext: 'provider',
+      roles: ['clinic_manager'],
+      permissions: [
+        'tenant.view',
+        'provider.view',
+        'provider.eligibility.view',
+        'provider.authorizations.view',
+        'provider.claims.view',
+        'provider.documents.view',
+        'provider.messages.view',
+        'provider.support.view'
+      ],
+      tenant: {
+        id: tenantId,
+        name: 'NorthStar Medical Group',
+        brandingConfig: {
+          purchasedModules: [
+            'provider_dashboard',
+            'provider_eligibility',
+            'provider_authorizations',
+            'provider_claims',
+            'provider_payments',
+            'provider_documents',
+            'provider_messages',
+            'provider_support'
+          ]
+        }
+      },
+      session: {
+        personaType: 'end_user',
+        type: 'end_user',
+        tenantId,
+        roles: ['clinic_manager'],
+        permissions: [
+          'tenant.view',
+          'provider.view',
+          'provider.eligibility.view',
+          'provider.authorizations.view',
+          'provider.claims.view',
+          'provider.documents.view',
+          'provider.messages.view',
+          'provider.support.view'
+        ]
+      }
+    }),
+    [providerManifest],
+    [
+      {
+        id: 'flag-provider-plugin',
+        key: 'plugins.provider.enabled',
+        enabled: true,
+        tenantId
+      }
+    ],
+    { audience: 'provider' }
+  );
+
+  assert.equal(
+    navigation.some((section) =>
+      section.items.some((item) => item.href.startsWith('/admin/'))
+    ),
+    false
   );
 });

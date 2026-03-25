@@ -4,10 +4,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
-import { manifest as brokerManifest } from '../../../plugins/broker/src/index.ts';
-import { manifest as enrollmentManifest } from '../../../plugins/enrollment/src/index.ts';
-import { manifest as memberManifest } from '../../../plugins/member/src/index.ts';
-import { manifest as providerManifest } from '../../../plugins/provider/src/index.ts';
+import { manifest as brokerManifest } from '../../../plugins/broker/src/index';
+import { manifest as enrollmentManifest } from '../../../plugins/enrollment/src/index';
+import { manifest as memberManifest } from '../../../plugins/member/src/index';
+import { manifest as providerManifest } from '../../../plugins/provider/src/index';
 import type { PlatformFeatureFlag, PluginManifest } from '@payer-portal/plugin-sdk';
 
 import { buildPortalNavigation } from '../lib/navigation';
@@ -88,8 +88,19 @@ function createUser(audience: RegressionAudience): PortalSessionUser {
       permissions: ['tenant.view', 'billing_enrollment.view']
     },
     provider: {
-      roles: ['provider'],
-      permissions: ['provider.view', 'tenant.view']
+      roles: ['clinic_manager'],
+      permissions: [
+        'tenant.view',
+        'provider.view',
+        'provider.eligibility.view',
+        'provider.authorizations.view',
+        'provider.claims.view',
+        'provider.documents.view',
+        'provider.messages.view',
+        'provider.support.view',
+        'provider.patients.view',
+        'provider.admin.manage'
+      ]
     }
   };
 

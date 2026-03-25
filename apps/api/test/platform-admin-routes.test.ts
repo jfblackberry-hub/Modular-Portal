@@ -258,3 +258,97 @@ test('platform-admin routes are restricted to platform admins', async () => {
 
   await app.close();
 });
+
+test('platform admins can archive inactive tenants and then delete them', async () => {
+  const { tenant, platformAdminUser } = await createFixtureData();
+  const app = Fastify();
+  await tenantRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+
+  const activeArchiveResponse = await app.inject({
+    method: 'POST',
+    url: `/platform-admin/tenants/${tenant.id}/archive`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(activeArchiveResponse.statusCode, 400);
+  assert.match(
+    activeArchiveResponse.json().message,
+    /inactive before it can be archived/i
+  );
+
+  const inactivateResponse = await app.inject({
+    method: 'PATCH',
+    url: `/platform-admin/tenants/${tenant.id}`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      status: 'INACTIVE'
+    }
+  });
+
+  assert.equal(inactivateResponse.statusCode, 200, inactivateResponse.body);
+
+  const archiveResponse = await app.inject({
+    method: 'POST',
+    url: `/platform-admin/tenants/${tenant.id}/archive`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(archiveResponse.statusCode, 200, archiveResponse.body);
+  assert.equal(archiveResponse.json().isArchived, true);
+
+  const deleteResponse = await app.inject({
+    method: 'DELETE',
+    url: `/platform-admin/tenants/${tenant.id}`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(deleteResponse.statusCode, 200, deleteResponse.body);
+  assert.equal(deleteResponse.json().deleted, true);
+
+  const deletedTenant = await prisma.tenant.findUnique({
+    where: {
+      id: tenant.id
+    }
+  });
+
+  assert.equal(deletedTenant, null);
+
+  await app.close();
+});
+
+test('platform-admin tenant creation returns a friendly error for duplicate slugs', async () => {
+  const { platformAdminUser } = await createFixtureData();
+  const app = Fastify();
+  await tenantRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/platform-admin/tenants',
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      name: 'Duplicate Slug Tenant',
+      slug: TEST_TENANT_SLUG,
+      status: 'ACTIVE',
+      type: 'PROVIDER',
+      brandingConfig: {}
+    }
+  });
+
+  assert.equal(response.statusCode, 400, response.body);
+  assert.match(response.body, /Tenant slug 'platform-plane-tenant' already exists\./);
+  assert.doesNotMatch(response.body, /Unique constraint failed/i);
+
+  await app.close();
+});

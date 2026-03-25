@@ -3,6 +3,8 @@ import path from 'node:path';
 
 import { PrismaClient } from '@prisma/client';
 
+import { seedTestProviderTenant } from './provider-tenant-seed.js';
+
 const prisma = new PrismaClient();
 
 async function syncUserTenantMemberships() {
@@ -819,6 +821,7 @@ async function main() {
     });
   }
 
+  await seedTestProviderTenant(prisma);
   await syncUserTenantMemberships();
 }
 

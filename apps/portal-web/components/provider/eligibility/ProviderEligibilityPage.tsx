@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import type {
+  ProviderEligibilityResultItem,
   ProviderPortalConfig,
   ProviderPortalVariant
 } from '../../../config/providerPortalConfig';
@@ -130,6 +131,21 @@ export function ProviderEligibilityPage({
   embedded?: boolean;
 }) {
   const page = getEligibilityPageConfig(variant);
+  const eligibilityResults: ProviderEligibilityResultItem[] =
+    config.demoData?.eligibilityResults ?? [
+      {
+        member: 'Taylor Morgan',
+        memberId: 'M-48291',
+        plan: 'Blue Horizon PPO Plus',
+        status: 'Active'
+      },
+      {
+        member: 'Jordan Patel',
+        memberId: 'M-77420',
+        plan: 'Blue Horizon HMO Select',
+        status: 'Inactive'
+      }
+    ];
 
   const benefitRows = [
     { label: page.benefitLabelSet.officeVisit, inNetwork: '$25 copay', outOfNetwork: '40% coinsurance' },
@@ -213,20 +229,7 @@ export function ProviderEligibilityPage({
               </tr>
             </thead>
             <tbody>
-              {[
-                {
-                  member: 'Taylor Morgan',
-                  memberId: 'M-48291',
-                  plan: 'Blue Horizon PPO Plus',
-                  status: 'Active'
-                },
-                {
-                  member: 'Jordan Patel',
-                  memberId: 'M-77420',
-                  plan: 'Blue Horizon HMO Select',
-                  status: 'Inactive'
-                }
-              ].map((result) => (
+              {eligibilityResults.map((result) => (
                 <tr key={result.memberId} className="border-t border-[var(--border-subtle)]">
                   <td className="px-4 py-3 text-[var(--text-primary)]">{result.member}</td>
                   <td className="px-4 py-3 text-[var(--text-secondary)]">{result.memberId}</td>
