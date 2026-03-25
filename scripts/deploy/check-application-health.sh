@@ -55,4 +55,4 @@ fi
 
 check_url "portal-liveness" "${PORTAL_URL}/liveness"
 check_url "admin-liveness" "${ADMIN_URL}/liveness"
-check_url "api-health" "${API_URL}/health"
+check_url "api-readiness" "${API_URL}/health/ready"
