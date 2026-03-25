@@ -12,15 +12,31 @@ RUN apt-get update \
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json tenant-config.json ./
+COPY apps/admin-console/package.json ./apps/admin-console/package.json
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/portal-web/package.json ./apps/portal-web/package.json
+COPY packages/api-contracts/package.json ./packages/api-contracts/package.json
+COPY packages/api-gateway/package.json ./packages/api-gateway/package.json
+COPY packages/canonical-model/package.json ./packages/canonical-model/package.json
+COPY packages/config/package.json ./packages/config/package.json
+COPY packages/database/package.json ./packages/database/package.json
+COPY packages/plugin-sdk/package.json ./packages/plugin-sdk/package.json
+COPY packages/server/package.json ./packages/server/package.json
+COPY packages/shared-types/package.json ./packages/shared-types/package.json
+COPY packages/shared-utils/package.json ./packages/shared-utils/package.json
+COPY packages/ui/package.json ./packages/ui/package.json
+COPY plugins/broker/package.json ./plugins/broker/package.json
+COPY plugins/enrollment/package.json ./plugins/enrollment/package.json
+COPY plugins/member/package.json ./plugins/member/package.json
+COPY plugins/provider/package.json ./plugins/provider/package.json
+
+RUN pnpm install --frozen-lockfile
+
 COPY apps ./apps
 COPY packages ./packages
 COPY plugins ./plugins
 COPY scripts ./scripts
-COPY docs ./docs
-COPY infra ./infra
 COPY theme ./theme
-
-RUN pnpm install --frozen-lockfile
 
 FROM base AS build
 
