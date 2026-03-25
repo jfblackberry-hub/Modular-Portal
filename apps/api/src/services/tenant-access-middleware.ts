@@ -2,11 +2,11 @@ import { prisma } from '@payer-portal/database';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import {
-  assertTenantAdmin,
   AuthenticationError,
   AuthorizationError,
   getCurrentUserFromHeaders,
   PLATFORM_ROOT_SCOPE,
+  resolveTenantScope,
   type CurrentUser
 } from './current-user-service';
 
@@ -81,6 +81,20 @@ function containsTenantIdentifier(value: unknown) {
   );
 }
 
+function readRequestedTenantId(request: FastifyRequest) {
+  const value =
+    findFirstValue(
+      request.query,
+      (key, entry) => FORBIDDEN_TENANT_KEYS.has(key) && typeof entry === 'string'
+    ) ??
+    findFirstValue(
+      request.params,
+      (key, entry) => FORBIDDEN_TENANT_KEYS.has(key) && typeof entry === 'string'
+    );
+
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
 function readOrgUnitIdFromRequest(request: FastifyRequest) {
   const value =
     findFirstValue(
@@ -104,23 +118,35 @@ export async function enforceTenantAccess(
   _reply: FastifyReply
 ) {
   const currentUser = await getCurrentUserFromHeaders(request.headers);
-  const tenantId = currentUser.tenantId;
+  const requestedTenantId = readRequestedTenantId(request);
 
-  if (tenantId === PLATFORM_ROOT_SCOPE) {
+  if (containsTenantIdentifier(request.body)) {
     throw new TenantAccessMiddlewareError(
-      403,
-      'Tenant-scoped routes require a tenant-scoped authenticated session.'
+      400,
+      'Client-supplied tenantId is not allowed. Tenant scope is resolved from the authenticated session.'
     );
   }
 
   if (
-    containsTenantIdentifier(request.query) ||
-    containsTenantIdentifier(request.body)
+    currentUser.tenantId !== PLATFORM_ROOT_SCOPE &&
+    containsTenantIdentifier(request.query)
   ) {
     throw new TenantAccessMiddlewareError(
       400,
       'Client-supplied tenantId is not allowed. Tenant scope is resolved from the authenticated session.'
     );
+  }
+
+  let tenantId: string;
+
+  try {
+    tenantId = resolveTenantScope(currentUser, requestedTenantId);
+  } catch (error) {
+    if (error instanceof AuthorizationError) {
+      throw new TenantAccessMiddlewareError(403, error.message);
+    }
+
+    throw error;
   }
 
   const orgUnitId = readOrgUnitIdFromRequest(request);

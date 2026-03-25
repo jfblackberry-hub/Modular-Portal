@@ -614,3 +614,24 @@ test('platform admin requests without explicit tenant workspace fail on tenant-a
 
   await app.close();
 });
+
+test('platform admin can inspect tenant-admin settings with explicit tenant workspace', async () => {
+  const { tenant, platformAdminUser } = await createFixtureData();
+  const app = Fastify();
+  await tenantAdminRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+
+  const response = await app.inject({
+    method: 'GET',
+    url: `/api/tenant-admin/settings?tenant_id=${tenant.id}`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(response.json().tenant.id, tenant.id);
+  assert.equal(response.json().tenant.slug, TEST_TENANT_SLUG);
+
+  await app.close();
+});
