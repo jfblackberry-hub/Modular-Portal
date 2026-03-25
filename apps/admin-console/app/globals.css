@@ -1,3 +1,5 @@
+@import '../../../theme/averra-brand-neon.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -29,6 +31,42 @@ body {
   background: var(--admin-content-bg);
 }
 
+body.averra-admin {
+  --admin-primary: var(--averra-pink);
+  --admin-primary-strong: var(--averra-blue);
+  --admin-primary-soft: rgba(216, 79, 163, 0.18);
+  --admin-shell-bg: linear-gradient(180deg, rgba(10, 8, 28, 0.96) 0%, rgba(16, 12, 38, 0.98) 100%);
+  --admin-sidebar-bg:
+    radial-gradient(circle at top center, rgba(216, 79, 163, 0.22), transparent 34%),
+    linear-gradient(180deg, rgba(12, 10, 31, 0.98) 0%, rgba(20, 16, 52, 0.98) 60%, rgba(9, 8, 20, 0.98) 100%);
+  --admin-section-bg: rgba(255, 255, 255, 0.06);
+  --admin-hover: rgba(255, 255, 255, 0.08);
+  --admin-active: var(--averra-gradient-button);
+  --admin-active-accent: rgba(76, 159, 204, 0.42);
+  --admin-sidebar-border: rgba(255, 255, 255, 0.12);
+  --admin-sidebar-text: rgba(255, 255, 255, 0.96);
+  --admin-sidebar-text-muted: rgba(220, 225, 255, 0.72);
+  --admin-sidebar-text-section: rgba(255, 255, 255, 0.5);
+  --admin-content-bg:
+    radial-gradient(circle at top left, rgba(216, 79, 163, 0.16), transparent 22rem),
+    radial-gradient(circle at 85% 0%, rgba(76, 159, 204, 0.14), transparent 24rem),
+    linear-gradient(180deg, #0d0a24 0%, #121034 48%, #09111f 100%);
+  --admin-surface: rgba(17, 13, 44, 0.88);
+  --admin-surface-muted: rgba(255, 255, 255, 0.06);
+  --admin-text: rgba(255, 255, 255, 0.94);
+  --admin-muted: rgba(220, 225, 255, 0.72);
+  --admin-border: rgba(255, 255, 255, 0.12);
+  --admin-success: var(--averra-success);
+  --admin-warning: var(--averra-warning);
+  --admin-danger: var(--averra-danger);
+  background:
+    radial-gradient(circle at top center, rgba(216, 79, 163, 0.16), transparent 30%),
+    radial-gradient(circle at right top, rgba(76, 159, 204, 0.14), transparent 26%),
+    linear-gradient(180deg, #0e0b26 0%, #15103a 55%, #0c1431 100%);
+  color: var(--admin-text);
+  font-family: var(--font-body);
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -46,6 +84,10 @@ textarea {
   outline-offset: 2px;
 }
 
+.averra-admin :focus-visible {
+  outline: 3px solid rgba(76, 159, 204, 0.36);
+}
+
 .admin-shell {
   background: var(--admin-shell-bg);
 }
@@ -54,6 +96,11 @@ textarea {
   border: 1px solid var(--admin-border);
   background: var(--admin-surface);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.averra-admin .admin-surface {
+  backdrop-filter: blur(18px);
+  box-shadow: var(--portal-shadow-md);
 }
 
 .admin-button {
@@ -80,6 +127,11 @@ textarea {
   box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
 }
 
+.averra-admin .admin-button--primary {
+  background: var(--averra-gradient-button);
+  box-shadow: var(--portal-glow-pink), 0 16px 32px rgba(0, 0, 0, 0.28);
+}
+
 .admin-button--primary:visited,
 .admin-button--primary > *,
 .admin-button--primary span,
@@ -97,6 +149,11 @@ textarea {
 .admin-button--secondary {
   border-color: var(--admin-border);
   background: #ffffff;
+  color: var(--admin-text);
+}
+
+.averra-admin .admin-button--secondary {
+  background: rgba(255, 255, 255, 0.04);
   color: var(--admin-text);
 }
 
@@ -145,16 +202,30 @@ textarea {
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
+.averra-admin .admin-input {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--admin-text);
+}
+
 .admin-input:focus {
   border-color: rgba(37, 99, 235, 0.45);
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
   outline: none;
 }
 
+.averra-admin .admin-input:focus {
+  border-color: rgba(76, 159, 204, 0.45);
+  box-shadow: 0 0 0 4px rgba(76, 159, 204, 0.16);
+}
+
 .admin-top-header {
   background: var(--admin-sidebar-bg);
   color: var(--admin-sidebar-text);
   box-shadow: inset 0 -1px 0 var(--admin-sidebar-border);
+}
+
+.averra-admin .admin-top-header {
+  backdrop-filter: blur(18px);
 }
 
 .admin-top-header__content {
@@ -189,6 +260,50 @@ textarea {
 .admin-top-header__brand-mark {
   background: var(--admin-active);
   color: var(--admin-sidebar-text);
+}
+
+.averra-admin .admin-top-header__brand-mark,
+.averra-admin .admin-top-header__avatar,
+.averra-admin .admin-left-rail__brand-mark {
+  background: var(--averra-gradient-button);
+  box-shadow: var(--portal-glow-pink), var(--portal-glow-blue);
+}
+
+.averra-admin .admin-top-header__title,
+.averra-admin .admin-left-rail__title {
+  font-family: var(--font-heading);
+}
+
+.averra-admin .admin-top-header__eyebrow,
+.averra-admin .admin-left-rail__eyebrow {
+  color: rgba(220, 225, 255, 0.62);
+}
+
+.averra-admin .admin-top-header__profile-card,
+.averra-admin .admin-left-rail__context-card,
+.averra-admin .admin-shell__content,
+.averra-admin .admin-left-rail {
+  backdrop-filter: blur(18px);
+}
+
+.averra-admin .admin-left-rail,
+.averra-admin .admin-shell__content {
+  background: transparent;
+}
+
+.averra-admin .admin-left-rail__context-card {
+  border-color: var(--admin-border);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: var(--portal-shadow-sm);
+}
+
+.averra-admin .admin-left-rail__context-label {
+  color: rgba(220, 225, 255, 0.62);
+}
+
+.averra-admin .admin-left-rail__context-value,
+.averra-admin .admin-top-header__profile-name {
+  color: var(--admin-text);
 }
 
 .admin-top-header__brand-copy {

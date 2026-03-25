@@ -75,41 +75,36 @@ const quickSignInGroups: QuickSignInGroup[] = [
 
 export default async function LoginPage() {
   return (
-    <main className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)]">
+    <main className="averra-platform-screen">
       <section className="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.85fr)]">
-          <section className="overflow-hidden rounded-[28px] border border-[var(--border-subtle)] bg-white shadow-sm">
+          <section className="averra-platform-card overflow-hidden">
             <div className="relative px-10 py-12 sm:px-12 sm:py-16">
-              <div
-                className="absolute inset-0 bg-gradient-to-br from-[var(--tenant-primary-soft-color)] via-white to-white"
-                aria-hidden="true"
-              />
-              <div className="absolute -right-14 top-8 h-36 w-36 rounded-full bg-[var(--tenant-primary-soft-color)]/70 blur-xl" aria-hidden="true" />
-              <div className="absolute -bottom-10 left-6 h-24 w-24 rounded-full bg-sky-100/80 blur-lg" aria-hidden="true" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(216,79,163,0.18),transparent_24%),radial-gradient(circle_at_85%_0%,rgba(76,159,204,0.16),transparent_26%)]" aria-hidden="true" />
+              <div className="absolute -right-14 top-8 h-36 w-36 rounded-full bg-[rgba(216,79,163,0.24)] blur-xl" aria-hidden="true" />
+              <div className="absolute -bottom-10 left-6 h-24 w-24 rounded-full bg-[rgba(76,159,204,0.22)] blur-lg" aria-hidden="true" />
 
               <div className="relative max-w-2xl">
-                <div className="inline-flex items-center gap-3 rounded-full border border-[var(--border-subtle)] bg-white/90 px-4 py-2">
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] text-xs font-bold text-white">
-                    P
-                  </span>
-                  <span className="text-sm font-semibold tracking-wide text-[var(--text-primary)]">
-                    Payer Portal
+                <div className="averra-platform-pill px-4 py-2">
+                  <span className="averra-platform-mark">AV</span>
+                  <span className="text-sm font-semibold tracking-wide text-white">
+                    Averra Portal
                   </span>
                 </div>
 
-                <h1 className="mt-8 text-4xl font-semibold leading-tight text-[var(--text-primary)] sm:text-5xl">
-                  Secure access to your health plan portal
+                <h1 className="mt-8 text-4xl font-semibold leading-tight sm:text-5xl">
+                  Secure access to the <span className="averra-platform-wordmark">Averra</span> platform
                 </h1>
-                <p className="mt-5 max-w-xl text-base leading-7 text-[var(--text-secondary)]">
-                  Sign in to review coverage, claims, ID cards, and support options in a protected healthcare environment.
+                <p className="averra-platform-text-muted mt-5 max-w-xl text-base leading-7">
+                  Sign in to open member, provider, employer, broker, and admin access paths from one protected platform gateway.
                 </p>
 
-                <section className="mt-8 rounded-2xl border border-[var(--border-subtle)] bg-white/90 p-5" aria-label="Quick sign-in users">
-                  <h2 className="text-sm font-semibold text-[var(--text-primary)]">Quick sign-in users</h2>
+                <section className="mt-8 rounded-2xl border border-[var(--averra-border)] bg-[rgba(255,255,255,0.05)] p-5" aria-label="Quick sign-in users">
+                  <h2 className="text-sm font-semibold text-white">Quick sign-in users</h2>
                   <div className="mt-3 space-y-3">
                     {quickSignInGroups.map((group) => (
                       <div key={group.title}>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--averra-platform-muted)]">
                           {group.title}
                         </p>
                         <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -117,10 +112,10 @@ export default async function LoginPage() {
                             <a
                               key={`${group.title}-${user.label}-${user.username}`}
                               href={user.href ?? `/login?user=${encodeURIComponent(user.username)}`}
-                              className="flex items-center justify-between gap-2 rounded-xl border border-[var(--border-subtle)] bg-white px-3 py-2 text-xs transition hover:border-[var(--tenant-primary-color)]"
+                              className="flex items-center justify-between gap-2 rounded-xl border border-[var(--averra-border)] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-xs transition hover:border-[var(--averra-blue)]"
                             >
-                              <span className="truncate text-[var(--text-secondary)]">{user.label}</span>
-                              <span className="font-semibold text-[var(--text-primary)]">{user.username}</span>
+                              <span className="truncate text-[var(--averra-platform-muted)]">{user.label}</span>
+                              <span className="font-semibold text-white">{user.username}</span>
                             </a>
                           ))}
                         </div>

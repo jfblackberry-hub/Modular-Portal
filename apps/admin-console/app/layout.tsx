@@ -9,8 +9,8 @@ import { AdminShell } from '../components/admin-shell';
 import { colors, semanticColors, surfaceColors } from '../lib/colors';
 
 export const metadata: Metadata = {
-  title: 'Admin Console',
-  description: 'Administrative console for the modular healthcare payer portal.'
+  title: 'Averra Control Center',
+  description: 'Administrative control center for the Averra platform.'
 };
 
 export default function RootLayout({
@@ -19,6 +19,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
+        className="averra-admin"
         style={
           {
             '--admin-shell-bg': colors.background,

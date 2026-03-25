@@ -5,13 +5,13 @@ export default function AdminIndexPage() {
     <div className="space-y-6">
       <div>
         <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
-          Control plane
+          Averra control plane
         </p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight text-admin-text">
-          Admin governance workspace
+          Averra governance workspace
         </h1>
         <p className="mt-3 max-w-3xl text-base leading-7 text-admin-muted">
-          Use dedicated views for licensing, feature flags, and roles. Portal rendering stays outside the admin console.
+          Use dedicated views for licensing, feature flags, and roles. Tenant rendering stays outside the Averra control center.
         </p>
       </div>
 

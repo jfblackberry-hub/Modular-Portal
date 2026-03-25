@@ -26,7 +26,7 @@ function getInitials(email: string) {
 export function TopHeader({ session, signOut }: TopHeaderProps) {
   const pathname = usePathname();
   const routeContext = getAdminRouteContext(pathname);
-  const workspaceLabel = session?.isPlatformAdmin ? 'Platform Admin' : 'Tenant Admin';
+  const workspaceLabel = session?.isPlatformAdmin ? 'Averra Admin' : 'Tenant Admin';
   const homeHref = session ? getDefaultAdminHref(session.isPlatformAdmin) : '/admin';
 
   return (
@@ -37,10 +37,10 @@ export function TopHeader({ session, signOut }: TopHeaderProps) {
             <Shield size={18} />
           </div>
           <div className="admin-top-header__brand-copy">
-            <p className="admin-top-header__eyebrow">Platform control plane</p>
+            <p className="admin-top-header__eyebrow">Averra control plane</p>
             <div className="admin-top-header__brand-row">
               <Link href={homeHref} className="admin-top-header__title admin-top-header__title-link">
-                Platform Admin
+                Averra Control Center
               </Link>
               <span className="admin-top-header__divider" aria-hidden="true">
                 <ChevronRight size={14} />

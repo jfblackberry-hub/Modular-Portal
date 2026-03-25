@@ -17,8 +17,8 @@ const adminOptions = [
     href: `${config.serviceEndpoints.admin}/login`
   },
   {
-    label: 'Platform Admin',
-    description: 'Open platform-wide operations for tenants, governance, and system health.',
+    label: 'Averra Control Center',
+    description: 'Open Averra-wide operations for tenants, governance, and system health.',
     href: `${config.serviceEndpoints.admin}/login`
   }
 ];
@@ -77,24 +77,23 @@ async function PortalLandingPage() {
   const matchedDemoUser = findDemoUser(demoAccessUser);
 
   return (
-    <main className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)]">
+    <main className="averra-platform-screen">
       <section className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-4 py-16 sm:px-6">
         <div className="max-w-3xl">
-          <p className="inline-flex rounded-full border border-[var(--border-subtle)] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--tenant-primary-color)]">
+          <p className="averra-platform-pill px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em]">
+            <span className="averra-platform-mark">AV</span>
             Demo Access: {matchedDemoUser?.username ?? demoAccessUser}
           </p>
           <h1 className="mt-6 text-5xl font-semibold tracking-tight sm:text-6xl">
-            A modern healthcare member portal experience for local development.
+            <span className="averra-platform-wordmark">Averra</span> platform access for local development.
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--text-secondary)]">
-            The default shell now follows familiar payer patterns: light
-            surfaces, trusted blue accents, quick member tasks, and clear
-            support paths.
+          <p className="averra-platform-text-muted mt-6 max-w-2xl text-lg leading-8">
+            Launch tenant experiences, open the Averra control center, and move between provider, member, employer, and broker surfaces from one platform entry point.
           </p>
           <div className="mt-8">
             <Link
               href="/login"
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)] transition hover:bg-[var(--tenant-primary-soft-color)]"
+              className="averra-platform-button averra-platform-button--secondary text-sm"
             >
               Manual login
             </Link>
@@ -105,27 +104,27 @@ async function PortalLandingPage() {
           {portalSignInLinks.map((portal) => (
             <article
               key={portal.label}
-              className="portal-card flex min-h-[148px] flex-col justify-between p-6 transition hover:border-[var(--tenant-primary-color)]"
+              className="averra-platform-card flex min-h-[148px] flex-col justify-between p-6 transition hover:border-[var(--averra-blue)]"
             >
               <div>
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                <h2 className="text-lg font-semibold">
                   {portal.label}
                 </h2>
-                <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
+                <p className="averra-platform-text-muted mt-3 text-sm leading-6">
                   {portal.description}
                 </p>
               </div>
               {portal.label === 'Employer Portal' ? (
                 <div className="mt-5 grid gap-2">
                   <Link
-                    href="/employer-login?user=EMP-0316043829906172-001&redirect=/employer&auto=1"
-                    className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+                  href="/employer-login?user=EMP-0316043829906172-001&redirect=/employer&auto=1"
+                    className="averra-platform-button averra-platform-button--primary text-sm"
                   >
                     Northstar login
                   </Link>
                   <Link
                     href="/employer-login?user=EMP-0316043829906172-002&redirect=/employer&auto=1"
-                    className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)] transition hover:bg-[var(--tenant-primary-soft-color)]"
+                    className="averra-platform-button averra-platform-button--secondary text-sm"
                   >
                     Lakeside login
                   </Link>
@@ -133,7 +132,7 @@ async function PortalLandingPage() {
               ) : (
                 <Link
                   href={portal.href}
-                  className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+                  className="averra-platform-button averra-platform-button--primary mt-5 text-sm"
                 >
                   {portal.loginLabel}
                 </Link>
@@ -142,16 +141,16 @@ async function PortalLandingPage() {
           ))}
         </div>
 
-        <section className="mt-14 rounded-[28px] border border-[var(--border-subtle)] bg-white p-6 shadow-sm sm:p-8">
+        <section className="averra-platform-card mt-14 p-6 sm:p-8">
           <div className="max-w-2xl">
-            <p className="text-sm font-medium uppercase tracking-[0.18em] text-[var(--tenant-primary-color)]">
+            <p className="text-sm font-medium uppercase tracking-[0.18em] text-[var(--averra-blue)]">
               Administration
             </p>
-            <h2 className="mt-3 text-2xl font-semibold text-[var(--text-primary)]">
-              Admin console access
+            <h2 className="mt-3 text-2xl font-semibold">
+              Averra control center access
             </h2>
-            <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-              Use the admin console to manage tenant operations or platform-wide administration.
+            <p className="averra-platform-text-muted mt-3 text-sm leading-6">
+              Use the Averra control center to manage tenant operations or platform-wide administration.
             </p>
           </div>
 
@@ -160,17 +159,17 @@ async function PortalLandingPage() {
               <Link
                 key={option.label}
                 href={option.href}
-                className="portal-card flex min-h-[152px] flex-col justify-between p-6 transition hover:border-[var(--tenant-primary-color)]"
+                className="averra-platform-card flex min-h-[152px] flex-col justify-between p-6 transition hover:border-[var(--averra-blue)]"
               >
                 <div>
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                  <h3 className="text-lg font-semibold">
                     {option.label}
                   </h3>
-                  <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
+                  <p className="averra-platform-text-muted mt-3 text-sm leading-6">
                     {option.description}
                   </p>
                 </div>
-                <span className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)] transition hover:bg-[var(--tenant-primary-soft-color)]">
+                <span className="averra-platform-button averra-platform-button--secondary mt-5 text-sm">
                   Open admin console
                 </span>
               </Link>
@@ -182,12 +181,12 @@ async function PortalLandingPage() {
           {featureCards.map((card) => (
             <article
               key={card.title}
-              className="portal-card p-6"
+              className="averra-platform-card p-6"
             >
-              <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+              <h2 className="text-xl font-semibold">
                 {card.title}
               </h2>
-              <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
+              <p className="averra-platform-text-muted mt-3 text-sm leading-6">
                 {card.description}
               </p>
             </article>

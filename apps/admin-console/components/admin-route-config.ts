@@ -41,7 +41,7 @@ export type AdminMenuConfig = {
 
 const platformMenu: AdminMenuConfig = {
   role: 'platform_admin',
-  label: 'Platform admin',
+  label: 'Averra control center',
   defaultHref: '/admin/platform/health',
   sections: [
     {

@@ -19,9 +19,9 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
             <div className="admin-left-rail__brand-mark" aria-hidden="true">
               P
             </div>
-            <div>
-              <p className="admin-left-rail__eyebrow">Platform Suite</p>
-              <h1 className="admin-left-rail__title">Admin Portal</h1>
+          <div>
+              <p className="admin-left-rail__eyebrow">Averra Platform</p>
+              <h1 className="admin-left-rail__title">Averra Control Center</h1>
             </div>
           </div>
           <p className="text-sm text-admin-nav-muted">Admin session required.</p>
@@ -38,10 +38,10 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
             P
           </div>
           <div>
-            <p className="admin-left-rail__eyebrow">Platform Suite</p>
-            <h1 className="admin-left-rail__title">Platform Admin</h1>
+            <p className="admin-left-rail__eyebrow">Averra Platform</p>
+            <h1 className="admin-left-rail__title">Averra Control Center</h1>
             <p className="admin-left-rail__description">
-              Operational control, tenant lifecycle management, and integration oversight in one workspace.
+              Operational control, tenant lifecycle management, and integration oversight across the Averra platform.
             </p>
           </div>
         </div>
