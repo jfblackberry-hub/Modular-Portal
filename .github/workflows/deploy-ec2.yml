@@ -113,3 +113,8 @@ jobs:
       - name: Verify public application health
         run: |
           bash scripts/deploy/check-application-health.sh "${ENVIRONMENT}" "${AWS_REGION}"
+
+      - name: Seed provider test tenant on dev
+        if: env.ENVIRONMENT == 'dev'
+        run: |
+          bash scripts/deploy/seed-provider-tenant.sh "${ENVIRONMENT}" "${AWS_REGION}"

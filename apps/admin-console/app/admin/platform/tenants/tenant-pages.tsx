@@ -21,6 +21,16 @@ type Tenant = {
   updatedAt?: string;
 };
 
+type OrganizationUnit = {
+  id: string;
+  tenantId: string;
+  parentId: string | null;
+  type: 'ENTERPRISE' | 'REGION' | 'LOCATION' | 'DEPARTMENT' | 'TEAM';
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 type Connector = {
   id: string;
   tenantId: string;
@@ -158,15 +168,80 @@ async function fetchTenantAuditEvents(tenantId: string, pageSize = 8) {
 }
 
 async function fetchTenantEnrichment(tenantId: string) {
-  const [settingsPayload, auditEvents] = await Promise.all([
+  const [settingsPayload, auditEvents, organizationUnits] = await Promise.all([
     fetchTenantSettings(tenantId),
-    fetchTenantAuditEvents(tenantId)
+    fetchTenantAuditEvents(tenantId),
+    fetchAdminJsonCached<OrganizationUnit[]>(
+      `${config.apiBaseUrl}/platform-admin/tenants/${tenantId}/organization-units`,
+      {
+        headers: getAdminAuthHeaders(),
+        ttlMs: 20_000
+      }
+    )
   ]);
 
   return {
     settings: settingsPayload,
-    auditEvents
+    auditEvents,
+    organizationUnits
   };
+}
+
+function buildOrganizationUnitDepthMap(organizationUnits: OrganizationUnit[]) {
+  const unitsById = new Map(organizationUnits.map((unit) => [unit.id, unit]));
+  const depthMap = new Map<string, number>();
+
+  function resolveDepth(unit: OrganizationUnit): number {
+    const cached = depthMap.get(unit.id);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    if (!unit.parentId) {
+      depthMap.set(unit.id, 0);
+      return 0;
+    }
+
+    const parent = unitsById.get(unit.parentId);
+    const depth = parent ? resolveDepth(parent) + 1 : 0;
+    depthMap.set(unit.id, depth);
+    return depth;
+  }
+
+  for (const unit of organizationUnits) {
+    resolveDepth(unit);
+  }
+
+  return depthMap;
+}
+
+function sortOrganizationUnits(organizationUnits: OrganizationUnit[]) {
+  const childrenByParentId = new Map<string | null, OrganizationUnit[]>();
+
+  for (const unit of organizationUnits) {
+    const siblings = childrenByParentId.get(unit.parentId) ?? [];
+    siblings.push(unit);
+    childrenByParentId.set(unit.parentId, siblings);
+  }
+
+  for (const siblings of childrenByParentId.values()) {
+    siblings.sort((left, right) => left.name.localeCompare(right.name));
+  }
+
+  const ordered: OrganizationUnit[] = [];
+
+  function visit(parentId: string | null) {
+    const children = childrenByParentId.get(parentId) ?? [];
+
+    for (const child of children) {
+      ordered.push(child);
+      visit(child.id);
+    }
+  }
+
+  visit(null);
+
+  return ordered;
 }
 
 export function TenantListPage() {
@@ -312,6 +387,9 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [settings, setSettings] = useState<SettingsPayload | null>(null);
   const [events, setEvents] = useState<AuditEvent[]>([]);
+  const [organizationUnits, setOrganizationUnits] = useState<OrganizationUnit[]>(
+    []
+  );
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -335,6 +413,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
         setTenant(tenantPayload);
         setSettings(enrichment.settings);
         setEvents(enrichment.auditEvents);
+        setOrganizationUnits(enrichment.organizationUnits);
         setError('');
       } catch (nextError) {
         if (!isMounted) {
@@ -397,6 +476,10 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const warningEvents = events.filter((event) =>
     alertKeywords.some((keyword) => event.eventType.toLowerCase().includes(keyword))
   ).length;
+  const orderedOrganizationUnits = sortOrganizationUnits(organizationUnits);
+  const organizationUnitDepthMap = buildOrganizationUnitDepthMap(
+    orderedOrganizationUnits
+  );
 
   return (
     <div className="space-y-6">
@@ -461,6 +544,95 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                 </div>
               ))}
             </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Organization Structure"
+            description="Canonical tenant organization hierarchy used for provider and operating-structure testing."
+          >
+            {orderedOrganizationUnits.length === 0 ? (
+              <p className="text-sm text-admin-muted">
+                No organization units are configured for this tenant yet.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
+                      Total Units
+                    </p>
+                    <p className="mt-3 text-base font-semibold text-admin-text">
+                      {orderedOrganizationUnits.length}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
+                      Root Nodes
+                    </p>
+                    <p className="mt-3 text-base font-semibold text-admin-text">
+                      {orderedOrganizationUnits.filter((unit) => !unit.parentId).length}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
+                      Types Present
+                    </p>
+                    <p className="mt-3 text-base font-semibold text-admin-text">
+                      {Array.from(
+                        new Set(orderedOrganizationUnits.map((unit) => unit.type))
+                      ).join(', ')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-admin-border">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="border-b border-admin-border bg-slate-50 text-xs uppercase tracking-[0.18em] text-admin-muted">
+                      <tr>
+                        <th className="px-4 py-3">Name</th>
+                        <th className="px-4 py-3">Type</th>
+                        <th className="px-4 py-3">Parent</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orderedOrganizationUnits.map((unit) => {
+                        const depth = organizationUnitDepthMap.get(unit.id) ?? 0;
+                        const parent = orderedOrganizationUnits.find(
+                          (candidate) => candidate.id === unit.parentId
+                        );
+
+                        return (
+                          <tr key={unit.id} className="border-b border-admin-border/70">
+                            <td className="px-4 py-4 text-admin-text">
+                              <div
+                                className="flex items-center gap-3"
+                                style={{ paddingLeft: `${depth * 20}px` }}
+                              >
+                                <span className="h-2.5 w-2.5 rounded-full bg-admin-accent/70" />
+                                <div>
+                                  <p className="font-medium">{unit.name}</p>
+                                  <p className="mt-1 text-xs text-admin-muted">
+                                    {depth === 0 ? 'Root unit' : `Level ${depth + 1}`}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                                {unit.type}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-admin-text">
+                              {parent?.name ?? 'None'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </SectionCard>
 
           <SectionCard

@@ -160,6 +160,34 @@ export async function getTenantById(id: string) {
   return tenant ? mapTenant(tenant) : null;
 }
 
+export async function listTenantOrganizationUnits(tenantId: string) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { id: true }
+  });
+
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+
+  const organizationUnits = await prisma.organizationUnit.findMany({
+    where: {
+      tenantId
+    },
+    orderBy: [{ parentId: 'asc' }, { name: 'asc' }]
+  });
+
+  return organizationUnits.map((unit) => ({
+    id: unit.id,
+    tenantId: unit.tenantId,
+    parentId: unit.parentId,
+    type: unit.type,
+    name: unit.name,
+    createdAt: unit.createdAt,
+    updatedAt: unit.updatedAt
+  }));
+}
+
 export async function createTenant(
   input: TenantInput,
   context: AuditContext = {}

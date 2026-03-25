@@ -13,6 +13,7 @@ import {
   createTenant,
   deleteTenant,
   getTenantById,
+  listTenantOrganizationUnits,
   listTenants,
   updateTenant
 } from '../services/tenant-service';
@@ -150,6 +151,40 @@ export async function tenantRoutes(app: FastifyInstance) {
             return reply.status(403).send({ message: error.message });
           }
 
+          const status = error.message === 'Tenant not found' ? 404 : 400;
+          return reply.status(status).send({ message: error.message });
+        }
+
+        return reply.status(503).send({
+          message:
+            'Local database unavailable. Start PostgreSQL, run migrations.'
+        });
+      }
+    }
+  );
+
+  app.get<{ Params: { id: string } }>(
+    '/platform-admin/tenants/:id/organization-units',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        const organizationUnits = await listTenantOrganizationUnits(
+          request.params.id
+        );
+
+        return reply.send(organizationUnits);
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          return reply.status(401).send({ message: error.message });
+        }
+
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ message: error.message });
+        }
+
+        if (error instanceof Error) {
           const status = error.message === 'Tenant not found' ? 404 : 400;
           return reply.status(status).send({ message: error.message });
         }
