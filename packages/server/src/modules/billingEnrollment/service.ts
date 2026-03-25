@@ -254,7 +254,10 @@ export async function createEnrollmentDraft(
   );
 
   publishInBackground('enrollment.created', {
+    capabilityId: 'billing_enrollment',
     id: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     type: 'enrollment.created',
     tenantId: context.tenantId,
     correlationId: randomUUID(),
@@ -306,7 +309,10 @@ export async function saveEnrollmentStep(
   );
 
   publishInBackground('enrollment.updated', {
+    capabilityId: 'billing_enrollment',
     id: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     type: 'enrollment.updated',
     tenantId: context.tenantId,
     correlationId: randomUUID(),
@@ -341,7 +347,10 @@ export async function submitEnrollment(
   );
 
   publishInBackground('enrollment.submitted', {
+    capabilityId: 'billing_enrollment',
     id: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     type: 'enrollment.submitted',
     tenantId: context.tenantId,
     correlationId: randomUUID(),
@@ -374,7 +383,10 @@ export async function completeEnrollment(
   );
 
   publishInBackground('enrollment.completed', {
+    capabilityId: 'billing_enrollment',
     id: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     type: 'enrollment.completed',
     tenantId: context.tenantId,
     correlationId: randomUUID(),
@@ -422,7 +434,10 @@ export async function renewCoverage(
   );
 
   publishInBackground('workflow.started', {
+    capabilityId: 'billing_enrollment',
     id: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     type: 'workflow.started',
     tenantId: context.tenantId,
     correlationId: randomUUID(),
@@ -534,7 +549,10 @@ export async function uploadRequiredDocumentHook(
   );
 
   publishInBackground('document.uploaded', {
+    capabilityId: 'billing_enrollment',
     id: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     type: 'document.uploaded',
     tenantId: context.tenantId,
     correlationId: randomUUID(),
@@ -568,7 +586,10 @@ export async function startEnrollmentOrchestration(
   );
 
   publishInBackground('workflow.started', {
+    capabilityId: 'billing_enrollment',
     id: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     type: 'workflow.started',
     tenantId: context.tenantId,
     correlationId: randomUUID(),
@@ -599,7 +620,10 @@ export async function submitPremiumPayment(
   );
 
   publishInBackground('integration.requested', {
+    capabilityId: 'billing_enrollment',
     id: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     type: 'integration.requested',
     tenantId: context.tenantId,
     correlationId: randomUUID(),
@@ -629,7 +653,10 @@ export async function submitLifeEventWorkflow(
   );
 
   publishInBackground('workflow.started', {
+    capabilityId: 'billing_enrollment',
     id: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     type: 'workflow.started',
     tenantId: context.tenantId,
     correlationId: randomUUID(),
@@ -660,7 +687,10 @@ export async function generateCorrespondenceNotice(
   );
 
   publishInBackground('notification.requested', {
+    capabilityId: 'billing_enrollment',
     id: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     type: 'notification.requested',
     tenantId: context.tenantId,
     correlationId: randomUUID(),
@@ -817,7 +847,10 @@ async function publishBillingNotification(
   recipientId: string
 ) {
   publishInBackground('notification.requested', {
+    capabilityId: 'billing_enrollment',
     id: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     type: 'notification.requested',
     tenantId: context.tenantId,
     correlationId: randomUUID(),
@@ -1390,7 +1423,10 @@ export async function uploadDocumentForDocumentCenter(
   );
 
   publishInBackground('document.uploaded', {
+    capabilityId: 'billing_enrollment',
     id: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     type: 'document.uploaded',
     tenantId: context.tenantId,
     correlationId: randomUUID(),

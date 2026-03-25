@@ -2,23 +2,26 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import type { MultipartFile } from '@fastify/multipart';
-import type { Prisma, Tenant } from '@payer-portal/database';
+import type { Prisma, Tenant, TenantType } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
 import {
   buildTenantLogoStorageKey,
   getPublicAssetStorageService,
   logAdminAction,
-  publishInBackground} from '@payer-portal/server';
+  publishInBackground
+} from '@payer-portal/server';
 
 type TenantInput = {
   name: string;
   slug: string;
   status: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
+  type: TenantType;
   brandingConfig: Record<string, unknown>;
 };
 
 type TenantUpdateInput = {
   status?: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
+  type?: TenantType;
   quotaUsers?: number;
   quotaMembers?: number;
   quotaStorageGb?: number;
@@ -31,6 +34,16 @@ type AuditContext = {
   ipAddress?: string;
   userAgent?: string;
 };
+
+const TENANT_TYPES = [
+  'PAYER',
+  'EMPLOYER',
+  'BROKER',
+  'MEMBER',
+  'PROVIDER'
+] as const satisfies readonly TenantType[];
+
+const tenantTypeSet = new Set<string>(TENANT_TYPES);
 
 function normalizeSlug(value: string) {
   return value
@@ -51,6 +64,7 @@ function mapTenant(tenant: Tenant) {
     name: tenant.name,
     slug: tenant.slug,
     status: tenant.status,
+    type: tenant.type,
     healthStatus:
       tenant.status === 'ACTIVE'
         ? 'HEALTHY'
@@ -69,6 +83,16 @@ function mapTenant(tenant: Tenant) {
     createdAt: tenant.createdAt,
     updatedAt: tenant.updatedAt
   };
+}
+
+function normalizeTenantType(value: TenantType | string) {
+  const normalized = value.trim().toUpperCase();
+
+  if (!tenantTypeSet.has(normalized)) {
+    throw new Error(`Tenant type must be one of: ${TENANT_TYPES.join(', ')}`);
+  }
+
+  return normalized as TenantType;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -129,12 +153,15 @@ export async function createTenant(
     throw new Error('Tenant slug is required');
   }
 
+  const type = normalizeTenantType(input.type);
+
   const tenant = await prisma.$transaction(async (tx) => {
     const createdTenant = await tx.tenant.create({
       data: {
         name,
         slug,
         status: input.status,
+        type,
         isActive: input.status === 'ACTIVE',
         brandingConfig: input.brandingConfig as Prisma.InputJsonValue
       }
@@ -155,8 +182,11 @@ export async function createTenant(
   });
 
   publishInBackground('tenant.created', {
+    capabilityId: 'platform.tenants',
     id: randomUUID(),
     correlationId: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     timestamp: new Date(),
     tenantId: tenant.id,
     type: 'tenant.created',
@@ -164,7 +194,8 @@ export async function createTenant(
       tenantId: tenant.id,
       name: tenant.name,
       slug: tenant.slug,
-      status: tenant.status
+      status: tenant.status,
+      tenantType: tenant.type
     }
   });
 
@@ -212,6 +243,9 @@ export async function updateTenant(
   };
 
   const updatedTenant = await prisma.$transaction(async (tx) => {
+    const nextType =
+      input.type !== undefined ? normalizeTenantType(input.type) : tenant.type;
+
     const nextTenant = await tx.tenant.update({
       where: { id },
       data: {
@@ -221,6 +255,7 @@ export async function updateTenant(
               isActive: input.status === 'ACTIVE'
             }
           : {}),
+        type: nextType,
         brandingConfig: nextBrandingConfig as Prisma.InputJsonValue
       }
     });
@@ -237,6 +272,7 @@ export async function updateTenant(
       metadata: {
         updatedFields: [
           ...(input.status ? ['status'] : []),
+          ...(input.type ? ['type'] : []),
           ...(typeof input.quotaMembers === 'number'
             ? ['brandingConfig.platformQuota.members']
             : []),
@@ -288,7 +324,9 @@ export async function uploadTenantLogo(
   );
 
   if (!uploadResult.publicUrl) {
-    throw new Error('Public asset storage must return a public URL for tenant logos');
+    throw new Error(
+      'Public asset storage must return a public URL for tenant logos'
+    );
   }
 
   const currentBrandingConfig: BrandingConfig = isRecord(tenant.brandingConfig)
@@ -326,8 +364,11 @@ export async function uploadTenantLogo(
   });
 
   publishInBackground('document.uploaded', {
+    capabilityId: 'platform.tenants',
     id: randomUUID(),
     correlationId: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     timestamp: new Date(),
     tenantId: updatedTenant.id,
     type: 'document.uploaded',

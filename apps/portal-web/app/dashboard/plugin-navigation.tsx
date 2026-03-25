@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getPluginNavigation } from '@payer-portal/plugin-sdk';
 
 import { SurfaceCard } from '../../components/portal-ui';
 import { getEnabledPlugins } from '../../lib/plugins';
@@ -12,7 +13,9 @@ export async function PluginNavigation() {
         title="Programs"
         description="Enable a plugin feature flag in the admin console and it will appear here automatically."
       >
-        <p className="text-sm text-[var(--text-secondary)]">No enabled plugins right now.</p>
+        <p className="text-sm text-[var(--text-secondary)]">
+          No enabled plugins right now.
+        </p>
       </SurfaceCard>
     );
   }
@@ -24,7 +27,7 @@ export async function PluginNavigation() {
     >
       <div className="flex flex-wrap gap-3">
         {plugins.flatMap((plugin) =>
-          plugin.navigation.map((item) => (
+          getPluginNavigation(plugin).map((item) => (
             <Link
               key={`${plugin.id}:${item.href}`}
               href={item.href}

@@ -2,8 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { PortalShell } from '../../components/portal-shell';
 import { TenantTheme } from '../../components/tenant-theme';
-import { buildPortalNavigation } from '../../lib/navigation';
-import { getEnabledPlugins } from '../../lib/plugins';
+import { resolvePortalNavigation } from '../../lib/navigation';
 import { resolvePortalExperience } from '../../lib/portal-experience';
 import { getPortalSessionUser } from '../../lib/portal-session';
 import { getTenantBranding } from '../../lib/tenant-branding';
@@ -17,8 +16,7 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
-  const enabledPlugins = await getEnabledPlugins(user.tenant.id);
-  const navigation = buildPortalNavigation(user, enabledPlugins);
+  const navigation = await resolvePortalNavigation(user);
   const branding = await getTenantBranding(user.tenant, user.id, {
     experience: resolvePortalExperience(user)
   });

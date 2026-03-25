@@ -1,21 +1,16 @@
-import { AdminPlaceholderPage } from '../../../../components/admin-placeholder-page';
+import { AdminPageLayout } from '../../../../components/admin-ui';
+import { TenantRoleGovernance } from '../../../../components/tenant-role-governance';
+
+export const dynamic = 'force-dynamic';
 
 export default function AdminTenantRolesPage() {
   return (
-    <AdminPlaceholderPage
+    <AdminPageLayout
       eyebrow="Tenant"
-      title="Roles"
-      description="Tenant-scoped role review and assignment workspace."
-      highlights={[
-        'Prepared route for tenant role management under User Administration.',
-        'Keeps tenant user listing and role policy views distinct.',
-        'Designed for future role assignment and permission review flows.'
-      ]}
-      nextSteps={[
-        'Add tenant role summaries and effective permission views.',
-        'Support assigning and reviewing tenant-admin-authorized roles.',
-        'Surface recent access changes and related audit events.'
-      ]}
-    />
+      title="Roles and permissions"
+      description="Manage tenant role assignments in a dedicated governance workspace."
+    >
+      <TenantRoleGovernance />
+    </AdminPageLayout>
   );
 }

@@ -8,9 +8,7 @@ import {
   logAuthenticationEvent,
   logAuthorizationFailure,
   recordApiRequest,
-  registerBillingEnrollmentAdapters,
-  registerIntegrationEventSubscriptions,
-  registerJobEventSubscriptions
+  registerBillingEnrollmentAdapters
 } from '@payer-portal/server';
 import Fastify from 'fastify';
 
@@ -19,12 +17,14 @@ import { registerRoutes } from './routes';
 import { apiRuntimeConfig } from './runtime-config';
 import { verifyAccessToken } from './services/access-token-service';
 import { logPreviewSessionActivity } from './services/preview-session-service';
-import {
-  resolveOptionalTenantContext,
-  TENANT_HEADER_NAME
-} from './services/tenant-context-service';
+import { resolveOptionalTenantContext } from './services/tenant-context-service';
 
 const serviceLogger = createStructuredLogger({
+  observability: {
+    capabilityId: 'platform.api',
+    failureType: 'none',
+    tenantId: 'platform'
+  },
   serviceName: apiRuntimeConfig.observability.serviceName
 });
 
@@ -45,27 +45,9 @@ function getBearerToken(authorizationHeader: string | string[] | undefined) {
   return token;
 }
 
-function getHeaderValue(value: string | string[] | undefined) {
-  if (typeof value === 'string') {
-    return value.trim() || null;
-  }
-
-  if (Array.isArray(value) && typeof value[0] === 'string') {
-    return value[0].trim() || null;
-  }
-
-  return null;
-}
-
-function resolveAuditTenantId(request: {
-  headers: Record<string, string | string[] | undefined>;
-}, tokenPayload: ReturnType<typeof verifyAccessToken>) {
-  const headerTenantId = getHeaderValue(request.headers[TENANT_HEADER_NAME]);
-
-  if (headerTenantId && headerTenantId !== 'platform') {
-    return headerTenantId;
-  }
-
+function resolveAuditTenantId(
+  tokenPayload: ReturnType<typeof verifyAccessToken>
+) {
   if (tokenPayload?.tenantId && tokenPayload.tenantId !== 'platform') {
     return tokenPayload.tenantId;
   }
@@ -91,8 +73,6 @@ function isTenantContextExemptRoute(url: string) {
 
 export function buildServer() {
   initializeMonitoring();
-  registerJobEventSubscriptions();
-  registerIntegrationEventSubscriptions();
   registerBillingEnrollmentAdapters();
 
   const app = Fastify({
@@ -130,7 +110,7 @@ export function buildServer() {
         if (!isTenantContextExemptRoute(request.url)) {
           return reply.status(401).send({
             message:
-              'Tenant context required. Provide x-tenant-id or a tenant-scoped bearer token.'
+              'Tenant context required. Provide a tenant-scoped bearer token.'
           });
         }
       } else {
@@ -138,19 +118,17 @@ export function buildServer() {
         // Attach the tenant to async request-local DB context immediately so all
         // downstream Prisma access stays bound to the authenticated tenant.
         setTenantContext(tenantContext);
-        request.headers[TENANT_HEADER_NAME] = tenantContext.tenantId;
-        reply.header(TENANT_HEADER_NAME, tenantContext.tenantId);
       }
     } catch (error) {
       return reply.status(403).send({
         message:
-          error instanceof Error
-            ? error.message
-            : 'Tenant context mismatch.'
+          error instanceof Error ? error.message : 'Tenant context mismatch.'
       });
     }
 
-    const tokenPayload = verifyAccessToken(getBearerToken(request.headers.authorization));
+    const tokenPayload = verifyAccessToken(
+      getBearerToken(request.headers.authorization)
+    );
     if (
       tokenPayload?.previewSessionId &&
       !['GET', 'HEAD', 'OPTIONS'].includes(request.method)
@@ -183,7 +161,9 @@ export function buildServer() {
   });
 
   app.addHook('onResponse', async (request, reply) => {
-    const startedAt = Number(request.headers['x-request-start-ms'] ?? Date.now());
+    const startedAt = Number(
+      request.headers['x-request-start-ms'] ?? Date.now()
+    );
     const route = request.routeOptions.url || request.url;
     const durationMs = Date.now() - startedAt;
 
@@ -194,21 +174,30 @@ export function buildServer() {
       statusCode: reply.statusCode
     });
 
-    request.log.info({
-      correlationId: request.id,
-      durationMs,
-      method: request.method,
-      route,
-      statusCode: reply.statusCode
-    }, 'request completed');
+    const tokenPayload = verifyAccessToken(
+      getBearerToken(request.headers.authorization)
+    );
 
-    const tokenPayload = verifyAccessToken(getBearerToken(request.headers.authorization));
+    request.log.info(
+      {
+        capabilityId: 'platform.api',
+        correlationId: request.id,
+        durationMs,
+        failureType: 'none',
+        method: request.method,
+        orgUnitId: undefined,
+        route,
+        statusCode: reply.statusCode,
+        tenantId:
+          tokenPayload?.tenantId && tokenPayload.tenantId !== 'platform'
+            ? tokenPayload.tenantId
+            : 'platform'
+      },
+      'request completed'
+    );
 
     if (reply.statusCode === 401 || reply.statusCode === 403) {
-      const tenantId = resolveAuditTenantId(
-        request as { headers: Record<string, string | string[] | undefined> },
-        tokenPayload
-      );
+      const tenantId = resolveAuditTenantId(tokenPayload);
 
       if (tenantId) {
         const auditInput = {
@@ -223,7 +212,10 @@ export function buildServer() {
             statusCode: reply.statusCode
           },
           metadata: {
-            outcome: reply.statusCode === 401 ? 'authentication_failed' : 'authorization_failed'
+            outcome:
+              reply.statusCode === 401
+                ? 'authentication_failed'
+                : 'authorization_failed'
           },
           ipAddress: request.ip,
           userAgent: request.headers['user-agent']
@@ -276,30 +268,44 @@ export function buildServer() {
   });
 
   app.setErrorHandler((error, request, reply) => {
-    const resolvedError = error instanceof Error ? error : new Error(String(error));
-
-    request.log.error({
-      correlationId: request.id,
-      errorMessage: resolvedError.message,
-      errorName: resolvedError.name,
-      method: request.method,
-      route: request.routeOptions.url || request.url,
-      stack: resolvedError.stack
-    }, 'request failed');
-
-    if (reply.sent) {
-      clearTenantContext();
-      return;
-    }
-
+    const resolvedError =
+      error instanceof Error ? error : new Error(String(error));
+    const tokenPayload = verifyAccessToken(
+      getBearerToken(request.headers.authorization)
+    );
     const statusCode =
       typeof (error as { statusCode?: unknown }).statusCode === 'number' &&
       (error as { statusCode?: number }).statusCode! >= 400
         ? (error as { statusCode?: number }).statusCode!
         : 500;
 
+    request.log.error(
+      {
+        capabilityId: 'platform.api',
+        correlationId: request.id,
+        errorMessage: resolvedError.message,
+        errorName: resolvedError.name,
+        failureType: statusCode >= 500 ? 'system' : 'validation',
+        method: request.method,
+        orgUnitId: undefined,
+        route: request.routeOptions.url || request.url,
+        stack: resolvedError.stack,
+        tenantId:
+          tokenPayload?.tenantId && tokenPayload.tenantId !== 'platform'
+            ? tokenPayload.tenantId
+            : 'platform'
+      },
+      'request failed'
+    );
+
+    if (reply.sent) {
+      clearTenantContext();
+      return;
+    }
+
     reply.status(statusCode).send({
-      message: statusCode >= 500 ? 'Internal server error' : resolvedError.message,
+      message:
+        statusCode >= 500 ? 'Internal server error' : resolvedError.message,
       correlationId: request.id
     });
 
@@ -322,11 +328,13 @@ async function start() {
     serviceLogger.info('api service started', {
       correlationId: resolveStartupCorrelationId(),
       host,
-      port
+      port,
+      tenantId: 'platform'
     });
   } catch (error) {
     serviceLogger.error('api service failed to start', {
       correlationId: resolveStartupCorrelationId(),
+      failureType: 'system',
       errorMessage: error instanceof Error ? error.message : String(error)
     });
     process.exit(1);

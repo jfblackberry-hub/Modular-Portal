@@ -13,6 +13,14 @@ enum TenantStatus {
   INACTIVE
 }
 
+enum TenantType {
+  PAYER
+  EMPLOYER
+  BROKER
+  MEMBER
+  PROVIDER
+}
+
 enum PreviewSessionMode {
   READ_ONLY
   FUNCTIONAL
@@ -26,12 +34,19 @@ enum ApiCatalogCategory {
   AUTHORIZATION
 }
 
+enum OrganizationUnitType {
+  LOCATION
+  DEPARTMENT
+  TEAM
+}
+
 model Tenant {
   id            String        @id @default(uuid()) @db.Uuid
   name          String
   slug          String        @unique
   isActive      Boolean       @default(true)
   status        TenantStatus  @default(ONBOARDING)
+  type          TenantType    @default(PAYER)
   brandingConfig Json         @default("{}")
   branding      TenantBranding?
   employerGroups EmployerGroup[]
@@ -45,10 +60,30 @@ model Tenant {
   integrationExecutions IntegrationExecution[]
   featureFlags FeatureFlag[]
   eventRecords  EventRecord[]
+  organizationUnits OrganizationUnit[]
   previewSessions PreviewSession[]
   portalAuthHandoffs PortalAuthHandoff[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+}
+
+model OrganizationUnit {
+  id        String               @id @default(uuid()) @db.Uuid
+  tenantId  String               @db.Uuid
+  parentId  String?              @db.Uuid
+  type      OrganizationUnitType
+  name      String
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent   OrganizationUnit?  @relation("OrganizationUnitHierarchy", fields: [parentId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  children OrganizationUnit[] @relation("OrganizationUnitHierarchy")
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@index([tenantId, type])
+  @@index([tenantId, parentId])
 }
 
 model TenantBranding {

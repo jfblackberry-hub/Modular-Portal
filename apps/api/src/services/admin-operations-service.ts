@@ -13,8 +13,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function readBrandingConfig(brandingConfig: Prisma.JsonValue): BrandingConfigRecord {
-  return isRecord(brandingConfig) ? (brandingConfig as BrandingConfigRecord) : {};
+function readBrandingConfig(
+  brandingConfig: Prisma.JsonValue
+): BrandingConfigRecord {
+  return isRecord(brandingConfig)
+    ? (brandingConfig as BrandingConfigRecord)
+    : {};
 }
 
 function readNotificationSettings(brandingConfig: BrandingConfigRecord) {
@@ -58,7 +62,9 @@ function getConnectivityLabel(statuses: string[]) {
     return 'Not configured';
   }
 
-  const activeCount = statuses.filter((status) => status.toUpperCase() === 'ACTIVE').length;
+  const activeCount = statuses.filter(
+    (status) => status.toUpperCase() === 'ACTIVE'
+  ).length;
 
   if (activeCount === statuses.length) {
     return 'Healthy';
@@ -183,6 +189,7 @@ export async function getPlatformHealthOverview() {
       name: tenant.name,
       slug: tenant.slug,
       status: tenant.status,
+      type: tenant.type,
       healthStatus:
         tenant.status === 'ACTIVE'
           ? 'HEALTHY'
@@ -192,21 +199,45 @@ export async function getPlatformHealthOverview() {
       brandingConfig: tenant.brandingConfig,
       quotaMembers:
         isRecord(tenant.brandingConfig) &&
-        isRecord((tenant.brandingConfig as BrandingConfigRecord).platformQuota) &&
-        typeof ((tenant.brandingConfig as BrandingConfigRecord).platformQuota as Record<string, unknown>).members === 'number'
-          ? (((tenant.brandingConfig as BrandingConfigRecord).platformQuota as Record<string, unknown>).members as number)
+        isRecord(
+          (tenant.brandingConfig as BrandingConfigRecord).platformQuota
+        ) &&
+        typeof (
+          (tenant.brandingConfig as BrandingConfigRecord)
+            .platformQuota as Record<string, unknown>
+        ).members === 'number'
+          ? ((
+              (tenant.brandingConfig as BrandingConfigRecord)
+                .platformQuota as Record<string, unknown>
+            ).members as number)
           : null,
       quotaUsers:
         isRecord(tenant.brandingConfig) &&
-        isRecord((tenant.brandingConfig as BrandingConfigRecord).platformQuota) &&
-        typeof ((tenant.brandingConfig as BrandingConfigRecord).platformQuota as Record<string, unknown>).users === 'number'
-          ? (((tenant.brandingConfig as BrandingConfigRecord).platformQuota as Record<string, unknown>).users as number)
+        isRecord(
+          (tenant.brandingConfig as BrandingConfigRecord).platformQuota
+        ) &&
+        typeof (
+          (tenant.brandingConfig as BrandingConfigRecord)
+            .platformQuota as Record<string, unknown>
+        ).users === 'number'
+          ? ((
+              (tenant.brandingConfig as BrandingConfigRecord)
+                .platformQuota as Record<string, unknown>
+            ).users as number)
           : null,
       quotaStorageGb:
         isRecord(tenant.brandingConfig) &&
-        isRecord((tenant.brandingConfig as BrandingConfigRecord).platformQuota) &&
-        typeof ((tenant.brandingConfig as BrandingConfigRecord).platformQuota as Record<string, unknown>).storageGb === 'number'
-          ? (((tenant.brandingConfig as BrandingConfigRecord).platformQuota as Record<string, unknown>).storageGb as number)
+        isRecord(
+          (tenant.brandingConfig as BrandingConfigRecord).platformQuota
+        ) &&
+        typeof (
+          (tenant.brandingConfig as BrandingConfigRecord)
+            .platformQuota as Record<string, unknown>
+        ).storageGb === 'number'
+          ? ((
+              (tenant.brandingConfig as BrandingConfigRecord)
+                .platformQuota as Record<string, unknown>
+            ).storageGb as number)
           : null,
       createdAt: tenant.createdAt,
       updatedAt: tenant.updatedAt
@@ -240,46 +271,47 @@ export async function getPlatformHealthOverview() {
 }
 
 export async function listPlatformTenantSummaries() {
-  const [tenants, activeUserCounts, connectors, auditAlertCounts] = await Promise.all([
-    prisma.tenant.findMany({
-      include: {
-        branding: true
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    }),
-    prisma.user.groupBy({
-      by: ['tenantId'],
-      where: {
-        isActive: true
-      },
-      _count: {
-        _all: true
-      }
-    }),
-    prisma.connectorConfig.findMany({
-      select: {
-        id: true,
-        tenantId: true,
-        status: true
-      }
-    }),
-    prisma.auditLog.groupBy({
-      by: ['tenantId'],
-      where: {
-        OR: alertKeywords.map((keyword) => ({
-          action: {
-            contains: keyword,
-            mode: 'insensitive'
-          }
-        }))
-      },
-      _count: {
-        _all: true
-      }
-    })
-  ]);
+  const [tenants, activeUserCounts, connectors, auditAlertCounts] =
+    await Promise.all([
+      prisma.tenant.findMany({
+        include: {
+          branding: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }),
+      prisma.user.groupBy({
+        by: ['tenantId'],
+        where: {
+          isActive: true
+        },
+        _count: {
+          _all: true
+        }
+      }),
+      prisma.connectorConfig.findMany({
+        select: {
+          id: true,
+          tenantId: true,
+          status: true
+        }
+      }),
+      prisma.auditLog.groupBy({
+        by: ['tenantId'],
+        where: {
+          OR: alertKeywords.map((keyword) => ({
+            action: {
+              contains: keyword,
+              mode: 'insensitive'
+            }
+          }))
+        },
+        _count: {
+          _all: true
+        }
+      })
+    ]);
 
   const activeUserCountByTenant = new Map(
     activeUserCounts.map((row) => [row.tenantId, row._count._all])
@@ -290,7 +322,9 @@ export async function listPlatformTenantSummaries() {
     if (existing) {
       existing.push({ status: connector.status });
     } else {
-      connectorsByTenant.set(connector.tenantId, [{ status: connector.status }]);
+      connectorsByTenant.set(connector.tenantId, [
+        { status: connector.status }
+      ]);
     }
   }
   const auditAlertCountByTenant = new Map(
@@ -300,7 +334,9 @@ export async function listPlatformTenantSummaries() {
   return tenants.map((tenant) => {
     const connectorRows = connectorsByTenant.get(tenant.id) ?? [];
     const brandingConfig = readBrandingConfig(tenant.brandingConfig);
-    const connectorStatuses = connectorRows.map((connector) => connector.status);
+    const connectorStatuses = connectorRows.map(
+      (connector) => connector.status
+    );
 
     return {
       tenant: {
@@ -317,18 +353,24 @@ export async function listPlatformTenantSummaries() {
         brandingConfig: tenant.brandingConfig,
         quotaMembers:
           isRecord(brandingConfig.platformQuota) &&
-          typeof (brandingConfig.platformQuota as Record<string, unknown>).members === 'number'
-            ? ((brandingConfig.platformQuota as Record<string, unknown>).members as number)
+          typeof (brandingConfig.platformQuota as Record<string, unknown>)
+            .members === 'number'
+            ? ((brandingConfig.platformQuota as Record<string, unknown>)
+                .members as number)
             : null,
         quotaUsers:
           isRecord(brandingConfig.platformQuota) &&
-          typeof (brandingConfig.platformQuota as Record<string, unknown>).users === 'number'
-            ? ((brandingConfig.platformQuota as Record<string, unknown>).users as number)
+          typeof (brandingConfig.platformQuota as Record<string, unknown>)
+            .users === 'number'
+            ? ((brandingConfig.platformQuota as Record<string, unknown>)
+                .users as number)
             : null,
         quotaStorageGb:
           isRecord(brandingConfig.platformQuota) &&
-          typeof (brandingConfig.platformQuota as Record<string, unknown>).storageGb === 'number'
-            ? ((brandingConfig.platformQuota as Record<string, unknown>).storageGb as number)
+          typeof (brandingConfig.platformQuota as Record<string, unknown>)
+            .storageGb === 'number'
+            ? ((brandingConfig.platformQuota as Record<string, unknown>)
+                .storageGb as number)
             : null,
         createdAt: tenant.createdAt,
         updatedAt: tenant.updatedAt
@@ -338,14 +380,18 @@ export async function listPlatformTenantSummaries() {
       configuration: getConfigurationCompleteness({
         name: tenant.name,
         brandingDisplayName: tenant.branding?.displayName ?? tenant.name,
-        brandingPrimaryColor: tenant.branding?.primaryColor ?? DEFAULT_PRIMARY_COLOR,
-        brandingSecondaryColor: tenant.branding?.secondaryColor ?? DEFAULT_SECONDARY_COLOR,
+        brandingPrimaryColor:
+          tenant.branding?.primaryColor ?? DEFAULT_PRIMARY_COLOR,
+        brandingSecondaryColor:
+          tenant.branding?.secondaryColor ?? DEFAULT_SECONDARY_COLOR,
         brandingConfig,
         connectorCount: connectorRows.length
       }),
       alerts:
         (auditAlertCountByTenant.get(tenant.id) ?? 0) +
-        connectorRows.filter((connector) => connector.status.toUpperCase() !== 'ACTIVE').length +
+        connectorRows.filter(
+          (connector) => connector.status.toUpperCase() !== 'ACTIVE'
+        ).length +
         getStatusAlertCount(tenant.status)
     };
   });
@@ -459,7 +505,11 @@ export async function getPlatformConnectivityStatusRows() {
   function toStatusLabel(status: string) {
     const normalized = status.toLowerCase();
 
-    if (normalized === 'active' || normalized === 'pass' || normalized === 'ok') {
+    if (
+      normalized === 'active' ||
+      normalized === 'pass' ||
+      normalized === 'ok'
+    ) {
       return 'Healthy';
     }
 
@@ -467,7 +517,11 @@ export async function getPlatformConnectivityStatusRows() {
       return 'Not Configured';
     }
 
-    if (normalized === 'disabled' || normalized === 'warning' || normalized === 'degraded') {
+    if (
+      normalized === 'disabled' ||
+      normalized === 'warning' ||
+      normalized === 'degraded'
+    ) {
       return 'Warning';
     }
 
@@ -497,28 +551,39 @@ export async function getPlatformConnectivityStatusRows() {
       return null;
     }
 
-    return [...filtered].sort((left, right) => right.getTime() - left.getTime())[0];
+    return [...filtered].sort(
+      (left, right) => right.getTime() - left.getTime()
+    )[0];
   }
 
   const rows = families.map((family) => {
     const familyConnectors = connectors.filter(family.filter);
-    const familyConnectorIds = new Set(familyConnectors.map((connector) => connector.id));
+    const familyConnectorIds = new Set(
+      familyConnectors.map((connector) => connector.id)
+    );
     const failures = auditLogs.filter(
       (event) =>
         event.entityId &&
         familyConnectorIds.has(event.entityId) &&
-        alertKeywords.some((keyword) => event.action.toLowerCase().includes(keyword))
+        alertKeywords.some((keyword) =>
+          event.action.toLowerCase().includes(keyword)
+        )
     );
 
     return {
       connection: family.label,
       scope: 'Platform',
       status: familyConnectors.length
-        ? getWorstStatus(familyConnectors.map((connector) => toStatusLabel(connector.status)))
+        ? getWorstStatus(
+            familyConnectors.map((connector) => toStatusLabel(connector.status))
+          )
         : 'Not Configured',
-      lastSuccess: getLatest(
-        familyConnectors.map((connector) => connector.lastSyncAt ?? connector.lastHealthCheckAt)
-      )?.toISOString() ?? null,
+      lastSuccess:
+        getLatest(
+          familyConnectors.map(
+            (connector) => connector.lastSyncAt ?? connector.lastHealthCheckAt
+          )
+        )?.toISOString() ?? null,
       lastFailure: failures[0]?.createdAt.toISOString() ?? null,
       errorCount: failures.length
     };

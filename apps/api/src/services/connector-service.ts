@@ -295,8 +295,11 @@ export async function enqueueConnectorSyncForTenant(
   });
 
   publishInBackground('integration.requested', {
+    capabilityId: 'platform.integrations',
     id: randomUUID(),
     correlationId: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     timestamp: new Date(),
     tenantId,
     type: 'integration.requested',

@@ -144,56 +144,57 @@ async function createFixtureData() {
     })
   ]);
 
-  const [platformAdminRole, adminRole, memberRole, assignableRole] = await Promise.all([
-    prisma.role.upsert({
-      where: {
-        code: TEST_PLATFORM_ADMIN_ROLE_CODE
-      },
-      update: {
-        name: 'Platform Admin'
-      },
-      create: {
-        code: TEST_PLATFORM_ADMIN_ROLE_CODE,
-        name: 'Platform Admin'
-      }
-    }),
-    prisma.role.upsert({
-      where: {
-        code: TEST_ADMIN_ROLE_CODE
-      },
-      update: {
-        name: 'Tenant Admin'
-      },
-      create: {
-        code: TEST_ADMIN_ROLE_CODE,
-        name: 'Tenant Admin'
-      }
-    }),
-    prisma.role.upsert({
-      where: {
-        code: TEST_MEMBER_ROLE_CODE
-      },
-      update: {
-        name: 'Tenant Member'
-      },
-      create: {
-        code: TEST_MEMBER_ROLE_CODE,
-        name: 'Tenant Member'
-      }
-    }),
-    prisma.role.upsert({
-      where: {
-        code: TEST_ASSIGNABLE_ROLE_CODE
-      },
-      update: {
-        name: 'Operations Analyst'
-      },
-      create: {
-        code: TEST_ASSIGNABLE_ROLE_CODE,
-        name: 'Operations Analyst'
-      }
-    })
-  ]);
+  const [platformAdminRole, adminRole, memberRole, assignableRole] =
+    await Promise.all([
+      prisma.role.upsert({
+        where: {
+          code: TEST_PLATFORM_ADMIN_ROLE_CODE
+        },
+        update: {
+          name: 'Platform Admin'
+        },
+        create: {
+          code: TEST_PLATFORM_ADMIN_ROLE_CODE,
+          name: 'Platform Admin'
+        }
+      }),
+      prisma.role.upsert({
+        where: {
+          code: TEST_ADMIN_ROLE_CODE
+        },
+        update: {
+          name: 'Tenant Admin'
+        },
+        create: {
+          code: TEST_ADMIN_ROLE_CODE,
+          name: 'Tenant Admin'
+        }
+      }),
+      prisma.role.upsert({
+        where: {
+          code: TEST_MEMBER_ROLE_CODE
+        },
+        update: {
+          name: 'Tenant Member'
+        },
+        create: {
+          code: TEST_MEMBER_ROLE_CODE,
+          name: 'Tenant Member'
+        }
+      }),
+      prisma.role.upsert({
+        where: {
+          code: TEST_ASSIGNABLE_ROLE_CODE
+        },
+        update: {
+          name: 'Operations Analyst'
+        },
+        create: {
+          code: TEST_ASSIGNABLE_ROLE_CODE,
+          name: 'Operations Analyst'
+        }
+      })
+    ]);
 
   await prisma.rolePermission.create({
     data: {
@@ -202,40 +203,41 @@ async function createFixtureData() {
     }
   });
 
-  const [platformAdminUser, adminUser, memberUser, foreignUser] = await Promise.all([
-    prisma.user.create({
-      data: {
-        tenantId: otherTenant.id,
-        email: TEST_PLATFORM_ADMIN_EMAIL,
-        firstName: 'Platform',
-        lastName: 'Admin'
-      }
-    }),
-    prisma.user.create({
-      data: {
-        tenantId: tenant.id,
-        email: TEST_ADMIN_EMAIL,
-        firstName: 'Tenant',
-        lastName: 'Admin'
-      }
-    }),
-    prisma.user.create({
-      data: {
-        tenantId: tenant.id,
-        email: TEST_MEMBER_EMAIL,
-        firstName: 'Tenant',
-        lastName: 'Member'
-      }
-    }),
-    prisma.user.create({
-      data: {
-        tenantId: otherTenant.id,
-        email: TEST_FOREIGN_EMAIL,
-        firstName: 'Foreign',
-        lastName: 'User'
-      }
-    })
-  ]);
+  const [platformAdminUser, adminUser, memberUser, foreignUser] =
+    await Promise.all([
+      prisma.user.create({
+        data: {
+          tenantId: otherTenant.id,
+          email: TEST_PLATFORM_ADMIN_EMAIL,
+          firstName: 'Platform',
+          lastName: 'Admin'
+        }
+      }),
+      prisma.user.create({
+        data: {
+          tenantId: tenant.id,
+          email: TEST_ADMIN_EMAIL,
+          firstName: 'Tenant',
+          lastName: 'Admin'
+        }
+      }),
+      prisma.user.create({
+        data: {
+          tenantId: tenant.id,
+          email: TEST_MEMBER_EMAIL,
+          firstName: 'Tenant',
+          lastName: 'Member'
+        }
+      }),
+      prisma.user.create({
+        data: {
+          tenantId: otherTenant.id,
+          email: TEST_FOREIGN_EMAIL,
+          firstName: 'Foreign',
+          lastName: 'User'
+        }
+      })
+    ]);
 
   await Promise.all([
     prisma.userRole.create({
@@ -316,7 +318,10 @@ async function createFixtureData() {
   };
 }
 
-function createTenantAdminToken(user: { id: string; email: string }, tenantId: string) {
+function createTenantAdminToken(
+  user: { id: string; email: string },
+  tenantId: string
+) {
   return createAccessToken({
     userId: user.id,
     email: user.email,
@@ -325,7 +330,10 @@ function createTenantAdminToken(user: { id: string; email: string }, tenantId: s
   });
 }
 
-function createEndUserToken(user: { id: string; email: string }, tenantId: string) {
+function createEndUserToken(
+  user: { id: string; email: string },
+  tenantId: string
+) {
   return createAccessToken({
     userId: user.id,
     email: user.email,
@@ -374,7 +382,9 @@ test('tenant admin settings endpoint returns scoped configuration and updates ar
   assert.equal(settingsPayload.webhooks.length, 1);
   assert.equal(settingsPayload.users.length, 2);
   assert.equal(
-    settingsPayload.users.some((user: { id: string }) => user.id === memberUser.id),
+    settingsPayload.users.some(
+      (user: { id: string }) => user.id === memberUser.id
+    ),
     true
   );
 
@@ -446,8 +456,14 @@ test('tenant admin settings endpoint returns scoped configuration and updates ar
 });
 
 test('tenant admin routes enforce admin permission and tenant scoping', async () => {
-  const { tenant, otherTenant, adminUser, memberUser, foreignUser, assignableRole } =
-    await createFixtureData();
+  const {
+    tenant,
+    otherTenant,
+    adminUser,
+    memberUser,
+    foreignUser,
+    assignableRole
+  } = await createFixtureData();
   const app = Fastify();
   await tenantAdminRoutes(app);
   const adminToken = createTenantAdminToken(adminUser, tenant.id);
@@ -480,17 +496,16 @@ test('tenant admin routes enforce admin permission and tenant scoping', async ()
     method: 'GET',
     url: `/api/tenant-admin/settings?tenant_id=${otherTenant.id}`,
     headers: {
-      authorization: `Bearer ${adminToken}`,
-      'x-tenant-id': otherTenant.id
+      authorization: `Bearer ${adminToken}`
     }
   });
 
-  assert.equal(crossTenantResponse.statusCode, 401, crossTenantResponse.body);
+  assert.equal(crossTenantResponse.statusCode, 400, crossTenantResponse.body);
 
   await app.close();
 });
 
-test('platform admins can switch tenant context on tenant-admin routes', async () => {
+test('platform-admin sessions cannot access tenant-admin routes without a tenant-scoped session', async () => {
   const { tenant, otherTenant, platformAdminUser } = await createFixtureData();
   const app = Fastify();
   await tenantAdminRoutes(app);
@@ -500,30 +515,26 @@ test('platform admins can switch tenant context on tenant-admin routes', async (
     method: 'GET',
     url: `/api/tenant-admin/settings?tenant_id=${tenant.id}`,
     headers: {
-      authorization: `Bearer ${platformToken}`,
-      'x-tenant-id': tenant.id
+      authorization: `Bearer ${platformToken}`
     }
   });
 
-  assert.equal(targetTenantResponse.statusCode, 200);
-  assert.equal(targetTenantResponse.json().tenant.id, tenant.id);
+  assert.equal(targetTenantResponse.statusCode, 403);
 
   const otherTenantResponse = await app.inject({
     method: 'GET',
     url: `/api/tenant-admin/settings?tenant_id=${otherTenant.id}`,
     headers: {
-      authorization: `Bearer ${platformToken}`,
-      'x-tenant-id': otherTenant.id
+      authorization: `Bearer ${platformToken}`
     }
   });
 
-  assert.equal(otherTenantResponse.statusCode, 200);
-  assert.equal(otherTenantResponse.json().tenant.id, otherTenant.id);
+  assert.equal(otherTenantResponse.statusCode, 403);
 
   await app.close();
 });
 
-test('tenant-admin jobs endpoint returns tenant-scoped jobs and respects platform tenant switching', async () => {
+test('tenant-admin jobs endpoint returns tenant-scoped jobs and blocks platform session switching', async () => {
   const { tenant, otherTenant, adminUser, platformAdminUser } =
     await createFixtureData();
 
@@ -572,16 +583,15 @@ test('tenant-admin jobs endpoint returns tenant-scoped jobs and respects platfor
     method: 'GET',
     url: `/api/tenant-admin/jobs?tenant_id=${otherTenant.id}&status=PENDING`,
     headers: {
-      authorization: `Bearer ${platformToken}`,
-      'x-tenant-id': otherTenant.id
+      authorization: `Bearer ${platformToken}`
     }
   });
 
-  assert.equal(switchedContextResponse.statusCode, 200, switchedContextResponse.body);
-  const switchedJobs = switchedContextResponse.json();
-  assert.equal(switchedJobs.length, 1);
-  assert.equal(switchedJobs[0].tenantId, otherTenant.id);
-  assert.equal(switchedJobs[0].status, 'PENDING');
+  assert.equal(
+    switchedContextResponse.statusCode,
+    403,
+    switchedContextResponse.body
+  );
 
   await app.close();
 });

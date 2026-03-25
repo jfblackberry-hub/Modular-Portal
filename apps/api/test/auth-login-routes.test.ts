@@ -90,6 +90,15 @@ test('issued end-user sessions always include non-null tenantId, personaType, an
         email: 'employer',
         password: 'anything'
       }
+    },
+    {
+      label: 'broker',
+      method: 'POST' as const,
+      url: '/auth/login',
+      payload: {
+        email: 'broker',
+        password: 'anything'
+      }
     }
   ];
 

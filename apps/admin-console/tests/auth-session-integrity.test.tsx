@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { AdminPersonaWorkspace } from '../components/admin-platform/admin-persona-workspace';
+import AdminPersonaWorkspacePage from '../app/admin/workspace/[sessionId]/page';
 import { isReturnToPortalRequest } from '../lib/admin-login-query';
 
 test('admin login ignores legacy query-param bootstrap inputs', () => {
@@ -17,17 +17,13 @@ test('admin login ignores legacy query-param bootstrap inputs', () => {
   assert.equal(isReturnToPortalRequest(params), false);
 });
 
-test('admin persona workspace fails closed when session state is missing', () => {
-  const markup = renderToStaticMarkup(
-    <AdminPersonaWorkspace
-      sessionId="missing-session"
-      tenantId=""
-      personaType="tenant_admin"
-      userId=""
-    />
-  );
+test('admin workspace route no longer embeds portal composition', async () => {
+  const page = await AdminPersonaWorkspacePage({
+    params: Promise.resolve({ sessionId: 'missing-session' })
+  });
+  const markup = renderToStaticMarkup(page);
 
-  assert.match(markup, /Session Unavailable/i);
-  assert.doesNotMatch(markup, /unknown-tenant/i);
-  assert.doesNotMatch(markup, /unknown-user/i);
+  assert.match(markup, /Embedded admin workspaces are retired/i);
+  assert.match(markup, /Open session controls/i);
+  assert.doesNotMatch(markup, /iframe/i);
 });

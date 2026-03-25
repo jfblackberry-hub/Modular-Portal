@@ -14,15 +14,21 @@ export type JobStatus = (typeof JOB_STATUS)[keyof typeof JOB_STATUS];
 export const DEFAULT_JOB_MAX_ATTEMPTS = 3;
 
 export type QueuedPlatformEvent = {
+  capabilityId: string;
   correlationId: string;
+  failureType: string;
   id: string;
+  orgUnitId?: string | null;
   payload: Prisma.JsonValue;
-  tenantId: string | null;
+  tenantId: string;
   timestamp: string;
   type: PlatformEventType;
 };
 
 export type RegisteredJobPayloads = {
+  'event.publish': {
+    event: QueuedPlatformEvent;
+  };
   'backup.run': {
     coverage: 'database' | 'documents' | 'audit_logs';
     schedule?: {

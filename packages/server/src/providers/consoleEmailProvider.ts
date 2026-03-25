@@ -3,7 +3,17 @@ import path from 'node:path';
 
 import { readProcessEnv } from '@payer-portal/config';
 
+import { createStructuredLogger } from '../observability/logger.js';
 import type { EmailProvider } from './emailProvider.js';
+
+const emailLogger = createStructuredLogger({
+  observability: {
+    capabilityId: 'platform.notifications',
+    failureType: 'none',
+    tenantId: 'platform'
+  },
+  serviceName: 'server'
+});
 
 function getDevLogPath() {
   const configuredPath = readProcessEnv('EMAIL_DEV_LOG_PATH');
@@ -25,7 +35,7 @@ export const consoleEmailProvider: EmailProvider = {
       ''
     ].join('\n');
 
-    console.log('[email] outbound', {
+    emailLogger.info('email outbound', {
       to,
       subject
     });

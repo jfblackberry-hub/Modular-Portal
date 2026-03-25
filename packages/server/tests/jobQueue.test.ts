@@ -61,6 +61,23 @@ async function suspendSeedJobs() {
   });
 }
 
+async function runJobsUntil(
+  predicate: () => Promise<boolean>,
+  maxRuns = 8
+) {
+  for (let index = 0; index < maxRuns; index += 1) {
+    if (await predicate()) {
+      return;
+    }
+
+    const processed = await runNextJob();
+
+    if (!processed) {
+      break;
+    }
+  }
+}
+
 beforeEach(async () => {
   clearJobHandlers();
   resetEmailProvider();
@@ -218,7 +235,36 @@ test('notification.send job creates a notification record', async () => {
     body: 'Notification body'
   });
 
-  await runNextJob();
+  const queuedBeforeWorker = await listJobs({
+    type: 'notification.send',
+    tenantId: user.tenantId
+  });
+  const pendingNotificationJob = queuedBeforeWorker.find(
+    (job) =>
+      typeof job.payload === 'object' &&
+      job.payload !== null &&
+      'notificationId' in job.payload &&
+      job.payload.notificationId === notification.id
+  );
+
+  assert.equal(notification.status, NOTIFICATION_STATUS.PENDING);
+  assert.equal(pendingNotificationJob?.status, JOB_STATUS.PENDING);
+
+  await runJobsUntil(async () => {
+    const jobs = await listJobs({
+      type: 'notification.send',
+      tenantId: user.tenantId
+    });
+
+    return jobs.some(
+      (job) =>
+        typeof job.payload === 'object' &&
+        job.payload !== null &&
+        'notificationId' in job.payload &&
+        job.payload.notificationId === notification.id &&
+        job.status === JOB_STATUS.SUCCEEDED
+    );
+  });
 
   const jobs = await listJobs({
     type: 'notification.send',
@@ -307,7 +353,15 @@ test('email provider failure updates notification status to failed', async () =>
     body: 'This will fail'
   });
 
-  await runNextJob();
+  await runJobsUntil(async () => {
+    const storedNotification = await prisma.notification.findUnique({
+      where: {
+        id: notification.id
+      }
+    });
+
+    return storedNotification?.status === NOTIFICATION_STATUS.FAILED;
+  });
 
   const storedNotification = await prisma.notification.findUniqueOrThrow({
     where: {

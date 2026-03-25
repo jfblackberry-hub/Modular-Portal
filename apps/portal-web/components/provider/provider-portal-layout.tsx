@@ -1,5 +1,6 @@
 'use client';
 
+import type { PluginNavigationItem } from '@payer-portal/plugin-sdk';
 import {
   Bell,
   ClipboardList,
@@ -27,8 +28,6 @@ import type {
 import type { PortalSessionUser } from '../../lib/portal-session';
 import { prefixPreviewHref, stripPreviewHref } from '../../lib/preview-route';
 import type { TenantBranding } from '../../lib/tenant-branding';
-import type { TenantPortalModuleId } from '../../lib/tenant-modules';
-import { isTenantModuleEnabledForUser } from '../../lib/tenant-modules';
 import { SignOutButton } from '../sign-out-button';
 
 const NAV_ICON_MAP: Record<ProviderPortalNavIcon, typeof Home> = {
@@ -44,50 +43,36 @@ const NAV_ICON_MAP: Record<ProviderPortalNavIcon, typeof Home> = {
   settings: Settings
 };
 
-const providerNavModuleMap: Record<string, TenantPortalModuleId> = {
-  dashboard: 'provider_dashboard',
-  eligibility: 'provider_eligibility',
-  authorizations: 'provider_authorizations',
-  claims: 'provider_claims',
-  payments: 'provider_payments',
-  patients: 'provider_patients',
-  documents: 'provider_documents',
-  messages: 'provider_messages',
-  support: 'provider_support',
-  admin: 'provider_admin'
-};
-
 function ProviderSidebar({
-  config,
+  navigationItems,
   routePrefix,
-  user,
   isMobileOpen,
   collapsed,
   onCloseMobile,
   onToggleCollapse
 }: {
-  config: ProviderPortalConfig;
+  navigationItems: PluginNavigationItem[];
   routePrefix?: string;
-  user: PortalSessionUser;
   isMobileOpen: boolean;
   collapsed: boolean;
   onCloseMobile: () => void;
   onToggleCollapse: () => void;
 }) {
   const pathname = stripPreviewHref(routePrefix, usePathname());
-  const enabledItems = config.navItems.filter((item) =>
-    isTenantModuleEnabledForUser(user, providerNavModuleMap[item.key])
-  );
-
-  const links = enabledItems.map((item) => {
-    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-    const Icon = NAV_ICON_MAP[item.icon];
+  const links = navigationItems.map((item) => {
+    const isActive =
+      pathname === item.href || pathname.startsWith(`${item.href}/`);
+    const iconKey =
+      typeof item.icon === 'string' && item.icon in NAV_ICON_MAP
+        ? (item.icon as ProviderPortalNavIcon)
+        : 'home';
+    const Icon = NAV_ICON_MAP[iconKey];
 
     return (
-        <Link
-          key={item.key}
-          href={prefixPreviewHref(routePrefix, item.href)}
-          onClick={onCloseMobile}
+      <Link
+        key={`${item.href}:${item.label}`}
+        href={prefixPreviewHref(routePrefix, item.href)}
+        onClick={onCloseMobile}
         className={`tenant-provider-sidebar__item ${isActive ? 'tenant-provider-sidebar__item--active' : ''} flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
           isActive
             ? 'border-[var(--tenant-primary-color)] bg-[var(--tenant-primary-soft-color)] text-[var(--tenant-primary-color)]'
@@ -95,7 +80,11 @@ function ProviderSidebar({
         }`}
       >
         <Icon size={18} className="tenant-provider-sidebar__icon shrink-0" />
-        <span className={`tenant-provider-sidebar__label ${collapsed ? 'portal-sr-only' : 'ml-3'}`}>{item.label}</span>
+        <span
+          className={`tenant-provider-sidebar__label ${collapsed ? 'portal-sr-only' : 'ml-3'}`}
+        >
+          {item.label}
+        </span>
       </Link>
     );
   });
@@ -116,14 +105,21 @@ function ProviderSidebar({
           >
             <Menu size={16} />
           </button>
-          <nav aria-label="Provider navigation" className="tenant-provider-sidebar__nav space-y-1">
+          <nav
+            aria-label="Provider navigation"
+            className="tenant-provider-sidebar__nav space-y-1"
+          >
             {links}
           </nav>
         </div>
       </aside>
 
       {isMobileOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-50 lg:hidden"
+          role="dialog"
+          aria-modal="true"
+        >
           <button
             type="button"
             className="absolute inset-0 bg-slate-900/45"
@@ -132,7 +128,9 @@ function ProviderSidebar({
           />
           <aside className="tenant-provider-sidebar tenant-provider-sidebar--mobile relative h-full w-[290px] border-r border-[var(--border-subtle)] bg-white p-4 shadow-xl">
             <div className="tenant-provider-sidebar__mobile-header mb-4 flex items-center justify-between">
-              <p className="tenant-provider-sidebar__mobile-title text-sm font-semibold text-[var(--text-primary)]">Provider navigation</p>
+              <p className="tenant-provider-sidebar__mobile-title text-sm font-semibold text-[var(--text-primary)]">
+                Provider navigation
+              </p>
               <button
                 type="button"
                 onClick={onCloseMobile}
@@ -142,7 +140,10 @@ function ProviderSidebar({
                 <X size={16} />
               </button>
             </div>
-            <nav aria-label="Provider navigation" className="tenant-provider-sidebar__nav space-y-1">
+            <nav
+              aria-label="Provider navigation"
+              className="tenant-provider-sidebar__nav space-y-1"
+            >
               {links}
             </nav>
           </aside>
@@ -155,6 +156,7 @@ function ProviderSidebar({
 export function ProviderPortalLayout({
   branding,
   config,
+  navigationItems,
   children,
   routePrefix,
   searchBasePath,
@@ -162,6 +164,7 @@ export function ProviderPortalLayout({
 }: {
   branding: TenantBranding;
   config: ProviderPortalConfig;
+  navigationItems: PluginNavigationItem[];
   children: ReactNode;
   routePrefix?: string;
   searchBasePath: string;
@@ -199,7 +202,10 @@ export function ProviderPortalLayout({
               <Menu size={18} />
             </button>
 
-            <a href={prefixPreviewHref(routePrefix, '/provider/dashboard')} className="tenant-provider-header__brand flex items-center gap-3">
+            <a
+              href={prefixPreviewHref(routePrefix, '/provider/dashboard')}
+              className="tenant-provider-header__brand flex items-center gap-3"
+            >
               {branding.logoUrl ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element -- dynamic provider branding URLs are runtime-configured and not safe to route through next/image without broad remote allowlists */}
@@ -223,7 +229,12 @@ export function ProviderPortalLayout({
               )}
             </a>
 
-            <form action={searchBasePath} method="get" className="tenant-provider-header__search min-w-0 flex-1" role="search">
+            <form
+              action={searchBasePath}
+              method="get"
+              className="tenant-provider-header__search min-w-0 flex-1"
+              role="search"
+            >
               <input
                 name="q"
                 placeholder="Search patients, claims, authorizations..."
@@ -253,7 +264,9 @@ export function ProviderPortalLayout({
                 <p className="tenant-provider-header__user-name text-sm font-semibold text-[var(--text-primary)]">
                   {user.firstName} {user.lastName}
                 </p>
-                <p className="tenant-provider-header__user-role text-xs text-[var(--text-muted)]">{config.providerRoleLabel}</p>
+                <p className="tenant-provider-header__user-role text-xs text-[var(--text-muted)]">
+                  {config.providerRoleLabel}
+                </p>
               </div>
             </div>
 
@@ -266,9 +279,8 @@ export function ProviderPortalLayout({
 
       <div className="tenant-provider-shell portal-fluid-shell mx-auto flex w-full max-w-[1600px]">
         <ProviderSidebar
-          config={config}
+          navigationItems={navigationItems}
           routePrefix={routePrefix}
-          user={user}
           isMobileOpen={isMobileSidebarOpen}
           collapsed={collapsed}
           onCloseMobile={() => setMobileSidebarOpen(false)}
@@ -276,7 +288,10 @@ export function ProviderPortalLayout({
         />
 
         <div className="tenant-provider-shell__main min-w-0 flex-1 px-5 pb-7 pt-5 md:px-7 md:pb-9 lg:px-10 lg:pt-7">
-          <main id="main-content" className="tenant-provider-shell__main-content min-w-0 space-y-4">
+          <main
+            id="main-content"
+            className="tenant-provider-shell__main-content min-w-0 space-y-4"
+          >
             {children}
           </main>
         </div>

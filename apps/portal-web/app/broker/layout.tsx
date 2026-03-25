@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { PortalShell } from '../../components/portal-shell';
 import { TenantTheme } from '../../components/tenant-theme';
 import { hasBillingPortalAudienceAccess } from '../../lib/billing-portal-audience';
-import { getBrokerNavigationSections } from '../../lib/broker-portal-config';
+import { resolvePortalNavigation } from '../../lib/navigation';
 import { getPortalSessionUser } from '../../lib/portal-session';
 import { getTenantBranding } from '../../lib/tenant-branding';
 
@@ -29,7 +29,7 @@ export default async function BrokerPortalLayout({
       <TenantTheme branding={branding} />
       <PortalShell
         branding={branding}
-        navigation={getBrokerNavigationSections()}
+        navigation={await resolvePortalNavigation(user, { audience: 'broker' })}
         searchBasePath="/dashboard/search"
         user={user}
       >

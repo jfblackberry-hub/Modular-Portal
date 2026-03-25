@@ -1,4 +1,3 @@
-import type { PortalNavigationSection } from './navigation';
 import type { PortalSessionUser } from './portal-session';
 
 export type BrokerPageId =
@@ -189,61 +188,6 @@ export function resolveBrokerPersona(user: Pick<PortalSessionUser, 'roles'>) {
     dashboardCtaLabel: 'Open broker dashboard',
     canManage: true
   };
-}
-
-export function getBrokerNavigationSections(): PortalNavigationSection[] {
-  return [
-    {
-      title: 'Broker E&B Portal',
-      items: [
-        {
-          label: brokerPageMetaById.dashboard.label,
-          href: brokerPageMetaById.dashboard.href,
-          description: 'Broker command center across groups, prospects, and service activity.'
-        },
-        {
-          label: brokerPageMetaById['book-of-business'].label,
-          href: brokerPageMetaById['book-of-business'].href,
-          description: 'Monitor assigned groups, census readiness, and portfolio health.'
-        },
-        {
-          label: brokerPageMetaById.quotes.label,
-          href: brokerPageMetaById.quotes.href,
-          description: 'Track quote intake, underwriting dependencies, and proposal timing.'
-        },
-        {
-          label: brokerPageMetaById.renewals.label,
-          href: brokerPageMetaById.renewals.href,
-          description: 'Manage renewal timelines, missing items, and client decision points.'
-        },
-        {
-          label: brokerPageMetaById.enrollments.label,
-          href: brokerPageMetaById.enrollments.href,
-          description: 'Follow enrollment readiness and implementation activity across groups.'
-        },
-        {
-          label: brokerPageMetaById.commissions.label,
-          href: brokerPageMetaById.commissions.href,
-          description: 'Review statements, exceptions, and reconciliation follow-up.'
-        },
-        {
-          label: brokerPageMetaById.documents.label,
-          href: brokerPageMetaById.documents.href,
-          description: 'Organize census, renewal, and client-submitted documentation.'
-        },
-        {
-          label: brokerPageMetaById.tasks.label,
-          href: brokerPageMetaById.tasks.href,
-          description: 'Work open cases, service items, and escalations from one queue.'
-        },
-        {
-          label: brokerPageMetaById.support.label,
-          href: brokerPageMetaById.support.href,
-          description: 'Access broker support channels, training, and release guidance.'
-        }
-      ]
-    }
-  ];
 }
 
 export function getBrokerPageMeta(pageId: BrokerPageId) {

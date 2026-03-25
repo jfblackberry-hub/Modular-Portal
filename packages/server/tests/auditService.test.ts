@@ -11,6 +11,7 @@ import {
   registerAuditLogSink,
   resetAuditLogSinksForTest
 } from '../src/services/auditService.js';
+import { createStructuredLogger } from '../src/observability/logger.js';
 
 const TEST_TENANT_SLUG = 'audit-service-test-tenant';
 const TEST_USER_EMAIL = 'audit-service-user@example.com';
@@ -93,6 +94,12 @@ test('audit logs fan out through registered sinks and persist request metadata',
   assert.equal(auditLog.tenantId, tenant.id);
   assert.equal(auditLog.actorUserId, user.id);
   assert.deepEqual(auditLog.metadata, {
+    observability: {
+      capabilityId: 'platform.identity',
+      correlationId: 'audit-correlation-id',
+      failureType: 'none',
+      tenantId: tenant.id
+    },
     sessionType: 'end_user',
     request: {
       correlationId: 'audit-correlation-id',
@@ -170,6 +177,12 @@ test('audit logs redact sensitive metadata and state values', async () => {
     memberNumber: '[REDACTED]'
   });
   assert.deepEqual(auditLog.metadata, {
+    observability: {
+      capabilityId: 'platform.identity',
+      correlationId: auditLog.metadata?.observability?.correlationId,
+      failureType: 'none',
+      tenantId: tenant.id
+    },
     authorization: '[REDACTED]',
     nested: {
       ssn: '[REDACTED]'
@@ -178,4 +191,19 @@ test('audit logs redact sensitive metadata and state values', async () => {
       route: '/auth/login'
     }
   });
+});
+
+test('structured logger rejects missing observability fields', () => {
+  assert.throws(
+    () =>
+      createStructuredLogger({
+        observability: {
+          capabilityId: '',
+          failureType: 'none',
+          tenantId: 'tenant-1'
+        },
+        serviceName: 'server-test'
+      }),
+    /capabilityId is required/
+  );
 });

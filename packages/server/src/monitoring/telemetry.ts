@@ -137,13 +137,19 @@ function registerEventMetrics() {
   );
 }
 
-export function initializeMonitoring() {
+export function initializeMonitoring(options: { subscribeToEvents?: boolean } = {}) {
   if (initialized) {
+    if (options.subscribeToEvents) {
+      registerEventMetrics();
+    }
     return;
   }
 
   initialized = true;
-  registerEventMetrics();
+
+  if (options.subscribeToEvents) {
+    registerEventMetrics();
+  }
 }
 
 export function recordApiRequest(input: {

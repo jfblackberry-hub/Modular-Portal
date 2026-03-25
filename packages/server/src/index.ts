@@ -21,6 +21,7 @@ export * from './jobs/jobWorker.js';
 export * from './modules/billingEnrollment/index.js';
 export * from './monitoring/telemetry.js';
 export * from './observability/logger.js';
+export * from './observability/schema.js';
 export * from './providers/consoleEmailProvider.js';
 export * from './providers/emailProvider.js';
 export * from './services/auditService.js';

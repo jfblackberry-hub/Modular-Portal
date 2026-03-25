@@ -1,4 +1,3 @@
-import { prisma } from '@payer-portal/database';
 import { listJobs } from '@payer-portal/server';
 import type { FastifyInstance } from 'fastify';
 
@@ -9,11 +8,13 @@ import {
 import {
   assertTenantAdmin,
   AuthenticationError,
-  AuthorizationError,
-  getCurrentUserFromHeaders,
-  isPlatformAdmin,
-  resolveTenantScope
+  AuthorizationError
 } from '../services/current-user-service';
+import {
+  enforceTenantAccess,
+  getTenantAccessContext,
+  handleTenantAccessError
+} from '../services/tenant-access-middleware';
 import {
   assignRoleToTenantUser,
   createTenantScopedUser,
@@ -106,7 +107,6 @@ type BillingEnrollmentModuleConfigBody = {
 };
 
 type TenantAdminQuery = {
-  tenant_id?: string;
   employer_key?: string;
 };
 
@@ -116,49 +116,21 @@ type TenantAdminJobsQuery = TenantAdminQuery & {
 };
 
 async function resolveTenantScopeForUserAction(
-  currentUser: Awaited<ReturnType<typeof getCurrentUserFromHeaders>>,
-  requestedTenantId: string | undefined,
+  tenantId: string,
   userId: string
 ) {
-  const normalizedRequestedTenantId = requestedTenantId?.trim();
-
-  if (normalizedRequestedTenantId) {
-    return resolveTenantScope(currentUser, normalizedRequestedTenantId);
-  }
-
-  if (!isPlatformAdmin(currentUser)) {
-    return resolveTenantScope(currentUser, normalizedRequestedTenantId);
-  }
-
-  const targetUser = await prisma.user.findUnique({
-    where: {
-      id: userId
-    },
-    select: {
-      tenantId: true,
-      memberships: {
-        where: {
-          isDefault: true
-        },
-        select: {
-          tenantId: true
-        },
-        take: 1
-      }
-    }
-  });
-
-  if (!targetUser) {
-    throw new Error('User not found');
-  }
-
-  return targetUser.tenantId ?? targetUser.memberships[0]?.tenantId ?? resolveTenantScope(currentUser);
+  return { tenantId, userId };
 }
 
 function handleRouteError(
   error: unknown,
   reply: { status: (code: number) => { send: (body: unknown) => unknown } }
 ) {
+  const tenantAccessError = handleTenantAccessError(error, reply);
+  if (tenantAccessError) {
+    return tenantAccessError;
+  }
+
   if (error instanceof AuthenticationError) {
     return reply.status(401).send({ message: error.message });
   }
@@ -168,62 +140,63 @@ function handleRouteError(
   }
 
   if (error instanceof Error) {
-    const status = error.message === 'User not found' || error.message === 'Tenant not found'
-      ? 404
-      : 400;
+    const status =
+      error.message === 'User not found' || error.message === 'Tenant not found'
+        ? 404
+        : 400;
     return reply.status(status).send({ message: error.message });
   }
 
   return reply.status(503).send({
-    message:
-      'Local database unavailable. Start PostgreSQL, run migrations.'
+    message: 'Local database unavailable. Start PostgreSQL, run migrations.'
   });
 }
 
 export async function tenantAdminRoutes(app: FastifyInstance) {
-  app.get<{ Querystring: TenantAdminJobsQuery }>(
-    '/api/tenant-admin/jobs',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
+  await app.register(async (tenantScopedApp) => {
+    tenantScopedApp.addHook('preHandler', enforceTenantAccess);
 
-        return await listJobs({
-          tenantId,
-          status: request.query.status,
-          type: request.query.type
-        });
-      } catch (error) {
-        return handleRouteError(error, reply);
+    tenantScopedApp.get<{ Querystring: TenantAdminJobsQuery }>(
+      '/api/tenant-admin/jobs',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+
+          return await listJobs({
+            tenantId,
+            status: request.query.status,
+            type: request.query.type
+          });
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
       }
-    }
-  );
+    );
 
-  app.get<{ Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/settings',
-    async (request, reply) => {
-    try {
-      const currentUser = await getCurrentUserFromHeaders(request.headers);
-      assertTenantAdmin(currentUser);
-      const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
+    tenantScopedApp.get<{ Querystring: TenantAdminQuery }>(
+      '/api/tenant-admin/settings',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
 
-      return await getTenantAdminSettings(tenantId, {
-        employerKey: request.query.employer_key
-      });
-    } catch (error) {
-      return handleRouteError(error, reply);
-    }
-    }
-  );
+          return await getTenantAdminSettings(tenantId, {
+            employerKey: request.query.employer_key
+          });
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
+      }
+    );
 
-  app.put<{ Body: NotificationSettingsBody; Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/notification-settings',
-    async (request, reply) => {
+    tenantScopedApp.put<{
+      Body: NotificationSettingsBody;
+      Querystring: TenantAdminQuery;
+    }>('/api/tenant-admin/notification-settings', async (request, reply) => {
       try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        const { currentUser, tenantId } = getTenantAccessContext(request);
         assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
 
         const settings = await saveTenantNotificationSettings(
           tenantId,
@@ -239,16 +212,15 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
       } catch (error) {
         return handleRouteError(error, reply);
       }
-    }
-  );
+    });
 
-  app.put<{ Body: BrandingSettingsBody; Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/branding',
-    async (request, reply) => {
+    tenantScopedApp.put<{
+      Body: BrandingSettingsBody;
+      Querystring: TenantAdminQuery;
+    }>('/api/tenant-admin/branding', async (request, reply) => {
       try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        const { currentUser, tenantId } = getTenantAccessContext(request);
         assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
 
         const branding = await saveTenantBrandingSettings(
           tenantId,
@@ -271,302 +243,294 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
       } catch (error) {
         return handleRouteError(error, reply);
       }
-    }
-  );
+    });
 
-  app.post<{ Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/branding/logo',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
-        const file = await request.file();
+    tenantScopedApp.post<{ Querystring: TenantAdminQuery }>(
+      '/api/tenant-admin/branding/logo',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+          const file = await request.file();
 
-        if (!file) {
-          return reply.status(400).send({
-            message: 'Logo file is required'
+          if (!file) {
+            return reply.status(400).send({
+              message: 'Logo file is required'
+            });
+          }
+
+          const branding = await uploadBrandingLogoForTenant(tenantId, file, {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
           });
+
+          return reply.status(201).send(branding);
+        } catch (error) {
+          return handleRouteError(error, reply);
         }
-
-        const branding = await uploadBrandingLogoForTenant(
-          tenantId,
-          file,
-          {
-            actorUserId: currentUser.id,
-            ipAddress: request.ip,
-            userAgent: request.headers['user-agent']
-          }
-        );
-
-        return reply.status(201).send(branding);
-      } catch (error) {
-        return handleRouteError(error, reply);
       }
-    }
-  );
+    );
 
-  app.put<{ Body: EmployerGroupBrandingSettingsBody; Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/employer-group-branding',
-    async (request, reply) => {
+    tenantScopedApp.put<{
+      Body: EmployerGroupBrandingSettingsBody;
+      Querystring: TenantAdminQuery;
+    }>('/api/tenant-admin/employer-group-branding', async (request, reply) => {
       try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        const { currentUser, tenantId } = getTenantAccessContext(request);
         assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
 
-        const employerGroupBranding = await saveTenantEmployerGroupBrandingSettings(
-          tenantId,
-          {
-            employerGroupName: request.body?.employerGroupName ?? undefined,
-            employerGroupLogoUrl: request.body?.employerGroupLogoUrl ?? undefined
-          },
-          {
-            actorUserId: currentUser.id,
-            ipAddress: request.ip,
-            userAgent: request.headers['user-agent']
-          },
-          {
-            employerKey: request.query.employer_key
-          }
-        );
+        const employerGroupBranding =
+          await saveTenantEmployerGroupBrandingSettings(
+            tenantId,
+            {
+              employerGroupName: request.body?.employerGroupName ?? undefined,
+              employerGroupLogoUrl:
+                request.body?.employerGroupLogoUrl ?? undefined
+            },
+            {
+              actorUserId: currentUser.id,
+              ipAddress: request.ip,
+              userAgent: request.headers['user-agent']
+            },
+            {
+              employerKey: request.query.employer_key
+            }
+          );
 
         return reply.send(employerGroupBranding);
       } catch (error) {
         return handleRouteError(error, reply);
       }
-    }
-  );
+    });
 
-  app.post<{ Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/employer-group-branding/logo',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
-        const file = await request.file();
+    tenantScopedApp.post<{ Querystring: TenantAdminQuery }>(
+      '/api/tenant-admin/employer-group-branding/logo',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+          const file = await request.file();
 
-        if (!file) {
-          return reply.status(400).send({
-            message: 'Employer group logo file is required'
-          });
+          if (!file) {
+            return reply.status(400).send({
+              message: 'Employer group logo file is required'
+            });
+          }
+
+          const uploadedAsset = await uploadEmployerGroupLogoAssetForTenant(
+            tenantId,
+            file
+          );
+
+          const employerGroupBranding =
+            await saveTenantEmployerGroupBrandingSettings(
+              tenantId,
+              {
+                employerGroupLogoUrl: uploadedAsset.logoUrl ?? undefined
+              },
+              {
+                actorUserId: currentUser.id,
+                ipAddress: request.ip,
+                userAgent: request.headers['user-agent']
+              },
+              {
+                employerKey: request.query.employer_key
+              }
+            );
+
+          return reply.status(201).send(employerGroupBranding);
+        } catch (error) {
+          return handleRouteError(error, reply);
         }
+      }
+    );
 
-        const uploadedAsset = await uploadEmployerGroupLogoAssetForTenant(tenantId, file);
+    tenantScopedApp.put<{ Body: PurchasedModulesBody }>(
+      '/api/tenant-admin/purchased-modules',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
 
-        const employerGroupBranding = await saveTenantEmployerGroupBrandingSettings(
-          tenantId,
-          {
-            employerGroupLogoUrl: uploadedAsset.logoUrl ?? undefined
-          },
-          {
+          const modules = Array.isArray(request.body?.modules)
+            ? request.body.modules
+            : [];
+
+          const updatedModules = await saveTenantPurchasedModules(
+            tenantId,
+            modules,
+            {
+              actorUserId: currentUser.id,
+              ipAddress: request.ip,
+              userAgent: request.headers['user-agent']
+            }
+          );
+
+          return reply.send({ modules: updatedModules });
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
+      }
+    );
+
+    tenantScopedApp.put<{ Body: BillingEnrollmentModuleConfigBody }>(
+      '/api/tenant-admin/billing-enrollment-module-config',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+
+          const moduleConfig = await saveTenantBillingEnrollmentModuleConfig(
+            tenantId,
+            request.body ?? {},
+            {
+              actorUserId: currentUser.id,
+              ipAddress: request.ip,
+              userAgent: request.headers['user-agent']
+            }
+          );
+
+          return reply.send(moduleConfig);
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
+      }
+    );
+
+    tenantScopedApp.post<{ Params: { userId: string }; Body: AssignRoleBody }>(
+      '/api/tenant-admin/users/:userId/roles',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+          const scopedAction = await resolveTenantScopeForUserAction(
+            tenantId,
+            request.params.userId
+          );
+
+          const assignment = await assignRoleToTenantUser(
+            scopedAction.tenantId,
+            scopedAction.userId,
+            request.body.roleId,
+            {
+              actorUserId: currentUser.id,
+              ipAddress: request.ip,
+              userAgent: request.headers['user-agent']
+            }
+          );
+
+          return reply.status(201).send(assignment);
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
+      }
+    );
+
+    tenantScopedApp.delete<{ Params: { userId: string; roleId: string } }>(
+      '/api/tenant-admin/users/:userId/roles/:roleId',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+          const scopedAction = await resolveTenantScopeForUserAction(
+            tenantId,
+            request.params.userId
+          );
+
+          const result = await removeRoleFromTenantUser(
+            scopedAction.tenantId,
+            scopedAction.userId,
+            request.params.roleId,
+            {
+              actorUserId: currentUser.id,
+              ipAddress: request.ip,
+              userAgent: request.headers['user-agent']
+            }
+          );
+
+          return reply.send(result);
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
+      }
+    );
+
+    tenantScopedApp.post<{ Body: TenantUserBody }>(
+      '/api/tenant-admin/users',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+
+          const user = await createTenantScopedUser(tenantId, request.body, {
             actorUserId: currentUser.id,
             ipAddress: request.ip,
             userAgent: request.headers['user-agent']
-          },
-          {
-            employerKey: request.query.employer_key
-          }
-        );
+          });
 
-        return reply.status(201).send(employerGroupBranding);
-      } catch (error) {
-        return handleRouteError(error, reply);
+          return reply.status(201).send(user);
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
       }
-    }
-  );
+    );
 
-  app.put<{ Body: PurchasedModulesBody; Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/purchased-modules',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
+    tenantScopedApp.patch<{ Params: { userId: string }; Body: TenantUserBody }>(
+      '/api/tenant-admin/users/:userId',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+          const scopedAction = await resolveTenantScopeForUserAction(
+            tenantId,
+            request.params.userId
+          );
 
-        const modules = Array.isArray(request.body?.modules)
-          ? request.body.modules
-          : [];
+          const user = await updateTenantScopedUser(
+            scopedAction.tenantId,
+            scopedAction.userId,
+            request.body,
+            {
+              actorUserId: currentUser.id,
+              ipAddress: request.ip,
+              userAgent: request.headers['user-agent']
+            }
+          );
 
-        const updatedModules = await saveTenantPurchasedModules(
-          tenantId,
-          modules,
-          {
-            actorUserId: currentUser.id,
-            ipAddress: request.ip,
-            userAgent: request.headers['user-agent']
-          }
-        );
-
-        return reply.send({ modules: updatedModules });
-      } catch (error) {
-        return handleRouteError(error, reply);
+          return reply.send(user);
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
       }
-    }
-  );
+    );
 
-  app.put<{ Body: BillingEnrollmentModuleConfigBody; Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/billing-enrollment-module-config',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
+    tenantScopedApp.delete<{ Params: { userId: string } }>(
+      '/api/tenant-admin/users/:userId',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+          const scopedAction = await resolveTenantScopeForUserAction(
+            tenantId,
+            request.params.userId
+          );
 
-        const moduleConfig = await saveTenantBillingEnrollmentModuleConfig(
-          tenantId,
-          request.body ?? {},
-          {
-            actorUserId: currentUser.id,
-            ipAddress: request.ip,
-            userAgent: request.headers['user-agent']
-          }
-        );
+          const deletedUser = await deleteTenantScopedUser(
+            scopedAction.tenantId,
+            scopedAction.userId,
+            {
+              actorUserId: currentUser.id,
+              ipAddress: request.ip,
+              userAgent: request.headers['user-agent']
+            }
+          );
 
-        return reply.send(moduleConfig);
-      } catch (error) {
-        return handleRouteError(error, reply);
+          return reply.send(deletedUser);
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
       }
-    }
-  );
-
-  app.post<{ Params: { userId: string }; Body: AssignRoleBody; Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/users/:userId/roles',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = await resolveTenantScopeForUserAction(
-          currentUser,
-          request.query.tenant_id,
-          request.params.userId
-        );
-
-        const assignment = await assignRoleToTenantUser(
-          tenantId,
-          request.params.userId,
-          request.body.roleId,
-          {
-            actorUserId: currentUser.id,
-            ipAddress: request.ip,
-            userAgent: request.headers['user-agent']
-          }
-        );
-
-        return reply.status(201).send(assignment);
-      } catch (error) {
-        return handleRouteError(error, reply);
-      }
-    }
-  );
-
-  app.delete<{ Params: { userId: string; roleId: string }; Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/users/:userId/roles/:roleId',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = await resolveTenantScopeForUserAction(
-          currentUser,
-          request.query.tenant_id,
-          request.params.userId
-        );
-
-        const result = await removeRoleFromTenantUser(
-          tenantId,
-          request.params.userId,
-          request.params.roleId,
-          {
-            actorUserId: currentUser.id,
-            ipAddress: request.ip,
-            userAgent: request.headers['user-agent']
-          }
-        );
-
-        return reply.send(result);
-      } catch (error) {
-        return handleRouteError(error, reply);
-      }
-    }
-  );
-
-  app.post<{ Body: TenantUserBody; Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/users',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
-
-        const user = await createTenantScopedUser(tenantId, request.body, {
-          actorUserId: currentUser.id,
-          ipAddress: request.ip,
-          userAgent: request.headers['user-agent']
-        });
-
-        return reply.status(201).send(user);
-      } catch (error) {
-        return handleRouteError(error, reply);
-      }
-    }
-  );
-
-  app.patch<{ Params: { userId: string }; Body: TenantUserBody; Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/users/:userId',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = await resolveTenantScopeForUserAction(
-          currentUser,
-          request.query.tenant_id,
-          request.params.userId
-        );
-
-        const user = await updateTenantScopedUser(
-          tenantId,
-          request.params.userId,
-          request.body,
-          {
-            actorUserId: currentUser.id,
-            ipAddress: request.ip,
-            userAgent: request.headers['user-agent']
-          }
-        );
-
-        return reply.send(user);
-      } catch (error) {
-        return handleRouteError(error, reply);
-      }
-    }
-  );
-
-  app.delete<{ Params: { userId: string }; Querystring: TenantAdminQuery }>(
-    '/api/tenant-admin/users/:userId',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = await resolveTenantScopeForUserAction(
-          currentUser,
-          request.query.tenant_id,
-          request.params.userId
-        );
-
-        const deletedUser = await deleteTenantScopedUser(
-          tenantId,
-          request.params.userId,
-          {
-            actorUserId: currentUser.id,
-            ipAddress: request.ip,
-            userAgent: request.headers['user-agent']
-          }
-        );
-
-        return reply.send(deletedUser);
-      } catch (error) {
-        return handleRouteError(error, reply);
-      }
-    }
-  );
+    );
+  });
 }

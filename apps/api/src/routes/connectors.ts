@@ -11,10 +11,13 @@ import {
 import {
   assertTenantAdmin,
   AuthenticationError,
-  AuthorizationError,
-  getCurrentUserFromHeaders,
-  resolveTenantScope
+  AuthorizationError
 } from '../services/current-user-service';
+import {
+  enforceTenantAccess,
+  getTenantAccessContext,
+  handleTenantAccessError
+} from '../services/tenant-access-middleware';
 
 type ConnectorBody = {
   adapterKey: string;
@@ -24,11 +27,16 @@ type ConnectorBody = {
 };
 
 type UpdateConnectorBody = Partial<ConnectorBody>;
-type ConnectorQuery = {
-  tenant_id?: string;
-};
 
-function handleRouteError(error: unknown, reply: { status: (code: number) => { send: (body: unknown) => unknown } }) {
+function handleRouteError(
+  error: unknown,
+  reply: { status: (code: number) => { send: (body: unknown) => unknown } }
+) {
+  const tenantAccessError = handleTenantAccessError(error, reply);
+  if (tenantAccessError) {
+    return tenantAccessError;
+  }
+
   if (error instanceof AuthenticationError) {
     return reply.status(401).send({ message: error.message });
   }
@@ -43,119 +51,120 @@ function handleRouteError(error: unknown, reply: { status: (code: number) => { s
   }
 
   return reply.status(503).send({
-    message:
-      'Local database unavailable. Start PostgreSQL, run migrations.'
+    message: 'Local database unavailable. Start PostgreSQL, run migrations.'
   });
 }
 
 export async function connectorRoutes(app: FastifyInstance) {
-  app.get<{ Querystring: ConnectorQuery }>('/api/connectors', async (request, reply) => {
-    try {
-      const currentUser = await getCurrentUserFromHeaders(request.headers);
-      assertTenantAdmin(currentUser);
-      const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
+  await app.register(async (tenantScopedApp) => {
+    tenantScopedApp.addHook('preHandler', enforceTenantAccess);
 
-      return await listConnectorsForTenant(tenantId);
-    } catch (error) {
-      return handleRouteError(error, reply);
-    }
-  });
+    tenantScopedApp.get('/api/connectors', async (request, reply) => {
+      try {
+        const { currentUser, tenantId } = getTenantAccessContext(request);
+        assertTenantAdmin(currentUser);
 
-  app.post<{ Body: ConnectorBody; Querystring: ConnectorQuery }>('/api/connectors', async (request, reply) => {
-    try {
-      const currentUser = await getCurrentUserFromHeaders(request.headers);
-      assertTenantAdmin(currentUser);
-      const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
+        return await listConnectorsForTenant(tenantId);
+      } catch (error) {
+        return handleRouteError(error, reply);
+      }
+    });
 
-      const connector = await createConnectorForTenant(
-        tenantId,
-        request.body,
-        {
-          actorUserId: currentUser.id,
-          ipAddress: request.ip,
-          userAgent: request.headers['user-agent']
+    tenantScopedApp.post<{ Body: ConnectorBody }>(
+      '/api/connectors',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+
+          const connector = await createConnectorForTenant(
+            tenantId,
+            request.body,
+            {
+              actorUserId: currentUser.id,
+              ipAddress: request.ip,
+              userAgent: request.headers['user-agent']
+            }
+          );
+
+          return reply.status(201).send(connector);
+        } catch (error) {
+          return handleRouteError(error, reply);
         }
-      );
+      }
+    );
 
-      return reply.status(201).send(connector);
-    } catch (error) {
-      return handleRouteError(error, reply);
-    }
+    tenantScopedApp.put<{ Params: { id: string }; Body: UpdateConnectorBody }>(
+      '/api/connectors/:id',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+
+          const connector = await updateConnectorForTenant(
+            tenantId,
+            request.params.id,
+            request.body,
+            {
+              actorUserId: currentUser.id,
+              ipAddress: request.ip,
+              userAgent: request.headers['user-agent']
+            }
+          );
+
+          return reply.send(connector);
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
+      }
+    );
+
+    tenantScopedApp.post<{ Params: { id: string } }>(
+      '/api/connectors/:id/sync',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+
+          const job = await enqueueConnectorSyncForTenant(
+            tenantId,
+            request.params.id,
+            {
+              actorUserId: currentUser.id,
+              ipAddress: request.ip,
+              userAgent: request.headers['user-agent']
+            }
+          );
+
+          return reply.status(202).send(job);
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
+      }
+    );
+
+    tenantScopedApp.post<{ Params: { id: string } }>(
+      '/api/connectors/:id/health',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+
+          const result = await runConnectorHealthCheckForTenant(
+            tenantId,
+            request.params.id,
+            {
+              actorUserId: currentUser.id,
+              ipAddress: request.ip,
+              userAgent: request.headers['user-agent']
+            }
+          );
+
+          return reply.send(result);
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
+      }
+    );
   });
-
-  app.put<{ Params: { id: string }; Body: UpdateConnectorBody; Querystring: ConnectorQuery }>(
-    '/api/connectors/:id',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
-
-        const connector = await updateConnectorForTenant(
-          tenantId,
-          request.params.id,
-          request.body,
-          {
-            actorUserId: currentUser.id,
-            ipAddress: request.ip,
-            userAgent: request.headers['user-agent']
-          }
-        );
-
-        return reply.send(connector);
-      } catch (error) {
-        return handleRouteError(error, reply);
-      }
-    }
-  );
-
-  app.post<{ Params: { id: string }; Querystring: ConnectorQuery }>(
-    '/api/connectors/:id/sync',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
-
-        const job = await enqueueConnectorSyncForTenant(
-          tenantId,
-          request.params.id,
-          {
-            actorUserId: currentUser.id,
-            ipAddress: request.ip,
-            userAgent: request.headers['user-agent']
-          }
-        );
-
-        return reply.status(202).send(job);
-      } catch (error) {
-        return handleRouteError(error, reply);
-      }
-    }
-  );
-
-  app.post<{ Params: { id: string }; Querystring: ConnectorQuery }>(
-    '/api/connectors/:id/health',
-    async (request, reply) => {
-      try {
-        const currentUser = await getCurrentUserFromHeaders(request.headers);
-        assertTenantAdmin(currentUser);
-        const tenantId = resolveTenantScope(currentUser, request.query.tenant_id);
-
-        const result = await runConnectorHealthCheckForTenant(
-          tenantId,
-          request.params.id,
-          {
-            actorUserId: currentUser.id,
-            ipAddress: request.ip,
-            userAgent: request.headers['user-agent']
-          }
-        );
-
-        return reply.send(result);
-      } catch (error) {
-        return handleRouteError(error, reply);
-      }
-    }
-  );
 }

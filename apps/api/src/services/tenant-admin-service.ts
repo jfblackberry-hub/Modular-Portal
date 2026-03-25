@@ -9,12 +9,20 @@ import {
   type TenantNotificationSettings,
   updateBillingEnrollmentModuleConfigForTenant,
   updateNotificationSettingsForTenant,
-  updatePurchasedModulesForTenant} from '@payer-portal/server';
+  updatePurchasedModulesForTenant
+} from '@payer-portal/server';
 
 import { getBrandingForTenant } from './branding-service';
 import { updateBrandingForTenant } from './branding-service';
 import { listConnectorsForTenant } from './connector-service';
-import { assignRoleToUser, createUser, deleteUser, listRoles, removeRoleFromUser, updateUser } from './role-service';
+import {
+  assignRoleToUser,
+  createUser,
+  deleteUser,
+  listRoles,
+  removeRoleFromUser,
+  updateUser
+} from './role-service';
 
 type AuditContext = {
   actorUserId: string;
@@ -112,7 +120,9 @@ function readEmployerGroupBrandingMap(brandingConfig: Record<string, unknown>) {
 
     const record = value as Record<string, unknown>;
     const employerGroupName =
-      typeof record.employerGroupName === 'string' ? record.employerGroupName : null;
+      typeof record.employerGroupName === 'string'
+        ? record.employerGroupName
+        : null;
     const employerGroupLogoUrl =
       typeof record.employerGroupLogoUrl === 'string'
         ? record.employerGroupLogoUrl
@@ -138,82 +148,92 @@ export async function getTenantAdminSettings(
     employerKey?: string;
   } = {}
 ) {
-  const [tenant, branding, notificationSettings, purchasedModules, billingEnrollmentModuleConfig, connectors, roles, users, employerGroups] =
-    await Promise.all([
-      prisma.tenant.findUnique({
-        where: { id: tenantId },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          status: true,
-          brandingConfig: true
+  const [
+    tenant,
+    branding,
+    notificationSettings,
+    purchasedModules,
+    billingEnrollmentModuleConfig,
+    connectors,
+    roles,
+    users,
+    employerGroups
+  ] = await Promise.all([
+    prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        type: true,
+        status: true,
+        brandingConfig: true
+      }
+    }),
+    getBrandingForTenant(tenantId),
+    getNotificationSettingsForTenant(tenantId),
+    getPurchasedModulesForTenant(tenantId),
+    getBillingEnrollmentModuleConfigForTenant(tenantId),
+    listConnectorsForTenant(tenantId),
+    listRoles(),
+    prisma.user.findMany({
+      where: {
+        memberships: {
+          some: {
+            tenantId
+          }
         }
-      }),
-      getBrandingForTenant(tenantId),
-      getNotificationSettingsForTenant(tenantId),
-      getPurchasedModulesForTenant(tenantId),
-      getBillingEnrollmentModuleConfigForTenant(tenantId),
-      listConnectorsForTenant(tenantId),
-      listRoles(),
-      prisma.user.findMany({
-        where: {
-          memberships: {
-            some: {
-              tenantId
+      },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        memberships: {
+          where: {
+            tenantId
+          },
+          select: {
+            tenant: {
+              select: {
+                id: true,
+                name: true
+              }
             }
           }
         },
-        include: {
-          tenant: {
-            select: {
-              id: true,
-              name: true
-            }
-          },
-          memberships: {
-            where: {
-              tenantId
-            },
-            select: {
-              tenant: {
-                select: {
-                  id: true,
-                  name: true
-                }
-              }
-            }
-          },
-          roles: {
-            include: {
-              role: {
-                include: {
-                  permissions: {
-                    include: {
-                      permission: true
-                    }
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true
                   }
                 }
               }
             }
           }
-        },
-        orderBy: {
-          createdAt: 'desc'
         }
-      }),
-      prisma.employerGroup.findMany({
-        where: { tenantId },
-        select: {
-          employerKey: true,
-          name: true,
-          logoUrl: true
-        },
-        orderBy: {
-          employerKey: 'asc'
-        }
-      })
-    ]);
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    }),
+    prisma.employerGroup.findMany({
+      where: { tenantId },
+      select: {
+        employerKey: true,
+        name: true,
+        logoUrl: true
+      },
+      orderBy: {
+        employerKey: 'asc'
+      }
+    })
+  ]);
 
   if (!tenant) {
     throw new Error('Tenant not found');
@@ -225,13 +245,14 @@ export async function getTenantAdminSettings(
     !Array.isArray(tenant.brandingConfig)
       ? (tenant.brandingConfig as Record<string, unknown>)
       : {};
-  const employerGroupBrandingMap = readEmployerGroupBrandingMap(tenantBrandingConfig);
+  const employerGroupBrandingMap =
+    readEmployerGroupBrandingMap(tenantBrandingConfig);
   const requestedEmployerKey = normalizeEmployerKey(options.employerKey);
   const scopedEmployerGroupFromTable = requestedEmployerKey
-    ? employerGroups.find(
+    ? (employerGroups.find(
         (group) =>
           normalizeEmployerKey(group.employerKey) === requestedEmployerKey
-      ) ?? null
+      ) ?? null)
     : null;
   const scopedEmployerGroupBranding = requestedEmployerKey
     ? employerGroupBrandingMap[requestedEmployerKey]
@@ -241,24 +262,24 @@ export async function getTenantAdminSettings(
     typeof scopedEmployerGroupFromTable?.name === 'string'
       ? scopedEmployerGroupFromTable.name
       : typeof scopedEmployerGroupBranding?.employerGroupName === 'string'
-      ? scopedEmployerGroupBranding.employerGroupName
-      : typeof tenantBrandingConfig.employerGroupName === 'string'
-        ? tenantBrandingConfig.employerGroupName
-      : typeof tenantBrandingConfig.employerName === 'string'
-        ? tenantBrandingConfig.employerName
-        : typeof tenantBrandingConfig.groupName === 'string'
-          ? tenantBrandingConfig.groupName
-          : null;
+        ? scopedEmployerGroupBranding.employerGroupName
+        : typeof tenantBrandingConfig.employerGroupName === 'string'
+          ? tenantBrandingConfig.employerGroupName
+          : typeof tenantBrandingConfig.employerName === 'string'
+            ? tenantBrandingConfig.employerName
+            : typeof tenantBrandingConfig.groupName === 'string'
+              ? tenantBrandingConfig.groupName
+              : null;
   const employerGroupLogoUrl =
     typeof scopedEmployerGroupFromTable?.logoUrl === 'string'
       ? scopedEmployerGroupFromTable.logoUrl
       : typeof scopedEmployerGroupBranding?.employerGroupLogoUrl === 'string'
-      ? scopedEmployerGroupBranding.employerGroupLogoUrl
-      : typeof tenantBrandingConfig.employerGroupLogoUrl === 'string'
-        ? tenantBrandingConfig.employerGroupLogoUrl
-      : typeof tenantBrandingConfig.employerLogoUrl === 'string'
-        ? tenantBrandingConfig.employerLogoUrl
-        : null;
+        ? scopedEmployerGroupBranding.employerGroupLogoUrl
+        : typeof tenantBrandingConfig.employerGroupLogoUrl === 'string'
+          ? tenantBrandingConfig.employerGroupLogoUrl
+          : typeof tenantBrandingConfig.employerLogoUrl === 'string'
+            ? tenantBrandingConfig.employerLogoUrl
+            : null;
 
   const webhookConfigs = connectors.filter(
     (connector) => connector.adapterKey === 'webhook'
@@ -273,8 +294,13 @@ export async function getTenantAdminSettings(
       employerGroupLogoUrl,
       availableEmployerKeys: Array.from(
         new Set([
-          ...Object.keys(employerGroupBrandingMap).map((key) => normalizeEmployerKey(key) ?? key),
-          ...employerGroups.map((group) => normalizeEmployerKey(group.employerKey) ?? group.employerKey)
+          ...Object.keys(employerGroupBrandingMap).map(
+            (key) => normalizeEmployerKey(key) ?? key
+          ),
+          ...employerGroups.map(
+            (group) =>
+              normalizeEmployerKey(group.employerKey) ?? group.employerKey
+          )
         ])
       ).sort()
     },
@@ -346,7 +372,9 @@ export async function saveTenantEmployerGroupBrandingSettings(
       !Array.isArray(tenant.brandingConfig)
         ? (tenant.brandingConfig as Record<string, unknown>)
         : {};
-    const existingEmployerGroupBrandingMap = readEmployerGroupBrandingMap(currentBrandingConfig);
+    const existingEmployerGroupBrandingMap = readEmployerGroupBrandingMap(
+      currentBrandingConfig
+    );
 
     const nextEmployerGroupName = normalizeOptionalString(
       input.employerGroupName ??
@@ -374,7 +402,7 @@ export async function saveTenantEmployerGroupBrandingSettings(
     } as Record<string, unknown>;
     const targetEmployerKey = normalizeEmployerKey(options.employerKey);
     const beforeState = targetEmployerKey
-      ? existingEmployerGroupBrandingMap[targetEmployerKey] ?? null
+      ? (existingEmployerGroupBrandingMap[targetEmployerKey] ?? null)
       : {
           employerGroupName:
             typeof currentBrandingConfig.employerGroupName === 'string'
@@ -418,12 +446,19 @@ export async function saveTenantEmployerGroupBrandingSettings(
           }
         },
         update: {
-          name: nextEmployerGroupName ?? existingEmployerGroup?.employerKey ?? targetEmployerKey,
+          name:
+            nextEmployerGroupName ??
+            existingEmployerGroup?.employerKey ??
+            targetEmployerKey,
           logoUrl: nextEmployerGroupLogoUrl ?? null,
           brandingConfig: {
             ...employerGroupBrandingConfig,
-            ...(nextEmployerGroupName ? { employerGroupName: nextEmployerGroupName } : {}),
-            ...(nextEmployerGroupLogoUrl ? { employerGroupLogoUrl: nextEmployerGroupLogoUrl } : {})
+            ...(nextEmployerGroupName
+              ? { employerGroupName: nextEmployerGroupName }
+              : {}),
+            ...(nextEmployerGroupLogoUrl
+              ? { employerGroupLogoUrl: nextEmployerGroupLogoUrl }
+              : {})
           } satisfies Prisma.InputJsonValue
         },
         create: {
@@ -433,13 +468,19 @@ export async function saveTenantEmployerGroupBrandingSettings(
           logoUrl: nextEmployerGroupLogoUrl ?? null,
           isActive: true,
           brandingConfig: {
-            ...(nextEmployerGroupName ? { employerGroupName: nextEmployerGroupName } : {}),
-            ...(nextEmployerGroupLogoUrl ? { employerGroupLogoUrl: nextEmployerGroupLogoUrl } : {})
+            ...(nextEmployerGroupName
+              ? { employerGroupName: nextEmployerGroupName }
+              : {}),
+            ...(nextEmployerGroupLogoUrl
+              ? { employerGroupLogoUrl: nextEmployerGroupLogoUrl }
+              : {})
           } satisfies Prisma.InputJsonValue
         }
       });
 
-      const employerGroupBrandingMap = readEmployerGroupBrandingMap(currentBrandingConfig);
+      const employerGroupBrandingMap = readEmployerGroupBrandingMap(
+        currentBrandingConfig
+      );
       const nextEmployerGroupBrandingEntry = {
         ...(employerGroupBrandingMap[targetEmployerKey] ?? {})
       } as {
@@ -448,7 +489,8 @@ export async function saveTenantEmployerGroupBrandingSettings(
       };
 
       nextEmployerGroupBrandingEntry.employerGroupName = nextEmployerGroupName;
-      nextEmployerGroupBrandingEntry.employerGroupLogoUrl = nextEmployerGroupLogoUrl;
+      nextEmployerGroupBrandingEntry.employerGroupLogoUrl =
+        nextEmployerGroupLogoUrl;
 
       if (
         !nextEmployerGroupBrandingEntry.employerGroupName &&
@@ -456,7 +498,8 @@ export async function saveTenantEmployerGroupBrandingSettings(
       ) {
         delete employerGroupBrandingMap[targetEmployerKey];
       } else {
-        employerGroupBrandingMap[targetEmployerKey] = nextEmployerGroupBrandingEntry;
+        employerGroupBrandingMap[targetEmployerKey] =
+          nextEmployerGroupBrandingEntry;
       }
 
       if (Object.keys(employerGroupBrandingMap).length > 0) {
@@ -636,13 +679,21 @@ export async function updateTenantScopedUser(
     throw new Error('User not found');
   }
 
-  return updateUser(userId, {
-    tenantId,
-    ...input
-  }, context);
+  return updateUser(
+    userId,
+    {
+      tenantId,
+      ...input
+    },
+    context
+  );
 }
 
-export async function deleteTenantScopedUser(tenantId: string, userId: string, context: AuditContext) {
+export async function deleteTenantScopedUser(
+  tenantId: string,
+  userId: string,
+  context: AuditContext
+) {
   const user = await prisma.user.findFirst({
     where: {
       id: userId,

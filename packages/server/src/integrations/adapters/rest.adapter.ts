@@ -151,17 +151,20 @@ export const restAdapter: IntegrationAdapter<Record<string, unknown>, RestAdapte
     for (const [index, record] of records.entries()) {
       eventsPublished += 1;
 
-      console.log('[connector] parsed record', {
+      context.logger.info('REST integration parsed record', {
         adapterKey: 'rest-api',
         endpointPath: config.endpointPath,
         record
       });
 
       await publish('connector.record.imported', {
+        capabilityId: 'platform.integrations',
         id: `rest:${index + 1}`,
         correlationId: `rest:${index + 1}`,
+        failureType: 'none',
+        orgUnitId: null,
         timestamp: new Date(),
-        tenantId: config.tenantId ?? null,
+        tenantId: config.tenantId ?? context.tenantId,
         type: 'connector.record.imported',
         payload: {
           adapterKey: 'rest-api',

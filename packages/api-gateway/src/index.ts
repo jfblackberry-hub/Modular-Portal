@@ -9,9 +9,7 @@ import {
   getUserNotifications,
   initializeMonitoring,
   markNotificationRead,
-  recordApiRequest,
-  registerIntegrationEventSubscriptions,
-  registerJobEventSubscriptions
+  recordApiRequest
 } from '@payer-portal/server';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 
@@ -718,8 +716,6 @@ function registerGatewayRoutes(app: FastifyInstance, prefix: '/api' | '/api/v1')
 
 export function buildApiGateway() {
   initializeMonitoring();
-  registerJobEventSubscriptions();
-  registerIntegrationEventSubscriptions();
 
   const app = Fastify({
     logger: true,

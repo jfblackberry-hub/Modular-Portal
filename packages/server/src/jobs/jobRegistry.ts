@@ -2,7 +2,7 @@ import type { Prisma } from '@payer-portal/database';
 
 import { registerDefaultAdapters } from '../adapters/adapterRegistry.js';
 import { runBackup, scheduleNextBackupRun } from '../backups/backupService.js';
-import type { PlatformEvent } from '../events/eventTypes.js';
+import { hydrateQueuedPlatformEvent, publish } from '../events/eventBus.js';
 import { createStructuredLogger } from '../observability/logger.js';
 import { runConnectorSync } from '../services/connectorService.js';
 import {
@@ -10,17 +10,6 @@ import {
 } from '../services/notificationService.js';
 import { jobWorkerRuntimeConfig } from './runtime-config.js';
 import type { JobRecord, RegisteredJobPayloads, RegisteredJobType } from './jobTypes.js';
-
-function hydrateQueuedEvent(event: RegisteredJobPayloads['connector.sync']['event']) {
-  if (!event) {
-    return undefined;
-  }
-
-  return {
-    ...event,
-    timestamp: new Date(event.timestamp)
-  } as PlatformEvent;
-}
 
 export type JobHandler<
   TPayload extends Prisma.JsonValue = Prisma.JsonValue,
@@ -56,6 +45,11 @@ export function registerDefaultJobHandlers() {
   defaultsRegistered = true;
   registerDefaultAdapters();
   const logger = createStructuredLogger({
+    observability: {
+      capabilityId: 'platform.jobs',
+      failureType: 'none',
+      tenantId: 'platform'
+    },
     serviceName: jobWorkerRuntimeConfig.observability.serviceName
   });
 
@@ -66,10 +60,23 @@ export function registerDefaultJobHandlers() {
       jobId: job.id,
       coverage: manifest.coverage,
       backupId: manifest.backupId,
-      encryptedFile: manifest.encryptedFile
+      encryptedFile: manifest.encryptedFile,
+      tenantId: job.tenantId ?? 'platform'
     });
 
     await scheduleNextBackupRun(payload, new Date());
+  });
+
+  registerJobHandler('event.publish', async ({ payload, job }) => {
+    const event = hydrateQueuedPlatformEvent(payload.event);
+    await publish(event.type, event);
+
+    logger.info('event.publish handled', {
+      jobId: job.id,
+      tenantId: event.tenantId,
+      eventId: event.id,
+      eventType: event.type
+    });
   });
 
   registerJobHandler('notification.send', async ({ payload, job }) => {
@@ -89,7 +96,7 @@ export function registerDefaultJobHandlers() {
       payload.connectorId,
       payload.requestedByUserId ?? null,
       payload.triggerMode,
-      hydrateQueuedEvent(payload.event)
+      payload.event ? hydrateQueuedPlatformEvent(payload.event) : undefined
     );
 
     logger.info('connector.sync handled', {

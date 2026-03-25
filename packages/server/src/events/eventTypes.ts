@@ -1,8 +1,11 @@
 export interface BaseEvent {
+  capabilityId: string;
   id: string;
+  failureType: string;
+  orgUnitId?: string | null;
   type: PlatformEventType;
   timestamp: Date;
-  tenantId: string | null;
+  tenantId: string;
   correlationId: string;
 }
 
@@ -25,6 +28,7 @@ export interface TenantCreatedEvent extends BaseEvent {
     name: string;
     slug: string;
     status: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
+    tenantType: 'PAYER' | 'EMPLOYER' | 'BROKER' | 'MEMBER' | 'PROVIDER';
   };
 }
 

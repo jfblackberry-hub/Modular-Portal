@@ -3,6 +3,11 @@ import { jobWorkerRuntimeConfig } from '../jobs/runtime-config.js';
 import { configureBackupJobs } from './backupService.js';
 
 const logger = createStructuredLogger({
+  observability: {
+    capabilityId: 'platform.backups',
+    failureType: 'none',
+    tenantId: 'platform'
+  },
   serviceName: jobWorkerRuntimeConfig.observability.serviceName
 });
 
@@ -17,6 +22,7 @@ async function main() {
 
 main().catch((error) => {
   logger.error('failed to configure backup jobs', {
+    failureType: 'system',
     errorMessage: error instanceof Error ? error.message : String(error)
   });
   process.exit(1);

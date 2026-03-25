@@ -1,10 +1,10 @@
 import { PlatformAdminGate } from '../../../../../components/platform-admin-gate';
-import { PreviewSessionWorkspace } from '../../../../../components/preview-session-workspace';
+import { PreviewSessionControl } from '../../../../../components/preview-session-control';
 
 export default function AdminPlatformSessionsPage() {
   return (
     <PlatformAdminGate>
-      <PreviewSessionWorkspace />
+      <PreviewSessionControl />
     </PlatformAdminGate>
   );
 }

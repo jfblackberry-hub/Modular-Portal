@@ -7,6 +7,7 @@ import { PlatformAdminGate } from '../../../../../components/platform-admin-gate
 import { SectionCard } from '../../../../../components/section-card';
 import { fetchAdminJsonCached } from '../../../../../lib/admin-client-data';
 import { config, getAdminAuthHeaders } from '../../../../../lib/api-auth';
+import { type ApiCatalogEntry } from '../../../../../lib/api-catalog-api';
 
 type Tenant = {
   id: string;
@@ -28,36 +29,6 @@ type AdapterRow = {
   endpoint: string;
   mapping: string;
   lastSyncAt: string | null;
-};
-
-type CatalogField = {
-  key: string;
-  label: string;
-  kind: 'text' | 'url' | 'path' | 'number' | 'secret' | 'select';
-  required?: boolean;
-  helpText?: string;
-  defaultValue?: string;
-  options?: Array<{
-    label: string;
-    value: string;
-  }>;
-};
-
-type CatalogEntry = {
-  key: string;
-  label: string;
-  vendor: string;
-  category: string;
-  adapterKey: string;
-  description: string;
-  endpointLabel: string;
-  mappingLabel: string;
-  defaultName: string;
-  fields: CatalogField[];
-  usage: {
-    connectorCount: number;
-    tenantCount: number;
-  };
 };
 
 function formatTimestamp(value: string | null) {
@@ -86,43 +57,32 @@ function getStatusTone(status: string) {
   return 'bg-rose-100 text-rose-700';
 }
 
-function getInitialFieldValues(entry: CatalogEntry | undefined) {
+function getInitialFieldValues(entry: ApiCatalogEntry | undefined): Record<string, string> {
   if (!entry) {
     return {};
   }
 
-  return Object.fromEntries(
-    entry.fields.map((field) => [field.key, field.defaultValue ?? ''])
-  );
-}
-
-function shouldShowField(fieldKey: string, authenticationType: string) {
-  if (['authToken'].includes(fieldKey)) {
-    return authenticationType === 'bearer';
-  }
-
-  if (['apiKeyHeaderName', 'apiKeyValue'].includes(fieldKey)) {
-    return authenticationType === 'apiKey';
-  }
-
-  if (['basicUsername', 'basicPassword'].includes(fieldKey)) {
-    return authenticationType === 'basic';
-  }
-
-  return true;
+  return {
+    baseUrl: '',
+    endpointPath: entry.endpoint,
+    method: 'GET',
+    authenticationType: 'none',
+    apiKeyHeaderName: 'x-api-key',
+    mappingKey: entry.slug
+  };
 }
 
 export default function AdminPlatformAdapterStatusPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [rows, setRows] = useState<AdapterRow[]>([]);
-  const [catalogEntries, setCatalogEntries] = useState<CatalogEntry[]>([]);
+  const [catalogEntries, setCatalogEntries] = useState<ApiCatalogEntry[]>([]);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isApplying, setIsApplying] = useState(false);
   const [selectedTenantId, setSelectedTenantId] = useState('');
-  const [selectedCatalogEntryKey, setSelectedCatalogEntryKey] = useState('');
+  const [selectedCatalogEntryId, setSelectedCatalogEntryId] = useState('');
   const [catalogName, setCatalogName] = useState('');
   const [catalogStatus, setCatalogStatus] = useState('ACTIVE');
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
@@ -139,20 +99,17 @@ export default function AdminPlatformAdapterStatusPage() {
           headers: getAdminAuthHeaders(),
           ttlMs: 20_000
         }),
-        fetchAdminJsonCached<CatalogEntry[]>(
-          `${config.apiBaseUrl}/platform-admin/connectivity/api-catalog`,
-          {
-            headers: getAdminAuthHeaders(),
-            ttlMs: 20_000
-          }
-        )
+        fetchAdminJsonCached<ApiCatalogEntry[]>(`${config.apiBaseUrl}/api-catalog`, {
+          headers: getAdminAuthHeaders(),
+          ttlMs: 20_000
+        })
       ]);
 
       setTenants(inventory.tenants);
       setRows(inventory.rows);
       setCatalogEntries(catalog);
       setSelectedTenantId((current) => current || inventory.tenants[0]?.id || '');
-      setSelectedCatalogEntryKey((current) => current || catalog[0]?.key || '');
+      setSelectedCatalogEntryId((current) => current || catalog[0]?.id || '');
       setError('');
     } catch (nextError) {
       setRows([]);
@@ -172,8 +129,8 @@ export default function AdminPlatformAdapterStatusPage() {
   }, []);
 
   const selectedCatalogEntry = useMemo(
-    () => catalogEntries.find((entry) => entry.key === selectedCatalogEntryKey),
-    [catalogEntries, selectedCatalogEntryKey]
+    () => catalogEntries.find((entry) => entry.id === selectedCatalogEntryId),
+    [catalogEntries, selectedCatalogEntryId]
   );
 
   useEffect(() => {
@@ -181,7 +138,7 @@ export default function AdminPlatformAdapterStatusPage() {
       return;
     }
 
-    setCatalogName(selectedCatalogEntry.defaultName);
+    setCatalogName(selectedCatalogEntry.name);
     setFieldValues(getInitialFieldValues(selectedCatalogEntry));
   }, [selectedCatalogEntry]);
 
@@ -217,7 +174,7 @@ export default function AdminPlatformAdapterStatusPage() {
 
   async function handleApplyCatalog(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedTenantId || !selectedCatalogEntryKey) {
+    if (!selectedTenantId || !selectedCatalogEntry) {
       return;
     }
 
@@ -227,7 +184,7 @@ export default function AdminPlatformAdapterStatusPage() {
 
     try {
       const response = await fetch(
-        `${config.apiBaseUrl}/platform-admin/connectivity/api-catalog/apply`,
+        `${config.apiBaseUrl}/platform-admin/connectivity/api-catalog/apply-registry`,
         {
           method: 'POST',
           headers: {
@@ -236,10 +193,19 @@ export default function AdminPlatformAdapterStatusPage() {
           },
           body: JSON.stringify({
             tenantId: selectedTenantId,
-            catalogEntryKey: selectedCatalogEntryKey,
+            entryId: selectedCatalogEntry.id,
             name: catalogName,
             status: catalogStatus,
-            fieldValues
+            baseUrl: fieldValues.baseUrl,
+            endpointPath: fieldValues.endpointPath,
+            method: fieldValues.method,
+            authenticationType,
+            authToken: fieldValues.authToken,
+            apiKeyHeaderName: fieldValues.apiKeyHeaderName,
+            apiKeyValue: fieldValues.apiKeyValue,
+            basicUsername: fieldValues.basicUsername,
+            basicPassword: fieldValues.basicPassword,
+            mappingKey: fieldValues.mappingKey
           })
         }
       );
@@ -253,13 +219,13 @@ export default function AdminPlatformAdapterStatusPage() {
 
       const tenantName =
         tenants.find((tenant) => tenant.id === selectedTenantId)?.name ?? 'tenant';
-      setSuccess(`Applied ${selectedCatalogEntry?.label ?? 'catalog API'} to ${tenantName}.`);
+      setSuccess(`Applied ${selectedCatalogEntry.name} to ${tenantName}.`);
       await loadWorkspace();
     } catch (nextError) {
       setError(
         nextError instanceof Error
           ? nextError.message
-          : 'Unable to apply catalog API to tenant.'
+          : 'Unable to apply registry entry to tenant.'
       );
     } finally {
       setIsApplying(false);
@@ -294,7 +260,7 @@ export default function AdminPlatformAdapterStatusPage() {
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
-            { label: 'Catalog entries', value: String(catalogEntries.length) },
+            { label: 'Registry entries', value: String(catalogEntries.length) },
             { label: 'Catalog deployments', value: String(catalogConnectorCount) },
             { label: 'Tenants using catalog', value: String(tenantsUsingCatalog) },
             { label: 'Custom connectors', value: String(customConnectorCount) }
@@ -314,8 +280,8 @@ export default function AdminPlatformAdapterStatusPage() {
         </div>
 
         <SectionCard
-          title="Shared API catalog"
-          description="Reusable API templates that can be applied to any tenant instead of hand-building every connector from scratch."
+          title="Integration registry"
+          description="Persistent upstream API registry entries that can be applied to any tenant instead of hand-building every connector from scratch."
         >
           <div className="mb-4 flex justify-end">
             <Link
@@ -326,55 +292,60 @@ export default function AdminPlatformAdapterStatusPage() {
             </Link>
           </div>
           {isLoading ? (
-            <p className="text-sm text-admin-muted">Loading shared catalog...</p>
+            <p className="text-sm text-admin-muted">Loading registry entries...</p>
           ) : catalogEntries.length === 0 ? (
-            <p className="text-sm text-admin-muted">No shared API templates are registered yet.</p>
+            <p className="text-sm text-admin-muted">No registry entries are registered yet.</p>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {catalogEntries.map((entry) => (
-                <article
-                  key={entry.key}
-                  className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-admin-text">{entry.label}</p>
-                      <p className="mt-1 text-sm text-admin-muted">
-                        {entry.vendor} · {entry.category}
-                      </p>
+              {catalogEntries.map((entry) => {
+                const deployments = rows.filter((row) => row.catalogEntryKey === entry.slug);
+                const tenantCount = new Set(deployments.map((row) => row.tenantId)).size;
+
+                return (
+                  <article
+                    key={entry.id}
+                    className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-admin-text">{entry.name}</p>
+                        <p className="mt-1 text-sm text-admin-muted">
+                          {entry.vendor} · {entry.category}
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-admin-border bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-admin-text">
+                        {entry.version}
+                      </span>
                     </div>
-                    <span className="rounded-full border border-admin-border bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-admin-text">
-                      {entry.adapterKey}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-sm text-admin-muted">{entry.description}</p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-admin-border bg-white px-3 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
-                        Deployments
-                      </p>
-                      <p className="mt-2 text-lg font-semibold text-admin-text">
-                        {entry.usage.connectorCount}
-                      </p>
+                    <p className="mt-3 text-sm text-admin-muted">{entry.description}</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-admin-border bg-white px-3 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
+                          Deployments
+                        </p>
+                        <p className="mt-2 text-lg font-semibold text-admin-text">
+                          {deployments.length}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-admin-border bg-white px-3 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
+                          Tenants
+                        </p>
+                        <p className="mt-2 text-lg font-semibold text-admin-text">
+                          {tenantCount}
+                        </p>
+                      </div>
                     </div>
-                    <div className="rounded-2xl border border-admin-border bg-white px-3 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
-                        Tenants
-                      </p>
-                      <p className="mt-2 text-lg font-semibold text-admin-text">
-                        {entry.usage.tenantCount}
-                      </p>
-                    </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           )}
         </SectionCard>
 
         <SectionCard
-          title="Apply API template to tenant"
-          description="Select a tenant, choose a vetted API template, and configure the endpoint details so the connector is immediately usable."
+          title="Apply registry entry to tenant"
+          description="Select a tenant, choose a registry entry, and configure the runtime endpoint details so the connector is immediately usable."
         >
           <form className="space-y-5" onSubmit={handleApplyCatalog}>
             <div className="grid gap-4 lg:grid-cols-2">
@@ -398,19 +369,19 @@ export default function AdminPlatformAdapterStatusPage() {
               </label>
 
               <label className="block">
-                <span className="text-sm font-medium text-admin-text">Catalog API</span>
+                <span className="text-sm font-medium text-admin-text">Registry entry</span>
                 <select
                   className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
-                  value={selectedCatalogEntryKey}
-                  onChange={(event) => setSelectedCatalogEntryKey(event.target.value)}
+                  value={selectedCatalogEntryId}
+                  onChange={(event) => setSelectedCatalogEntryId(event.target.value)}
                   required
                 >
                   <option value="" disabled>
-                    Select API template
+                    Select registry entry
                   </option>
                   {catalogEntries.map((entry) => (
-                    <option key={entry.key} value={entry.key}>
-                      {entry.label} ({entry.vendor})
+                    <option key={entry.id} value={entry.id}>
+                      {entry.name} ({entry.vendor})
                     </option>
                   ))}
                 </select>
@@ -420,7 +391,7 @@ export default function AdminPlatformAdapterStatusPage() {
             {selectedCatalogEntry ? (
               <>
                 <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
-                  <p className="text-sm font-semibold text-admin-text">{selectedCatalogEntry.label}</p>
+                  <p className="text-sm font-semibold text-admin-text">{selectedCatalogEntry.name}</p>
                   <p className="mt-1 text-sm text-admin-muted">
                     {selectedCatalogEntry.description}
                   </p>
@@ -433,7 +404,7 @@ export default function AdminPlatformAdapterStatusPage() {
                       className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
                       value={catalogName}
                       onChange={(event) => setCatalogName(event.target.value)}
-                      placeholder={selectedCatalogEntry.defaultName}
+                      placeholder={selectedCatalogEntry.name}
                       required
                     />
                   </label>
@@ -451,55 +422,170 @@ export default function AdminPlatformAdapterStatusPage() {
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  {selectedCatalogEntry.fields
-                    .filter((field) => shouldShowField(field.key, authenticationType))
-                    .map((field) => (
-                      <label
-                        key={field.key}
-                        className={`block ${
-                          field.kind === 'text' && field.key === 'eventTypes'
-                            ? 'md:col-span-2'
-                            : ''
-                        }`}
-                      >
-                        <span className="text-sm font-medium text-admin-text">{field.label}</span>
-                        {field.kind === 'select' ? (
-                          <select
-                            className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
-                            value={fieldValues[field.key] ?? field.defaultValue ?? ''}
-                            onChange={(event) =>
-                              setFieldValues((current) => ({
-                                ...current,
-                                [field.key]: event.target.value
-                              }))
-                            }
-                          >
-                            {(field.options ?? []).map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type={field.kind === 'secret' ? 'password' : field.kind === 'number' ? 'number' : 'text'}
-                            className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
-                            value={fieldValues[field.key] ?? ''}
-                            onChange={(event) =>
-                              setFieldValues((current) => ({
-                                ...current,
-                                [field.key]: event.target.value
-                              }))
-                            }
-                            placeholder={field.defaultValue}
-                            required={field.required}
-                          />
-                        )}
-                        {field.helpText ? (
-                          <p className="mt-2 text-xs text-admin-muted">{field.helpText}</p>
-                        ) : null}
+                  <label className="block">
+                    <span className="text-sm font-medium text-admin-text">Base URL</span>
+                    <input
+                      type="url"
+                      className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                      value={fieldValues.baseUrl ?? ''}
+                      onChange={(event) =>
+                        setFieldValues((current) => ({
+                          ...current,
+                          baseUrl: event.target.value
+                        }))
+                      }
+                      placeholder="https://vendor.example.com"
+                      required
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-medium text-admin-text">Endpoint Path</span>
+                    <input
+                      className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                      value={fieldValues.endpointPath ?? ''}
+                      onChange={(event) =>
+                        setFieldValues((current) => ({
+                          ...current,
+                          endpointPath: event.target.value
+                        }))
+                      }
+                      placeholder={selectedCatalogEntry.endpoint}
+                      required
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-medium text-admin-text">Method</span>
+                    <select
+                      className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                      value={fieldValues.method ?? 'GET'}
+                      onChange={(event) =>
+                        setFieldValues((current) => ({
+                          ...current,
+                          method: event.target.value
+                        }))
+                      }
+                    >
+                      <option value="GET">GET</option>
+                      <option value="POST">POST</option>
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-medium text-admin-text">Mapping Key</span>
+                    <input
+                      className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                      value={fieldValues.mappingKey ?? ''}
+                      onChange={(event) =>
+                        setFieldValues((current) => ({
+                          ...current,
+                          mappingKey: event.target.value
+                        }))
+                      }
+                      placeholder={selectedCatalogEntry.slug}
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-medium text-admin-text">Authentication</span>
+                    <select
+                      className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                      value={authenticationType}
+                      onChange={(event) =>
+                        setFieldValues((current) => ({
+                          ...current,
+                          authenticationType: event.target.value
+                        }))
+                      }
+                    >
+                      <option value="none">None</option>
+                      <option value="bearer">Bearer token</option>
+                      <option value="apiKey">API key</option>
+                      <option value="basic">Basic auth</option>
+                    </select>
+                  </label>
+
+                  {authenticationType === 'bearer' ? (
+                    <label className="block">
+                      <span className="text-sm font-medium text-admin-text">Bearer Token</span>
+                      <input
+                        type="password"
+                        className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                        value={fieldValues.authToken ?? ''}
+                        onChange={(event) =>
+                          setFieldValues((current) => ({
+                            ...current,
+                            authToken: event.target.value
+                          }))
+                        }
+                      />
+                    </label>
+                  ) : null}
+
+                  {authenticationType === 'apiKey' ? (
+                    <>
+                      <label className="block">
+                        <span className="text-sm font-medium text-admin-text">API Key Header</span>
+                        <input
+                          className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                          value={fieldValues.apiKeyHeaderName ?? 'x-api-key'}
+                          onChange={(event) =>
+                            setFieldValues((current) => ({
+                              ...current,
+                              apiKeyHeaderName: event.target.value
+                            }))
+                          }
+                        />
                       </label>
-                    ))}
+                      <label className="block">
+                        <span className="text-sm font-medium text-admin-text">API Key</span>
+                        <input
+                          type="password"
+                          className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                          value={fieldValues.apiKeyValue ?? ''}
+                          onChange={(event) =>
+                            setFieldValues((current) => ({
+                              ...current,
+                              apiKeyValue: event.target.value
+                            }))
+                          }
+                        />
+                      </label>
+                    </>
+                  ) : null}
+
+                  {authenticationType === 'basic' ? (
+                    <>
+                      <label className="block">
+                        <span className="text-sm font-medium text-admin-text">Username</span>
+                        <input
+                          className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                          value={fieldValues.basicUsername ?? ''}
+                          onChange={(event) =>
+                            setFieldValues((current) => ({
+                              ...current,
+                              basicUsername: event.target.value
+                            }))
+                          }
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-sm font-medium text-admin-text">Password</span>
+                        <input
+                          type="password"
+                          className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                          value={fieldValues.basicPassword ?? ''}
+                          onChange={(event) =>
+                            setFieldValues((current) => ({
+                              ...current,
+                              basicPassword: event.target.value
+                            }))
+                          }
+                        />
+                      </label>
+                    </>
+                  ) : null}
                 </div>
 
                 <div className="flex flex-wrap gap-3">
@@ -508,7 +594,7 @@ export default function AdminPlatformAdapterStatusPage() {
                     disabled={isApplying}
                     className="rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {isApplying ? 'Applying API template...' : 'Apply API to tenant'}
+                    {isApplying ? 'Applying registry entry...' : 'Apply registry entry'}
                   </button>
                   {selectedTenantId ? (
                     <Link

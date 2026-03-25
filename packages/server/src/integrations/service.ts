@@ -28,10 +28,17 @@ function createLogger(input: {
   triggerMode: IntegrationTriggerMode;
 }) {
   const logger = createStructuredLogger({
+    observability: {
+      capabilityId: 'platform.integrations',
+      failureType: 'none',
+      tenantId: input.tenantId
+    },
     serviceName: 'api'
   }).child({
     adapterKey: input.adapterKey,
+    capabilityId: 'platform.integrations',
     connectorId: input.connectorId,
+    failureType: 'none',
     tenantId: input.tenantId,
     triggerMode: input.triggerMode,
     subsystem: 'integration'
@@ -50,7 +57,10 @@ function createLogger(input: {
       log('debug', message, metadata);
     },
     error(message: string, metadata?: Record<string, unknown>) {
-      log('error', message, metadata);
+      log('error', message, {
+        failureType: 'integration',
+        ...(metadata ?? {})
+      });
     },
     info(message: string, metadata?: Record<string, unknown>) {
       log('info', message, metadata);

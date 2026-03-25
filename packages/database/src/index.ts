@@ -14,10 +14,13 @@ export class TenantContextError extends Error {
   }
 }
 
-const tenantContextStorage = new AsyncLocalStorage<TenantRequestContext | undefined>();
+const tenantContextStorage = new AsyncLocalStorage<
+  TenantRequestContext | undefined
+>();
 const TENANT_SCOPED_MODELS = new Set([
   'TenantBranding',
   'EmployerGroup',
+  'OrganizationUnit',
   'Notification',
   'ConnectorConfig',
   'IntegrationExecution',
@@ -92,9 +95,9 @@ function shouldApplyTenantContext(model: string | undefined) {
   const context = tenantContextStorage.getStore();
   return Boolean(
     model &&
-      context &&
-      context.tenantId !== 'platform' &&
-      TENANT_SCOPED_MODELS.has(model)
+    context &&
+    context.tenantId !== 'platform' &&
+    TENANT_SCOPED_MODELS.has(model)
   );
 }
 
@@ -193,3 +196,4 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export * from '@prisma/client';
+export * from './organizationUnits.js';

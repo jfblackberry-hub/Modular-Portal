@@ -10,10 +10,7 @@ import { verifyAccessToken } from './access-token-service';
 export const TENANT_HEADER_NAME = 'x-tenant-id';
 export const PLATFORM_TENANT_ID = 'platform';
 
-function readHeaderValue(
-  headers: IncomingHttpHeaders,
-  name: string
-) {
+function readHeaderValue(headers: IncomingHttpHeaders, name: string) {
   const value = headers[name];
 
   if (Array.isArray(value)) {
@@ -41,29 +38,17 @@ function getBearerToken(headers: IncomingHttpHeaders) {
 export function resolveOptionalTenantContext(
   headers: IncomingHttpHeaders
 ): TenantRequestContext | null {
-  const tenantIdFromHeader = readHeaderValue(headers, TENANT_HEADER_NAME);
   const tokenPayload = verifyAccessToken(getBearerToken(headers));
   const tenantIdFromToken = tokenPayload?.tenantId?.trim() || null;
-  const tenantId = tenantIdFromHeader ?? tenantIdFromToken;
+  const tenantId = tenantIdFromToken;
 
   if (!tenantId) {
     return null;
   }
 
-  if (
-    tenantIdFromHeader &&
-    tenantIdFromToken &&
-    tenantIdFromToken !== PLATFORM_TENANT_ID &&
-    tenantIdFromHeader !== tenantIdFromToken
-  ) {
-    throw new Error(
-      'Tenant context mismatch. x-tenant-id must match the authenticated tenant scope.'
-    );
-  }
-
   return {
     tenantId,
-    source: tenantIdFromHeader ? 'header' : 'token'
+    source: 'token'
   };
 }
 
@@ -72,7 +57,7 @@ export function requireTenantContext(headers: IncomingHttpHeaders) {
 
   if (!context) {
     throw new Error(
-      'Tenant context required. Provide x-tenant-id or a tenant-scoped bearer token.'
+      'Tenant context required. Provide a tenant-scoped bearer token.'
     );
   }
 

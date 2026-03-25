@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import type { TenantType } from '@payer-portal/database';
 
 import { uploadBrandingLogoForTenant } from '../services/branding-service';
 import {
@@ -18,11 +19,13 @@ type TenantBody = {
   name: string;
   slug: string;
   status: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
+  type: TenantType;
   brandingConfig: Record<string, unknown>;
 };
 
 type TenantUpdateBody = {
   status?: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
+  type?: TenantType;
   quotaUsers?: number;
   quotaMembers?: number;
   quotaStorageGb?: number;
@@ -45,42 +48,44 @@ export async function tenantRoutes(app: FastifyInstance) {
       }
 
       return reply.status(503).send({
-        message:
-          'Local database unavailable. Start PostgreSQL, run migrations.'
+        message: 'Local database unavailable. Start PostgreSQL, run migrations.'
       });
     }
   });
 
-  app.post<{ Body: TenantBody }>('/platform-admin/tenants', async (request, reply) => {
-    try {
-      const currentUser = await getCurrentUserFromHeaders(request.headers);
-      assertPlatformAdmin(currentUser);
+  app.post<{ Body: TenantBody }>(
+    '/platform-admin/tenants',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
 
-      const tenant = await createTenant(request.body, {
-        actorUserId: currentUser.id,
-        ipAddress: request.ip,
-        userAgent: request.headers['user-agent']
-      });
-      return reply.status(201).send(tenant);
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error instanceof AuthenticationError) {
-          return reply.status(401).send({ message: error.message });
+        const tenant = await createTenant(request.body, {
+          actorUserId: currentUser.id,
+          ipAddress: request.ip,
+          userAgent: request.headers['user-agent']
+        });
+        return reply.status(201).send(tenant);
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error instanceof AuthenticationError) {
+            return reply.status(401).send({ message: error.message });
+          }
+
+          if (error instanceof AuthorizationError) {
+            return reply.status(403).send({ message: error.message });
+          }
+
+          return reply.status(400).send({ message: error.message });
         }
 
-        if (error instanceof AuthorizationError) {
-          return reply.status(403).send({ message: error.message });
-        }
-
-        return reply.status(400).send({ message: error.message });
+        return reply.status(503).send({
+          message:
+            'Local database unavailable. Start PostgreSQL, run migrations.'
+        });
       }
-
-      return reply.status(503).send({
-        message:
-          'Local database unavailable. Start PostgreSQL, run migrations.'
-      });
     }
-  });
+  );
 
   app.get<{ Params: { id: string } }>(
     '/platform-admin/tenants/:id',
@@ -122,11 +127,15 @@ export async function tenantRoutes(app: FastifyInstance) {
         const currentUser = await getCurrentUserFromHeaders(request.headers);
         assertPlatformAdmin(currentUser);
 
-        const tenant = await updateTenant(request.params.id, request.body ?? {}, {
-          actorUserId: currentUser.id,
-          ipAddress: request.ip,
-          userAgent: request.headers['user-agent']
-        });
+        const tenant = await updateTenant(
+          request.params.id,
+          request.body ?? {},
+          {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          }
+        );
 
         return reply.send(tenant);
       } catch (error) {
@@ -166,11 +175,15 @@ export async function tenantRoutes(app: FastifyInstance) {
           });
         }
 
-        const tenant = await uploadBrandingLogoForTenant(request.params.id, file, {
-          actorUserId: currentUser.id,
-          ipAddress: request.ip,
-          userAgent: request.headers['user-agent']
-        });
+        const tenant = await uploadBrandingLogoForTenant(
+          request.params.id,
+          file,
+          {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          }
+        );
         return reply.status(201).send(tenant);
       } catch (error) {
         if (error instanceof Error) {

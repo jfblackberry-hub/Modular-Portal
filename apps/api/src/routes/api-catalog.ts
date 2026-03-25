@@ -1,11 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 
 import {
+  applyRegistryEntryToTenant,
   applyCatalogEntryToTenant,
   listApiCatalogEntries
 } from '../services/api-catalog-service';
 import {
+  createBackendApiCatalogEntry,
+  deleteBackendApiCatalogEntry,
   listBackendApiCatalogEntries,
+  updateBackendApiCatalogEntry,
   parseApiCatalogCategory
 } from '../services/backend-api-catalog-service';
 import {
@@ -21,6 +25,37 @@ type ApplyCatalogBody = {
   name?: string;
   status?: string;
   fieldValues: Record<string, string>;
+};
+
+type UpsertPlatformCatalogBody = {
+  slug?: string;
+  name: string;
+  category: string;
+  vendor: string;
+  description: string;
+  endpoint: string;
+  version: string;
+  inputModels?: string[];
+  outputModels?: string[];
+  tenantAvailability?: string[];
+  sortOrder?: number;
+};
+
+type ApplyRegistryBody = {
+  entryId: string;
+  tenantId: string;
+  name?: string;
+  status?: string;
+  baseUrl: string;
+  endpointPath?: string;
+  method?: string;
+  authenticationType?: string;
+  authToken?: string;
+  apiKeyHeaderName?: string;
+  apiKeyValue?: string;
+  basicUsername?: string;
+  basicPassword?: string;
+  mappingKey?: string;
 };
 
 function handleRouteError(error: unknown, reply: { status: (code: number) => { send: (body: unknown) => unknown } }) {
@@ -101,6 +136,80 @@ export async function apiCatalogRoutes(app: FastifyInstance) {
         });
 
         return reply.status(201).send(connector);
+      } catch (error) {
+        return handleRouteError(error, reply);
+      }
+    }
+  );
+
+  app.post<{ Body: ApplyRegistryBody }>(
+    '/platform-admin/connectivity/api-catalog/apply-registry',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        const connector = await applyRegistryEntryToTenant(request.body, {
+          actorUserId: currentUser.id,
+          ipAddress: request.ip,
+          userAgent: request.headers['user-agent']
+        });
+
+        return reply.status(201).send(connector);
+      } catch (error) {
+        return handleRouteError(error, reply);
+      }
+    }
+  );
+
+  app.post<{ Body: UpsertPlatformCatalogBody }>(
+    '/platform-admin/connectivity/api-catalog',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        const entry = await createBackendApiCatalogEntry({
+          ...request.body,
+          category: request.body.category as never
+        });
+
+        return reply.status(201).send(entry);
+      } catch (error) {
+        return handleRouteError(error, reply);
+      }
+    }
+  );
+
+  app.put<{ Params: { id: string }; Body: UpsertPlatformCatalogBody }>(
+    '/platform-admin/connectivity/api-catalog/:id',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        const entry = await updateBackendApiCatalogEntry(request.params.id, {
+          ...request.body,
+          category: request.body.category as never
+        });
+
+        return reply.send(entry);
+      } catch (error) {
+        return handleRouteError(error, reply);
+      }
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/platform-admin/connectivity/api-catalog/:id',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        await deleteBackendApiCatalogEntry(request.params.id);
+
+        return reply.status(204).send();
       } catch (error) {
         return handleRouteError(error, reply);
       }

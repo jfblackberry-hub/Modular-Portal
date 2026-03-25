@@ -1,6 +1,7 @@
 import type { Prisma } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
 
+import { getBackendApiCatalogEntryById } from './backend-api-catalog-service';
 import { createConnectorForTenant } from './connector-service';
 
 type AuditContext = {
@@ -44,6 +45,23 @@ type ApplyCatalogApiInput = {
   name?: string;
   status?: string;
   fieldValues: Record<string, string>;
+};
+
+type ApplyRegistryEntryInput = {
+  entryId: string;
+  tenantId: string;
+  name?: string;
+  status?: string;
+  baseUrl: string;
+  endpointPath?: string;
+  method?: string;
+  authenticationType?: string;
+  authToken?: string;
+  apiKeyHeaderName?: string;
+  apiKeyValue?: string;
+  basicUsername?: string;
+  basicPassword?: string;
+  mappingKey?: string;
 };
 
 function trimValue(value: string | undefined) {
@@ -478,6 +496,63 @@ export async function applyCatalogEntryToTenant(
       label: definition.label,
       vendor: definition.vendor,
       category: definition.category
+    }
+  };
+}
+
+export async function applyRegistryEntryToTenant(
+  input: ApplyRegistryEntryInput,
+  context: AuditContext
+) {
+  const entry = await getBackendApiCatalogEntryById(input.entryId);
+  const connectorName = trimValue(input.name) || entry.name;
+  const status = trimValue(input.status).toUpperCase() || 'ACTIVE';
+
+  const fieldValues = {
+    baseUrl: input.baseUrl,
+    endpointPath: input.endpointPath || entry.endpoint,
+    method: input.method || 'GET',
+    authenticationType: input.authenticationType || 'none',
+    authToken: input.authToken,
+    apiKeyHeaderName: input.apiKeyHeaderName,
+    apiKeyValue: input.apiKeyValue,
+    basicUsername: input.basicUsername,
+    basicPassword: input.basicPassword,
+    mappingKey: input.mappingKey || entry.slug
+  } as Record<string, string | undefined>;
+
+  const config = {
+    baseUrl: requireField(fieldValues as Record<string, string>, 'baseUrl', 'Base URL'),
+    endpointPath: requireField(fieldValues as Record<string, string>, 'endpointPath', 'Endpoint Path'),
+    method: trimValue(fieldValues.method || 'GET').toUpperCase(),
+    authentication: buildAuthentication(fieldValues as Record<string, string>),
+    catalog: {
+      entryKey: entry.slug,
+      label: entry.name,
+      vendor: entry.vendor,
+      category: entry.category
+    },
+    mappingKey: optionalField(fieldValues as Record<string, string>, 'mappingKey') ?? entry.slug
+  } satisfies Prisma.InputJsonValue;
+
+  const connector = await createConnectorForTenant(
+    input.tenantId,
+    {
+      adapterKey: 'rest-api',
+      name: connectorName,
+      status,
+      config
+    },
+    context
+  );
+
+  return {
+    ...connector,
+    catalog: {
+      entryKey: entry.slug,
+      label: entry.name,
+      vendor: entry.vendor,
+      category: entry.category
     }
   };
 }

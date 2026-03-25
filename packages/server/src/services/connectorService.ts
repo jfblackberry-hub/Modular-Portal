@@ -27,8 +27,11 @@ export async function runConnectorSync(
   });
 
   publishInBackground('integration.completed', {
+    capabilityId: 'platform.integrations',
     id: randomUUID(),
     correlationId: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     timestamp: execution.connector.lastSyncAt ?? new Date(),
     tenantId: execution.connector.tenantId,
     type: 'integration.completed',

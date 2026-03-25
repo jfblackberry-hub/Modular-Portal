@@ -96,5 +96,8 @@ test('preview launch consumes an opaque artifact path without a query token', as
     response.headers.get('location'),
     'http://localhost/preview/preview-session-1'
   );
-  assert.match(response.headers.get('set-cookie') ?? '', /portal-session=/);
+  assert.match(
+    response.headers.get('set-cookie') ?? '',
+    /portal(?:_|-)session=/
+  );
 });

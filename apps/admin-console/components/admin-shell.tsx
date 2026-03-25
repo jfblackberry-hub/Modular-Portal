@@ -19,8 +19,6 @@ export function AdminShell({ children }: AdminShellProps) {
   const router = useRouter();
   const { session, isLoading, signOut, error } = useAdminSession();
   const isLoginRoute = pathname === '/login';
-  const isIsolatedAdminPlatformRoute =
-    pathname === '/admin' || pathname.startsWith('/admin/workspace/');
 
   useEffect(() => {
     if (!isLoading && !session && !isLoginRoute) {
@@ -34,7 +32,7 @@ export function AdminShell({ children }: AdminShellProps) {
     }
   }, [isLoading, pathname, router, session]);
 
-  if (isLoginRoute || isIsolatedAdminPlatformRoute) {
+  if (isLoginRoute) {
     return <>{children}</>;
   }
 

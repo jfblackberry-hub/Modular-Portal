@@ -5,14 +5,16 @@ import { PreviewRouteUnavailable } from '../../../../components/preview-route-un
 import { ProviderPortalLayout } from '../../../../components/provider/provider-portal-layout';
 import { TenantTheme } from '../../../../components/tenant-theme';
 import { getProviderPortalConfig } from '../../../../config/providerPortalConfig';
-import { billingPortalNavigationByAudience } from '../../../../lib/billing-portal-audience';
-import { getBrokerNavigationSections } from '../../../../lib/broker-portal-config';
-import { buildPortalNavigation } from '../../../../lib/navigation';
-import { getEnabledPlugins } from '../../../../lib/plugins';
+import { resolvePortalNavigation } from '../../../../lib/navigation';
+import { getPluginNavigationById } from '../../../../lib/plugins';
 import { resolvePortalExperience } from '../../../../lib/portal-experience';
 import { getPortalSessionUser } from '../../../../lib/portal-session';
 import { resolveProviderClinicLogoSrc } from '../../../../lib/provider-hero-branding';
 import { getProviderPortalSessionContext } from '../../../../lib/provider-portal-session';
+import {
+  isTenantModuleEnabledForUser,
+  type TenantPortalModuleId
+} from '../../../../lib/tenant-modules';
 import { getTenantBranding } from '../../../../lib/tenant-branding';
 import BrokerBookOfBusinessPage from '../../../broker/book-of-business/page';
 import BrokerCommissionsPage from '../../../broker/commissions/page';
@@ -231,19 +233,20 @@ export default async function PreviewSessionCatchAllPage({
     const branding = await getTenantBranding(sessionUser.tenant, sessionUser.id, {
       experience: resolvePortalExperience(sessionUser)
     });
+    const audience =
+      sessionUser.previewSession.portalType === 'broker'
+        ? 'broker'
+        : sessionUser.previewSession.portalType === 'employer'
+          ? 'employer'
+          : 'individual';
+    const navigation = await resolvePortalNavigation(sessionUser, { audience });
 
     return (
       <>
         <TenantTheme branding={branding} />
         <PortalShell
           branding={branding}
-          navigation={
-            sessionUser.previewSession.portalType === 'broker'
-              ? getBrokerNavigationSections()
-              : sessionUser.previewSession.portalType === 'employer'
-                ? billingPortalNavigationByAudience.employer
-                : billingPortalNavigationByAudience.individual
-          }
+          navigation={navigation}
           routePrefix={previewBasePath}
           searchBasePath={`${previewBasePath}/dashboard/search`}
           user={sessionUser}
@@ -265,6 +268,13 @@ export default async function PreviewSessionCatchAllPage({
       experience: 'provider'
     });
     const config = getProviderPortalConfig(variant);
+    const navigationItems = getPluginNavigationById('provider').filter((item) =>
+      item.moduleKeys.length > 0
+        ? item.moduleKeys.some((moduleKey) =>
+            isTenantModuleEnabledForUser(user, moduleKey as TenantPortalModuleId)
+          )
+        : true
+    );
     const providerClinicLogoSrc = resolveProviderClinicLogoSrc({
       tenantBrandingConfig: user.tenant.brandingConfig
     });
@@ -278,6 +288,7 @@ export default async function PreviewSessionCatchAllPage({
             logoUrl: providerClinicLogoSrc
           }}
           config={config}
+          navigationItems={navigationItems}
           routePrefix={previewBasePath}
           searchBasePath={`${previewBasePath}/provider/dashboard`}
           user={user}
@@ -291,43 +302,13 @@ export default async function PreviewSessionCatchAllPage({
   const branding = await getTenantBranding(sessionUser.tenant, sessionUser.id, {
     experience: resolvePortalExperience(sessionUser)
   });
-
-  if (sessionUser.previewSession.portalType === 'broker') {
-    return (
-      <>
-        <TenantTheme branding={branding} />
-        <PortalShell
-          branding={branding}
-          navigation={getBrokerNavigationSections()}
-          routePrefix={previewBasePath}
-          searchBasePath={`${previewBasePath}/dashboard/search`}
-          user={sessionUser}
-        >
-          {content}
-        </PortalShell>
-      </>
-    );
-  }
-
-  if (sessionUser.previewSession.portalType === 'employer') {
-    return (
-      <>
-        <TenantTheme branding={branding} />
-        <PortalShell
-          branding={branding}
-          navigation={billingPortalNavigationByAudience.employer}
-          routePrefix={previewBasePath}
-          searchBasePath={`${previewBasePath}/dashboard/search`}
-          user={sessionUser}
-        >
-          {content}
-        </PortalShell>
-      </>
-    );
-  }
-
-  const enabledPlugins = await getEnabledPlugins(sessionUser.tenant.id);
-  const navigation = buildPortalNavigation(sessionUser, enabledPlugins);
+  const audience =
+    sessionUser.previewSession.portalType === 'broker'
+      ? 'broker'
+      : sessionUser.previewSession.portalType === 'employer'
+        ? 'employer'
+        : 'member';
+  const navigation = await resolvePortalNavigation(sessionUser, { audience });
 
   return (
     <>

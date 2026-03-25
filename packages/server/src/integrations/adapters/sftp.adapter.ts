@@ -125,22 +125,20 @@ export const localFileAdapter: IntegrationAdapter<
         recordsProcessed += 1;
         eventsPublished += 1;
 
-        console.log('[connector] parsed record', {
+        context.logger.info('File integration parsed record', {
           adapterKey: 'local-file',
           fileName: entry.name,
           record
         });
 
-        context.logger.info('File integration parsed record', {
-          adapterKey: 'local-file',
-          fileName: entry.name
-        });
-
         await publish('connector.record.imported', {
+          capabilityId: 'platform.integrations',
           id: `${entry.name}:${recordsProcessed}`,
           correlationId: `${entry.name}:${recordsProcessed}`,
+          failureType: 'none',
+          orgUnitId: null,
           timestamp: new Date(),
-          tenantId: config.tenantId ?? null,
+          tenantId: config.tenantId ?? context.tenantId,
           type: 'connector.record.imported',
           payload: {
             adapterKey: 'local-file',

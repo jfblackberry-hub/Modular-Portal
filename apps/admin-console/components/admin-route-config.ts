@@ -168,9 +168,15 @@ const platformMenu: AdminMenuConfig = {
     },
     {
       key: 'configuration',
-      label: 'Modules',
+      label: 'Governance',
       icon: 'modules',
       items: [
+        {
+          key: 'licensing',
+          href: '/admin/platform/licensing',
+          label: 'Licensing',
+          description: 'Manage tenant licensing and module entitlements.'
+        },
         {
           key: 'platform-settings',
           href: '/admin/platform/settings',
@@ -320,7 +326,13 @@ const tenantMenu: AdminMenuConfig = {
               key: 'tenant-configuration',
               href: '/admin/tenant/configuration',
               label: 'Tenant Configuration',
-              description: 'Tenant branding, notifications, and configuration.'
+              description: 'Tenant branding, notifications, and operational configuration.'
+            },
+            {
+              key: 'tenant-licensing',
+              href: '/admin/tenant/licensing',
+              label: 'Licensing',
+              description: 'Manage tenant module entitlements.'
             },
             {
               key: 'tenant-documents',

@@ -1,5 +1,10 @@
 import type { AuditLog, Prisma, PrismaClient } from '@payer-portal/database';
 import { prisma } from '@payer-portal/database';
+import {
+  validateObservabilityContext,
+  type ObservabilityContext,
+  type ObservabilityFailureType
+} from '../observability/schema.js';
 
 type AuditLogClient = Pick<PrismaClient, 'auditLog'> | Prisma.TransactionClient;
 
@@ -47,14 +52,18 @@ export type AuditEventListResult = {
 };
 
 export type LogAuditEventInput = {
+  capabilityId?: string | null;
   tenantId: string;
   actorUserId?: string | null;
   action: string;
+  correlationId?: string | null;
   entityType: string;
   entityId?: string | null;
+  failureType?: ObservabilityFailureType | null;
   beforeState?: Prisma.InputJsonValue;
   afterState?: Prisma.InputJsonValue;
   metadata?: Prisma.InputJsonValue;
+  orgUnitId?: string | null;
   ipAddress?: string | null;
   userAgent?: string | null;
   client?: AuditLogClient;
@@ -70,9 +79,13 @@ export type AuditLogSink = {
 };
 
 type AuditCategoryLogInput = {
+  capabilityId?: string | null;
   tenantId: string;
   actorUserId?: string | null;
   action: string;
+  correlationId?: string | null;
+  failureType?: ObservabilityFailureType | null;
+  orgUnitId?: string | null;
   resourceType: string;
   resourceId?: string | null;
   beforeState?: Prisma.InputJsonValue;
@@ -192,18 +205,92 @@ export function buildAuditRequestMetadata(
 
 function buildAuditMetadata(
   metadata: Prisma.InputJsonValue | undefined,
-  request: AuditRequestMetadataInput | null | undefined
+  request: AuditRequestMetadataInput | null | undefined,
+  observability: ObservabilityContext
 ) {
   const metadataRecord = asObjectRecord(metadata);
 
-  if (!request) {
-    return metadataRecord ?? metadata;
-  }
-
   return {
     ...(metadataRecord ?? {}),
-    request: buildAuditRequestMetadata(request)
+    observability,
+    ...(request
+      ? {
+          request: buildAuditRequestMetadata(request)
+        }
+      : {})
   } satisfies Prisma.InputJsonObject;
+}
+
+function deriveCapabilityId(input: {
+  action: string;
+  entityType: string;
+}) {
+  const action = input.action.toLowerCase();
+  const entityType = input.entityType.toLowerCase();
+
+  if (action.startsWith('auth.') || entityType === 'route') {
+    return 'platform.identity';
+  }
+
+  if (action.startsWith('preview.session')) {
+    return 'platform.preview_sessions';
+  }
+
+  if (action.startsWith('job.') || entityType === 'job') {
+    return 'platform.jobs';
+  }
+
+  if (action.startsWith('notification.') || entityType === 'notification') {
+    return 'platform.notifications';
+  }
+
+  if (action.startsWith('integration.') || entityType === 'integration') {
+    return 'platform.integrations';
+  }
+
+  if (entityType === 'document') {
+    return 'platform.documents';
+  }
+
+  if (action.startsWith('tenant.') || entityType === 'tenant') {
+    return 'platform.tenants';
+  }
+
+  if (action.startsWith('role.') || entityType === 'role' || entityType === 'user') {
+    return 'platform.access';
+  }
+
+  return 'platform.audit';
+}
+
+function deriveFailureType(action: string) {
+  const normalized = action.toLowerCase();
+
+  if (normalized.includes('.failed')) {
+    if (normalized.includes('auth.authentication')) {
+      return 'authentication';
+    }
+
+    if (normalized.includes('auth.authorization')) {
+      return 'authorization';
+    }
+
+    if (normalized.includes('notification')) {
+      return 'notification';
+    }
+
+    if (normalized.includes('integration')) {
+      return 'integration';
+    }
+
+    if (normalized.includes('job')) {
+      return 'job';
+    }
+
+    return 'unknown';
+  }
+
+  return 'none';
 }
 
 const databaseAuditLogSink: AuditLogSink = {
@@ -240,10 +327,26 @@ export async function logAuditEvent(
   input: LogAuditEventInput
 ): Promise<AuditLog> {
   try {
+    const observability = validateObservabilityContext({
+      capabilityId:
+        input.capabilityId ??
+        deriveCapabilityId({
+          action: input.action,
+          entityType: input.entityType
+        }),
+      correlationId: input.correlationId ?? null,
+      failureType: input.failureType ?? deriveFailureType(input.action),
+      orgUnitId: input.orgUnitId,
+      tenantId: input.tenantId
+    });
+    const metadata = buildAuditMetadata(input.metadata, null, observability);
     let primaryRecord: AuditLog | null = null;
 
     for (const sink of auditLogSinks) {
-      const sinkRecord = await sink.write(input);
+      const sinkRecord = await sink.write({
+        ...input,
+        metadata
+      });
       if (sinkRecord && !primaryRecord) {
         primaryRecord = sinkRecord;
       }
@@ -269,15 +372,27 @@ export async function logAuditEvent(
 export async function logAuthenticationEvent(
   input: AuditCategoryLogInput
 ): Promise<AuditLog> {
+  const observability = validateObservabilityContext({
+    capabilityId:
+      input.capabilityId ?? deriveCapabilityId({ action: input.action, entityType: input.resourceType }),
+    correlationId: input.correlationId ?? input.request?.correlationId ?? null,
+    failureType: input.failureType ?? deriveFailureType(input.action),
+    orgUnitId: input.orgUnitId,
+    tenantId: input.tenantId
+  });
   return logAuditEvent({
+    capabilityId: observability.capabilityId,
     tenantId: input.tenantId,
     actorUserId: input.actorUserId,
     action: input.action,
+    correlationId: observability.correlationId,
     entityType: normalizeRequired(input.resourceType, 'resourceType'),
     entityId: normalizeOptional(input.resourceId),
+    failureType: observability.failureType as ObservabilityFailureType,
     beforeState: input.beforeState,
     afterState: input.afterState,
-    metadata: buildAuditMetadata(input.metadata, input.request),
+    metadata: buildAuditMetadata(input.metadata, input.request, observability),
+    orgUnitId: observability.orgUnitId,
     ipAddress: input.ipAddress,
     userAgent: input.userAgent,
     client: input.client
@@ -287,15 +402,31 @@ export async function logAuthenticationEvent(
 export async function logAuthorizationFailure(
   input: Omit<AuditCategoryLogInput, 'action'>
 ): Promise<AuditLog> {
+  const observability = validateObservabilityContext({
+    capabilityId:
+      input.capabilityId ??
+      deriveCapabilityId({
+        action: 'auth.authorization.failed',
+        entityType: input.resourceType
+      }),
+    correlationId: input.correlationId ?? input.request?.correlationId ?? null,
+    failureType: input.failureType ?? 'authorization',
+    orgUnitId: input.orgUnitId,
+    tenantId: input.tenantId
+  });
   return logAuditEvent({
+    capabilityId: observability.capabilityId,
     tenantId: input.tenantId,
     actorUserId: input.actorUserId,
     action: 'auth.authorization.failed',
+    correlationId: observability.correlationId,
     entityType: normalizeRequired(input.resourceType, 'resourceType'),
     entityId: normalizeOptional(input.resourceId),
+    failureType: observability.failureType as ObservabilityFailureType,
     beforeState: input.beforeState,
     afterState: input.afterState,
-    metadata: buildAuditMetadata(input.metadata, input.request),
+    metadata: buildAuditMetadata(input.metadata, input.request, observability),
+    orgUnitId: observability.orgUnitId,
     ipAddress: input.ipAddress,
     userAgent: input.userAgent,
     client: input.client
@@ -305,15 +436,27 @@ export async function logAuthorizationFailure(
 export async function logAdminAction(
   input: AuditCategoryLogInput
 ): Promise<AuditLog> {
+  const observability = validateObservabilityContext({
+    capabilityId:
+      input.capabilityId ?? deriveCapabilityId({ action: input.action, entityType: input.resourceType }),
+    correlationId: input.correlationId ?? input.request?.correlationId ?? null,
+    failureType: input.failureType ?? deriveFailureType(input.action),
+    orgUnitId: input.orgUnitId,
+    tenantId: input.tenantId
+  });
   return logAuditEvent({
+    capabilityId: observability.capabilityId,
     tenantId: input.tenantId,
     actorUserId: input.actorUserId,
     action: input.action,
+    correlationId: observability.correlationId,
     entityType: normalizeRequired(input.resourceType, 'resourceType'),
     entityId: normalizeOptional(input.resourceId),
+    failureType: observability.failureType as ObservabilityFailureType,
     beforeState: input.beforeState,
     afterState: input.afterState,
-    metadata: buildAuditMetadata(input.metadata, input.request),
+    metadata: buildAuditMetadata(input.metadata, input.request, observability),
+    orgUnitId: observability.orgUnitId,
     ipAddress: input.ipAddress,
     userAgent: input.userAgent,
     client: input.client
@@ -323,15 +466,27 @@ export async function logAdminAction(
 export async function logPersonaSwitchEvent(
   input: AuditCategoryLogInput
 ): Promise<AuditLog> {
+  const observability = validateObservabilityContext({
+    capabilityId:
+      input.capabilityId ?? deriveCapabilityId({ action: input.action, entityType: input.resourceType }),
+    correlationId: input.correlationId ?? input.request?.correlationId ?? null,
+    failureType: input.failureType ?? deriveFailureType(input.action),
+    orgUnitId: input.orgUnitId,
+    tenantId: input.tenantId
+  });
   return logAuditEvent({
+    capabilityId: observability.capabilityId,
     tenantId: input.tenantId,
     actorUserId: input.actorUserId,
     action: input.action,
+    correlationId: observability.correlationId,
     entityType: normalizeRequired(input.resourceType, 'resourceType'),
     entityId: normalizeOptional(input.resourceId),
+    failureType: observability.failureType as ObservabilityFailureType,
     beforeState: input.beforeState,
     afterState: input.afterState,
-    metadata: buildAuditMetadata(input.metadata, input.request),
+    metadata: buildAuditMetadata(input.metadata, input.request, observability),
+    orgUnitId: observability.orgUnitId,
     ipAddress: input.ipAddress,
     userAgent: input.userAgent,
     client: input.client
@@ -341,15 +496,27 @@ export async function logPersonaSwitchEvent(
 export async function logSensitiveDataAccess(
   input: AuditCategoryLogInput
 ): Promise<AuditLog> {
+  const observability = validateObservabilityContext({
+    capabilityId:
+      input.capabilityId ?? deriveCapabilityId({ action: input.action, entityType: input.resourceType }),
+    correlationId: input.correlationId ?? input.request?.correlationId ?? null,
+    failureType: input.failureType ?? deriveFailureType(input.action),
+    orgUnitId: input.orgUnitId,
+    tenantId: input.tenantId
+  });
   return logAuditEvent({
+    capabilityId: observability.capabilityId,
     tenantId: input.tenantId,
     actorUserId: input.actorUserId,
     action: input.action,
+    correlationId: observability.correlationId,
     entityType: normalizeRequired(input.resourceType, 'resourceType'),
     entityId: normalizeOptional(input.resourceId),
+    failureType: observability.failureType as ObservabilityFailureType,
     beforeState: input.beforeState,
     afterState: input.afterState,
-    metadata: buildAuditMetadata(input.metadata, input.request),
+    metadata: buildAuditMetadata(input.metadata, input.request, observability),
+    orgUnitId: observability.orgUnitId,
     ipAddress: input.ipAddress,
     userAgent: input.userAgent,
     client: input.client
@@ -359,15 +526,27 @@ export async function logSensitiveDataAccess(
 export async function logIntegrationEvent(
   input: AuditCategoryLogInput
 ): Promise<AuditLog> {
+  const observability = validateObservabilityContext({
+    capabilityId:
+      input.capabilityId ?? deriveCapabilityId({ action: input.action, entityType: input.resourceType }),
+    correlationId: input.correlationId ?? input.request?.correlationId ?? null,
+    failureType: input.failureType ?? deriveFailureType(input.action),
+    orgUnitId: input.orgUnitId,
+    tenantId: input.tenantId
+  });
   return logAuditEvent({
+    capabilityId: observability.capabilityId,
     tenantId: input.tenantId,
     actorUserId: input.actorUserId,
     action: input.action,
+    correlationId: observability.correlationId,
     entityType: normalizeRequired(input.resourceType, 'resourceType'),
     entityId: normalizeOptional(input.resourceId),
+    failureType: observability.failureType as ObservabilityFailureType,
     beforeState: input.beforeState,
     afterState: input.afterState,
-    metadata: buildAuditMetadata(input.metadata, input.request),
+    metadata: buildAuditMetadata(input.metadata, input.request, observability),
+    orgUnitId: observability.orgUnitId,
     ipAddress: input.ipAddress,
     userAgent: input.userAgent,
     client: input.client

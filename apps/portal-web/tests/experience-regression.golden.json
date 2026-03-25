@@ -1,0 +1,67 @@
+{
+  "member": [
+    {
+      "title": "Member portal",
+      "items": [
+        { "label": "Home", "href": "/dashboard" },
+        { "label": "Benefits", "href": "/dashboard/benefits" },
+        { "label": "Claims", "href": "/dashboard/claims" },
+        { "label": "ID card", "href": "/dashboard/id-card" },
+        { "label": "Providers", "href": "/dashboard/providers" },
+        { "label": "Authorizations", "href": "/dashboard/authorizations" },
+        { "label": "Messages", "href": "/dashboard/messages" },
+        { "label": "Documents", "href": "/dashboard/documents" },
+        { "label": "Care Cost Estimator", "href": "/dashboard/care-cost-estimator" },
+        { "label": "Help", "href": "/dashboard/help" }
+      ]
+    }
+  ],
+  "employer": [
+    {
+      "title": "Employer portal",
+      "items": [
+        { "label": "Home", "href": "/employer" },
+        { "label": "Enrollment", "href": "/employer/enrollment" },
+        { "label": "Eligibility Changes", "href": "/employer/eligibility-changes" },
+        { "label": "Employees / Members", "href": "/employer/employees" },
+        { "label": "Billing", "href": "/employer/billing" },
+        { "label": "Reports", "href": "/employer/reports" },
+        { "label": "Documents", "href": "/employer/documents" },
+        { "label": "Support", "href": "/employer/support" },
+        { "label": "Admin", "href": "/employer/admin" }
+      ]
+    }
+  ],
+  "broker": [
+    {
+      "title": "Broker portal",
+      "items": [
+        { "label": "Dashboard", "href": "/broker" },
+        { "label": "Book of Business", "href": "/broker/book-of-business" },
+        { "label": "Quotes", "href": "/broker/quotes" },
+        { "label": "Renewals", "href": "/broker/renewals" },
+        { "label": "Enrollments", "href": "/broker/enrollments" },
+        { "label": "Commissions", "href": "/broker/commissions" },
+        { "label": "Documents", "href": "/broker/documents" },
+        { "label": "Tasks / Cases", "href": "/broker/tasks" },
+        { "label": "Support / Training", "href": "/broker/support" }
+      ]
+    }
+  ],
+  "provider": [
+    {
+      "title": "Provider Services",
+      "items": [
+        { "label": "Dashboard", "href": "/provider/dashboard" },
+        { "label": "Eligibility", "href": "/provider/eligibility" },
+        { "label": "Authorizations", "href": "/provider/authorizations" },
+        { "label": "Claims & Payments", "href": "/provider/claims" },
+        { "label": "Patients", "href": "/provider/patients" },
+        { "label": "Documents", "href": "/provider/documents" },
+        { "label": "Messages", "href": "/provider/messages" },
+        { "label": "Support", "href": "/provider/support" },
+        { "label": "Admin", "href": "/provider/admin" }
+      ]
+    }
+  ]
+}

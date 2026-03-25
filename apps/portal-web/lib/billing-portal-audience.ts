@@ -1,18 +1,6 @@
-import { getBrokerNavigationSections } from './broker-portal-config';
 import type { PortalSessionUser } from './portal-session';
 
 export type BillingPortalAudience = 'employer' | 'individual' | 'broker';
-
-export type BillingPortalNavigationItem = {
-  label: string;
-  href: string;
-  description: string;
-};
-
-export type BillingPortalNavigationSection = {
-  title: string;
-  items: BillingPortalNavigationItem[];
-};
 
 const EMPLOYER_ROLES = new Set([
   'employer_group_admin',
@@ -41,118 +29,6 @@ const INDIVIDUAL_ROLES = new Set([
   'platform_admin',
   'platform-admin'
 ]);
-
-export const billingPortalNavigationByAudience: Record<
-  BillingPortalAudience,
-  BillingPortalNavigationSection[]
-> = {
-  employer: [
-    {
-      title: 'Employer E&B Portal',
-      items: [
-        {
-          label: 'Home',
-          href: '/employer',
-          description: 'Employer enrollment and billing command center.'
-        },
-        {
-          label: 'Employees / Members',
-          href: '/employer/employees',
-          description: 'Manage employee roster, covered lives, and dependent administration.'
-        },
-        {
-          label: 'Enrollment',
-          href: '/employer/enrollment',
-          description: 'Track open enrollment progress and employer group readiness.'
-        },
-        {
-          label: 'Eligibility Changes',
-          href: '/employer/eligibility-changes',
-          description: 'Review pending adds, terminations, status changes, and approvals.'
-        },
-        {
-          label: 'Billing',
-          href: '/employer/billing',
-          description: 'Review invoices, payments, and group billing activity.'
-        },
-        {
-          label: 'Reports',
-          href: '/employer/reports',
-          description: 'Run employer enrollment and billing reports.'
-        },
-        {
-          label: 'Documents',
-          href: '/employer/documents',
-          description: 'Upload and review census, billing, and plan documents.'
-        },
-        {
-          label: 'Support',
-          href: '/employer/support',
-          description: 'Access support resources and case follow-up.'
-        },
-        {
-          label: 'Admin',
-          href: '/employer/admin',
-          description: 'Manage employer settings, users, and delivery preferences.'
-        }
-      ]
-    }
-  ],
-  individual: [
-    {
-      title: 'Shop and Enroll Individual',
-      items: [
-        {
-          label: 'Home',
-          href: '/individual',
-          description: 'Consumer enrollment and billing overview.'
-        },
-        {
-          label: 'Shop Plans',
-          href: '/individual/shop-plans',
-          description: 'Review and compare plan options for the household.'
-        },
-        {
-          label: 'My Application',
-          href: '/individual/my-application',
-          description: 'Track enrollment progress, renewals, and required actions.'
-        },
-        {
-          label: 'My Coverage',
-          href: '/individual/my-coverage',
-          description: 'Review active coverage, costs, and plan details.'
-        },
-        {
-          label: 'Household',
-          href: '/individual/household',
-          description: 'Manage household members, dependents, and verification.'
-        },
-        {
-          label: 'Billing & Payments',
-          href: '/individual/billing-payments',
-          description: 'Manage premium payments, invoices, and autopay.'
-        },
-        {
-          label: 'Documents',
-          href: '/individual/documents',
-          description: 'Upload and review required documents and notices.'
-        },
-        {
-          label: 'Support',
-          href: '/individual/support',
-          description: 'Get help with enrollment, billing, and documentation.'
-        },
-        {
-          label: 'Profile',
-          href: '/individual/profile',
-          description: 'Review subscriber identity and account details.'
-        }
-      ]
-    }
-  ],
-  broker: getBrokerNavigationSections()
-  
-};
 
 const legacyRouteMaps: Record<
   BillingPortalAudience,

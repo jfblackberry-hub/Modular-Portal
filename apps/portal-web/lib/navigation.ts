@@ -1,6 +1,16 @@
-import type { PluginManifest } from '@payer-portal/plugin-sdk';
+import type {
+  PlatformFeatureFlag,
+  PluginAudience,
+  PluginManifest,
+  ResolvedPluginNavigationItem
+} from '@payer-portal/plugin-sdk';
+import { getPluginNavigation } from '@payer-portal/plugin-sdk';
 
-import { getBrokerNavigationSections } from './broker-portal-config';
+import {
+  getEnabledPluginsForTenant,
+  getPlatformFeatureFlags,
+  isCapabilityEnabledForTenant
+} from './plugins';
 import type { PortalSessionUser } from './portal-session';
 import { config } from './server-runtime';
 import type { TenantPortalModuleId } from './tenant-modules';
@@ -11,7 +21,6 @@ export interface PortalNavigationItem {
   external?: boolean;
   href: string;
   label: string;
-  moduleId?: TenantPortalModuleId;
   requiredPermissions?: string[];
 }
 
@@ -20,157 +29,18 @@ export interface PortalNavigationSection {
   title: string;
 }
 
-const memberNavigationSections: PortalNavigationSection[] = [
-  {
-    title: 'Member portal',
-    items: [
-      {
-        label: 'Home',
-        href: '/dashboard',
-        description: 'Plan summary, reminders, and quick actions.',
-        moduleId: 'member_home'
-      },
-      {
-        label: 'Benefits',
-        href: '/dashboard/benefits',
-        description: 'Coverage details and plan highlights.',
-        moduleId: 'member_benefits',
-        requiredPermissions: ['member.view']
-      },
-      {
-        label: 'Claims',
-        href: '/dashboard/claims',
-        description: 'Recent claims and payment activity.',
-        moduleId: 'member_claims',
-        requiredPermissions: ['member.view']
-      },
-      {
-        label: 'ID card',
-        href: '/dashboard/id-card',
-        description: 'Digital member ID card and pharmacy details.',
-        moduleId: 'member_id_card',
-        requiredPermissions: ['member.view']
-      },
-      {
-        label: 'Providers',
-        href: '/dashboard/providers',
-        description: 'Find care and search provider options.',
-        moduleId: 'member_providers',
-        requiredPermissions: ['member.view']
-      },
-      {
-        label: 'Authorizations',
-        href: '/dashboard/authorizations',
-        description: 'Track prior authorization requests and next steps.',
-        moduleId: 'member_authorizations',
-        requiredPermissions: ['member.view']
-      },
-      {
-        label: 'Messages',
-        href: '/dashboard/messages',
-        description: 'Secure inbox and service requests.',
-        moduleId: 'member_messages',
-        requiredPermissions: ['member.view']
-      },
-      {
-        label: 'Documents',
-        href: '/dashboard/documents',
-        description: 'Member-facing document delivery and history.',
-        moduleId: 'member_documents',
-        requiredPermissions: ['member.view']
-      },
-      {
-        label: 'Care Cost Estimator',
-        href: '/dashboard/care-cost-estimator',
-        description: 'Compare providers and estimate out-of-pocket costs before you schedule care.',
-        moduleId: 'member_care_cost_estimator',
-        requiredPermissions: ['member.view']
-      },
-      {
-        label: 'Help',
-        href: '/dashboard/help',
-        description: 'Support contacts, FAQs, and accessibility help.',
-        moduleId: 'member_support',
-        requiredPermissions: ['member.view']
-      }
-    ]
-  },
-];
+export interface BuildPortalNavigationOptions {
+  audience?: PluginAudience;
+}
 
-const employerNavigationSections: PortalNavigationSection[] = [
-  {
-    title: 'Employer portal',
-    items: [
-      {
-        label: 'Command Center',
-        href: '/employer',
-        description: 'Employer overview, alerts, and primary actions.',
-        moduleId: 'billing_enrollment',
-        requiredPermissions: ['billing_enrollment.view']
-      },
-      {
-        label: 'Enrollment',
-        href: '/employer/enrollment',
-        description: 'Track group enrollment readiness and open enrollment progress.',
-        moduleId: 'billing_enrollment',
-        requiredPermissions: ['billing_enrollment.view']
-      },
-      {
-        label: 'Eligibility Changes',
-        href: '/employer/eligibility-changes',
-        description: 'Review pending adds, terms, approvals, and change requests.',
-        moduleId: 'billing_enrollment',
-        requiredPermissions: ['billing_enrollment.view']
-      },
-      {
-        label: 'Employees',
-        href: '/employer/employees',
-        description: 'Search and manage employee census records.',
-        moduleId: 'billing_enrollment',
-        requiredPermissions: ['billing_enrollment.view']
-      },
-      {
-        label: 'Administration',
-        href: '/employer/admin',
-        description: 'Manage employer profile, administrators, and configuration settings.',
-        moduleId: 'billing_enrollment',
-        requiredPermissions: ['billing_enrollment.view']
-      },
-      {
-        label: 'Billing',
-        href: '/employer/billing',
-        description: 'Review invoices, payments, and premium activity.',
-        moduleId: 'billing_enrollment',
-        requiredPermissions: ['billing_enrollment.view']
-      },
-      {
-        label: 'Documents',
-        href: '/employer/documents',
-        description: 'Upload and track census and enrollment documents.',
-        moduleId: 'billing_enrollment',
-        requiredPermissions: ['billing_enrollment.view']
-      },
-      {
-        label: 'Reports',
-        href: '/employer/reports',
-        description: 'Run employer enrollment and billing reporting.',
-        moduleId: 'billing_enrollment',
-        requiredPermissions: ['billing_enrollment.view']
-      },
-      {
-        label: 'Support',
-        href: '/employer/support',
-        description: 'Get enrollment and billing support resources.',
-        moduleId: 'billing_enrollment',
-        requiredPermissions: ['billing_enrollment.view']
-      }
-    ]
-  }
-];
-
-const pluginModuleMap: Record<string, TenantPortalModuleId> = {
-  'billing-enrollment': 'billing_enrollment'
-};
+const BROKER_ROLES = new Set([
+  'broker',
+  'broker_admin',
+  'broker_staff',
+  'broker_readonly',
+  'broker_read_only',
+  'account_executive'
+]);
 
 function hasRequiredPermissions(
   userPermissions: string[],
@@ -189,62 +59,99 @@ function hasRequiredRoles(userRoles: string[], requiredRoles: string[] = []) {
   return requiredRoles.some((role) => userRoles.includes(role));
 }
 
-export function filterNavigationItems(
-  items: PortalNavigationItem[],
-  user: PortalSessionUser
-) {
-  return items.filter((item) => {
-    const hasPermission = hasRequiredPermissions(user.permissions, item.requiredPermissions);
-    const hasModuleAccess = item.moduleId ? isTenantModuleEnabledForUser(user, item.moduleId) : true;
-    return hasPermission && hasModuleAccess;
-  });
+export function resolveNavigationAudience(
+  user: PortalSessionUser,
+  explicitAudience?: PluginAudience
+): PluginAudience {
+  if (explicitAudience) {
+    return explicitAudience;
+  }
+
+  if (
+    user.landingContext === 'broker' ||
+    user.roles.some((role) => BROKER_ROLES.has(role))
+  ) {
+    return 'broker';
+  }
+
+  if (user.landingContext === 'employer') {
+    return 'employer';
+  }
+
+  if (user.landingContext === 'provider') {
+    return 'provider';
+  }
+
+  return 'member';
 }
 
-export function buildPortalNavigation(
+function isNavigationItemVisible(
+  item: ResolvedPluginNavigationItem,
   user: PortalSessionUser,
-  plugins: PluginManifest[]
+  featureFlags: PlatformFeatureFlag[],
+  audience: PluginAudience
 ) {
-  const isBrokerUser =
-    user.landingContext === 'broker' ||
-    user.roles.includes('broker') ||
-    user.roles.includes('broker_admin') ||
-    user.roles.includes('broker_staff') ||
-    user.roles.includes('broker_readonly') ||
-    user.roles.includes('broker_read_only') ||
-    user.roles.includes('account_executive');
-  const isEmployerUser =
-    user.landingContext === 'employer' ||
-    user.roles.includes('employer_group_admin');
-  const baseNavigationSections = isBrokerUser
-    ? getBrokerNavigationSections()
-    : isEmployerUser
-      ? employerNavigationSections
-      : memberNavigationSections;
+  const matchesAudience =
+    item.audiences.length === 0 || item.audiences.includes(audience);
+  const hasPermission = hasRequiredPermissions(
+    user.permissions,
+    item.requiredPermissions
+  );
+  const hasRole = hasRequiredRoles(user.roles, item.requiredRoles);
+  const hasModuleAccess =
+    item.moduleKeys.length === 0 ||
+    item.moduleKeys.some((moduleKey) =>
+      isTenantModuleEnabledForUser(user, moduleKey as TenantPortalModuleId)
+    );
+  const hasFeatureAccess = isCapabilityEnabledForTenant(
+    featureFlags,
+    item.featureFlagKeys,
+    user.tenant.id
+  );
 
-  const coreSections = baseNavigationSections
-    .map((section) => ({
-      title: section.title,
-      items: filterNavigationItems(section.items, user)
-    }))
-    .filter((section) => section.items.length > 0);
+  return (
+    matchesAudience &&
+    hasPermission &&
+    hasRole &&
+    hasModuleAccess &&
+    hasFeatureAccess
+  );
+}
 
-  const pluginItems = plugins
-    .filter((plugin) =>
-      hasRequiredPermissions(user.permissions, plugin.requiredPermissions) &&
-      hasRequiredRoles(user.roles, plugin.requiredRoles) &&
-      (pluginModuleMap[plugin.id]
-        ? isTenantModuleEnabledForUser(user, pluginModuleMap[plugin.id])
-        : true)
-    )
-    .flatMap((plugin) =>
-      plugin.navigation.map((item) => ({
+function buildManifestNavigationSections(
+  user: PortalSessionUser,
+  plugins: PluginManifest[],
+  featureFlags: PlatformFeatureFlag[],
+  audience: PluginAudience
+) {
+  const sections = new Map<string, PortalNavigationItem[]>();
+
+  for (const plugin of plugins) {
+    for (const item of getPluginNavigation(plugin)) {
+      if (!isNavigationItemVisible(item, user, featureFlags, audience)) {
+        continue;
+      }
+
+      const sectionTitle = item.sectionTitle;
+      const sectionItems = sections.get(sectionTitle) ?? [];
+      sectionItems.push({
         label: item.label,
         href: item.href,
-        description: `${plugin.name} plugin workspace`,
-        requiredPermissions: plugin.requiredPermissions
-      }))
-    );
+        description: item.description ?? `${plugin.name} capability`,
+        external: item.external,
+        requiredPermissions: item.requiredPermissions
+      });
+      sections.set(sectionTitle, sectionItems);
+    }
+  }
 
+  return Array.from(sections.entries()).map(([title, items]) => ({
+    title,
+    items
+  }));
+}
+
+function buildAdminNavigation(user: PortalSessionUser) {
   const adminItems: PortalNavigationItem[] = [];
 
   if (
@@ -255,7 +162,8 @@ export function buildPortalNavigation(
     adminItems.push({
       label: 'Tenant admin',
       href: `${config.serviceEndpoints.admin}/admin/tenant/health`,
-      description: 'Manage members, documents, notifications, and tenant settings.',
+      description:
+        'Manage members, documents, notifications, and tenant settings.',
       external: true
     });
   }
@@ -272,21 +180,39 @@ export function buildPortalNavigation(
     });
   }
 
-  const sections = [...coreSections];
+  return adminItems.length > 0
+    ? [
+        {
+          title: 'Admin',
+          items: adminItems
+        }
+      ]
+    : [];
+}
 
-  if (adminItems.length > 0) {
-    sections.push({
-      title: 'Admin',
-      items: adminItems
-    });
-  }
+export function buildPortalNavigation(
+  user: PortalSessionUser,
+  plugins: PluginManifest[],
+  featureFlags: PlatformFeatureFlag[],
+  options: BuildPortalNavigationOptions = {}
+) {
+  const audience = resolveNavigationAudience(user, options.audience);
+  const manifestSections = buildManifestNavigationSections(
+    user,
+    plugins,
+    featureFlags,
+    audience
+  );
 
-  if (pluginItems.length > 0) {
-    sections.push({
-      title: 'Programs',
-      items: pluginItems
-    });
-  }
+  return [...manifestSections, ...buildAdminNavigation(user)];
+}
 
-  return sections;
+export async function resolvePortalNavigation(
+  user: PortalSessionUser,
+  options: BuildPortalNavigationOptions = {}
+) {
+  const featureFlags = await getPlatformFeatureFlags();
+  const plugins = getEnabledPluginsForTenant(featureFlags, user.tenant.id);
+
+  return buildPortalNavigation(user, plugins, featureFlags, options);
 }

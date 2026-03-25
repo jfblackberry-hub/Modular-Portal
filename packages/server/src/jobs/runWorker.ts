@@ -3,6 +3,11 @@ import { createJobWorker } from './jobWorker.js';
 import { jobWorkerRuntimeConfig } from './runtime-config.js';
 
 const logger = createStructuredLogger({
+  observability: {
+    capabilityId: 'platform.jobs',
+    failureType: 'none',
+    tenantId: 'platform'
+  },
   serviceName: jobWorkerRuntimeConfig.observability.serviceName
 });
 

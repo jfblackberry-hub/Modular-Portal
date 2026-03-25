@@ -110,8 +110,11 @@ export async function createNotification(
   });
 
   publishInBackground('notification.requested', {
+    capabilityId: 'platform.notifications',
     id: randomUUID(),
     correlationId: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     timestamp: new Date(),
     tenantId: notification.tenantId,
     type: 'notification.requested',
@@ -123,7 +126,17 @@ export async function createNotification(
     }
   });
 
-  await sendNotification(notification.id);
+  await enqueueJob({
+    type: 'notification.send',
+    tenantId: notification.tenantId,
+    payload: {
+      notificationId: notification.id,
+      channel:
+        notification.channel === NOTIFICATION_CHANNEL.EMAIL ? 'email' : 'in_app',
+      recipientId: notification.userId ?? undefined,
+      templateKey: notification.template
+    }
+  });
 
   return prisma.notification.findFirstOrThrow({
     where: {
@@ -142,18 +155,6 @@ export async function sendNotification(notificationId: string) {
 
   if (!notification) {
     throw new Error('Notification not found');
-  }
-
-  const settings = await getNotificationSettingsForTenant(notification.tenantId);
-
-  if (
-    (notification.channel === NOTIFICATION_CHANNEL.EMAIL && !settings.emailEnabled) ||
-    (notification.channel === NOTIFICATION_CHANNEL.IN_APP && !settings.inAppEnabled)
-  ) {
-    return markNotificationStatus(notification.id, {
-      status: NOTIFICATION_STATUS.FAILED,
-      sentAt: null
-    });
   }
 
   return enqueueJob({
@@ -199,8 +200,11 @@ export async function deliverNotification(notificationId: string) {
     });
 
     publishInBackground('notification.sent', {
+      capabilityId: 'platform.notifications',
       id: randomUUID(),
       correlationId: randomUUID(),
+      failureType: 'none',
+      orgUnitId: null,
       timestamp: sentNotification.sentAt ?? new Date(),
       tenantId: sentNotification.tenantId,
       type: 'notification.sent',
@@ -255,8 +259,11 @@ export async function deliverNotification(notificationId: string) {
   });
 
   publishInBackground('notification.sent', {
+    capabilityId: 'platform.notifications',
     id: randomUUID(),
     correlationId: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     timestamp: sentNotification.sentAt ?? new Date(),
     tenantId: sentNotification.tenantId,
     type: 'notification.sent',

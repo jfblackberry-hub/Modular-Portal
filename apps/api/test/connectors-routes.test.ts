@@ -33,10 +33,7 @@ async function cleanupTestData() {
 
   await prisma.connectorConfig.deleteMany({
     where: {
-      OR: [
-        { name: TEST_CONNECTOR_NAME },
-        { name: 'Should Not Update' }
-      ]
+      OR: [{ name: TEST_CONNECTOR_NAME }, { name: 'Should Not Update' }]
     }
   });
 
@@ -200,7 +197,10 @@ async function createFixtureData() {
   };
 }
 
-function createTenantAdminToken(user: { id: string; email: string }, tenantId: string) {
+function createTenantAdminToken(
+  user: { id: string; email: string },
+  tenantId: string
+) {
   return createAccessToken({
     userId: user.id,
     email: user.email,
@@ -209,7 +209,10 @@ function createTenantAdminToken(user: { id: string; email: string }, tenantId: s
   });
 }
 
-function createEndUserToken(user: { id: string; email: string }, tenantId: string) {
+function createEndUserToken(
+  user: { id: string; email: string },
+  tenantId: string
+) {
   return createAccessToken({
     userId: user.id,
     email: user.email,
@@ -267,7 +270,9 @@ test('tenant admins can manage connectors and sync jobs are enqueued with audit 
   assert.equal(
     listResponse
       .json()
-      .some((connector: { id: string }) => connector.id === createdConnector.id),
+      .some(
+        (connector: { id: string }) => connector.id === createdConnector.id
+      ),
     true
   );
 
@@ -351,7 +356,10 @@ test('non-admin users are blocked and tenant isolation is enforced', async () =>
   const { adminUser, memberUser, otherTenant } = await createFixtureData();
   const app = Fastify();
   await connectorRoutes(app);
-  const adminToken = createTenantAdminToken(adminUser, adminUser.tenantId ?? '');
+  const adminToken = createTenantAdminToken(
+    adminUser,
+    adminUser.tenantId ?? ''
+  );
   const memberToken = createEndUserToken(memberUser, otherTenant.id);
 
   const foreignConnector = await prisma.connectorConfig.create({
@@ -361,7 +369,9 @@ test('non-admin users are blocked and tenant isolation is enforced', async () =>
       name: 'Should Not Update',
       status: 'ACTIVE',
       config: {
-        directoryPath: await mkdtemp(path.join(os.tmpdir(), 'connector-foreign-'))
+        directoryPath: await mkdtemp(
+          path.join(os.tmpdir(), 'connector-foreign-')
+        )
       }
     }
   });
@@ -385,6 +395,55 @@ test('non-admin users are blocked and tenant isolation is enforced', async () =>
   });
 
   assert.equal(isolatedResponse.statusCode, 404);
+
+  await app.close();
+});
+
+test('tenant-scoped connector routes reject client-supplied tenantId and foreign orgUnitId', async () => {
+  const { adminUser, tenant, otherTenant } = await createFixtureData();
+  const app = Fastify();
+  await connectorRoutes(app);
+  const adminToken = createTenantAdminToken(adminUser, tenant.id);
+
+  const foreignOrgUnit = await prisma.organizationUnit.create({
+    data: {
+      tenantId: otherTenant.id,
+      type: 'DEPARTMENT',
+      name: 'Foreign Department'
+    }
+  });
+
+  const crossTenantResponse = await app.inject({
+    method: 'GET',
+    url: `/api/connectors?tenant_id=${otherTenant.id}`,
+    headers: {
+      authorization: `Bearer ${adminToken}`
+    }
+  });
+
+  assert.equal(crossTenantResponse.statusCode, 400, crossTenantResponse.body);
+  assert.match(
+    crossTenantResponse.body,
+    /Client-supplied tenantId is not allowed/i
+  );
+
+  const invalidOrgUnitResponse = await app.inject({
+    method: 'GET',
+    url: `/api/connectors?orgUnitId=${foreignOrgUnit.id}`,
+    headers: {
+      authorization: `Bearer ${adminToken}`
+    }
+  });
+
+  assert.equal(
+    invalidOrgUnitResponse.statusCode,
+    403,
+    invalidOrgUnitResponse.body
+  );
+  assert.match(
+    invalidOrgUnitResponse.body,
+    /organization unit is not accessible/i
+  );
 
   await app.close();
 });

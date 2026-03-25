@@ -1,226 +1,317 @@
 import type { PluginManifest } from '@payer-portal/plugin-sdk';
 
+const EMPLOYER_ROLES = [
+  'employer_group_admin',
+  'internal_operations',
+  'internal_admin',
+  'tenant_admin',
+  'platform_admin',
+  'platform-admin'
+];
+
+const INDIVIDUAL_ROLES = [
+  'member',
+  'tenant_admin',
+  'platform_admin',
+  'platform-admin'
+];
+
+const LICENSED_MODULES = ['billing_enrollment'];
+
 export const manifest: PluginManifest = {
   id: 'billing-enrollment',
   name: 'Billing & Enrollment',
   version: '0.1.0',
-  routes: [
+  capabilities: [
     {
-      path: '/dashboard/billing-enrollment',
-      label: 'Overview'
+      id: 'employer_enrollment',
+      label: 'Enrollment',
+      description: 'Employer enrollment readiness and open enrollment workflows.',
+      audiences: ['employer'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: EMPLOYER_ROLES,
+      routes: [
+        { path: '/employer', label: 'Employer home' },
+        { path: '/employer/enrollment', label: 'Enrollment' }
+      ],
+      navigation: [
+        {
+          label: 'Home',
+          href: '/employer',
+          description: 'Employer enrollment and billing command center.'
+        },
+        {
+          label: 'Enrollment',
+          href: '/employer/enrollment',
+          description: 'Track open enrollment progress and employer group readiness.'
+        }
+      ],
+      sectionTitle: 'Employer portal'
     },
     {
-      path: '/dashboard/billing-enrollment/enrollment',
-      label: 'Enrollment Orchestration'
+      id: 'employer_eligibility',
+      label: 'Eligibility Changes',
+      description: 'Employer adds, terms, and eligibility approvals.',
+      audiences: ['employer'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: EMPLOYER_ROLES,
+      routes: [{ path: '/employer/eligibility-changes', label: 'Eligibility Changes' }],
+      navigation: [
+        {
+          label: 'Eligibility Changes',
+          href: '/employer/eligibility-changes',
+          description:
+            'Review pending adds, terminations, status changes, and approvals.'
+        }
+      ],
+      sectionTitle: 'Employer portal'
     },
     {
-      path: '/dashboard/billing-enrollment/plans',
-      label: 'Plan Catalog'
+      id: 'employer_population',
+      label: 'Employees',
+      description: 'Employee roster and covered-lives administration.',
+      audiences: ['employer'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: EMPLOYER_ROLES,
+      routes: [{ path: '/employer/employees', label: 'Employees' }],
+      navigation: [
+        {
+          label: 'Employees / Members',
+          href: '/employer/employees',
+          description:
+            'Manage employee roster, covered lives, and dependent administration.'
+        }
+      ],
+      sectionTitle: 'Employer portal'
     },
     {
-      path: '/dashboard/billing-enrollment/plans/compare',
-      label: 'Compare Plans'
+      id: 'employer_billing',
+      label: 'Billing',
+      description: 'Employer invoices, payments, and premium activity.',
+      audiences: ['employer'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: EMPLOYER_ROLES,
+      routes: [{ path: '/employer/billing', label: 'Billing' }],
+      navigation: [
+        {
+          label: 'Billing',
+          href: '/employer/billing',
+          description: 'Review invoices, payments, and group billing activity.'
+        }
+      ],
+      sectionTitle: 'Employer portal'
     },
     {
-      path: '/dashboard/billing-enrollment/rules',
-      label: 'Eligibility Rules'
+      id: 'employer_reporting',
+      label: 'Reports',
+      description: 'Employer enrollment and billing reporting.',
+      audiences: ['employer'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: EMPLOYER_ROLES,
+      routes: [{ path: '/employer/reports', label: 'Reports' }],
+      navigation: [
+        {
+          label: 'Reports',
+          href: '/employer/reports',
+          description: 'Run employer enrollment and billing reports.'
+        }
+      ],
+      sectionTitle: 'Employer portal'
     },
     {
-      path: '/dashboard/billing-enrollment/rules/verify',
-      label: 'Verify Eligibility'
+      id: 'employer_documents',
+      label: 'Documents',
+      description: 'Employer census, billing, and plan documents.',
+      audiences: ['employer'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: EMPLOYER_ROLES,
+      routes: [{ path: '/employer/documents', label: 'Documents' }],
+      navigation: [
+        {
+          label: 'Documents',
+          href: '/employer/documents',
+          description: 'Upload and review census, billing, and plan documents.'
+        }
+      ],
+      sectionTitle: 'Employer portal'
     },
     {
-      path: '/dashboard/billing-enrollment/invoices',
-      label: 'Invoice & Premiums'
+      id: 'employer_support',
+      label: 'Support',
+      description: 'Employer support resources and case follow-up.',
+      audiences: ['employer'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: EMPLOYER_ROLES,
+      routes: [{ path: '/employer/support', label: 'Support' }],
+      navigation: [
+        {
+          label: 'Support',
+          href: '/employer/support',
+          description: 'Access support resources and case follow-up.'
+        }
+      ],
+      sectionTitle: 'Employer portal'
     },
     {
-      path: '/dashboard/billing-enrollment/payments',
-      label: 'Payment Orchestration'
+      id: 'employer_administration',
+      label: 'Administration',
+      description: 'Employer settings, users, and delivery preferences.',
+      audiences: ['employer'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: EMPLOYER_ROLES,
+      routes: [{ path: '/employer/admin', label: 'Admin' }],
+      navigation: [
+        {
+          label: 'Admin',
+          href: '/employer/admin',
+          description: 'Manage employer settings, users, and delivery preferences.'
+        }
+      ],
+      sectionTitle: 'Employer portal'
     },
     {
-      path: '/dashboard/billing-enrollment/documents',
-      label: 'Document Requirements'
+      id: 'individual_shopping',
+      label: 'Shop Plans',
+      description: 'Individual plan shopping and comparison workflows.',
+      audiences: ['individual'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: INDIVIDUAL_ROLES,
+      routes: [
+        { path: '/individual', label: 'Individual home' },
+        { path: '/individual/shop-plans', label: 'Shop Plans' }
+      ],
+      navigation: [
+        {
+          label: 'Home',
+          href: '/individual',
+          description: 'Consumer enrollment and billing overview.'
+        },
+        {
+          label: 'Shop Plans',
+          href: '/individual/shop-plans',
+          description: 'Review and compare plan options for the household.'
+        }
+      ],
+      sectionTitle: 'Individual portal'
     },
     {
-      path: '/dashboard/billing-enrollment/documents/upload',
-      label: 'Upload Required Documents'
+      id: 'individual_application',
+      label: 'My Application',
+      description: 'Enrollment progress, renewals, and required actions.',
+      audiences: ['individual'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: INDIVIDUAL_ROLES,
+      routes: [{ path: '/individual/my-application', label: 'My Application' }],
+      navigation: [
+        {
+          label: 'My Application',
+          href: '/individual/my-application',
+          description: 'Track enrollment progress, renewals, and required actions.'
+        }
+      ],
+      sectionTitle: 'Individual portal'
     },
     {
-      path: '/dashboard/billing-enrollment/renewals',
-      label: 'Renewals & Life Events'
+      id: 'individual_coverage',
+      label: 'My Coverage',
+      description: 'Active coverage, costs, and plan details.',
+      audiences: ['individual'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: INDIVIDUAL_ROLES,
+      routes: [{ path: '/individual/my-coverage', label: 'My Coverage' }],
+      navigation: [
+        {
+          label: 'My Coverage',
+          href: '/individual/my-coverage',
+          description: 'Review active coverage, costs, and plan details.'
+        }
+      ],
+      sectionTitle: 'Individual portal'
     },
     {
-      path: '/dashboard/billing-enrollment/renewals/life-event',
-      label: 'Report Life Event'
+      id: 'individual_household',
+      label: 'Household',
+      description: 'Household members, dependents, and verification.',
+      audiences: ['individual'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: INDIVIDUAL_ROLES,
+      routes: [{ path: '/individual/household', label: 'Household' }],
+      navigation: [
+        {
+          label: 'Household',
+          href: '/individual/household',
+          description: 'Manage household members, dependents, and verification.'
+        }
+      ],
+      sectionTitle: 'Individual portal'
     },
     {
-      path: '/dashboard/billing-enrollment/enrollment/start',
-      label: 'Start Enrollment'
+      id: 'individual_billing',
+      label: 'Billing & Payments',
+      description: 'Premium payments, invoices, and autopay.',
+      audiences: ['individual'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: INDIVIDUAL_ROLES,
+      routes: [{ path: '/individual/billing-payments', label: 'Billing & Payments' }],
+      navigation: [
+        {
+          label: 'Billing & Payments',
+          href: '/individual/billing-payments',
+          description: 'Manage premium payments, invoices, and autopay.'
+        }
+      ],
+      sectionTitle: 'Individual portal'
     },
     {
-      path: '/dashboard/billing-enrollment/enrollment/household',
-      label: 'Manage Household'
+      id: 'individual_documents',
+      label: 'Documents',
+      description: 'Required documents and notices.',
+      audiences: ['individual'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: INDIVIDUAL_ROLES,
+      routes: [{ path: '/individual/documents', label: 'Documents' }],
+      navigation: [
+        {
+          label: 'Documents',
+          href: '/individual/documents',
+          description: 'Upload and review required documents and notices.'
+        }
+      ],
+      sectionTitle: 'Individual portal'
     },
     {
-      path: '/dashboard/billing-enrollment/enrollment/status',
-      label: 'Enrollment Status Tracker'
+      id: 'individual_support',
+      label: 'Support',
+      description: 'Enrollment, billing, and documentation help.',
+      audiences: ['individual'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: INDIVIDUAL_ROLES,
+      routes: [{ path: '/individual/support', label: 'Support' }],
+      navigation: [
+        {
+          label: 'Support',
+          href: '/individual/support',
+          description: 'Get help with enrollment, billing, and documentation.'
+        }
+      ],
+      sectionTitle: 'Individual portal'
     },
     {
-      path: '/dashboard/billing-enrollment/employees',
-      label: 'Employee Census'
-    },
-    {
-      path: '/dashboard/billing-enrollment/enrollment-activity',
-      label: 'Enrollment Activity Queue'
-    },
-    {
-      path: '/dashboard/billing-enrollment/enrollment-activity/history',
-      label: 'Enrollment Activity History'
-    },
-    {
-      path: '/dashboard/billing-enrollment/open-enrollment',
-      label: 'Open Enrollment Overview'
-    },
-    {
-      path: '/dashboard/billing-enrollment/open-enrollment/[recordId]',
-      label: 'Open Enrollment Employee Detail'
-    },
-    {
-      path: '/dashboard/billing-enrollment/census-import',
-      label: 'Census Import'
-    },
-    {
-      path: '/dashboard/billing-enrollment/census-import/history',
-      label: 'Census Import History'
-    },
-    {
-      path: '/dashboard/billing-enrollment/census-import/history/[importId]',
-      label: 'Census Import Detail'
-    },
-    {
-      path: '/dashboard/billing-enrollment/census-import/errors',
-      label: 'Census Import Error Resolution'
-    },
-    {
-      path: '/dashboard/billing-enrollment/census-import/integrations',
-      label: 'HRIS Integration Configuration'
-    },
-    {
-      path: '/dashboard/billing-enrollment/tasks',
-      label: 'Employer Tasks Dashboard'
-    },
-    {
-      path: '/dashboard/billing-enrollment/tasks/[taskId]',
-      label: 'Employer Task Detail'
-    },
-    {
-      path: '/dashboard/billing-enrollment/notifications',
-      label: 'Employer Notifications Center'
-    },
-    {
-      path: '/dashboard/billing-enrollment/notifications/settings',
-      label: 'Employer Notification Settings'
-    },
-    {
-      path: '/dashboard/billing-enrollment/administration',
-      label: 'Employer Administration'
-    },
-    {
-      path: '/dashboard/billing-enrollment/administration/profile',
-      label: 'Employer Profile Settings'
-    },
-    {
-      path: '/dashboard/billing-enrollment/administration/users',
-      label: 'Employer Administrator Users'
-    },
-    {
-      path: '/dashboard/billing-enrollment/administration/billing-preferences',
-      label: 'Employer Billing Preferences'
-    },
-    {
-      path: '/dashboard/billing-enrollment/administration/notification-settings',
-      label: 'Employer Administration Notification Settings'
-    },
-    {
-      path: '/dashboard/billing-enrollment/administration/integrations',
-      label: 'Employer Administration Integration Settings'
-    },
-    {
-      path: '/dashboard/billing-enrollment/billing-overview',
-      label: 'Employer Billing Overview'
-    },
-    {
-      path: '/dashboard/billing-enrollment/billing-invoices/history',
-      label: 'Employer Invoice History'
-    },
-    {
-      path: '/dashboard/billing-enrollment/billing-payments',
-      label: 'Employer Payment Management'
-    },
-    {
-      path: '/dashboard/billing-enrollment/document-center',
-      label: 'Employer Document Center'
-    },
-    {
-      path: '/dashboard/billing-enrollment/reports/analytics',
-      label: 'Reports Analytics Dashboard'
-    },
-    {
-      path: '/dashboard/billing-enrollment/reports/schedule',
-      label: 'Reports Schedule Manager'
-    },
-    {
-      path: '/dashboard/billing-enrollment/notices',
-      label: 'Notices'
-    },
-    {
-      path: '/dashboard/billing-enrollment/support',
-      label: 'Support'
-    },
-    {
-      path: '/dashboard/billing-enrollment/payments/current-balance',
-      label: 'Current Balance'
-    },
-    {
-      path: '/dashboard/billing-enrollment/payments/next-invoice',
-      label: 'Next Invoice'
-    },
-    {
-      path: '/dashboard/billing-enrollment/payments/history',
-      label: 'Payment History'
-    },
-    {
-      path: '/dashboard/billing-enrollment/payments/make',
-      label: 'Make Payment'
-    },
-    {
-      path: '/dashboard/billing-enrollment/payments/methods',
-      label: 'Saved Payment Methods'
-    },
-    {
-      path: '/dashboard/billing-enrollment/payments/autopay',
-      label: 'Autopay'
-    },
-    {
-      path: '/dashboard/billing-enrollment/payments/statements',
-      label: 'Statements and Tax Documents'
+      id: 'individual_profile',
+      label: 'Profile',
+      description: 'Subscriber identity and account details.',
+      audiences: ['individual'],
+      moduleKeys: LICENSED_MODULES,
+      requiredRoles: INDIVIDUAL_ROLES,
+      routes: [{ path: '/individual/profile', label: 'Profile' }],
+      navigation: [
+        {
+          label: 'Profile',
+          href: '/individual/profile',
+          description: 'Review subscriber identity and account details.'
+        }
+      ],
+      sectionTitle: 'Individual portal'
     }
-  ],
-  navigation: [
-    {
-      label: 'Billing & Enrollment',
-      href: '/dashboard/billing-enrollment'
-    }
-  ],
-  requiredPermissions: [],
-  requiredRoles: [
-    'member',
-    'employer_group_admin',
-    'broker',
-    'internal_operations',
-    'internal_admin',
-    'tenant_admin',
-    'platform_admin',
-    'platform-admin'
   ]
 };

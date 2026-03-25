@@ -75,8 +75,11 @@ test('publish persists event history and delivers to subscribers', async () => {
 
   try {
     const event = await publish('tenant.created', {
+      capabilityId: 'platform.tenants',
       id: 'tenant-created-1',
       correlationId: 'corr-tenant-created-1',
+      failureType: 'none',
+      orgUnitId: null,
       timestamp: new Date(),
       tenantId: tenant.id,
       type: 'tenant.created',
@@ -84,7 +87,8 @@ test('publish persists event history and delivers to subscribers', async () => {
         tenantId: tenant.id,
         name: 'Replay Health',
         slug: 'replay-health',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        tenantType: 'PAYER'
       }
     });
 
@@ -137,8 +141,11 @@ test('failed deliveries retry and then succeed', async () => {
 
   try {
     await publish('user.created', {
+      capabilityId: 'platform.access',
       id: 'user-created-1',
       correlationId: 'corr-user-created-1',
+      failureType: 'none',
+      orgUnitId: null,
       timestamp: new Date(),
       tenantId: tenant.id,
       type: 'user.created',
@@ -214,8 +221,11 @@ test('dead letter queue captures exhausted deliveries', async () => {
 
   try {
     await publish('document.uploaded', {
+      capabilityId: 'platform.documents',
       id: 'document-uploaded-1',
       correlationId: 'corr-document-uploaded-1',
+      failureType: 'none',
+      orgUnitId: null,
       timestamp: new Date(),
       tenantId: tenant.id,
       type: 'document.uploaded',
@@ -242,6 +252,34 @@ test('dead letter queue captures exhausted deliveries', async () => {
   } finally {
     unsubscribe();
   }
+});
+
+test('publish rejects events missing required observability fields', async () => {
+  const tenant = await prisma.tenant.findFirstOrThrow({
+    select: {
+      id: true
+    }
+  });
+
+  await assert.rejects(
+    publish('notification.requested', {
+      capabilityId: '',
+      id: 'notification-requested-1',
+      correlationId: 'corr-notification-requested-1',
+      failureType: 'none',
+      orgUnitId: null,
+      timestamp: new Date(),
+      tenantId: tenant.id,
+      type: 'notification.requested',
+      payload: {
+        notificationId: 'notification-1',
+        channel: 'email',
+        recipientId: 'user-1',
+        templateKey: 'welcome'
+      }
+    }),
+    /capabilityId is required/
+  );
 });
 
 test('subscriber replay receives persisted history', async () => {

@@ -2,10 +2,8 @@ import { redirect } from 'next/navigation';
 
 import { PortalShell } from '../../components/portal-shell';
 import { TenantTheme } from '../../components/tenant-theme';
-import {
-  billingPortalNavigationByAudience,
-  hasBillingPortalAudienceAccess
-} from '../../lib/billing-portal-audience';
+import { hasBillingPortalAudienceAccess } from '../../lib/billing-portal-audience';
+import { resolvePortalNavigation } from '../../lib/navigation';
 import { getPortalSessionUser } from '../../lib/portal-session';
 import { getTenantBranding } from '../../lib/tenant-branding';
 
@@ -31,7 +29,7 @@ export default async function IndividualPortalLayout({
       <TenantTheme branding={branding} />
       <PortalShell
         branding={branding}
-        navigation={billingPortalNavigationByAudience.individual}
+        navigation={await resolvePortalNavigation(user, { audience: 'individual' })}
         searchBasePath="/dashboard/search"
         user={user}
       >

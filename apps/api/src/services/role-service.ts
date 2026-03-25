@@ -541,8 +541,11 @@ export async function createUser(
     });
 
     publishInBackground('user.created', {
+      capabilityId: 'platform.access',
       id: randomUUID(),
       correlationId: randomUUID(),
+      failureType: 'none',
+      orgUnitId: null,
       timestamp: new Date(),
       tenantId: user.tenant.id,
       type: 'user.created',

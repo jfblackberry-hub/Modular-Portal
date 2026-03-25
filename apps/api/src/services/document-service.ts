@@ -149,8 +149,11 @@ export async function uploadDocument(input: UploadDocumentInput) {
   });
 
   publishInBackground('document.uploaded', {
+    capabilityId: 'platform.documents',
     id: randomUUID(),
     correlationId: randomUUID(),
+    failureType: 'none',
+    orgUnitId: null,
     timestamp: new Date(),
     tenantId: document.tenantId,
     type: 'document.uploaded',

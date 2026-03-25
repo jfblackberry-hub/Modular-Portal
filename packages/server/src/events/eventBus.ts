@@ -5,6 +5,10 @@ import type { EventDelivery, EventRecord, Prisma } from '@payer-portal/database'
 import { prisma } from '@payer-portal/database';
 
 import type { PlatformEvent, PlatformEventType } from './eventTypes.js';
+import { enqueueJob } from '../jobs/jobQueue.js';
+import type { QueuedPlatformEvent } from '../jobs/jobTypes.js';
+import { createStructuredLogger } from '../observability/logger.js';
+import { validateObservabilityContext } from '../observability/schema.js';
 
 type EventByType = {
   [T in PlatformEventType]: Extract<PlatformEvent, { type: T }>;
@@ -62,6 +66,15 @@ const backgroundPublishes = new Set<Promise<void>>();
 
 emitter.setMaxListeners(0);
 
+const eventLogger = createStructuredLogger({
+  serviceName: 'server',
+  observability: {
+    capabilityId: 'platform.eventing',
+    failureType: 'none',
+    tenantId: 'platform'
+  }
+});
+
 function getSubscribers<TType extends PlatformEventType>(eventType: TType) {
   let eventSubscribers = subscribers.get(eventType);
 
@@ -93,15 +106,17 @@ function normalizeError(error: unknown) {
   return 'Unknown event handler error';
 }
 
-function hydrateEvent(record: EventRecord): PlatformEvent {
-  const payload = record.payload as Prisma.JsonObject;
+function hydrateSerializedEvent(
+  payload: Prisma.JsonObject | QueuedPlatformEvent,
+  fallbackTimestamp: Date
+): PlatformEvent {
   const timestampValue = payload.timestamp;
   const event = {
     ...(payload as unknown as Omit<PlatformEvent, 'timestamp'>),
     timestamp:
       typeof timestampValue === 'string' || timestampValue instanceof Date
         ? new Date(timestampValue)
-        : record.occurredAt
+        : fallbackTimestamp
   } as PlatformEvent;
 
   if (event.type === 'notification.sent') {
@@ -127,18 +142,55 @@ function hydrateEvent(record: EventRecord): PlatformEvent {
   return event;
 }
 
+function hydrateEvent(record: EventRecord): PlatformEvent {
+  return hydrateSerializedEvent(record.payload as Prisma.JsonObject, record.occurredAt);
+}
+
 function serializeEvent<TType extends PlatformEventType>(
   eventType: TType,
   event: EventByType[TType]
 ): EventByType[TType] {
+  const observability = validateObservabilityContext({
+    capabilityId: event.capabilityId,
+    correlationId: event.correlationId,
+    failureType: event.failureType,
+    orgUnitId: event.orgUnitId ?? null,
+    tenantId: event.tenantId
+  });
+
   return {
     ...event,
+    ...observability,
     id: event.id?.trim() || randomUUID(),
     type: eventType,
-    tenantId: event.tenantId ?? null,
-    correlationId: event.correlationId?.trim() || randomUUID(),
     timestamp: event.timestamp instanceof Date ? event.timestamp : new Date(event.timestamp)
   };
+}
+
+export function queuePlatformEvent<TType extends PlatformEventType>(
+  eventType: TType,
+  event: EventByType[TType]
+): QueuedPlatformEvent {
+  const serializedEvent = serializeEvent(eventType, event);
+
+  return {
+    capabilityId: serializedEvent.capabilityId,
+    correlationId: serializedEvent.correlationId,
+    failureType: serializedEvent.failureType,
+    id: serializedEvent.id,
+    orgUnitId: serializedEvent.orgUnitId ?? null,
+    payload: serializedEvent.payload as Prisma.JsonValue,
+    tenantId: serializedEvent.tenantId,
+    timestamp: serializedEvent.timestamp.toISOString(),
+    type: serializedEvent.type
+  };
+}
+
+export function hydrateQueuedPlatformEvent(event: QueuedPlatformEvent): PlatformEvent {
+  return hydrateSerializedEvent(
+    event as unknown as Prisma.JsonObject,
+    new Date(event.timestamp)
+  );
 }
 
 async function ensureDelivery(
@@ -353,12 +405,30 @@ export function publishInBackground<TType extends PlatformEventType>(
   eventType: TType,
   event: EventByType[TType]
 ) {
-  queueMicrotask(() => {
-    const pendingPublish = publish(eventType, event).then(() => undefined);
-    backgroundPublishes.add(pendingPublish);
-    void pendingPublish.finally(() => {
-      backgroundPublishes.delete(pendingPublish);
-    });
+  const pendingPublish = enqueueJob({
+    type: 'event.publish',
+    tenantId: event.tenantId,
+    payload: {
+      event: queuePlatformEvent(eventType, event)
+    }
+  })
+      .then(() => undefined)
+      .catch((error) => {
+        eventLogger.error('background event publish failed', {
+          capabilityId: event.capabilityId,
+          correlationId: event.correlationId,
+          eventType,
+          failureType: event.failureType === 'none' ? 'system' : event.failureType,
+          orgUnitId: event.orgUnitId ?? undefined,
+          tenantId: event.tenantId,
+          errorMessage: error instanceof Error ? error.message : String(error)
+        });
+        throw error;
+      });
+
+  backgroundPublishes.add(pendingPublish);
+  void pendingPublish.finally(() => {
+    backgroundPublishes.delete(pendingPublish);
   });
 }
 

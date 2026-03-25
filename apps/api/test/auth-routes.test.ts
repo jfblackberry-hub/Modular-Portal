@@ -118,7 +118,7 @@ test('auth me returns current user role context', async () => {
   await app.close();
 });
 
-test('auth me rejects requests without tenant context', async () => {
+test('auth me resolves tenant context from the authenticated session even when x-tenant-id is present', async () => {
   const { user, tenant } = await createFixtureData();
   const app = Fastify();
   await authRoutes(app);
@@ -138,7 +138,8 @@ test('auth me rejects requests without tenant context', async () => {
     }
   });
 
-  assert.equal(response.statusCode, 401, response.body);
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(response.json().tenantId, tenant.id);
 
   await app.close();
 });

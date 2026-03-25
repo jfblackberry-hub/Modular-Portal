@@ -7,7 +7,10 @@ import type {
   PluginManifest
 } from '@payer-portal/plugin-sdk';
 import {
+  areFeatureFlagsEnabled,
+  getPluginNavigation,
   getPluginFeatureFlagKey,
+  getPluginRoutes,
   isPluginEnabled
 } from '@payer-portal/plugin-sdk';
 
@@ -29,24 +32,34 @@ export function discoverPlugins() {
   return discoveredPlugins;
 }
 
-export async function getEnabledPlugins(tenantId?: string | null) {
+export async function getPlatformFeatureFlags() {
   try {
     const response = await fetch(`${config.apiBaseUrl}/api/v1/feature-flags`, {
       cache: 'no-store'
     });
 
     if (!response.ok) {
-      return [];
+      return [] as FeatureFlagResponse[];
     }
 
-    const featureFlags = (await response.json()) as FeatureFlagResponse[];
-
-    return discoverPlugins().filter((plugin) =>
-      isPluginEnabled(plugin, featureFlags, tenantId)
-    );
+    return (await response.json()) as FeatureFlagResponse[];
   } catch {
-    return [];
+    return [] as FeatureFlagResponse[];
   }
+}
+
+export function getEnabledPluginsForTenant(
+  featureFlags: FeatureFlagResponse[],
+  tenantId?: string | null
+) {
+  return discoverPlugins().filter((plugin) =>
+    isPluginEnabled(plugin, featureFlags, tenantId)
+  );
+}
+
+export async function getEnabledPlugins(tenantId?: string | null) {
+  const featureFlags = await getPlatformFeatureFlags();
+  return getEnabledPluginsForTenant(featureFlags, tenantId);
 }
 
 export function getPluginFeatureFlags() {
@@ -54,4 +67,26 @@ export function getPluginFeatureFlags() {
     pluginId: plugin.id,
     featureFlagKey: getPluginFeatureFlagKey(plugin.id)
   }));
+}
+
+export function getPluginManifestById(pluginId: string) {
+  return discoverPlugins().find((plugin) => plugin.id === pluginId) ?? null;
+}
+
+export function getPluginRoutesById(pluginId: string) {
+  const plugin = getPluginManifestById(pluginId);
+  return plugin ? getPluginRoutes(plugin) : [];
+}
+
+export function getPluginNavigationById(pluginId: string) {
+  const plugin = getPluginManifestById(pluginId);
+  return plugin ? getPluginNavigation(plugin) : [];
+}
+
+export function isCapabilityEnabledForTenant(
+  featureFlags: FeatureFlagResponse[],
+  featureFlagKeys: string[],
+  tenantId?: string | null
+) {
+  return areFeatureFlagsEnabled(featureFlags, featureFlagKeys, tenantId);
 }
