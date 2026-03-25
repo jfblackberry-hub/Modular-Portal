@@ -18,6 +18,7 @@ COPY plugins ./plugins
 COPY scripts ./scripts
 COPY docs ./docs
 COPY infra ./infra
+COPY theme ./theme
 
 RUN pnpm install --frozen-lockfile
 
