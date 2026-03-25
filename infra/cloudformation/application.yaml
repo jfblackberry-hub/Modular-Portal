@@ -15,6 +15,7 @@ Parameters:
     Type: String
   RootVolumeSize:
     Type: Number
+    Default: 64
   PortalImageUri:
     Type: String
   AdminImageUri:
@@ -60,6 +61,19 @@ Parameters:
     AllowedValues:
       - true
       - false
+  GrafanaPrometheusUrl:
+    Type: String
+    Default: ''
+  GrafanaLokiPushUrl:
+    Type: String
+    Default: ''
+  GrafanaUserId:
+    Type: String
+    Default: ''
+  GrafanaApiToken:
+    Type: String
+    Default: ''
+    NoEcho: true
 
 Resources:
   ApplicationElasticIp:
@@ -187,9 +201,92 @@ Resources:
           LOCAL_PUBLIC_ASSET_DIR=apps/portal-web/public/tenant-assets
           LOCAL_PUBLIC_ASSET_BASE_PATH=/tenant-assets
           BACKUP_STORAGE_DIR=backups
+          GRAFANA_PROMETHEUS_URL=${GrafanaPrometheusUrl}
+          GRAFANA_LOKI_PUSH_URL=${GrafanaLokiPushUrl}
+          GRAFANA_USER_ID=${GrafanaUserId}
+          GRAFANA_API_TOKEN=${GrafanaApiToken}
           EOF
 
+          if [[ -n "${GrafanaPrometheusUrl}" && -n "${GrafanaLokiPushUrl}" && -n "${GrafanaUserId}" && -n "${GrafanaApiToken}" ]]; then
+            cat > /opt/modular-portal/alloy-config.alloy <<'ALLOY_EOF'
+          prometheus.scrape "api" {
+            targets         = [{ __address__ = "api:9464" }]
+            scrape_interval = "30s"
+            metrics_path    = "/metrics"
+            forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+          }
+
+          prometheus.exporter.unix "host" {
+            procfs_path    = "/host/proc"
+            sysfs_path     = "/host/sys"
+            rootfs_path    = "/rootfs"
+            set_collectors = ["cpu", "diskstats", "filesystem", "loadavg", "meminfo", "netdev"]
+          }
+
+          prometheus.scrape "host" {
+            targets         = prometheus.exporter.unix.host.targets
+            scrape_interval = "60s"
+            forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+          }
+
+          prometheus.remote_write "grafana_cloud" {
+            endpoint {
+              url = env("GRAFANA_PROMETHEUS_URL")
+              basic_auth {
+                username = env("GRAFANA_USER_ID")
+                password = env("GRAFANA_API_TOKEN")
+              }
+            }
+            external_labels = { env = "${EnvironmentName}", service = "modular-portal" }
+          }
+
+          discovery.docker "containers" {
+            host = "unix:///var/run/docker.sock"
+          }
+
+          discovery.relabel "containers" {
+            targets = discovery.docker.containers.targets
+            rule {
+              source_labels = ["__meta_docker_container_name"]
+              regex         = "/(.*)"
+              target_label  = "container"
+            }
+            rule {
+              source_labels = ["__meta_docker_container_log_stream"]
+              target_label  = "stream"
+            }
+            rule {
+              source_labels = ["__meta_docker_compose_service"]
+              target_label  = "service"
+            }
+          }
+
+          loki.source.docker "containers" {
+            host       = "unix:///var/run/docker.sock"
+            targets    = discovery.relabel.containers.output
+            forward_to = [loki.write.grafana_cloud.receiver]
+          }
+
+          loki.write "grafana_cloud" {
+            endpoint {
+              url = env("GRAFANA_LOKI_PUSH_URL")
+              basic_auth {
+                username = env("GRAFANA_USER_ID")
+                password = env("GRAFANA_API_TOKEN")
+              }
+            }
+            external_labels = { env = "${EnvironmentName}", service = "modular-portal" }
+          }
+          ALLOY_EOF
+          fi
+
           cat > /opt/modular-portal/docker-compose.yml <<EOF
+          x-json-logging: &json-logging
+            driver: json-file
+            options:
+              max-size: "10m"
+              max-file: "5"
+
           services:
             postgres:
               image: postgres:16-alpine
@@ -209,6 +306,7 @@ Resources:
                 interval: 10s
                 timeout: 5s
                 retries: 12
+              logging: *json-logging
 
             api:
               image: ${ApiImageUri}
@@ -231,11 +329,12 @@ Resources:
                 - storage-data:/workspace/storage
                 - backup-data:/workspace/backups
               healthcheck:
-                test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3002/health >/dev/null 2>&1 || exit 1"]
+                test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3002/health/ready >/dev/null 2>&1 || exit 1"]
                 interval: 30s
                 timeout: 5s
                 retries: 3
                 start_period: 90s
+              logging: *json-logging
 
             portal-web:
               image: ${PortalImageUri}
@@ -262,6 +361,7 @@ Resources:
                 timeout: 5s
                 retries: 3
                 start_period: 60s
+              logging: *json-logging
 
             admin-console:
               image: ${AdminImageUri}
@@ -286,6 +386,7 @@ Resources:
                 timeout: 5s
                 retries: 3
                 start_period: 60s
+              logging: *json-logging
 
             autoheal:
               image: willfarrell/autoheal:latest
@@ -296,6 +397,21 @@ Resources:
                 AUTOHEAL_START_PERIOD: 120
               volumes:
                 - /var/run/docker.sock:/var/run/docker.sock
+              logging: *json-logging
+
+            grafana-alloy:
+              image: grafana/alloy:latest
+              restart: unless-stopped
+              command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
+              env_file:
+                - /opt/modular-portal/.env
+              volumes:
+                - /opt/modular-portal/alloy-config.alloy:/etc/alloy/config.alloy:ro
+                - /var/run/docker.sock:/var/run/docker.sock
+                - /proc:/host/proc:ro
+                - /sys:/host/sys:ro
+                - /:/rootfs:ro
+              logging: *json-logging
 
           volumes:
             postgres-data:
@@ -332,7 +448,7 @@ Resources:
           WorkingDirectory=/opt/modular-portal
           RemainAfterExit=yes
           EnvironmentFile=/opt/modular-portal/.env
-          ExecStart=/bin/bash -lc '/usr/local/bin/modular-portal-init-db && /usr/local/bin/modular-portal-compose up -d api portal-web admin-console'
+          ExecStart=/bin/bash -lc 'SERVICES="api portal-web admin-console"; if [[ -n "${!GRAFANA_PROMETHEUS_URL}" && -n "${!GRAFANA_LOKI_PUSH_URL}" && -n "${!GRAFANA_USER_ID}" && -n "${!GRAFANA_API_TOKEN}" ]]; then SERVICES="$SERVICES grafana-alloy"; fi; /usr/local/bin/modular-portal-init-db && /usr/local/bin/modular-portal-compose up -d $SERVICES'
           ExecStop=/usr/local/bin/modular-portal-compose down
           TimeoutStartSec=0
 
