@@ -158,7 +158,7 @@ function AdminLoginFormContent() {
   }
 
   return (
-    <section className="rounded-3xl border border-admin-border bg-white p-8 shadow-sm">
+    <section className="admin-form-card p-8">
       <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
         Sign In
       </p>
@@ -172,7 +172,7 @@ function AdminLoginFormContent() {
             Username or email
           </span>
           <input
-            className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+            className="admin-input mt-2"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="tenant"
@@ -183,7 +183,7 @@ function AdminLoginFormContent() {
         <label className="block">
           <span className="text-sm font-medium text-admin-text">Password</span>
           <input
-            className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+            className="admin-input mt-2"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -193,7 +193,7 @@ function AdminLoginFormContent() {
         </label>
 
         {error ? (
-          <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <p className="admin-notice admin-notice--danger">
             {error}
           </p>
         ) : null}
@@ -201,7 +201,7 @@ function AdminLoginFormContent() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+          className="admin-button admin-button--primary w-full disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSubmitting ? 'Signing in...' : 'Sign in'}
         </button>

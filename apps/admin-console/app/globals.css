@@ -153,8 +153,12 @@ textarea {
 }
 
 .averra-admin .admin-button--secondary {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--admin-text);
+  border-color: rgba(216, 79, 163, 0.26);
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.18), rgba(76, 159, 204, 0.16)),
+    rgba(17, 13, 44, 0.82);
+  color: rgba(255, 255, 255, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), var(--portal-shadow-sm);
 }
 
 .admin-button--secondary:visited,
@@ -166,6 +170,15 @@ textarea {
   border-color: var(--admin-active);
   background: rgba(37, 99, 235, 0.06);
   color: var(--admin-primary-strong);
+}
+
+.averra-admin .admin-button--secondary:hover {
+  border-color: rgba(76, 159, 204, 0.58);
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.26), rgba(76, 159, 204, 0.24)),
+    rgba(17, 13, 44, 0.94);
+  color: #ffffff;
+  box-shadow: var(--portal-glow-pink), var(--portal-shadow-sm);
 }
 
 .admin-button--content,
@@ -180,6 +193,14 @@ textarea {
   color: var(--admin-sidebar-text);
 }
 
+.averra-admin .admin-button--header {
+  border-color: rgba(255, 255, 255, 0.16);
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.18), rgba(76, 159, 204, 0.14)),
+    rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
 .admin-button--header:visited,
 .admin-button--header > * {
   color: inherit;
@@ -189,6 +210,14 @@ textarea {
   border-color: var(--admin-active-accent);
   background: var(--admin-hover);
   color: var(--admin-sidebar-text);
+}
+
+.averra-admin .admin-button--header:hover {
+  border-color: rgba(76, 159, 204, 0.48);
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.26), rgba(76, 159, 204, 0.22)),
+    rgba(255, 255, 255, 0.08);
+  box-shadow: var(--portal-glow-blue);
 }
 
 .admin-input {
@@ -293,7 +322,9 @@ textarea {
 
 .averra-admin .admin-left-rail__context-card {
   border-color: var(--admin-border);
-  background: rgba(255, 255, 255, 0.05);
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.12), rgba(76, 159, 204, 0.1)),
+    rgba(255, 255, 255, 0.05);
   box-shadow: var(--portal-shadow-sm);
 }
 
@@ -404,6 +435,13 @@ textarea {
   box-shadow: inset -1px 0 0 var(--admin-sidebar-border);
 }
 
+.averra-admin .admin-left-rail {
+  background:
+    radial-gradient(circle at top center, rgba(216, 79, 163, 0.26), transparent 30%),
+    radial-gradient(circle at 80% 10%, rgba(76, 159, 204, 0.18), transparent 26%),
+    linear-gradient(180deg, rgba(11, 10, 29, 0.98) 0%, rgba(23, 16, 57, 0.98) 56%, rgba(8, 10, 26, 0.99) 100%);
+}
+
 .admin-left-rail__inner {
   display: flex;
   height: 100%;
@@ -490,6 +528,12 @@ textarea {
   padding: 0.75rem;
 }
 
+.averra-admin .admin-nav__section {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
 .admin-nav__section-header {
   display: flex;
   width: 100%;
@@ -501,6 +545,10 @@ textarea {
   color: var(--admin-sidebar-text-muted);
   padding: 0.1rem 0.25rem 0.4rem;
   text-align: left;
+}
+
+.averra-admin .admin-nav__section-header:hover {
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .admin-nav__section-heading {
@@ -551,9 +599,24 @@ textarea {
   background: var(--admin-hover);
 }
 
+.averra-admin .admin-nav__group-toggle:hover,
+.averra-admin .admin-nav__item:hover {
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.16), rgba(76, 159, 204, 0.14)),
+    rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
 .admin-nav__group-toggle--active,
 .admin-nav__item--active {
   background: var(--admin-active);
+}
+
+.averra-admin .admin-nav__group-toggle--active,
+.averra-admin .admin-nav__item--active {
+  background:
+    linear-gradient(135deg, rgba(116, 68, 201, 0.84), rgba(216, 79, 163, 0.78) 52%, rgba(76, 159, 204, 0.72));
+  box-shadow: var(--portal-glow-pink), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .admin-nav__item-line {
@@ -569,9 +632,18 @@ textarea {
   background: var(--admin-active-accent);
 }
 
+.averra-admin .admin-nav__group-toggle--active .admin-nav__item-line,
+.averra-admin .admin-nav__item--active .admin-nav__item-line {
+  background: rgba(255, 255, 255, 0.88);
+}
+
 .admin-nav__item-icon {
   flex-shrink: 0;
   color: var(--admin-sidebar-text-muted);
+}
+
+.averra-admin .admin-nav__item-icon {
+  color: rgba(220, 225, 255, 0.68);
 }
 
 .admin-nav__group-toggle--active .admin-nav__item-icon,
@@ -592,11 +664,19 @@ textarea {
   font-weight: 500;
 }
 
+.averra-admin .admin-nav__item-label {
+  color: rgba(244, 246, 255, 0.9);
+}
+
 .admin-nav__item-description {
   margin-top: 0.18rem;
   color: var(--admin-sidebar-text-section);
   font-size: 0.8rem;
   line-height: 1.45;
+}
+
+.averra-admin .admin-nav__item-description {
+  color: rgba(220, 225, 255, 0.56);
 }
 
 .admin-nav__section-items > .admin-nav__item .admin-nav__item-label,
@@ -652,6 +732,11 @@ textarea {
   font-weight: 600;
 }
 
+.averra-admin .admin-nav__group-toggle--active .admin-nav__item-description,
+.averra-admin .admin-nav__item--active .admin-nav__item-description {
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .admin-nav__group-toggle:focus-visible,
 .admin-nav__item:focus-visible,
 .admin-nav__section-header:focus-visible {
@@ -698,6 +783,22 @@ textarea {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.averra-admin .admin-content-router__context-pill {
+  border: 1px solid rgba(216, 79, 163, 0.2);
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.14), rgba(76, 159, 204, 0.14)),
+    rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.averra-admin .admin-content-router__context-pill--link:hover {
+  border-color: rgba(76, 159, 204, 0.46);
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.24), rgba(76, 159, 204, 0.22)),
+    rgba(255, 255, 255, 0.08);
+  color: #ffffff;
 }
 
 .admin-content-router__context-pill--link:hover {
@@ -1063,6 +1164,209 @@ textarea {
   color: var(--admin-muted);
   font-size: 1rem;
   line-height: 1.65;
+}
+
+.admin-form-card {
+  border: 1px solid var(--admin-border);
+  border-radius: 1.5rem;
+  background: var(--admin-surface);
+  box-shadow: var(--portal-shadow-md);
+}
+
+.averra-admin .admin-form-card {
+  backdrop-filter: blur(18px);
+}
+
+.admin-subtle-surface {
+  border: 1px solid var(--admin-border);
+  border-radius: 1rem;
+  background: var(--admin-surface-muted);
+}
+
+.averra-admin .admin-subtle-surface {
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.12), rgba(76, 159, 204, 0.1)),
+    rgba(255, 255, 255, 0.05);
+  box-shadow: var(--portal-shadow-sm);
+  backdrop-filter: blur(16px);
+}
+
+.admin-input--textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.admin-chip-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 79, 163, 0.24);
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.12), rgba(76, 159, 204, 0.1)),
+    rgba(255, 255, 255, 0.05);
+  padding: 0.35rem 0.8rem;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition:
+    border-color var(--portal-transition-fast),
+    background-color var(--portal-transition-fast),
+    color var(--portal-transition-fast);
+}
+
+.admin-chip-button:hover {
+  border-color: rgba(76, 159, 204, 0.5);
+  color: #ffffff;
+}
+
+.admin-chip-button--danger:hover {
+  border-color: rgba(255, 95, 109, 0.46);
+  color: #ffd4d8;
+}
+
+/* Legacy utility compatibility so platform-admin pages inherit the shared averra theme. */
+.averra-admin .bg-admin-bg {
+  background: transparent;
+}
+
+.averra-admin .bg-white,
+.averra-admin .bg-white\/88 {
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.1), rgba(76, 159, 204, 0.1)),
+    rgba(17, 13, 44, 0.88);
+  box-shadow: var(--portal-shadow-sm);
+}
+
+.averra-admin .bg-slate-50,
+.averra-admin .bg-slate-100 {
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.1), rgba(76, 159, 204, 0.08)),
+    rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.averra-admin .bg-slate-900,
+.averra-admin .bg-slate-950 {
+  background:
+    linear-gradient(135deg, rgba(116, 68, 201, 0.76), rgba(216, 79, 163, 0.7) 52%, rgba(76, 159, 204, 0.64));
+  color: #ffffff;
+}
+
+.averra-admin .bg-cyan-50 {
+  background:
+    linear-gradient(135deg, rgba(76, 159, 204, 0.22), rgba(216, 79, 163, 0.14)),
+    rgba(255, 255, 255, 0.05);
+}
+
+.averra-admin .border-admin-border,
+.averra-admin .border-slate-200,
+.averra-admin .border-slate-200\/80,
+.averra-admin .border-slate-300,
+.averra-admin .border-cyan-300,
+.averra-admin .border-emerald-300 {
+  border-color: var(--admin-border);
+}
+
+.averra-admin .text-admin-text,
+.averra-admin .text-slate-950,
+.averra-admin .text-slate-900 {
+  color: var(--admin-text);
+}
+
+.averra-admin .text-admin-muted,
+.averra-admin .text-slate-700,
+.averra-admin .text-slate-600,
+.averra-admin .text-slate-500,
+.averra-admin .text-slate-400,
+.averra-admin .text-zinc-700,
+.averra-admin .text-zinc-600 {
+  color: var(--admin-muted);
+}
+
+.averra-admin .text-admin-accent,
+.averra-admin .text-cyan-700,
+.averra-admin .text-emerald-700 {
+  color: #9fdcff;
+}
+
+.averra-admin .bg-admin-accent {
+  background: var(--averra-gradient-button);
+  box-shadow: var(--portal-glow-pink), 0 16px 32px rgba(0, 0, 0, 0.28);
+}
+
+.averra-admin .bg-admin-accent\/70 {
+  background-color: rgba(216, 79, 163, 0.72);
+}
+
+.averra-admin .bg-rose-50 {
+  background: rgba(127, 29, 29, 0.22);
+}
+
+.averra-admin .border-rose-200 {
+  border-color: rgba(255, 95, 109, 0.34);
+}
+
+.averra-admin .text-rose-700,
+.averra-admin .text-rose-600 {
+  color: #fecdd3;
+}
+
+.averra-admin .hover\:opacity-90:hover {
+  opacity: 1;
+  filter: brightness(1.05);
+}
+
+.averra-admin .hover\:bg-slate-50:hover,
+.averra-admin .hover\:bg-slate-300:hover {
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.18), rgba(76, 159, 204, 0.16)),
+    rgba(255, 255, 255, 0.08);
+}
+
+.averra-admin .hover\:border-admin-accent:hover,
+.averra-admin .hover\:border-slate-300:hover,
+.averra-admin .hover\:border-rose-300:hover {
+  border-color: rgba(76, 159, 204, 0.5);
+}
+
+.averra-admin .hover\:text-admin-accent:hover,
+.averra-admin .hover\:text-rose-600:hover {
+  color: #ffffff;
+}
+
+.averra-admin .focus\:border-admin-accent:focus,
+.averra-admin .focus\:border-emerald-500:focus {
+  border-color: rgba(76, 159, 204, 0.52);
+  box-shadow: 0 0 0 4px rgba(76, 159, 204, 0.16);
+  outline: none;
+}
+
+.averra-admin .disabled\:bg-slate-100:disabled {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.averra-admin .disabled\:text-admin-muted:disabled {
+  color: rgba(220, 225, 255, 0.5);
+}
+
+.averra-admin input[type="file"]::file-selector-button {
+  border: 0;
+  border-radius: 999px;
+  background: var(--averra-gradient-button);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: var(--portal-glow-pink);
+}
+
+.averra-admin .shadow-sm,
+.averra-admin .shadow-\[0_6px_18px_rgba\(15\2c 23\2c 42\2c 0\.03\)\],
+.averra-admin .shadow-\[0_8px_22px_rgba\(8\2c 145\2c 178\2c 0\.10\)\],
+.averra-admin .shadow-\[0_10px_24px_rgba\(37\2c 99\2c 235\2c 0\.18\)\],
+.averra-admin .shadow-\[0_12px_26px_rgba\(15\2c 23\2c 42\2c 0\.16\)\],
+.averra-admin .shadow-\[0_12px_30px_rgba\(15\2c 23\2c 42\2c 0\.04\)\] {
+  box-shadow: var(--portal-shadow-sm);
 }
 
 @media (max-width: 1279px) {

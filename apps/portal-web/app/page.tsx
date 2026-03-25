@@ -17,8 +17,8 @@ const adminOptions = [
     href: `${config.serviceEndpoints.admin}/login`
   },
   {
-    label: 'Averra Control Center',
-    description: 'Open Averra-wide operations for tenants, governance, and system health.',
+    label: 'averra control center',
+    description: 'Open averra-wide operations for tenants, governance, and system health.',
     href: `${config.serviceEndpoints.admin}/login`
   }
 ];
@@ -81,14 +81,31 @@ async function PortalLandingPage() {
       <section className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-4 py-16 sm:px-6">
         <div className="max-w-3xl">
           <p className="averra-platform-pill px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em]">
-            <span className="averra-platform-mark">AV</span>
+            <span className="averra-platform-logo averra-platform-logo--pill" aria-hidden="true">
+              {/* eslint-disable-next-line @next/next/no-img-element -- static platform branding asset is served from local public storage */}
+              <img src="/branding/averra_logo_cutout.svg" alt="" />
+            </span>
             Demo Access: {matchedDemoUser?.username ?? demoAccessUser}
           </p>
+          <div className="averra-platform-lockup mt-8">
+            <span className="averra-platform-logo averra-platform-logo--hero" aria-hidden="true">
+              {/* eslint-disable-next-line @next/next/no-img-element -- static platform branding asset is served from local public storage */}
+              <img src="/branding/averra_logo_cutout.svg" alt="" />
+            </span>
+            <div>
+              <p className="averra-platform-kicker text-xs font-semibold text-[var(--averra-platform-muted)]">
+                averra access
+              </p>
+              <p className="mt-2 text-lg font-semibold text-white">
+                Unified platform entry
+              </p>
+            </div>
+          </div>
           <h1 className="mt-6 text-5xl font-semibold tracking-tight sm:text-6xl">
-            <span className="averra-platform-wordmark">Averra</span> platform access for local development.
+            <span className="averra-platform-wordmark">averra</span> platform access for local development.
           </h1>
           <p className="averra-platform-text-muted mt-6 max-w-2xl text-lg leading-8">
-            Launch tenant experiences, open the Averra control center, and move between provider, member, employer, and broker surfaces from one platform entry point.
+            Launch tenant experiences, open the averra control center, and move between provider, member, employer, and broker surfaces from one platform entry point.
           </p>
           <div className="mt-8">
             <Link
@@ -147,10 +164,10 @@ async function PortalLandingPage() {
               Administration
             </p>
             <h2 className="mt-3 text-2xl font-semibold">
-              Averra control center access
+              averra control center access
             </h2>
             <p className="averra-platform-text-muted mt-3 text-sm leading-6">
-              Use the Averra control center to manage tenant operations or platform-wide administration.
+              Use the averra control center to manage tenant operations or platform-wide administration.
             </p>
           </div>
 

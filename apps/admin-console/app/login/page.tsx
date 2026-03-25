@@ -32,7 +32,7 @@ function AdminLoginPageContent() {
     return (
       <main className="min-h-screen bg-admin-bg px-6 py-12 text-admin-text">
         <div className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center justify-center">
-          <section className="w-full rounded-3xl border border-admin-border bg-white p-10 text-center shadow-sm">
+          <section className="admin-form-card w-full p-10 text-center">
             <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
               Returning To Portal
             </p>
@@ -45,7 +45,7 @@ function AdminLoginPageContent() {
             <div className="mt-8">
               <Link
                 href={`${config.serviceEndpoints.portal}/login`}
-                className="inline-flex rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                className="admin-button admin-button--primary"
               >
                 Go to portal login
               </Link>
