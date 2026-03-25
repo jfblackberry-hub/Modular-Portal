@@ -1,0 +1,201 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@400;500;600;700&display=swap");
+
+/* =========================================
+   averra theme
+   ========================================= */
+
+:root {
+  --averra-purple: #7444c9;
+  --averra-pink: #d84fa3;
+  --averra-blue: #4c9fcc;
+  --averra-green: #4bdd88;
+
+  --bg-primary: #0b0f1a;
+  --bg-secondary: #12182a;
+  --bg-tertiary: #1a2238;
+  --bg-elevated: rgba(20, 24, 42, 0.9);
+
+  --text-primary: #e6eaf2;
+  --text-secondary: #aab3c5;
+  --text-muted: #6e7891;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+
+  --gradient-primary: linear-gradient(135deg, #5e3db3, #4c9fcc);
+  --gradient-accent: linear-gradient(135deg, #7444c9, #d84fa3);
+  --gradient-surface:
+    linear-gradient(135deg, rgba(116, 68, 201, 0.18), rgba(76, 159, 204, 0.14)),
+    rgba(255, 255, 255, 0.04);
+
+  --glow-soft: 0 0 12px rgba(116, 68, 201, 0.25);
+  --glow-pink: 0 0 24px rgba(216, 79, 163, 0.3);
+  --glow-blue: 0 0 24px rgba(76, 159, 204, 0.28);
+
+  --font-heading: Montserrat, Inter, "Segoe UI", Arial, sans-serif;
+  --font-body: "Open Sans", Inter, "Segoe UI", Arial, sans-serif;
+
+  --averra-white: #ffffff;
+  --averra-black: #090814;
+  --averra-ink: #0f1330;
+  --averra-panel: rgba(18, 24, 42, 0.88);
+  --averra-panel-strong: rgba(12, 17, 30, 0.94);
+  --averra-panel-soft: rgba(255, 255, 255, 0.06);
+  --averra-border: var(--border-subtle);
+  --averra-border-strong: rgba(216, 79, 163, 0.28);
+
+  --averra-success: #4bdd88;
+  --averra-warning: #ffbc42;
+  --averra-danger: #ff5f6d;
+  --averra-info: #4c9fcc;
+
+  --averra-gradient-primary: linear-gradient(135deg, #5e3db3 0%, #7444c9 36%, #4c9fcc 100%);
+  --averra-gradient-button: linear-gradient(135deg, #5e3db3 0%, #7444c9 42%, #d84fa3 100%);
+  --averra-gradient-accent: linear-gradient(90deg, #7444c9 0%, #d84fa3 55%, #4c9fcc 100%);
+  --averra-gradient-hero:
+    radial-gradient(circle at top left, rgba(116, 68, 201, 0.24), transparent 22rem),
+    radial-gradient(circle at 82% 0%, rgba(76, 159, 204, 0.18), transparent 24rem),
+    linear-gradient(180deg, #0b0f1a 0%, #11182c 48%, #090d18 100%);
+
+  --portal-bg:
+    radial-gradient(circle at top center, rgba(116, 68, 201, 0.2), transparent 26%),
+    radial-gradient(circle at right top, rgba(76, 159, 204, 0.16), transparent 24%),
+    radial-gradient(circle at left bottom, rgba(216, 79, 163, 0.14), transparent 24%),
+    linear-gradient(180deg, #0b0f1a 0%, #11182c 52%, #0a0f19 100%);
+  --portal-surface: var(--averra-panel);
+  --portal-surface-strong: var(--averra-panel-strong);
+  --portal-surface-muted: var(--averra-panel-soft);
+  --portal-text: var(--text-primary);
+  --portal-text-muted: var(--text-secondary);
+  --portal-heading: #ffffff;
+
+  --portal-shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.22);
+  --portal-shadow-md: 0 16px 40px rgba(0, 0, 0, 0.28);
+  --portal-shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.34);
+  --portal-glow-pink: var(--glow-pink);
+  --portal-glow-blue: var(--glow-blue);
+
+  --portal-radius-xs: 8px;
+  --portal-radius-sm: 14px;
+  --portal-radius-md: 18px;
+  --portal-radius-lg: 28px;
+  --portal-radius-pill: 999px;
+
+  --portal-focus-ring: 0 0 0 3px rgba(76, 159, 204, 0.32);
+  --portal-transition-fast: 160ms ease;
+  --portal-transition: 240ms ease;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--portal-bg);
+  color: var(--portal-text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  line-height: 1.5;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(216, 79, 163, 0.28);
+  color: #fff;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  color: var(--portal-heading);
+  letter-spacing: 0.01em;
+}
+
+a {
+  color: #a7d4ef;
+  text-decoration: none;
+  transition: color var(--portal-transition-fast), text-shadow var(--portal-transition-fast);
+}
+
+a:hover {
+  color: #ffffff;
+  text-shadow: var(--portal-glow-blue);
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.card:hover {
+  border-color: var(--border-strong);
+}
+
+.btn-primary {
+  background: var(--gradient-primary);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: var(--glow-soft);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  padding: 10px 18px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-strong);
+}
+
+.btn-accent {
+  background: var(--gradient-accent);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+}
+
+.btn-accent:hover {
+  box-shadow: 0 0 16px rgba(216, 79, 163, 0.35);
+}
+
+.highlight {
+  color: var(--averra-pink);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
