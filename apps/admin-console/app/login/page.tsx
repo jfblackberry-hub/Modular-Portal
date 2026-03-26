@@ -33,8 +33,15 @@ function AdminLoginPageContent() {
       <main className="min-h-screen bg-admin-bg px-6 py-12 text-admin-text">
         <div className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center justify-center">
           <section className="admin-form-card w-full p-10 text-center">
+            <div className="admin-login-brand justify-center">
+              <span className="admin-login-brand__mark" aria-hidden="true">
+                {/* eslint-disable-next-line @next/next/no-img-element -- platform logo is served from local static branding assets */}
+                <img src="/branding/averra_logo_cutout.svg" alt="" className="admin-brand-logo" />
+              </span>
+              <span className="admin-login-brand__label">averra control center</span>
+            </div>
             <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
-              Returning To Portal
+              Returning to portal
             </p>
             <h1 className="mt-4 text-4xl font-semibold tracking-tight text-admin-text">
               Taking you to the main portal login.
@@ -60,6 +67,13 @@ function AdminLoginPageContent() {
     <main className="min-h-screen bg-admin-bg px-6 py-12 text-admin-text">
       <div className="mx-auto flex min-h-[80vh] w-full max-w-3xl items-center justify-center">
         <div className="w-full space-y-5">
+          <div className="admin-login-brand justify-center">
+            <span className="admin-login-brand__mark" aria-hidden="true">
+              {/* eslint-disable-next-line @next/next/no-img-element -- platform logo is served from local static branding assets */}
+              <img src="/branding/averra_logo_cutout.svg" alt="" className="admin-brand-logo" />
+            </span>
+            <span className="admin-login-brand__label">averra control center</span>
+          </div>
           <AdminLoginForm />
           <div className="text-center text-sm text-admin-muted">
             Need member access instead?{' '}

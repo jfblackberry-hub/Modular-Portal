@@ -5,13 +5,13 @@ export default function AdminIndexPage() {
     <div className="space-y-6">
       <div>
         <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
-          Averra control plane
+          averra control plane
         </p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight text-admin-text">
-          Averra governance workspace
+          averra governance workspace
         </h1>
         <p className="mt-3 max-w-3xl text-base leading-7 text-admin-muted">
-          Use dedicated views for licensing, feature flags, and roles. Tenant rendering stays outside the Averra control center.
+          Use dedicated views for licensing, feature flags, and roles. Tenant rendering stays outside the averra control center.
         </p>
       </div>
 

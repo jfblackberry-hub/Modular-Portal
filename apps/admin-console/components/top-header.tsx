@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight, LogOut, Shield } from 'lucide-react';
+import { ChevronRight, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -26,7 +26,7 @@ function getInitials(email: string) {
 export function TopHeader({ session, signOut }: TopHeaderProps) {
   const pathname = usePathname();
   const routeContext = getAdminRouteContext(pathname);
-  const workspaceLabel = session?.isPlatformAdmin ? 'Averra Admin' : 'Tenant Admin';
+  const workspaceLabel = session?.isPlatformAdmin ? 'averra admin' : 'Tenant Admin';
   const homeHref = session ? getDefaultAdminHref(session.isPlatformAdmin) : '/admin';
 
   return (
@@ -34,13 +34,14 @@ export function TopHeader({ session, signOut }: TopHeaderProps) {
       <div className="admin-top-header__content">
         <div className="admin-top-header__brand">
           <div className="admin-top-header__brand-mark" aria-hidden="true">
-            <Shield size={18} />
+            {/* eslint-disable-next-line @next/next/no-img-element -- platform logo is served from local static branding assets */}
+            <img src="/branding/averra_logo_cutout.svg" alt="" className="admin-brand-logo" />
           </div>
           <div className="admin-top-header__brand-copy">
-            <p className="admin-top-header__eyebrow">Averra control plane</p>
+            <p className="admin-top-header__eyebrow">averra control plane</p>
             <div className="admin-top-header__brand-row">
               <Link href={homeHref} className="admin-top-header__title admin-top-header__title-link">
-                Averra Control Center
+                averra control center
               </Link>
               <span className="admin-top-header__divider" aria-hidden="true">
                 <ChevronRight size={14} />

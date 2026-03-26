@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 
+import { PlatformBrandingStylesheet } from './platform-branding-stylesheet';
+
 export function DemoGate() {
   const router = useRouter();
   const [username, setUsername] = useState('');
@@ -39,8 +41,10 @@ export function DemoGate() {
   }
 
   return (
-    <main className="averra-platform-screen">
-      <section className="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
+    <>
+      <PlatformBrandingStylesheet />
+      <main className="averra-platform-screen">
+        <section className="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(440px,0.9fr)]">
           <section className="averra-platform-card overflow-hidden">
             <div className="relative px-10 py-12 sm:px-12 sm:py-16">
@@ -58,7 +62,7 @@ export function DemoGate() {
                     <img src="/branding/averra_logo_cutout.svg" alt="" />
                   </span>
                   <span className="text-sm font-semibold tracking-[0.08em] text-white">
-                    Averra Demo Access
+                    averra demo access
                   </span>
                 </div>
 
@@ -78,7 +82,7 @@ export function DemoGate() {
                 </div>
 
                 <h1 className="mt-8 text-4xl font-semibold leading-tight sm:text-5xl">
-                  Controlled entry for the <span className="averra-platform-wordmark">Averra</span> demo environment
+                  Controlled entry for the <span className="averra-platform-wordmark">averra</span> demo environment
                 </h1>
                 <p className="averra-platform-text-muted mt-5 max-w-2xl text-base leading-7">
                   This front-door screen keeps the pilot materials behind a lightweight
@@ -102,7 +106,7 @@ export function DemoGate() {
               Demo Sign-In
             </p>
             <h2 className="mt-4 text-3xl font-semibold text-white">
-              Enter the Averra pilot portal
+              Enter the averra pilot portal
             </h2>
             <p className="averra-platform-text-muted mt-3 text-sm leading-6">
               Use your assigned demo credentials to unlock the pilot environment.
@@ -150,7 +154,8 @@ export function DemoGate() {
             </form>
           </section>
         </div>
-      </section>
-    </main>
+        </section>
+      </main>
+    </>
   );
 }

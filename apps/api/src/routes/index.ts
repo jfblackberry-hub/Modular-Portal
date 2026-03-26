@@ -14,6 +14,7 @@ import { healthRoutes } from './health';
 import { jobRoutes } from './jobs';
 import { memberRoutes } from './member';
 import { metricsRoutes } from './metrics';
+import { platformBrandingRoutes } from './platform-branding';
 import { previewSessionRoutes } from './preview-sessions';
 import { roleRoutes } from './roles';
 import { searchRoutes } from './search';
@@ -35,6 +36,7 @@ export function registerRoutes(app: FastifyInstance) {
   app.register(jobRoutes);
   app.register(memberRoutes);
   app.register(metricsRoutes);
+  app.register(platformBrandingRoutes);
   app.register(previewSessionRoutes);
   app.register(roleRoutes);
   app.register(searchRoutes);

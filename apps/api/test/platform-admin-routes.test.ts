@@ -5,8 +5,11 @@ process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
 
 import { prisma } from '@payer-portal/database';
+import { getPublicAssetStorageService } from '@payer-portal/server';
 import Fastify from 'fastify';
 
+import { registerPlugins } from '../src/plugins/index.js';
+import { platformBrandingRoutes } from '../src/routes/platform-branding.js';
 import { featureFlagRoutes } from '../src/routes/feature-flags.js';
 import { roleRoutes } from '../src/routes/roles.js';
 import { tenantRoutes } from '../src/routes/tenants.js';
@@ -21,6 +24,9 @@ const TEST_TENANT_SLUG = 'platform-plane-tenant';
 
 async function cleanupTestData() {
   await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
+  await getPublicAssetStorageService()
+    .delete('platform/branding/platform-custom.css')
+    .catch(() => undefined);
 
   await prisma.featureFlag.deleteMany({
     where: {
@@ -51,6 +57,23 @@ async function cleanupTestData() {
       slug: TEST_TENANT_SLUG
     }
   });
+}
+
+function buildMultipartBody(input: {
+  boundary: string;
+  fieldName: string;
+  fileName: string;
+  contentType: string;
+  content: string;
+}) {
+  return Buffer.from(
+    `--${input.boundary}\r\n` +
+      `Content-Disposition: form-data; name="${input.fieldName}"; filename="${input.fileName}"\r\n` +
+      `Content-Type: ${input.contentType}\r\n\r\n` +
+      `${input.content}\r\n` +
+      `--${input.boundary}--\r\n`,
+    'utf8'
+  );
 }
 
 async function createFixtureData() {
@@ -349,6 +372,58 @@ test('platform-admin tenant creation returns a friendly error for duplicate slug
   assert.equal(response.statusCode, 400, response.body);
   assert.match(response.body, /Tenant slug 'platform-plane-tenant' already exists\./);
   assert.doesNotMatch(response.body, /Unique constraint failed/i);
+
+  await app.close();
+});
+
+test('platform admins can upload platform branding css and public route serves it', async () => {
+  const { platformAdminUser } = await createFixtureData();
+  const app = Fastify();
+  registerPlugins(app);
+  await platformBrandingRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+  const boundary = '----codex-platform-css-boundary';
+  const cssContent = 'body.averra-admin { outline: 1px solid rgb(255, 0, 255); }';
+
+  const uploadResponse = await app.inject({
+    method: 'POST',
+    url: '/platform-admin/settings/branding/css',
+    headers: {
+      authorization: `Bearer ${platformToken}`,
+      'x-tenant-id': 'platform',
+      'content-type': `multipart/form-data; boundary=${boundary}`
+    },
+    payload: buildMultipartBody({
+      boundary,
+      fieldName: 'file',
+      fileName: 'platform.css',
+      contentType: 'text/css',
+      content: cssContent
+    })
+  });
+
+  assert.equal(uploadResponse.statusCode, 201, uploadResponse.body);
+  assert.equal(uploadResponse.json().hasCustomCss, true);
+
+  const metadataResponse = await app.inject({
+    method: 'GET',
+    url: '/platform-admin/settings/branding',
+    headers: {
+      authorization: `Bearer ${platformToken}`,
+      'x-tenant-id': 'platform'
+    }
+  });
+
+  assert.equal(metadataResponse.statusCode, 200, metadataResponse.body);
+  assert.equal(metadataResponse.json().hasCustomCss, true);
+
+  const publicCssResponse = await app.inject({
+    method: 'GET',
+    url: '/public/platform-branding/custom.css'
+  });
+
+  assert.equal(publicCssResponse.statusCode, 200, publicCssResponse.body);
+  assert.match(publicCssResponse.body, /body\.averra-admin/);
 
   await app.close();
 });

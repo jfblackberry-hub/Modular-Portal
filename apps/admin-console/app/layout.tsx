@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 
 import { AdminSessionProvider } from '../components/admin-session-provider';
 import { AdminShell } from '../components/admin-shell';
+import { config } from '../lib/public-runtime';
 
 export const metadata: Metadata = {
   title: 'averra control center',
@@ -17,6 +18,12 @@ export default function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
+      <head>
+        <link
+          rel="stylesheet"
+          href={`${config.serviceEndpoints.api}/public/platform-branding/custom.css`}
+        />
+      </head>
       <body className="averra-admin">
         <AdminSessionProvider>
           <AdminShell>{children}</AdminShell>

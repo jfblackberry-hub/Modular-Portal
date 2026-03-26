@@ -1,0 +1,203 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@400;500;600;700&display=swap");
+
+:root {
+  --averra-purple: #7444c9;
+  --averra-purple-deep: #5e3db3;
+  --averra-purple-ink: #3e2b72;
+  --averra-pink: #d84fa3;
+  --averra-blue: #4c9fcc;
+  --averra-blue-deep: #3f7fa3;
+  --averra-green: #4bdd88;
+  --averra-white: #ffffff;
+  --averra-black: #090814;
+  --averra-ink: #0f1330;
+
+  --bg-primary: #0b0f1a;
+  --bg-secondary: #11172a;
+  --bg-tertiary: #171f35;
+  --bg-elevated: rgba(20, 26, 46, 0.88);
+  --bg-input: rgba(255, 255, 255, 0.045);
+
+  --text-primary: #f3f6fb;
+  --text-secondary: #b8c1d6;
+  --text-muted: #8a94ac;
+  --text-subtle: #6d7690;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  --gradient-primary: linear-gradient(135deg, #5e3db3 0%, #5a49b7 30%, #4d66b6 65%, #3f7fa3 100%);
+  --gradient-accent: linear-gradient(135deg, rgba(116, 68, 201, 0.95) 0%, rgba(216, 79, 163, 0.85) 100%);
+  --gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  --gradient-page:
+    radial-gradient(circle at 28% 22%, rgba(116, 68, 201, 0.18) 0%, rgba(116, 68, 201, 0.06) 18%, transparent 42%),
+    radial-gradient(circle at 76% 18%, rgba(76, 159, 204, 0.16) 0%, rgba(76, 159, 204, 0.05) 22%, transparent 46%),
+    linear-gradient(135deg, #0b0f1a 0%, #0d1120 45%, #081228 100%);
+
+  --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 18px 50px rgba(0, 0, 0, 0.32);
+  --shadow-lg: 0 28px 70px rgba(0, 0, 0, 0.42);
+  --glow-soft: 0 0 14px rgba(116, 68, 201, 0.18);
+  --glow-pink: 0 0 26px rgba(216, 79, 163, 0.28);
+  --glow-blue: 0 0 26px rgba(76, 159, 204, 0.24);
+
+  --font-heading: "Montserrat", "Open Sans", Arial, sans-serif;
+  --font-body: "Open Sans", Arial, sans-serif;
+
+  --averra-panel: rgba(18, 24, 42, 0.88);
+  --averra-panel-strong: rgba(12, 17, 30, 0.94);
+  --averra-panel-soft: rgba(255, 255, 255, 0.06);
+  --averra-border: var(--border-default);
+  --averra-border-strong: rgba(216, 79, 163, 0.28);
+  --averra-success: #4bdd88;
+  --averra-warning: #ffbc42;
+  --averra-danger: #ff5f6d;
+  --averra-info: #4c9fcc;
+
+  --averra-gradient-primary: linear-gradient(135deg, #5e3db3 0%, #7444c9 36%, #4c9fcc 100%);
+  --averra-gradient-button: linear-gradient(135deg, #5e3db3 0%, #7444c9 42%, #d84fa3 100%);
+  --averra-gradient-accent: linear-gradient(90deg, #7444c9 0%, #d84fa3 55%, #4c9fcc 100%);
+  --averra-gradient-hero:
+    radial-gradient(circle at top left, rgba(116, 68, 201, 0.24), transparent 22rem),
+    radial-gradient(circle at 82% 0%, rgba(76, 159, 204, 0.18), transparent 24rem),
+    linear-gradient(180deg, #0b0f1a 0%, #11182c 48%, #090d18 100%);
+
+  --portal-bg: var(--gradient-page);
+  --portal-surface: var(--averra-panel);
+  --portal-surface-strong: var(--averra-panel-strong);
+  --portal-surface-muted: var(--averra-panel-soft);
+  --portal-text: var(--text-primary);
+  --portal-text-muted: var(--text-secondary);
+  --portal-heading: #ffffff;
+  --portal-shadow-sm: var(--shadow-sm);
+  --portal-shadow-md: var(--shadow-md);
+  --portal-shadow-lg: var(--shadow-lg);
+  --portal-glow-pink: var(--glow-pink);
+  --portal-glow-blue: var(--glow-blue);
+  --portal-radius-xs: 8px;
+  --portal-radius-sm: 14px;
+  --portal-radius-md: 18px;
+  --portal-radius-lg: 28px;
+  --portal-radius-pill: 999px;
+  --portal-focus-ring: 0 0 0 3px rgba(76, 159, 204, 0.32);
+  --portal-transition-fast: 160ms ease;
+  --portal-transition: 240ms ease;
+}
+
+body.averra-admin,
+.averra-platform-screen {
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body.averra-admin {
+  min-height: 100vh;
+  background: var(--gradient-page);
+  background-color: var(--bg-primary);
+}
+
+.averra-platform-screen {
+  min-height: 100vh;
+  background: var(--gradient-page);
+  background-color: var(--bg-primary);
+}
+
+body.averra-admin h1,
+body.averra-admin h2,
+body.averra-admin h3,
+body.averra-admin h4,
+body.averra-admin h5,
+body.averra-admin h6,
+.averra-platform-screen h1,
+.averra-platform-screen h2,
+.averra-platform-screen h3,
+.averra-platform-screen h4,
+.averra-platform-screen h5,
+.averra-platform-screen h6 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+body.averra-admin a,
+.averra-platform-screen a {
+  transition: color var(--portal-transition-fast), text-shadow var(--portal-transition-fast);
+}
+
+body.averra-admin a:hover,
+.averra-platform-screen a:hover {
+  text-shadow: var(--portal-glow-blue);
+}
+
+body.averra-admin .panel,
+body.averra-admin .card,
+body.averra-admin .surface,
+.averra-platform-screen .panel,
+.averra-platform-screen .card,
+.averra-platform-screen .surface {
+  background: var(--gradient-surface), rgba(18, 24, 42, 0.88);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+body.averra-admin .brand-chip,
+body.averra-admin .badge,
+body.averra-admin .pill,
+.averra-platform-screen .brand-chip,
+.averra-platform-screen .badge,
+.averra-platform-screen .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.averra-admin .btn,
+body.averra-admin button,
+.averra-platform-screen .btn,
+.averra-platform-screen button {
+  transition:
+    transform 160ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+}
+
+body.averra-admin .btn-primary,
+body.averra-admin .btn-accent,
+.averra-platform-screen .btn-primary,
+.averra-platform-screen .btn-accent {
+  background: var(--averra-gradient-button);
+  color: #fff;
+  box-shadow: var(--glow-pink), 0 16px 32px rgba(0, 0, 0, 0.28);
+}
+
+body.averra-admin .btn-secondary,
+.averra-platform-screen .btn-secondary {
+  border: 1px solid rgba(216, 79, 163, 0.26);
+  background:
+    linear-gradient(135deg, rgba(216, 79, 163, 0.18), rgba(76, 159, 204, 0.16)),
+    rgba(17, 13, 44, 0.82);
+  color: rgba(255, 255, 255, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), var(--shadow-sm);
+}
+
+body.averra-admin .highlight,
+.averra-platform-screen .highlight {
+  color: var(--averra-pink);
+}
+
+body.averra-admin .text-muted,
+.averra-platform-screen .text-muted {
+  color: var(--text-muted);
+}

@@ -1,5 +1,6 @@
 import { AdminPageLayout } from '../../../../components/admin-ui';
 import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
+import { PlatformBrandingSettings } from '../../../../components/platform-branding-settings';
 import { SectionCard } from '../../../../components/section-card';
 import { config } from '../../../../lib/public-runtime';
 
@@ -11,6 +12,8 @@ export default function AdminPlatformSettingsPage() {
         title="Platform settings"
         description="Shared operating defaults for the multi-tenant platform and platform operator workflows."
       >
+        <PlatformBrandingSettings />
+
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <SectionCard title="Default quotas" description="New tenant defaults used during provisioning.">
             <ul className="space-y-2 text-sm text-admin-muted">

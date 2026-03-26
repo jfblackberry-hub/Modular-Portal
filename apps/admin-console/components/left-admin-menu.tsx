@@ -17,11 +17,12 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
         <div className="admin-left-rail__inner">
           <div className="admin-left-rail__brand">
             <div className="admin-left-rail__brand-mark" aria-hidden="true">
-              P
+              {/* eslint-disable-next-line @next/next/no-img-element -- platform logo is served from local static branding assets */}
+              <img src="/branding/averra_logo_cutout.svg" alt="" className="admin-brand-logo" />
             </div>
-          <div>
-              <p className="admin-left-rail__eyebrow">Averra Platform</p>
-              <h1 className="admin-left-rail__title">Averra Control Center</h1>
+            <div>
+              <p className="admin-left-rail__eyebrow">averra platform</p>
+              <h1 className="admin-left-rail__title">averra control center</h1>
             </div>
           </div>
           <p className="text-sm text-admin-nav-muted">Admin session required.</p>
@@ -35,13 +36,14 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
       <div className="admin-left-rail__inner">
         <div className="admin-left-rail__brand">
           <div className="admin-left-rail__brand-mark" aria-hidden="true">
-            P
+            {/* eslint-disable-next-line @next/next/no-img-element -- platform logo is served from local static branding assets */}
+            <img src="/branding/averra_logo_cutout.svg" alt="" className="admin-brand-logo" />
           </div>
           <div>
-            <p className="admin-left-rail__eyebrow">Averra Platform</p>
-            <h1 className="admin-left-rail__title">Averra Control Center</h1>
+            <p className="admin-left-rail__eyebrow">averra platform</p>
+            <h1 className="admin-left-rail__title">averra control center</h1>
             <p className="admin-left-rail__description">
-              Operational control, tenant lifecycle management, and integration oversight across the Averra platform.
+              Operational control, tenant lifecycle management, and integration oversight across the averra platform.
             </p>
           </div>
         </div>
