@@ -433,7 +433,15 @@ Resources:
           done
 
           /usr/local/bin/modular-portal-compose run --rm --entrypoint sh api -lc \
-            "cd /workspace && pnpm --filter @payer-portal/database exec prisma migrate deploy && pnpm --filter @payer-portal/database db:seed && pnpm --filter @payer-portal/database db:seed:employer-groups"
+            "cd /workspace && pnpm --filter @payer-portal/database exec prisma migrate deploy"
+
+          if [[ \"$(/usr/local/bin/modular-portal-compose exec -T postgres psql -U \"${DatabaseUser}\" -d \"${DatabaseName}\" -tAc \"SELECT 1 FROM \\\"Tenant\\\" WHERE slug = 'blue-horizon-health' LIMIT 1\")\" != \"1\" ]]; then
+            /usr/local/bin/modular-portal-compose run --rm --entrypoint sh api -lc \
+              "cd /workspace && pnpm --filter @payer-portal/database db:seed"
+          fi
+
+          /usr/local/bin/modular-portal-compose run --rm --entrypoint sh api -lc \
+            "cd /workspace && pnpm --filter @payer-portal/database db:seed:provider-tenant && pnpm --filter @payer-portal/database db:seed:employer-groups"
           EOF
           chmod +x /usr/local/bin/modular-portal-init-db
 

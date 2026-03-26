@@ -222,6 +222,7 @@ function buildSessionBrandingConfig(
       : {};
 
   delete baseConfig.customCss;
+  delete baseConfig.providerDemoData;
 
   return {
     ...baseConfig,

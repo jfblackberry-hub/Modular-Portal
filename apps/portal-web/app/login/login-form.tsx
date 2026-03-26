@@ -100,7 +100,10 @@ function LoginFormContent({
       });
 
       if (!response.ok) {
-        setError('Unable to sign in. Check your credentials and try again.');
+        const payload = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setError(payload?.message ?? 'Unable to sign in. Check your credentials and try again.');
         return;
       }
 
