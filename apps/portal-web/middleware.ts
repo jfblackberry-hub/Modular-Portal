@@ -116,16 +116,11 @@ export async function middleware(request: NextRequest) {
   const isProtectedDemoPage =
     pathname === '/login' ||
     pathname.startsWith('/login') ||
-    pathname === '/provider-login' ||
-    pathname.startsWith('/provider-login') ||
     pathname === '/employer-login' ||
     pathname.startsWith('/employer-login');
   const isProtectedDemoAuthApi =
     pathname === '/api/auth/login' ||
-    pathname === '/api/auth/login/provider' ||
-    pathname === '/api/auth/login/employer' ||
-    pathname === '/api/auth/session' ||
-    pathname === '/api/auth/logout';
+    pathname === '/api/auth/login/employer';
 
   if (isDemoAccessApi) {
     return NextResponse.next();
