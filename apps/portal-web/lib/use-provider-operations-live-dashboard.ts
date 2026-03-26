@@ -14,6 +14,7 @@ export function useProviderOperationsLiveDashboard(
 ) {
   const [dashboard, setDashboard] = useState(initialDashboard);
   const [refreshState, setRefreshState] = useState<'live' | 'fallback'>('live');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const lastStreamMessageAtRef = useRef<number | null>(null);
   const streamStateRef = useRef<'connecting' | 'open' | 'degraded'>('connecting');
 
@@ -24,11 +25,13 @@ export function useProviderOperationsLiveDashboard(
 
     async function pollSnapshot() {
       try {
+        setIsRefreshing(true);
         const response = await fetch('/api/provider-operations/dashboard', {
           cache: 'no-store'
         });
 
         if (!response.ok) {
+          setIsRefreshing(false);
           return;
         }
 
@@ -47,6 +50,10 @@ export function useProviderOperationsLiveDashboard(
         });
       } catch {
         // Fallback polling should fail quietly and retry on the next interval.
+      } finally {
+        if (!cancelled) {
+          setIsRefreshing(false);
+        }
       }
     }
 
@@ -77,6 +84,7 @@ export function useProviderOperationsLiveDashboard(
           );
           setRefreshState('live');
         });
+        setIsRefreshing(false);
       });
 
       eventSource.addEventListener('heartbeat', () => {
@@ -133,6 +141,32 @@ export function useProviderOperationsLiveDashboard(
 
   return {
     dashboard,
+    isRefreshing,
+    lastRefreshedAt: dashboard.generatedAt,
+    refreshNow: async () => {
+      await (async () => {
+        try {
+          setIsRefreshing(true);
+          const response = await fetch('/api/provider-operations/dashboard', {
+            cache: 'no-store'
+          });
+
+          if (!response.ok) {
+            return;
+          }
+
+          const nextDashboard =
+            (await response.json()) as ProviderOperationsDashboardContract;
+          startTransition(() => {
+            setDashboard((current) =>
+              mergeProviderOperationsDashboard(current, nextDashboard)
+            );
+          });
+        } finally {
+          setIsRefreshing(false);
+        }
+      })();
+    },
     refreshState
   };
 }

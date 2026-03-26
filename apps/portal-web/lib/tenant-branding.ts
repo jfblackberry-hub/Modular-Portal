@@ -21,6 +21,7 @@ export interface TenantBranding {
   faviconUrl?: string;
   fontFamily: string;
   heroImageUrl?: string;
+  themeKey?: string;
   primaryColor: string;
   primarySoftColor: string;
   secondaryColor: string;
@@ -245,6 +246,7 @@ function buildBranding(
     customCss:
       (typeof brandingOverride?.customCss === 'string' ? brandingOverride.customCss : undefined) ??
       getStringValue(config, 'customCss'),
+    themeKey: getStringValueFromKeys(config, ['themeKey', 'theme', 'tenantThemeKey']),
     heroImageUrl:
       brandingOverride?.heroImageUrl ??
       getStringValue(config, 'heroImageUrl') ??

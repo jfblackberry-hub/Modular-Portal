@@ -13,6 +13,8 @@ export type ProviderPortalRouteKey =
   | 'admin';
 
 export type ProviderPortalNavIcon =
+  | 'activity'
+  | 'calendar-days'
   | 'home'
   | 'shield-check'
   | 'clipboard-list'

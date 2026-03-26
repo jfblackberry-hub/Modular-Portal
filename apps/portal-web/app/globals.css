@@ -31,13 +31,40 @@
   --success-500: #4fa37a;
   --accent-teal-500: #4c9e9a;
   --bg-page: #f6f8fb;
+  --bg-page-strong: #eef3f8;
   --bg-card: #ffffff;
+  --bg-card-elevated: rgba(255, 255, 255, 0.94);
+  --bg-card-muted: #f4f7fb;
+  --bg-card-emphasis: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tenant-primary-color) 94%, #ffffff),
+    color-mix(in srgb, var(--tenant-primary-color) 86%, #0f172a)
+  );
   --border-subtle: #d9e2ec;
+  --border-emphasis: color-mix(in srgb, var(--tenant-primary-color) 18%, #cbd5e1);
   --text-primary: #1f2937;
   --text-secondary: #4b5563;
   --text-muted: #6b7280;
   --danger-600: #b42318;
   --warning-600: #b54708;
+  --info-600: #1d4ed8;
+  --success-600: #0f766e;
+  --shadow-surface: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --shadow-surface-strong: 0 24px 64px rgba(15, 23, 42, 0.14);
+  --shadow-floating: 0 12px 28px rgba(15, 23, 42, 0.1);
+  --hero-panel-glow: color-mix(in srgb, var(--tenant-secondary-color) 16%, transparent);
+  --status-critical-bg: rgba(180, 35, 24, 0.1);
+  --status-critical-border: rgba(180, 35, 24, 0.2);
+  --status-critical-text: var(--danger-600);
+  --status-warning-bg: rgba(181, 71, 8, 0.1);
+  --status-warning-border: rgba(181, 71, 8, 0.2);
+  --status-warning-text: var(--warning-600);
+  --status-info-bg: rgba(29, 78, 216, 0.1);
+  --status-info-border: rgba(29, 78, 216, 0.18);
+  --status-info-text: var(--info-600);
+  --status-success-bg: rgba(15, 118, 110, 0.1);
+  --status-success-border: rgba(15, 118, 110, 0.18);
+  --status-success-text: var(--success-600);
   --tenant-primary: var(--primary-600);
   --tenant-secondary: #eaf4fb;
   --tenant-font: Inter, Aptos, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
@@ -127,9 +154,10 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, var(--tenant-primary-soft-color), transparent 20rem),
-    radial-gradient(circle at 85% 0%, var(--tenant-secondary-soft-color), transparent 22rem),
-    linear-gradient(180deg, #f9fbfd 0%, var(--bg-page) 28%, #f3f7fb 100%);
+    radial-gradient(circle at top left, var(--tenant-primary-soft-color), transparent 18rem),
+    radial-gradient(circle at 85% 0%, var(--tenant-secondary-soft-color), transparent 20rem),
+    radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.92), transparent 24rem),
+    linear-gradient(180deg, #fbfcfe 0%, var(--bg-page) 22%, var(--bg-page-strong) 100%);
   color: var(--text-primary);
   font-family: var(--tenant-font);
   font-size: 1rem;
@@ -170,9 +198,291 @@ img {
 
 .portal-card {
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  background: var(--bg-card);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  border-radius: 22px;
+  background: var(--bg-card-elevated);
+  box-shadow: var(--shadow-surface);
+  backdrop-filter: blur(10px);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.portal-card:hover {
+  border-color: var(--border-emphasis);
+  box-shadow: var(--shadow-floating);
+}
+
+.tenant-home-shell {
+  position: relative;
+}
+
+.tenant-home-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 22rem;
+  background:
+    radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--tenant-primary-color) 12%, transparent), transparent 28%),
+    radial-gradient(circle at 86% 12%, color-mix(in srgb, var(--tenant-secondary-color) 14%, transparent), transparent 26%);
+  pointer-events: none;
+}
+
+.tenant-home-layer {
+  position: relative;
+  z-index: 1;
+}
+
+.tenant-hero-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--tenant-primary-color) 14%, rgba(255, 255, 255, 0.2));
+  border-radius: 30px;
+  background: var(--bg-card-emphasis);
+  box-shadow: var(--shadow-surface-strong);
+  color: #fff;
+}
+
+.tenant-hero-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--tenant-secondary-color) 24%, transparent), transparent 16%),
+    radial-gradient(circle at 86% 18%, rgba(255, 255, 255, 0.08), transparent 12%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 52%);
+  pointer-events: none;
+}
+
+.tenant-hero-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.tenant-hero-row {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.tenant-hero-left,
+.tenant-hero-right {
+  min-width: 0;
+  min-height: 0;
+}
+
+.tenant-hero-insights-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.tenant-hero-insights-header {
+  flex: 0 0 auto;
+}
+
+.tenant-hero-insights-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: scroll;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.tenant-hero-insights-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tenant-hero-insights-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+
+.tenant-hero-insights-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+}
+
+.tenant-hero-insights-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.tenant-hero-insights-title {
+  color: rgba(255, 255, 255, 0.995);
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.tenant-hero-insights-copy {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.865rem;
+  line-height: 1.55;
+}
+
+.tenant-hero-insights-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.tenant-hero-insights-body .group:hover .tenant-hero-insights-title,
+.tenant-hero-insights-body .group:focus-visible .tenant-hero-insights-title {
+  color: rgba(255, 255, 255, 1);
+}
+
+.tenant-hero-insights-body .group:hover .tenant-hero-insights-copy,
+.tenant-hero-insights-body .group:focus-visible .tenant-hero-insights-copy {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+@media (min-width: 1280px) {
+  .tenant-hero-row {
+    grid-template-columns: minmax(0, 1fr) 380px;
+  }
+}
+
+.tenant-hero-kicker {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tenant-hero-title {
+  color: rgba(255, 255, 255, 1);
+  letter-spacing: -0.03em;
+}
+
+.tenant-hero-insights-heading {
+  color: rgba(255, 255, 255, 1);
+}
+
+.tenant-hero-copy {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.tenant-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.5rem;
+  padding: 0 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.tenant-hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 1.9rem;
+  padding: 0 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tenant-hero-stat {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.tenant-hero-stat__label {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tenant-hero-stat__value {
+  color: #fff;
+  font-size: clamp(1.7rem, 2vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.tenant-hero-stat__detail {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.9rem;
+}
+
+.tenant-section-shell {
+  border-color: color-mix(in srgb, var(--tenant-primary-color) 10%, var(--border-subtle));
+  box-shadow: var(--shadow-surface);
+}
+
+.tenant-subcard {
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  background: var(--bg-card-muted);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.tenant-action-panel {
+  border: 1px solid color-mix(in srgb, var(--tenant-primary-color) 10%, var(--border-subtle));
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(244, 247, 251, 0.96));
+  box-shadow: var(--shadow-floating);
+}
+
+.tenant-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 1.9rem;
+  padding: 0 0.8rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tenant-status-chip--critical {
+  border-color: var(--status-critical-border);
+  background: var(--status-critical-bg);
+  color: var(--status-critical-text);
+}
+
+.tenant-status-chip--warning {
+  border-color: var(--status-warning-border);
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
+}
+
+.tenant-status-chip--info {
+  border-color: var(--status-info-border);
+  background: var(--status-info-bg);
+  color: var(--status-info-text);
+}
+
+.tenant-status-chip--success {
+  border-color: var(--status-success-border);
+  background: var(--status-success-bg);
+  color: var(--status-success-text);
 }
 
 .averra-platform-screen {

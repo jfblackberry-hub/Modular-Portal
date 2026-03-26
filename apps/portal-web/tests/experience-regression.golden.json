@@ -53,13 +53,14 @@
       "title": "Provider Operations",
       "items": [
         { "label": "Dashboard", "href": "/provider/dashboard" },
-        { "label": "Eligibility", "href": "/provider/eligibility" },
+        { "label": "Scheduling", "href": "/provider/dashboard?detail=scheduling&filter=all" },
         { "label": "Authorizations", "href": "/provider/authorizations" },
-        { "label": "Claims & Payments", "href": "/provider/claims" },
+        { "label": "Utilization", "href": "/provider/dashboard?detail=utilization&filter=all" },
+        { "label": "Eligibility", "href": "/provider/eligibility" },
+        { "label": "Claims & Billing", "href": "/provider/claims" },
         { "label": "Patients", "href": "/provider/patients" },
         { "label": "Documents", "href": "/provider/documents" },
         { "label": "Messages", "href": "/provider/messages" },
-        { "label": "Support", "href": "/provider/support" },
         { "label": "Admin", "href": "/provider/admin" }
       ]
     }

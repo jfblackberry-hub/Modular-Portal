@@ -65,7 +65,7 @@ export async function GET() {
             )
           );
         }
-      }, 15_000);
+      }, 30_000);
 
       heartbeatInterval = setInterval(() => {
         controller.enqueue(
@@ -76,7 +76,7 @@ export async function GET() {
             })
           )
         );
-      }, 10_000);
+      }, 15_000);
     },
     cancel() {
       if (refreshInterval) {

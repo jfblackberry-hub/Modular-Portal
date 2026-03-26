@@ -393,7 +393,36 @@ export function resolveProviderOperationsDashboardFromSourceConnectors(input: {
     personaCode: input.currentUser.activePersonaCode ?? 'provider_user',
     tenantId: input.currentUser.tenantId,
     activeOrganizationUnitId: input.currentUser.activeOrganizationUnitId ?? null,
+    generatedAt: new Date().toISOString(),
+    refreshIntervalSeconds: 30,
+    alertsCount: 0,
+    organizationUnits: input.currentUser.accessibleOrganizationUnitIds.map((organizationUnitId) => ({
+      id: organizationUnitId,
+      name: organizationUnitId,
+      type: 'LOCATION',
+      isActive: organizationUnitId === input.currentUser.activeOrganizationUnitId
+    })),
+    quickActions: [],
+    attentionItems: [],
     widgets,
-    generatedAt: new Date().toISOString()
+    scheduling: {
+      metrics: [],
+      sessions: []
+    },
+    authorizations: {
+      metrics: [],
+      authorizations: []
+    },
+    utilization: {
+      metrics: [],
+      therapists: []
+    },
+    claims: {
+      metrics: [],
+      claims: [],
+      pipeline: [],
+      denialReasons: [],
+      dollarAmountAtRisk: 0
+    }
   };
 }

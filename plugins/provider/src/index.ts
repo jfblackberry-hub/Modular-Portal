@@ -22,12 +22,12 @@ export const PROVIDER_OPERATION_WIDGETS: PluginNavigationItem[] = [
     requiredPermissions: ['tenant.view', 'provider.view']
   },
   {
-    widgetId: 'provider-operations-eligibility',
-    label: 'Eligibility',
-    href: '/provider/eligibility',
-    icon: 'shield-check',
-    requiredPermissions: ['tenant.view', 'provider.eligibility.view'],
-    futureCapabilityId: 'provider_eligibility'
+    widgetId: 'provider-operations-scheduling',
+    label: 'Scheduling',
+    href: '/provider/dashboard?detail=scheduling&filter=all',
+    icon: 'calendar-days',
+    requiredPermissions: ['tenant.view', 'provider.view'],
+    futureCapabilityId: 'provider_scheduling'
   },
   {
     widgetId: 'provider-operations-authorizations',
@@ -38,8 +38,24 @@ export const PROVIDER_OPERATION_WIDGETS: PluginNavigationItem[] = [
     futureCapabilityId: 'provider_authorizations'
   },
   {
+    widgetId: 'provider-operations-utilization',
+    label: 'Utilization',
+    href: '/provider/dashboard?detail=utilization&filter=all',
+    icon: 'activity',
+    requiredPermissions: ['tenant.view', 'provider.view'],
+    futureCapabilityId: 'provider_utilization'
+  },
+  {
+    widgetId: 'provider-operations-eligibility',
+    label: 'Eligibility',
+    href: '/provider/eligibility',
+    icon: 'shield-check',
+    requiredPermissions: ['tenant.view', 'provider.eligibility.view'],
+    futureCapabilityId: 'provider_eligibility'
+  },
+  {
     widgetId: 'provider-operations-claims-payments',
-    label: 'Claims & Payments',
+    label: 'Claims & Billing',
     href: '/provider/claims',
     icon: 'file-text',
     requiredPermissions: ['tenant.view', 'provider.claims.view'],
@@ -68,14 +84,6 @@ export const PROVIDER_OPERATION_WIDGETS: PluginNavigationItem[] = [
     icon: 'mail',
     requiredPermissions: ['tenant.view', 'provider.messages.view'],
     futureCapabilityId: 'provider_messages'
-  },
-  {
-    widgetId: 'provider-operations-support',
-    label: 'Support',
-    href: '/provider/support',
-    icon: 'life-buoy',
-    requiredPermissions: ['tenant.view', 'provider.support.view'],
-    futureCapabilityId: 'provider_support'
   },
   {
     widgetId: 'provider-operations-admin',

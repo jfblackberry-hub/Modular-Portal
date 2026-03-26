@@ -47,5 +47,6 @@ test('provider operations data layer owns scoping and aggregation enforcement', 
   assert.match(dataLayerSource, /resolveProviderOperationsDashboardData/);
   assert.match(dataLayerSource, /activeOrganizationUnit/);
   assert.match(dataLayerSource, /rollupAuthorized/);
-  assert.match(dataLayerSource, /ProviderOperationsWidgetContract/);
+  assert.match(dataLayerSource, /ProviderOperationsDashboardContract/);
+  assert.match(dataLayerSource, /buildProviderOperationsDashboardModel/);
 });

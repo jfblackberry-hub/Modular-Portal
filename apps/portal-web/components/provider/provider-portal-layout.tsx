@@ -2,7 +2,9 @@
 
 import type { PluginNavigationItem } from '@payer-portal/plugin-sdk';
 import {
+  Activity,
   Bell,
+  CalendarDays,
   ClipboardList,
   FileText,
   FolderOpen,
@@ -10,6 +12,7 @@ import {
   LifeBuoy,
   Mail,
   Menu,
+  RefreshCw,
   Settings,
   ShieldCheck,
   Users,
@@ -17,9 +20,9 @@ import {
   X
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { CSSProperties, ReactNode } from 'react';
-import { useState } from 'react';
+import { startTransition, useState } from 'react';
 
 import type {
   ProviderPortalConfig,
@@ -31,6 +34,8 @@ import type { TenantBranding } from '../../lib/tenant-branding';
 import { SignOutButton } from '../sign-out-button';
 
 const NAV_ICON_MAP: Record<ProviderPortalNavIcon, typeof Home> = {
+  activity: Activity,
+  'calendar-days': CalendarDays,
   home: Home,
   'shield-check': ShieldCheck,
   'clipboard-list': ClipboardList,
@@ -172,6 +177,7 @@ export function ProviderPortalLayout({
 }) {
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const router = useRouter();
 
   const initials = `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`;
   const activeOrganizationUnit = user.session.activeOrganizationUnit;
@@ -218,7 +224,7 @@ export function ProviderPortalLayout({
                   <img
                     src={branding.logoUrl}
                     alt={`${branding.displayName} logo`}
-                    className="tenant-provider-header__logo h-9 w-auto max-w-[140px] object-contain"
+                    className="tenant-provider-header__logo h-14 w-auto max-w-[220px] object-contain"
                   />
                 </>
               ) : (
@@ -247,6 +253,20 @@ export function ProviderPortalLayout({
                 className="tenant-provider-header__search-input portal-input h-10 rounded-xl px-3 text-sm"
               />
             </form>
+
+            <button
+              type="button"
+              className="tenant-provider-header__refresh inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--tenant-primary-color)] bg-[var(--tenant-primary-color)] px-3 text-sm font-medium text-white transition hover:brightness-110"
+              aria-label="Refresh provider dashboard"
+              onClick={() => {
+                startTransition(() => {
+                  router.refresh();
+                });
+              }}
+            >
+              <RefreshCw size={16} />
+              <span className="hidden lg:inline">Refresh</span>
+            </button>
 
             <button
               type="button"

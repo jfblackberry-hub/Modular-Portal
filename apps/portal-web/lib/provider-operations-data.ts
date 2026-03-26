@@ -1,21 +1,11 @@
 import type {
   ProviderOperationsDashboardContract,
-  ProviderOperationsWidgetContract,
-  ProviderOperationsWidgetId,
-  ProviderOperationsWidgetTone
+  ProviderOperationsWidgetId
 } from '@payer-portal/api-contracts';
 
 import type { ProviderPortalConfig } from '../config/providerPortalConfig';
 import type { PortalSessionUser } from './portal-session';
-
-type ProviderOperationsWidgetData = {
-  summary: string;
-  detail: string;
-  highlights: string[];
-  tone: ProviderOperationsWidgetTone;
-  href?: string;
-  ctaLabel?: string;
-};
+import { buildProviderOperationsDashboardModel } from './provider-command-center-mock-data';
 
 type ProviderOperationsPersonaWidgetMapping = {
   persona: string;
@@ -23,25 +13,14 @@ type ProviderOperationsPersonaWidgetMapping = {
   rollupWidgets?: ProviderOperationsWidgetId[];
 };
 
-type ProviderOperationsTenantConfig = {
-  personaWidgetMappings?: ProviderOperationsPersonaWidgetMapping[];
-  widgetData?: Partial<Record<ProviderOperationsWidgetId, Partial<ProviderOperationsWidgetData>>>;
-};
-
 type ProviderOperationsSourceSnapshot = {
-  widgetData?: Partial<Record<ProviderOperationsWidgetId, Partial<ProviderOperationsWidgetData>>>;
   personaWidgetMappings?: ProviderOperationsPersonaWidgetMapping[];
 };
 
 type ProviderOperationsDataContext = {
   config: ProviderPortalConfig;
   user: PortalSessionUser;
-};
-
-type ProviderOperationsDataSource = {
-  loadSnapshot: (
-    context: ProviderOperationsDataContext
-  ) => Promise<ProviderOperationsSourceSnapshot>;
+  now?: Date;
 };
 
 const DEFAULT_PROVIDER_OPERATIONS_PERSONA_MAPPINGS: ProviderOperationsPersonaWidgetMapping[] = [
@@ -73,100 +52,6 @@ const DEFAULT_PROVIDER_OPERATIONS_PERSONA_MAPPINGS: ProviderOperationsPersonaWid
   }
 ];
 
-const DEFAULT_WIDGET_DATA: Record<ProviderOperationsWidgetId, ProviderOperationsWidgetData> = {
-  scheduling: {
-    summary: '28 visits scheduled',
-    detail: 'Front-desk and clinic scheduling activity for the active organization unit.',
-    highlights: [
-      '6 same-day appointment requests',
-      '4 patients awaiting pre-visit verification',
-      '2 provider templates need schedule adjustment'
-    ],
-    tone: 'info',
-    href: '/provider/dashboard',
-    ctaLabel: 'Review schedule priorities'
-  },
-  authorizations: {
-    summary: '11 authorizations in flight',
-    detail: 'Clinical review, attachments, and payer follow-up for current utilization work.',
-    highlights: [
-      '3 requests need clinical attachments today',
-      '2 determinations expected before 3 PM',
-      '1 denial needs appeal prep'
-    ],
-    tone: 'warning',
-    href: '/provider/authorizations',
-    ctaLabel: 'Open authorization work'
-  },
-  claims: {
-    summary: '19 claims require follow-up',
-    detail: 'Claims aging and adjudication exceptions for the current operations queue.',
-    highlights: [
-      '5 claims approach timely filing thresholds',
-      '3 claims await corrected billing edits',
-      '2 ERA adjustments need reconciliation'
-    ],
-    tone: 'danger',
-    href: '/provider/claims',
-    ctaLabel: 'Open claims follow-up'
-  },
-  billing: {
-    summary: '$84,220 posted today',
-    detail: 'Billing and payment performance across current remittance and reconciliation activity.',
-    highlights: [
-      '8 remits posted in the last cycle',
-      '2 EFT batches pending reconciliation',
-      '1 payment exception requires support escalation'
-    ],
-    tone: 'success',
-    href: '/provider/payments',
-    ctaLabel: 'Open billing and payments'
-  },
-  utilization: {
-    summary: '87% utilization target attainment',
-    detail: 'Operational throughput, queue balance, and exception rates for provider operations.',
-    highlights: [
-      'Eligibility response time trending 8% faster',
-      'Authorization backlog stable vs yesterday',
-      'Claims closure rate improved across the current queue'
-    ],
-    tone: 'default',
-    href: '/provider/dashboard',
-    ctaLabel: 'Review utilization signals'
-  }
-};
-
-const WIDGET_LABELS: Record<
-  ProviderOperationsWidgetId,
-  { title: string; description: string; supportsRollup: boolean }
-> = {
-  scheduling: {
-    title: 'Scheduling',
-    description: 'Daily scheduling pressure, intake readiness, and front-desk flow.',
-    supportsRollup: false
-  },
-  authorizations: {
-    title: 'Authorizations',
-    description: 'Clinical review and prior-authorization work queues.',
-    supportsRollup: false
-  },
-  claims: {
-    title: 'Claims',
-    description: 'Claims follow-up, adjudication exceptions, and aging risks.',
-    supportsRollup: true
-  },
-  billing: {
-    title: 'Billing',
-    description: 'Payment posting, remittance exceptions, and reconciliation progress.',
-    supportsRollup: true
-  },
-  utilization: {
-    title: 'Utilization',
-    description: 'Throughput, queue balance, and operational efficiency signals.',
-    supportsRollup: true
-  }
-};
-
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
@@ -188,17 +73,10 @@ function isProviderOperationsWidgetId(value: string): value is ProviderOperation
   return ['scheduling', 'authorizations', 'claims', 'billing', 'utilization'].includes(value);
 }
 
-function readProviderOperationsTenantConfig(
-  brandingConfig?: Record<string, unknown>
-): ProviderOperationsTenantConfig {
+function resolvePersonaMappings(brandingConfig?: Record<string, unknown>) {
   const providerDemoData = asRecord(brandingConfig?.providerDemoData);
   const providerOperations = asRecord(providerDemoData?.providerOperations);
-
-  if (!providerOperations) {
-    return {};
-  }
-
-  const rawMappings = Array.isArray(providerOperations.personaWidgetMappings)
+  const rawMappings = Array.isArray(providerOperations?.personaWidgetMappings)
     ? providerOperations.personaWidgetMappings
     : [];
   const personaWidgetMappings = rawMappings
@@ -226,45 +104,19 @@ function readProviderOperationsTenantConfig(
     })
     .filter((entry): entry is ProviderOperationsPersonaWidgetMapping => entry !== null);
 
-  const rawWidgetData = asRecord(providerOperations.widgetData);
-  const widgetData = rawWidgetData
-    ? Object.fromEntries(
-        Object.entries(rawWidgetData)
-          .filter(([key]) => isProviderOperationsWidgetId(key))
-          .map(([key, value]) => [key, asRecord(value) ?? {}])
-      )
-    : undefined;
-
   return {
-    ...(personaWidgetMappings.length > 0 ? { personaWidgetMappings } : {}),
-    ...(widgetData ? { widgetData } : {})
-  };
-}
-
-function createTenantConfigDataSource(): ProviderOperationsDataSource {
-  return {
-    async loadSnapshot({ user }) {
-      const tenantConfig = readProviderOperationsTenantConfig(user.tenant.brandingConfig);
-
-      return {
-        widgetData: tenantConfig.widgetData,
-        personaWidgetMappings: tenantConfig.personaWidgetMappings
-      };
-    }
-  };
-}
-
-function resolvePersonaMappings(
-  snapshot: ProviderOperationsSourceSnapshot
-) {
-  return snapshot.personaWidgetMappings ?? DEFAULT_PROVIDER_OPERATIONS_PERSONA_MAPPINGS;
+    personaWidgetMappings:
+      personaWidgetMappings.length > 0
+        ? personaWidgetMappings
+        : DEFAULT_PROVIDER_OPERATIONS_PERSONA_MAPPINGS
+  } satisfies ProviderOperationsSourceSnapshot;
 }
 
 export function resolveProviderOperationsPersonaProfile(
   personaType: string,
   snapshot?: ProviderOperationsSourceSnapshot
 ) {
-  const mappings = resolvePersonaMappings(snapshot ?? {});
+  const mappings = snapshot?.personaWidgetMappings ?? DEFAULT_PROVIDER_OPERATIONS_PERSONA_MAPPINGS;
 
   return (
     mappings.find((mapping) => mapping.persona === personaType) ?? {
@@ -275,44 +127,8 @@ export function resolveProviderOperationsPersonaProfile(
   );
 }
 
-function resolveWidgetData(
-  widgetId: ProviderOperationsWidgetId,
-  snapshot: ProviderOperationsSourceSnapshot
-) {
-  const widgetData = snapshot.widgetData?.[widgetId] ?? {};
-
-  return {
-    ...DEFAULT_WIDGET_DATA[widgetId],
-    ...(typeof widgetData.summary === 'string' ? { summary: widgetData.summary } : {}),
-    ...(typeof widgetData.detail === 'string' ? { detail: widgetData.detail } : {}),
-    ...(Array.isArray(widgetData.highlights)
-      ? {
-          highlights: widgetData.highlights.filter(
-            (entry): entry is string => typeof entry === 'string'
-          )
-        }
-      : {}),
-    ...(typeof widgetData.tone === 'string'
-      ? { tone: widgetData.tone as ProviderOperationsWidgetTone }
-      : {}),
-    ...(typeof widgetData.href === 'string' ? { href: widgetData.href } : {}),
-    ...(typeof widgetData.ctaLabel === 'string'
-      ? { ctaLabel: widgetData.ctaLabel }
-      : {})
-  } satisfies ProviderOperationsWidgetData;
-}
-
-function canUseRollup(
-  widgetId: ProviderOperationsWidgetId,
-  user: PortalSessionUser,
-  snapshot: ProviderOperationsSourceSnapshot
-) {
+function canUseRollup(user: PortalSessionUser, snapshot: ProviderOperationsSourceSnapshot) {
   if (user.session.availableOrganizationUnits.length < 2) {
-    return false;
-  }
-
-  const widgetMeta = WIDGET_LABELS[widgetId];
-  if (!widgetMeta.supportsRollup) {
     return false;
   }
 
@@ -321,7 +137,7 @@ function canUseRollup(
     snapshot
   );
 
-  return (profile.rollupWidgets ?? []).includes(widgetId);
+  return (profile.rollupWidgets ?? []).length > 0;
 }
 
 function enforceProviderOperationsScope(user: PortalSessionUser) {
@@ -344,41 +160,22 @@ export async function resolveProviderOperationsDashboardData(
 ): Promise<ProviderOperationsDashboardContract> {
   enforceProviderOperationsScope(context.user);
 
-  const dataSource = createTenantConfigDataSource();
-  const snapshot = await dataSource.loadSnapshot(context);
-  const personaProfile = resolveProviderOperationsPersonaProfile(
+  const snapshot = resolvePersonaMappings(context.user.tenant.brandingConfig);
+  const profile = resolveProviderOperationsPersonaProfile(
     context.user.session.personaType,
     snapshot
   );
-
-  const widgets = personaProfile.widgets.map((widgetId) => {
-    const widgetMeta = WIDGET_LABELS[widgetId];
-    const rollupAuthorized = canUseRollup(widgetId, context.user, snapshot);
-
-    return {
-      id: widgetId,
-      title: widgetMeta.title,
-      description: widgetMeta.description,
-      ...resolveWidgetData(widgetId, snapshot),
-      scope: {
-        mode: rollupAuthorized ? 'rollup' : 'organization_unit',
-        tenantId: context.user.tenant.id,
-        activeOrganizationUnitId: context.user.session.activeOrganizationUnit?.id ?? null,
-        accessibleOrganizationUnitIds: context.user.session.availableOrganizationUnits.map(
-          (organizationUnit) => organizationUnit.id
-        ),
-        rollupAuthorized
-      },
-      sourceTypes: []
-    } satisfies ProviderOperationsWidgetContract;
+  const rollupAuthorized = canUseRollup(context.user, snapshot);
+  const dashboard = buildProviderOperationsDashboardModel({
+    user: context.user,
+    rollupAuthorized,
+    now: context.now
   });
 
+  const allowedWidgetIds = new Set(profile.widgets);
+
   return {
-    source: 'platform_provider_operations_data_layer',
-    personaCode: context.user.session.personaType,
-    tenantId: context.user.tenant.id,
-    activeOrganizationUnitId: context.user.session.activeOrganizationUnit?.id ?? null,
-    widgets,
-    generatedAt: new Date().toISOString()
+    ...dashboard,
+    widgets: dashboard.widgets.filter((widget) => allowedWidgetIds.has(widget.id))
   };
 }

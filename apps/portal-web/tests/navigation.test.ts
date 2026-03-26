@@ -273,12 +273,13 @@ test('provider tenant navigation is composed from plugin flags, permissions, and
         title: 'Provider Operations',
         items: [
           'Dashboard',
-          'Eligibility',
+          'Scheduling',
           'Authorizations',
-          'Claims & Payments',
+          'Utilization',
+          'Eligibility',
+          'Claims & Billing',
           'Documents',
-          'Messages',
-          'Support'
+          'Messages'
         ]
       }
     ]
@@ -351,7 +352,7 @@ test('restricted provider users only see provider capabilities they are authoriz
     [
       {
         title: 'Provider Operations',
-        items: ['Dashboard', 'Eligibility', 'Messages', 'Support']
+        items: ['Dashboard', 'Scheduling', 'Utilization', 'Eligibility', 'Messages']
       }
     ]
   );

@@ -17,6 +17,36 @@ function createDashboard(
     tenantId: 'tenant-1',
     activeOrganizationUnitId: 'ou-1',
     generatedAt: '2026-03-26T12:00:00.000Z',
+    refreshIntervalSeconds: 30,
+    alertsCount: 5,
+    organizationUnits: [
+      {
+        id: 'ou-1',
+        name: 'Grand Rapids Clinic',
+        type: 'LOCATION',
+        isActive: true
+      }
+    ],
+    quickActions: [
+      {
+        id: 'eligibility_check',
+        label: 'Start Eligibility Check',
+        description: 'Verify coverage before a session starts slipping.',
+        href: '/provider/dashboard?detail=scheduling&filter=eligibility_missing'
+      }
+    ],
+    attentionItems: [
+      {
+        id: 'sessions_at_risk',
+        label: 'Sessions at risk today',
+        count: 2,
+        urgency: 'critical',
+        summary: 'Two sessions need intervention.',
+        detail: 'Therapist and auth issues need review now.',
+        href: '/provider/dashboard?detail=scheduling&filter=at_risk',
+        preview: ['Noah Bennett: Trigger eligibility check']
+      }
+    ],
     widgets: [
       {
         id: 'scheduling',
@@ -57,6 +87,25 @@ function createDashboard(
         sourceTypes: ['clearinghouse_environment']
       }
     ],
+    scheduling: {
+      metrics: [],
+      sessions: []
+    },
+    authorizations: {
+      metrics: [],
+      authorizations: []
+    },
+    utilization: {
+      metrics: [],
+      therapists: []
+    },
+    claims: {
+      metrics: [],
+      claims: [],
+      pipeline: [],
+      denialReasons: [],
+      dollarAmountAtRisk: 0
+    },
     ...overrides
   };
 }
