@@ -133,10 +133,15 @@ export async function getCurrentUserFromHeaders(
     throw new AuthenticationError('Access token tenant scope mismatch.');
   }
 
-  const roleCodes = user.roles.map(({ role }) => role.code);
+  const scopedAssignments = user.roles.filter((assignment) =>
+    requestTenantContext.tenantId === PLATFORM_ROOT_SCOPE
+      ? assignment.tenantId === null
+      : assignment.tenantId === requestTenantContext.tenantId || assignment.tenantId === null
+  );
+  const roleCodes = scopedAssignments.map(({ role }) => role.code);
   const permissionCodes = Array.from(
     new Set(
-      user.roles.flatMap(({ role }) =>
+      scopedAssignments.flatMap(({ role }) =>
         role.permissions.map(({ permission }) => permission.code)
       )
     )
@@ -146,9 +151,6 @@ export async function getCurrentUserFromHeaders(
       ...user.memberships
         .filter((membership) => membership.isTenantAdmin)
         .map((membership) => membership.tenantId),
-      ...(roleCodes.includes(TENANT_ADMIN_ROLE_CODE) && user.tenantId
-        ? [user.tenantId]
-        : [])
     ])
   );
 
@@ -244,10 +246,15 @@ export async function getCurrentUserFromGatewayClaims(claims: {
     throw new AuthenticationError('Access token subject mismatch.');
   }
 
-  const roleCodes = user.roles.map(({ role }) => role.code);
+  const scopedAssignments = user.roles.filter((assignment) =>
+    claims.tenantId === PLATFORM_ROOT_SCOPE
+      ? assignment.tenantId === null
+      : assignment.tenantId === claims.tenantId || assignment.tenantId === null
+  );
+  const roleCodes = scopedAssignments.map(({ role }) => role.code);
   const permissionCodes = Array.from(
     new Set(
-      user.roles.flatMap(({ role }) =>
+      scopedAssignments.flatMap(({ role }) =>
         role.permissions.map(({ permission }) => permission.code)
       )
     )
@@ -263,9 +270,6 @@ export async function getCurrentUserFromGatewayClaims(claims: {
       ...user.memberships
         .filter((membership) => membership.isTenantAdmin)
         .map((membership) => membership.tenantId),
-      ...(roleCodes.includes(TENANT_ADMIN_ROLE_CODE) && user.tenantId
-        ? [user.tenantId]
-        : [])
     ])
   );
 

@@ -47,10 +47,17 @@ function getBearerToken(authorizationHeader: string | string[] | undefined) {
 }
 
 function resolveAuditTenantId(
-  tokenPayload: ReturnType<typeof verifyAccessToken>
+  tokenPayload: ReturnType<typeof verifyAccessToken>,
+  tenantHeader: string | string[] | undefined
 ) {
   if (tokenPayload?.tenantId && tokenPayload.tenantId !== 'platform') {
     return tokenPayload.tenantId;
+  }
+
+  const headerValue = Array.isArray(tenantHeader) ? tenantHeader[0] : tenantHeader;
+  const normalizedHeader = headerValue?.trim();
+  if (normalizedHeader && normalizedHeader !== 'platform') {
+    return normalizedHeader;
   }
 
   return null;
@@ -209,7 +216,10 @@ export function buildServer() {
     );
 
     if (reply.statusCode === 401 || reply.statusCode === 403) {
-      const tenantId = resolveAuditTenantId(tokenPayload);
+      const tenantId = resolveAuditTenantId(
+        tokenPayload,
+        request.headers['x-tenant-id']
+      );
 
       if (tenantId) {
         const auditInput = {

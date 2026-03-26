@@ -4,7 +4,7 @@ import { after, beforeEach, test } from 'node:test';
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
 
-import { prisma } from '@payer-portal/database';
+import { prisma, syncTenantTypeDefinitions } from '@payer-portal/database';
 import Fastify from 'fastify';
 
 import { tenantAdminRoutes } from '../src/routes/tenant-admin.js';
@@ -118,12 +118,16 @@ async function ensurePermission() {
 }
 
 async function createFixtureData() {
+  await syncTenantTypeDefinitions(prisma);
+
   const permission = await ensurePermission();
   const [tenant, otherTenant] = await Promise.all([
     prisma.tenant.create({
       data: {
         name: 'Tenant Admin Test',
         slug: TEST_TENANT_SLUG,
+        type: 'PAYER',
+        tenantTypeCode: 'PAYER',
         status: 'ACTIVE',
         brandingConfig: {
           notificationSettings: {
@@ -138,6 +142,8 @@ async function createFixtureData() {
       data: {
         name: 'Tenant Admin Other',
         slug: TEST_OTHER_TENANT_SLUG,
+        type: 'PAYER',
+        tenantTypeCode: 'PAYER',
         status: 'ACTIVE',
         brandingConfig: {}
       }
@@ -151,11 +157,15 @@ async function createFixtureData() {
           code: TEST_PLATFORM_ADMIN_ROLE_CODE
         },
         update: {
-          name: 'Platform Admin'
+          name: 'Platform Admin',
+          isPlatformRole: true,
+          appliesToAllTenantTypes: true
         },
         create: {
           code: TEST_PLATFORM_ADMIN_ROLE_CODE,
-          name: 'Platform Admin'
+          name: 'Platform Admin',
+          isPlatformRole: true,
+          appliesToAllTenantTypes: true
         }
       }),
       prisma.role.upsert({
@@ -163,11 +173,13 @@ async function createFixtureData() {
           code: TEST_ADMIN_ROLE_CODE
         },
         update: {
-          name: 'Tenant Admin'
+          name: 'Tenant Admin',
+          appliesToAllTenantTypes: true
         },
         create: {
           code: TEST_ADMIN_ROLE_CODE,
-          name: 'Tenant Admin'
+          name: 'Tenant Admin',
+          appliesToAllTenantTypes: true
         }
       }),
       prisma.role.upsert({
@@ -175,11 +187,13 @@ async function createFixtureData() {
           code: TEST_MEMBER_ROLE_CODE
         },
         update: {
-          name: 'Tenant Member'
+          name: 'Tenant Member',
+          tenantTypeCode: 'PAYER'
         },
         create: {
           code: TEST_MEMBER_ROLE_CODE,
-          name: 'Tenant Member'
+          name: 'Tenant Member',
+          tenantTypeCode: 'PAYER'
         }
       }),
       prisma.role.upsert({
@@ -187,11 +201,13 @@ async function createFixtureData() {
           code: TEST_ASSIGNABLE_ROLE_CODE
         },
         update: {
-          name: 'Operations Analyst'
+          name: 'Operations Analyst',
+          tenantTypeCode: 'PAYER'
         },
         create: {
           code: TEST_ASSIGNABLE_ROLE_CODE,
-          name: 'Operations Analyst'
+          name: 'Operations Analyst',
+          tenantTypeCode: 'PAYER'
         }
       })
     ]);
@@ -210,7 +226,8 @@ async function createFixtureData() {
           tenantId: otherTenant.id,
           email: TEST_PLATFORM_ADMIN_EMAIL,
           firstName: 'Platform',
-          lastName: 'Admin'
+          lastName: 'Admin',
+          status: 'ACTIVE'
         }
       }),
       prisma.user.create({
@@ -218,7 +235,8 @@ async function createFixtureData() {
           tenantId: tenant.id,
           email: TEST_ADMIN_EMAIL,
           firstName: 'Tenant',
-          lastName: 'Admin'
+          lastName: 'Admin',
+          status: 'ACTIVE'
         }
       }),
       prisma.user.create({
@@ -226,7 +244,8 @@ async function createFixtureData() {
           tenantId: tenant.id,
           email: TEST_MEMBER_EMAIL,
           firstName: 'Tenant',
-          lastName: 'Member'
+          lastName: 'Member',
+          status: 'ACTIVE'
         }
       }),
       prisma.user.create({
@@ -234,7 +253,8 @@ async function createFixtureData() {
           tenantId: otherTenant.id,
           email: TEST_FOREIGN_EMAIL,
           firstName: 'Foreign',
-          lastName: 'User'
+          lastName: 'User',
+          status: 'ACTIVE'
         }
       })
     ]);
@@ -243,19 +263,22 @@ async function createFixtureData() {
     prisma.userRole.create({
       data: {
         userId: platformAdminUser.id,
-        roleId: platformAdminRole.id
+        roleId: platformAdminRole.id,
+        tenantId: null
       }
     }),
     prisma.userRole.create({
       data: {
         userId: adminUser.id,
-        roleId: adminRole.id
+        roleId: adminRole.id,
+        tenantId: tenant.id
       }
     }),
     prisma.userRole.create({
       data: {
         userId: memberUser.id,
-        roleId: memberRole.id
+        roleId: memberRole.id,
+        tenantId: tenant.id
       }
     })
   ]);
@@ -266,19 +289,25 @@ async function createFixtureData() {
         userId: adminUser.id,
         tenantId: tenant.id,
         isDefault: true,
-        isTenantAdmin: true
+        isTenantAdmin: true,
+        status: 'ACTIVE',
+        activatedAt: new Date()
       },
       {
         userId: memberUser.id,
         tenantId: tenant.id,
         isDefault: true,
-        isTenantAdmin: false
+        isTenantAdmin: false,
+        status: 'ACTIVE',
+        activatedAt: new Date()
       },
       {
         userId: foreignUser.id,
         tenantId: otherTenant.id,
         isDefault: true,
-        isTenantAdmin: false
+        isTenantAdmin: false,
+        status: 'ACTIVE',
+        activatedAt: new Date()
       }
     ]
   });
@@ -505,7 +534,7 @@ test('tenant admin routes enforce admin permission and tenant scoping', async ()
   await app.close();
 });
 
-test('platform-admin sessions cannot access tenant-admin routes without a tenant-scoped session', async () => {
+test('platform-admin sessions can access tenant-admin routes with an explicit tenant workspace', async () => {
   const { tenant, otherTenant, platformAdminUser } = await createFixtureData();
   const app = Fastify();
   await tenantAdminRoutes(app);
@@ -519,7 +548,7 @@ test('platform-admin sessions cannot access tenant-admin routes without a tenant
     }
   });
 
-  assert.equal(targetTenantResponse.statusCode, 403);
+  assert.equal(targetTenantResponse.statusCode, 200, targetTenantResponse.body);
 
   const otherTenantResponse = await app.inject({
     method: 'GET',
@@ -529,7 +558,7 @@ test('platform-admin sessions cannot access tenant-admin routes without a tenant
     }
   });
 
-  assert.equal(otherTenantResponse.statusCode, 403);
+  assert.equal(otherTenantResponse.statusCode, 200, otherTenantResponse.body);
 
   await app.close();
 });
@@ -589,9 +618,11 @@ test('tenant-admin jobs endpoint returns tenant-scoped jobs and blocks platform 
 
   assert.equal(
     switchedContextResponse.statusCode,
-    403,
+    200,
     switchedContextResponse.body
   );
+  assert.equal(switchedContextResponse.json().length, 1);
+  assert.equal(switchedContextResponse.json()[0].tenantId, otherTenant.id);
 
   await app.close();
 });

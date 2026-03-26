@@ -22,10 +22,14 @@ type CreateRoleBody = {
   name: string;
   description?: string;
   permissions: string[];
+  tenantTypeCode?: string;
+  appliesToAllTenantTypes?: boolean;
+  isPlatformRole?: boolean;
 };
 
 type AssignRoleBody = {
   roleId: string;
+  tenantId?: string | null;
 };
 
 type CreateUserBody = {
@@ -34,6 +38,9 @@ type CreateUserBody = {
   firstName: string;
   lastName: string;
   isActive?: boolean;
+  status?: 'INVITED' | 'ACTIVE' | 'DISABLED';
+  password?: string;
+  organizationUnitId?: string;
 };
 
 type UpdateUserBody = {
@@ -42,6 +49,9 @@ type UpdateUserBody = {
   firstName?: string;
   lastName?: string;
   isActive?: boolean;
+  status?: 'INVITED' | 'ACTIVE' | 'DISABLED';
+  password?: string;
+  organizationUnitId?: string | null;
 };
 
 export async function roleRoutes(app: FastifyInstance) {
@@ -103,7 +113,14 @@ export async function roleRoutes(app: FastifyInstance) {
 
         const assignment = await assignRoleToUser(
           request.params.userId,
-          request.body.roleId
+          request.body.roleId,
+          {},
+          {
+            tenantId:
+              request.body.tenantId === undefined
+                ? undefined
+                : request.body.tenantId
+          }
         );
         return reply.status(201).send(assignment);
       } catch (error) {
@@ -223,7 +240,7 @@ export async function roleRoutes(app: FastifyInstance) {
         const currentUser = await getCurrentUserFromHeaders(request.headers);
         assertPlatformAdmin(currentUser);
 
-        const user = await updateUser(request.params.userId, request.body);
+      const user = await updateUser(request.params.userId, request.body);
         return reply.send(user);
       } catch (error) {
         if (error instanceof AuthenticationError) {

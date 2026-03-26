@@ -5,7 +5,7 @@ process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
 process.env.PAYER_PORTAL_API_AUTOSTART = 'false';
 
-import { clearTenantContext, prisma } from '@payer-portal/database';
+import { clearTenantContext, prisma, syncTenantTypeDefinitions } from '@payer-portal/database';
 
 import { createAccessToken } from '../src/services/access-token-service.js';
 
@@ -13,6 +13,33 @@ const TEST_TENANT_SLUG = 'audit-logging-tenant';
 const TEST_USER_EMAIL = 'audit-logging-user@example.com';
 const TEST_PLATFORM_ADMIN_EMAIL = 'audit-logging-platform-admin@example.com';
 const TEST_PLATFORM_ADMIN_ROLE_CODE = 'platform_admin';
+
+async function waitForAuditEvent(input: {
+  tenantId: string;
+  action: string;
+  actorUserId?: string;
+}) {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const event = await prisma.auditLog.findFirst({
+      where: {
+        tenantId: input.tenantId,
+        action: input.action,
+        ...(input.actorUserId ? { actorUserId: input.actorUserId } : {})
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    if (event) {
+      return event;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+
+  return null;
+}
 
 async function cleanupTestData() {
   clearTenantContext();
@@ -65,16 +92,22 @@ after(async () => {
 });
 
 async function createPlatformAdminUser(tenantId: string) {
+  await syncTenantTypeDefinitions(prisma);
+
   const platformAdminRole = await prisma.role.upsert({
     where: {
       code: TEST_PLATFORM_ADMIN_ROLE_CODE
     },
     update: {
-      name: 'Platform Admin'
+      name: 'Platform Admin',
+      isPlatformRole: true,
+      appliesToAllTenantTypes: true
     },
     create: {
       code: TEST_PLATFORM_ADMIN_ROLE_CODE,
-      name: 'Platform Admin'
+      name: 'Platform Admin',
+      isPlatformRole: true,
+      appliesToAllTenantTypes: true
     }
   });
 
@@ -83,14 +116,16 @@ async function createPlatformAdminUser(tenantId: string) {
       tenantId,
       email: TEST_PLATFORM_ADMIN_EMAIL,
       firstName: 'Platform',
-      lastName: 'Auditor'
+      lastName: 'Auditor',
+      status: 'ACTIVE'
     }
   });
 
   await prisma.userRole.create({
     data: {
       userId: platformAdminUser.id,
-      roleId: platformAdminRole.id
+      roleId: platformAdminRole.id,
+      tenantId: null
     }
   });
 
@@ -99,7 +134,9 @@ async function createPlatformAdminUser(tenantId: string) {
       userId: platformAdminUser.id,
       tenantId,
       isDefault: true,
-      isTenantAdmin: true
+      isTenantAdmin: true,
+      status: 'ACTIVE',
+      activatedAt: new Date()
     }
   });
 
@@ -111,6 +148,8 @@ test('authentication failures are audited with tenant and request metadata', asy
     data: {
       name: 'Audit Logging Tenant',
       slug: TEST_TENANT_SLUG,
+      type: 'PAYER',
+      tenantTypeCode: 'PAYER',
       status: 'ACTIVE',
       brandingConfig: {}
     }
@@ -131,28 +170,22 @@ test('authentication failures are audited with tenant and request metadata', asy
 
   assert.equal(response.statusCode, 401, response.body);
 
-  const auditEvent = await prisma.auditLog.findFirst({
-    where: {
-      tenantId: tenant.id,
-      action: 'auth.authentication.failed'
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
+  const auditEvent = await waitForAuditEvent({
+    tenantId: tenant.id,
+    action: 'auth.authentication.failed'
   });
 
   assert.ok(auditEvent);
   assert.equal(auditEvent.entityType, 'route');
   assert.equal(auditEvent.entityId, '/auth/me');
-  assert.deepEqual(auditEvent.metadata, {
-    outcome: 'authentication_failed',
-    request: {
-      correlationId: response.headers['x-correlation-id'],
-      method: 'GET',
-      route: '/auth/me',
-      statusCode: 401
-    }
+  assert.equal(auditEvent.metadata?.outcome, 'authentication_failed');
+  assert.deepEqual(auditEvent.metadata?.request, {
+    correlationId: response.headers['x-correlation-id'],
+    method: 'GET',
+    route: '/auth/me',
+    statusCode: 401
   });
+  assert.equal(auditEvent.metadata?.observability?.tenantId, tenant.id);
 
   await app.close();
 });
@@ -162,6 +195,8 @@ test('sensitive member reads are audited', async () => {
     data: {
       name: 'Audit Logging Tenant',
       slug: TEST_TENANT_SLUG,
+      type: 'PAYER',
+      tenantTypeCode: 'PAYER',
       status: 'ACTIVE',
       brandingConfig: {}
     }
@@ -172,7 +207,8 @@ test('sensitive member reads are audited', async () => {
       tenantId: tenant.id,
       email: TEST_USER_EMAIL,
       firstName: 'Audit',
-      lastName: 'Member'
+      lastName: 'Member',
+      status: 'ACTIVE'
     }
   });
 
@@ -180,7 +216,9 @@ test('sensitive member reads are audited', async () => {
     data: {
       userId: user.id,
       tenantId: tenant.id,
-      isDefault: true
+      isDefault: true,
+      status: 'ACTIVE',
+      activatedAt: new Date()
     }
   });
 
@@ -206,28 +244,22 @@ test('sensitive member reads are audited', async () => {
 
   assert.equal(response.statusCode, 200, response.body);
 
-  const auditEvent = await prisma.auditLog.findFirst({
-    where: {
-      tenantId: tenant.id,
-      actorUserId: user.id,
-      action: 'data.member.profile.read'
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
+  const auditEvent = await waitForAuditEvent({
+    tenantId: tenant.id,
+    actorUserId: user.id,
+    action: 'data.member.profile.read'
   });
 
   assert.ok(auditEvent);
   assert.equal(auditEvent.entityType, 'member_profile');
   assert.equal(auditEvent.entityId, user.id);
-  assert.deepEqual(auditEvent.metadata, {
-    sourceSystem: 'local-portal-db',
-    request: {
-      correlationId: response.headers['x-correlation-id'],
-      method: 'GET',
-      route: '/api/v1/member/profile'
-    }
+  assert.equal(auditEvent.metadata?.sourceSystem, 'local-portal-db');
+  assert.deepEqual(auditEvent.metadata?.request, {
+    correlationId: response.headers['x-correlation-id'],
+    method: 'GET',
+    route: '/api/v1/member/profile'
   });
+  assert.equal(auditEvent.metadata?.observability?.tenantId, tenant.id);
 
   await app.close();
 });
@@ -237,6 +269,8 @@ test('persona session switches are audited as tenant-scoped append-only events',
     data: {
       name: 'Audit Logging Tenant',
       slug: TEST_TENANT_SLUG,
+      type: 'PAYER',
+      tenantTypeCode: 'PAYER',
       status: 'ACTIVE',
       brandingConfig: {}
     }
@@ -272,31 +306,25 @@ test('persona session switches are audited as tenant-scoped append-only events',
 
   assert.equal(response.statusCode, 202, response.body);
 
-  const auditEvent = await prisma.auditLog.findFirst({
-    where: {
-      tenantId: tenant.id,
-      actorUserId: platformAdminUser.id,
-      action: 'persona.session.focused'
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
+  const auditEvent = await waitForAuditEvent({
+    tenantId: tenant.id,
+    actorUserId: platformAdminUser.id,
+    action: 'persona.session.focused'
   });
 
   assert.ok(auditEvent);
   assert.equal(auditEvent.entityType, 'persona_session');
   assert.equal(auditEvent.entityId, 'persona-session-1');
-  assert.deepEqual(auditEvent.metadata, {
-    adminSurface: 'admin_console',
-    personaType: 'tenant_admin',
-    targetUserId: 'persona-user-1',
-    request: {
-      correlationId: response.headers['x-correlation-id'],
-      method: 'POST',
-      route: '/platform-admin/persona-sessions/events',
-      statusCode: 202
-    }
+  assert.equal(auditEvent.metadata?.adminSurface, 'admin_console');
+  assert.equal(auditEvent.metadata?.personaType, 'tenant_admin');
+  assert.equal(auditEvent.metadata?.targetUserId, 'persona-user-1');
+  assert.deepEqual(auditEvent.metadata?.request, {
+    correlationId: response.headers['x-correlation-id'],
+    method: 'POST',
+    route: '/platform-admin/persona-sessions/events',
+    statusCode: 202
   });
+  assert.equal(auditEvent.metadata?.observability?.tenantId, tenant.id);
 
   await app.close();
 });

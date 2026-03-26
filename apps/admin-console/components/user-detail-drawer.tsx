@@ -8,6 +8,7 @@ type UserRecord = {
   lastName: string;
   email: string;
   isActive: boolean;
+  status?: 'INVITED' | 'ACTIVE' | 'DISABLED';
   tenant: {
     id: string;
     name: string;
@@ -33,6 +34,8 @@ type UserFormState = {
   lastName: string;
   email: string;
   isActive: boolean;
+  status: 'INVITED' | 'ACTIVE' | 'DISABLED';
+  password: string;
 };
 
 type UserDetailDrawerProps = {
@@ -101,8 +104,8 @@ export function UserDetailDrawer({
             </h2>
             <p className="mt-2 text-sm text-admin-muted">
               {mode === 'create'
-                ? 'Create a new user record and assign access.'
-                : 'Update profile, status, and role assignment.'}
+                ? 'Create a real user account, assign access, and optionally set credentials immediately.'
+                : 'Update profile, lifecycle status, credentials, and role assignment.'}
             </p>
           </div>
 
@@ -129,7 +132,7 @@ export function UserDetailDrawer({
                   Status
                 </p>
                 <p className="mt-3 text-sm font-semibold text-admin-text">
-                  {user.isActive ? 'Active' : 'Inactive'}
+                  {user.status ?? (user.isActive ? 'ACTIVE' : 'DISABLED')}
                 </p>
               </div>
               <div className="rounded-2xl border border-admin-border bg-slate-50 px-4 py-4">
@@ -272,19 +275,48 @@ export function UserDetailDrawer({
               />
             </label>
 
-            <label className="flex items-center gap-3 text-sm text-admin-text">
-              <input
-                type="checkbox"
-                checked={formState.isActive}
-                onChange={(event) =>
-                  onFormChange({
-                    ...formState,
-                    isActive: event.target.checked
-                  })
-                }
-              />
-              Active user
-            </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="text-sm font-medium text-admin-text">Lifecycle status</span>
+                <select
+                  className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                  value={formState.status}
+                  onChange={(event) =>
+                    onFormChange({
+                      ...formState,
+                      status: event.target.value as UserFormState['status'],
+                      isActive: event.target.value === 'ACTIVE'
+                    })
+                  }
+                >
+                  <option value="INVITED">Invited / Pending Activation</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="DISABLED">Disabled</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-medium text-admin-text">
+                  {mode === 'create' ? 'Initial password' : 'Reset password'}
+                </span>
+                <input
+                  type="password"
+                  className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
+                  value={formState.password}
+                  onChange={(event) =>
+                    onFormChange({
+                      ...formState,
+                      password: event.target.value
+                    })
+                  }
+                  placeholder={
+                    mode === 'create'
+                      ? 'At least 8 characters'
+                      : 'Leave blank to keep current password'
+                  }
+                />
+              </label>
+            </div>
 
             {canChooseInitialRole ? (
               <label className="block">

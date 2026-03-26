@@ -42,6 +42,12 @@ enum OrganizationUnitType {
   TEAM
 }
 
+enum UserLifecycleStatus {
+  INVITED
+  ACTIVE
+  DISABLED
+}
+
 model Tenant {
   id            String        @id @default(uuid()) @db.Uuid
   name          String
@@ -49,11 +55,14 @@ model Tenant {
   isActive      Boolean       @default(true)
   status        TenantStatus  @default(ONBOARDING)
   type          TenantType    @default(PAYER)
+  tenantTypeCode String       @default("PAYER")
   brandingConfig Json         @default("{}")
+  tenantTypeDefinition TenantTypeDefinition @relation(fields: [tenantTypeCode], references: [code], onDelete: Restrict)
   branding      TenantBranding?
   employerGroups EmployerGroup[]
   users         User[]        @relation("UserPrimaryTenant")
   memberships   UserTenantMembership[]
+  roleAssignments UserRole[]
   auditLogs     AuditLog[]
   documents     Document[]
   jobs          Job[]
@@ -67,6 +76,8 @@ model Tenant {
   portalAuthHandoffs PortalAuthHandoff[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+
+  @@index([tenantTypeCode])
 }
 
 model OrganizationUnit {
@@ -81,6 +92,7 @@ model OrganizationUnit {
   tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   parent   OrganizationUnit?  @relation("OrganizationUnitHierarchy", fields: [parentId, tenantId], references: [id, tenantId], onDelete: Restrict)
   children OrganizationUnit[] @relation("OrganizationUnitHierarchy")
+  memberships UserTenantMembership[]
 
   @@unique([id, tenantId])
   @@index([tenantId])
@@ -110,10 +122,12 @@ model User {
   firstName   String
   lastName    String
   isActive    Boolean    @default(true)
+  status      UserLifecycleStatus @default(ACTIVE)
   lastLoginAt DateTime?
   tenant      Tenant?    @relation("UserPrimaryTenant", fields: [tenantId], references: [id], onDelete: SetNull)
   memberships UserTenantMembership[]
   employerGroup EmployerGroup? @relation(fields: [employerGroupId], references: [id], onDelete: SetNull)
+  credential  UserCredential?
   roles       UserRole[]
   auditLogs   AuditLog[]
   documents   Document[]
@@ -182,18 +196,50 @@ model UserTenantMembership {
   id            String   @id @default(uuid()) @db.Uuid
   userId        String   @db.Uuid
   tenantId      String   @db.Uuid
+  organizationUnitId String? @db.Uuid
+  status        UserLifecycleStatus @default(ACTIVE)
   isDefault     Boolean  @default(false)
   isTenantAdmin Boolean  @default(false)
+  invitedAt     DateTime?
+  activatedAt   DateTime?
+  disabledAt    DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationUnit OrganizationUnit? @relation(fields: [organizationUnitId, tenantId], references: [id, tenantId], onDelete: Restrict)
 
   @@unique([userId, tenantId])
   @@index([tenantId])
   @@index([userId, isTenantAdmin])
   @@index([userId, isDefault])
+  @@index([organizationUnitId])
+  @@index([status])
+}
+
+model TenantTypeDefinition {
+  code        String   @id
+  enumValue   TenantType @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenants Tenant[]
+  roles   Role[]
+}
+
+model UserCredential {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @unique @db.Uuid
+  passwordHash      String
+  mustResetPassword Boolean  @default(false)
+  passwordSetAt     DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model EmployerGroup {
@@ -366,12 +412,18 @@ model ApiCatalogEntry {
 model Role {
   id          String           @id @default(uuid()) @db.Uuid
   code        String           @unique
+  tenantTypeCode String?
   name        String
   description String?
+  appliesToAllTenantTypes Boolean @default(false)
+  isPlatformRole Boolean @default(false)
   users       UserRole[]
   permissions RolePermission[]
+  tenantTypeDefinition TenantTypeDefinition? @relation(fields: [tenantTypeCode], references: [code], onDelete: SetNull)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+
+  @@index([tenantTypeCode])
 }
 
 model Permission {
@@ -437,14 +489,19 @@ model EventDelivery {
 }
 
 model UserRole {
+  id         String   @id @default(uuid()) @db.Uuid
   userId     String   @db.Uuid
   roleId     String   @db.Uuid
+  tenantId   String?  @db.Uuid
   assignedAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@id([userId, roleId])
+  @@unique([userId, roleId, tenantId])
+  @@index([tenantId])
+  @@index([roleId, tenantId])
 }
 
 model RolePermission {

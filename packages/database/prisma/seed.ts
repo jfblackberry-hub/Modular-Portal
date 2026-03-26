@@ -1,11 +1,44 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { randomBytes, scryptSync } from 'node:crypto';
 
 import { PrismaClient } from '@prisma/client';
 
 import { seedTestProviderTenant } from './provider-tenant-seed.js';
 
 const prisma = new PrismaClient();
+const DEFAULT_DEMO_PASSWORD = 'demo12345';
+
+function hashPassword(password: string) {
+  const salt = randomBytes(16).toString('hex');
+  const derivedKey = scryptSync(password, salt, 64).toString('hex');
+  return `scrypt:${salt}:${derivedKey}`;
+}
+
+async function syncTenantTypeDefinitions() {
+  await Promise.all(
+    [
+      ['PAYER', 'PAYER', 'Payer'],
+      ['PROVIDER', 'PROVIDER', 'Provider'],
+      ['EMPLOYER', 'EMPLOYER', 'Employer'],
+      ['BROKER', 'BROKER', 'Broker'],
+      ['MEMBER', 'MEMBER', 'Member']
+    ].map(([code, enumValue, name]) =>
+      prisma.tenantTypeDefinition.upsert({
+        where: { code },
+        update: {
+          enumValue: enumValue as 'PAYER' | 'PROVIDER' | 'EMPLOYER' | 'BROKER' | 'MEMBER',
+          name
+        },
+        create: {
+          code,
+          enumValue: enumValue as 'PAYER' | 'PROVIDER' | 'EMPLOYER' | 'BROKER' | 'MEMBER',
+          name
+        }
+      })
+    )
+  );
+}
 
 async function syncUserTenantMemberships() {
   const users = await prisma.user.findMany({
@@ -206,10 +239,13 @@ async function writeMockDocument(storageKey: string, filename: string) {
 }
 
 async function main() {
+  await syncTenantTypeDefinitions();
   const tenant = await prisma.tenant.upsert({
     where: { slug: 'blue-horizon-health' },
     update: {
       status: 'ACTIVE',
+      type: 'PAYER',
+      tenantTypeCode: 'PAYER',
       brandingConfig: {
         primaryColor: '#0f6cbd',
         secondaryColor: '#ffffff',
@@ -220,6 +256,8 @@ async function main() {
       name: 'Blue Horizon Health',
       slug: 'blue-horizon-health',
       status: 'ACTIVE',
+      type: 'PAYER',
+      tenantTypeCode: 'PAYER',
       brandingConfig: {
         primaryColor: '#0f6cbd',
         secondaryColor: '#ffffff',
@@ -286,11 +324,13 @@ async function main() {
   const adminRole = await prisma.role.upsert({
     where: { code: 'platform-admin' },
     update: {
+      isPlatformRole: true,
       name: 'Platform Admin',
       description: 'Administrative role with tenant and user access.'
     },
     create: {
       code: 'platform-admin',
+      isPlatformRole: true,
       name: 'Platform Admin',
       description: 'Administrative role with tenant and user access.'
     }
@@ -299,11 +339,13 @@ async function main() {
   const platformAdminRole = await prisma.role.upsert({
     where: { code: 'platform_admin' },
     update: {
+      isPlatformRole: true,
       name: 'Platform Admin',
       description: 'Administrative role with cross-tenant platform access.'
     },
     create: {
       code: 'platform_admin',
+      isPlatformRole: true,
       name: 'Platform Admin',
       description: 'Administrative role with cross-tenant platform access.'
     }
@@ -312,11 +354,13 @@ async function main() {
   const tenantAdminRole = await prisma.role.upsert({
     where: { code: 'tenant_admin' },
     update: {
+      appliesToAllTenantTypes: true,
       name: 'Tenant Admin',
       description: 'Administrative role restricted to a single tenant scope.'
     },
     create: {
       code: 'tenant_admin',
+      appliesToAllTenantTypes: true,
       name: 'Tenant Admin',
       description: 'Administrative role restricted to a single tenant scope.'
     }
@@ -325,11 +369,13 @@ async function main() {
   const memberRole = await prisma.role.upsert({
     where: { code: 'member' },
     update: {
+      tenantTypeCode: 'PAYER',
       name: 'Member',
       description: 'Default member-facing access role.'
     },
     create: {
       code: 'member',
+      tenantTypeCode: 'PAYER',
       name: 'Member',
       description: 'Default member-facing access role.'
     }
@@ -386,13 +432,17 @@ async function main() {
     update: {
       tenantId: tenant.id,
       firstName: 'Maria',
-      lastName: 'Lopez'
+      lastName: 'Lopez',
+      isActive: true,
+      status: 'ACTIVE'
     },
     create: {
       tenantId: tenant.id,
       email: DEFAULT_MEMBER_LOGIN,
       firstName: 'Maria',
-      lastName: 'Lopez'
+      lastName: 'Lopez',
+      isActive: true,
+      status: 'ACTIVE'
     }
   });
 
@@ -401,70 +451,125 @@ async function main() {
     update: {
       tenantId: tenant.id,
       firstName: 'Tenant',
-      lastName: 'Admin'
+      lastName: 'Admin',
+      isActive: true,
+      status: 'ACTIVE'
     },
     create: {
       tenantId: tenant.id,
       email: 'tenant',
       firstName: 'Tenant',
-      lastName: 'Admin'
+      lastName: 'Admin',
+      isActive: true,
+      status: 'ACTIVE'
     }
   });
 
   const platformAdminUser = await prisma.user.upsert({
     where: { email: 'admin' },
     update: {
-      tenantId: tenant.id,
+      tenantId: null,
       firstName: 'Platform',
-      lastName: 'Admin'
+      lastName: 'Admin',
+      isActive: true,
+      status: 'ACTIVE'
     },
     create: {
-      tenantId: tenant.id,
+      tenantId: null,
       email: 'admin',
       firstName: 'Platform',
-      lastName: 'Admin'
+      lastName: 'Admin',
+      isActive: true,
+      status: 'ACTIVE'
     }
   });
 
-  await prisma.userRole.upsert({
+  for (const user of [portalUser, tenantAdminUser, platformAdminUser]) {
+    await prisma.userCredential.upsert({
+      where: { userId: user.id },
+      update: {
+        passwordHash: hashPassword(DEFAULT_DEMO_PASSWORD),
+        mustResetPassword: false,
+        passwordSetAt: new Date()
+      },
+      create: {
+        userId: user.id,
+        passwordHash: hashPassword(DEFAULT_DEMO_PASSWORD),
+        mustResetPassword: false,
+        passwordSetAt: new Date()
+      }
+    });
+  }
+
+  await prisma.userRole.deleteMany({
     where: {
-      userId_roleId: {
+      userId: {
+        in: [portalUser.id, tenantAdminUser.id, platformAdminUser.id]
+      }
+    }
+  });
+
+  await prisma.userRole.createMany({
+    data: [
+      {
         userId: portalUser.id,
-        roleId: memberRole.id
+        roleId: memberRole.id,
+        tenantId: tenant.id
+      },
+      {
+        userId: tenantAdminUser.id,
+        roleId: tenantAdminRole.id,
+        tenantId: tenant.id
+      },
+      {
+        userId: platformAdminUser.id,
+        roleId: platformAdminRole.id,
+        tenantId: null
+      }
+    ]
+  });
+
+  await prisma.userTenantMembership.upsert({
+    where: {
+      userId_tenantId: {
+        userId: portalUser.id,
+        tenantId: tenant.id
       }
     },
-    update: {},
+    update: {
+      isDefault: true,
+      status: 'ACTIVE',
+      activatedAt: new Date()
+    },
     create: {
       userId: portalUser.id,
-      roleId: memberRole.id
+      tenantId: tenant.id,
+      isDefault: true,
+      status: 'ACTIVE',
+      activatedAt: new Date()
     }
   });
 
-  await prisma.userRole.upsert({
+  await prisma.userTenantMembership.upsert({
     where: {
-      userId_roleId: {
+      userId_tenantId: {
         userId: tenantAdminUser.id,
-        roleId: tenantAdminRole.id
+        tenantId: tenant.id
       }
     },
-    update: {},
+    update: {
+      isDefault: true,
+      isTenantAdmin: true,
+      status: 'ACTIVE',
+      activatedAt: new Date()
+    },
     create: {
       userId: tenantAdminUser.id,
-      roleId: tenantAdminRole.id
-    }
-  });
-
-  await prisma.userRole.upsert({
-    where: {
-      userId_roleId: {
-        userId: platformAdminUser.id,
-        roleId: platformAdminRole.id
-      }
-    },
-    update: {},
-    create: {
-      userId: platformAdminUser.id,
-      roleId: platformAdminRole.id
+      tenantId: tenant.id,
+      isDefault: true,
+      isTenantAdmin: true,
+      status: 'ACTIVE',
+      activatedAt: new Date()
     }
   });
 
@@ -718,12 +823,6 @@ async function main() {
         maxAttempts: 1
       }
     ]
-  });
-
-  await prisma.auditLog.deleteMany({
-    where: {
-      tenantId: tenant.id
-    }
   });
 
   await prisma.auditLog.createMany({

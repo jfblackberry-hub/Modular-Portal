@@ -60,6 +60,9 @@ type TenantUserBody = {
   firstName: string;
   lastName: string;
   isActive?: boolean;
+  status?: 'INVITED' | 'ACTIVE' | 'DISABLED';
+  password?: string;
+  organizationUnitId?: string | null;
 };
 
 type PurchasedModulesBody = {

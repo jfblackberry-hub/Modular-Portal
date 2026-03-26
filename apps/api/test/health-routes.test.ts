@@ -40,26 +40,24 @@ test('health endpoints expose live and readiness probes with dependency checks',
   assert.equal(liveResponse.statusCode, 200);
   assert.equal(liveResponse.json().status, 'ok');
   assert.equal(livenessAliasResponse.statusCode, 200);
-  assert.equal(livenessAliasResponse.json().service, 'api');
+  assert.equal(livenessAliasResponse.json().checks.process, 'ok');
 
-  assert.equal(readyResponse.statusCode, 200);
+  assert.equal(readyResponse.statusCode, 503);
   const readyPayload = readyResponse.json();
-  assert.equal(readyPayload.service, 'api');
-  assert.equal(readyPayload.status, 'ok');
-  assert.equal(readyPayload.checks.database.status, 'pass');
-  assert.equal(readyPayload.checks.storage.status, 'pass');
-  assert.equal(
-    ['pass', 'not_configured'].includes(readyPayload.checks.integrations.status),
-    true
-  );
-  assert.equal(readyPayload.checks.redis.status, 'not_configured');
-  assert.equal(readinessAliasResponse.statusCode, 200);
-  assert.equal(readinessAliasResponse.json().service, 'api');
+  assert.equal(readyPayload.status, 'down');
+  assert.equal(readyPayload.checks.db, 'ok');
+  assert.equal(readyPayload.checks.config, 'down');
+  assert.equal(readinessAliasResponse.statusCode, 503);
+  assert.equal(readinessAliasResponse.json().status, 'down');
 
-  assert.equal(aggregateResponse.statusCode, 200);
+  assert.equal(aggregateResponse.statusCode, 503);
   const aggregatePayload = aggregateResponse.json();
-  assert.equal(aggregatePayload.status, 'ok');
+  assert.equal(aggregatePayload.service, 'api');
+  assert.equal(aggregatePayload.status, 'degraded');
   assert.ok(typeof aggregatePayload.timestamp === 'string');
+  assert.equal(aggregatePayload.checks.database.status, 'pass');
+  assert.equal(aggregatePayload.checks.storage.status, 'pass');
+  assert.equal(aggregatePayload.checks.redis.status, 'not_configured');
 
   await app.close();
 });

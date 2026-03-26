@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import type { MultipartFile } from '@fastify/multipart';
-import { Prisma, prisma } from '@payer-portal/database';
+import { Prisma, prisma, syncTenantTypeDefinitions } from '@payer-portal/database';
 import type { Tenant, TenantType } from '@payer-portal/database';
 import {
   buildTenantLogoStorageKey,
@@ -32,6 +32,8 @@ type BrandingConfig = Record<string, unknown>;
 type TenantLifecycleConfig = {
   archivedAt?: string;
   archivedByUserId?: string | null;
+  deletedAt?: string;
+  deletedByUserId?: string | null;
 };
 
 type AuditContext = {
@@ -204,6 +206,7 @@ export async function createTenant(
   }
 
   const type = normalizeTenantType(input.type);
+  await syncTenantTypeDefinitions(prisma);
 
   let tenant: Tenant;
 
@@ -215,6 +218,7 @@ export async function createTenant(
           slug,
           status: input.status,
           type,
+          tenantTypeCode: type,
           isActive: input.status === 'ACTIVE',
           brandingConfig: input.brandingConfig as Prisma.InputJsonValue
         }
@@ -316,6 +320,7 @@ export async function updateTenant(
             }
           : {}),
         type: nextType,
+        tenantTypeCode: nextType,
         brandingConfig: nextBrandingConfig as Prisma.InputJsonValue
       }
     });
@@ -529,6 +534,17 @@ export async function deleteTenant(
     throw new Error('Tenant must be archived before it can be deleted');
   }
 
+  if (typeof currentLifecycle.deletedAt === 'string') {
+    return {
+      id: tenant.id,
+      deleted: true
+    };
+  }
+
+  const deletedAt = new Date().toISOString();
+  const deletedSlug = `${tenant.slug}-deleted-${tenant.id.slice(0, 8)}`;
+  const deletedName = `${tenant.name} (Deleted)`;
+
   await prisma.$transaction(async (tx) => {
     await logAdminAction({
       client: tx,
@@ -545,8 +561,20 @@ export async function deleteTenant(
       }
     });
 
-    await tx.tenant.delete({
-      where: { id: tenant.id }
+    await tx.tenant.update({
+      where: { id: tenant.id },
+      data: {
+        name: deletedName,
+        slug: deletedSlug,
+        brandingConfig: {
+          ...(currentBrandingConfig as Prisma.InputJsonObject),
+          lifecycle: {
+            ...currentLifecycle,
+            deletedAt,
+            deletedByUserId: context.actorUserId ?? null
+          }
+        }
+      }
     });
   });
 

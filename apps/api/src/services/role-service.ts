@@ -1,7 +1,13 @@
 import { randomUUID } from 'node:crypto';
 
-import type { Permission, Role, User } from '@payer-portal/database';
-import { Prisma, prisma } from '@payer-portal/database';
+import type { TenantType, UserLifecycleStatus } from '@payer-portal/database';
+import {
+  hashPassword,
+  normalizeUserLifecycleStatus,
+  Prisma,
+  prisma,
+  syncTenantTypeDefinitions
+} from '@payer-portal/database';
 import {
   createNotification,
   logAdminAction,
@@ -13,6 +19,9 @@ type CreateRoleInput = {
   name: string;
   description?: string;
   permissions: string[];
+  tenantTypeCode?: string;
+  appliesToAllTenantTypes?: boolean;
+  isPlatformRole?: boolean;
 };
 
 type CreateUserInput = {
@@ -21,6 +30,9 @@ type CreateUserInput = {
   firstName: string;
   lastName: string;
   isActive?: boolean;
+  status?: UserLifecycleStatus | string;
+  password?: string;
+  organizationUnitId?: string | null;
 };
 
 type UpdateUserInput = {
@@ -29,6 +41,9 @@ type UpdateUserInput = {
   firstName?: string;
   lastName?: string;
   isActive?: boolean;
+  status?: UserLifecycleStatus | string;
+  password?: string;
+  organizationUnitId?: string | null;
 };
 
 type AuditContext = {
@@ -37,33 +52,57 @@ type AuditContext = {
   userAgent?: string;
 };
 
-const userInclude = {
-  tenant: true,
-  memberships: {
-    include: {
-      tenant: {
-        select: {
-          id: true,
-          name: true
-        }
+const userWithAccessArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
+  include: {
+    credential: true,
+    tenant: {
+      select: {
+        id: true,
+        name: true,
+        tenantTypeCode: true
       }
     },
-    orderBy: [{ isDefault: 'desc' as const }, { createdAt: 'asc' as const }]
-  },
-  roles: {
-    include: {
-      role: {
-        include: {
-          permissions: {
-            include: {
-              permission: true
+    memberships: {
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            tenantTypeCode: true
+          }
+        },
+        organizationUnit: {
+          select: {
+            id: true,
+            name: true,
+            type: true
+          }
+        }
+      },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
+    },
+    roles: {
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
             }
           }
         }
-      }
+      },
+      orderBy: [{ assignedAt: 'desc' }]
     }
   }
-};
+});
 
 function normalizeCode(value: string) {
   return value.trim().toLowerCase();
@@ -79,97 +118,228 @@ function normalizeRequired(value: string, fieldName: string) {
   return normalized;
 }
 
-function normalizeOptional(value: string | undefined) {
+function normalizeOptional(value: string | undefined | null) {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
 }
 
-function mapUser(
-  user: User & {
-    tenant: {
-      id: string;
-      name: string;
-    } | null;
-    memberships: Array<{
-      tenantId: string;
-      isDefault: boolean;
-      isTenantAdmin: boolean;
-      tenant: {
-        id: string;
-        name: string;
-      };
-    }>;
-    roles: Array<{
-      role: Role & {
-        permissions: Array<{
-          permission: Permission;
-        }>;
-      };
-    }>;
+function normalizeTenantTypeCode(value: string | TenantType | undefined, fallback?: string) {
+  const candidate = value?.trim().toUpperCase() ?? fallback?.trim().toUpperCase();
+
+  if (!candidate) {
+    return undefined;
   }
+
+  return candidate;
+}
+
+function resolveLifecycleStatus(input: {
+  status?: UserLifecycleStatus | string;
+  isActive?: boolean;
+}) {
+  if (input.status !== undefined) {
+    return normalizeUserLifecycleStatus(input.status);
+  }
+
+  if (input.isActive === false) {
+    return 'DISABLED' as const;
+  }
+
+  return 'ACTIVE' as const;
+}
+
+function getEffectiveMembership(
+  user: UserRecordWithRelations,
+  tenantId?: string | null
 ) {
+  if (tenantId) {
+    return (
+      user.memberships.find(
+        (membership) => membership.tenantId === tenantId && membership.status === 'ACTIVE'
+      ) ?? null
+    );
+  }
+
+  return (
+    user.memberships.find(
+      (membership) => membership.isDefault && membership.status === 'ACTIVE'
+    ) ??
+    user.memberships.find((membership) => membership.status === 'ACTIVE') ??
+    null
+  );
+}
+
+type UserRecordWithRelations = Prisma.UserGetPayload<typeof userWithAccessArgs>;
+
+function mapUser(user: UserRecordWithRelations) {
+  const effectiveMembership = getEffectiveMembership(user, user.tenantId);
+  const effectiveTenant = effectiveMembership?.tenant ?? user.tenant ?? null;
+  const effectiveRoleAssignments = user.roles.filter((assignment) =>
+    effectiveTenant
+      ? assignment.tenantId === effectiveTenant.id || assignment.tenantId === null
+      : assignment.tenantId === null
+  );
+
   return {
     id: user.id,
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
     isActive: user.isActive,
+    status: user.status,
     lastLoginAt: user.lastLoginAt,
-    tenant: (() => {
-      const resolvedTenant = user.tenant ?? user.memberships[0]?.tenant ?? null;
-
-      return resolvedTenant
-        ? {
-            id: resolvedTenant.id,
-            name: resolvedTenant.name
-          }
-        : null;
-    })(),
+    tenant: effectiveTenant
+      ? {
+          id: effectiveTenant.id,
+          name: effectiveTenant.name
+        }
+      : null,
     memberships: user.memberships.map((membership) => ({
+      id: membership.id,
       tenant: membership.tenant,
+      tenantTypeCode: membership.tenant.tenantTypeCode,
       isDefault: membership.isDefault,
-      isTenantAdmin: membership.isTenantAdmin
+      isTenantAdmin: membership.isTenantAdmin,
+      status: membership.status,
+      organizationUnit: membership.organizationUnit
+        ? {
+            id: membership.organizationUnit.id,
+            name: membership.organizationUnit.name,
+            type: membership.organizationUnit.type
+          }
+        : null
     })),
-    roles: user.roles.map(({ role }) => role.code),
+    roles: effectiveRoleAssignments.map(({ role }) => role.code),
+    roleAssignments: user.roles.map((assignment) => ({
+      id: assignment.id,
+      tenantId: assignment.tenantId,
+      tenant: assignment.tenant,
+      role: {
+        id: assignment.role.id,
+        code: assignment.role.code,
+        name: assignment.role.name,
+        tenantTypeCode: assignment.role.tenantTypeCode,
+        isPlatformRole: assignment.role.isPlatformRole,
+        appliesToAllTenantTypes: assignment.role.appliesToAllTenantTypes
+      }
+    })),
     permissions: Array.from(
       new Set(
-        user.roles.flatMap(({ role }) =>
+        effectiveRoleAssignments.flatMap(({ role }) =>
           role.permissions.map(({ permission }) => permission.code)
         )
       )
-    )
+    ),
+    credentials: {
+      hasPassword: Boolean(user.credential),
+      mustResetPassword: user.credential?.mustResetPassword ?? false,
+      passwordSetAt: user.credential?.passwordSetAt ?? null
+    }
   };
 }
 
 function mapRole(
-  role: Role & {
-    permissions: Array<{
-      permission: Permission;
-    }>;
-    users: Array<{
-      user: User;
-    }>;
-  }
+  role: Prisma.RoleGetPayload<{
+    include: {
+      permissions: {
+        include: {
+          permission: true;
+        };
+      };
+      users: {
+        include: {
+          user: true;
+          tenant: {
+            select: {
+              id: true;
+              name: true;
+            };
+          };
+        };
+      };
+    };
+  }>
 ) {
   return {
     id: role.id,
     code: role.code,
+    tenantTypeCode: role.tenantTypeCode,
+    appliesToAllTenantTypes: role.appliesToAllTenantTypes,
+    isPlatformRole: role.isPlatformRole,
     name: role.name,
     description: role.description,
     permissions: role.permissions.map(({ permission }) => permission.code),
-    users: role.users.map(({ user }) => ({
+    users: role.users.map(({ user, tenant }) => ({
       id: user.id,
       email: user.email,
       firstName: user.firstName,
-      lastName: user.lastName
+      lastName: user.lastName,
+      tenant
     })),
     createdAt: role.createdAt,
     updatedAt: role.updatedAt
   };
 }
 
-export async function listRoles() {
+async function resolveTenantContextForUser(
+  tenantId?: string,
+  organizationUnitId?: string | null
+) {
+  if (!tenantId) {
+    if (organizationUnitId) {
+      throw new Error('Organization Unit requires a tenant.');
+    }
+
+    return null;
+  }
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: {
+      id: true,
+      name: true,
+      tenantTypeCode: true
+    }
+  });
+
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+
+  if (organizationUnitId) {
+    const organizationUnit = await prisma.organizationUnit.findFirst({
+      where: {
+        id: organizationUnitId,
+        tenantId
+      },
+      select: {
+        id: true
+      }
+    });
+
+    if (!organizationUnit) {
+      throw new Error('Organization Unit not found for tenant.');
+    }
+  }
+
+  return tenant;
+}
+
+export async function listRoles(options: {
+  tenantTypeCode?: string;
+  includePlatformRoles?: boolean;
+} = {}) {
+  const normalizedTenantTypeCode = normalizeTenantTypeCode(options.tenantTypeCode);
   const roles = await prisma.role.findMany({
+    where: normalizedTenantTypeCode
+      ? {
+          OR: [
+            { tenantTypeCode: normalizedTenantTypeCode },
+            { appliesToAllTenantTypes: true },
+            ...(options.includePlatformRoles ? [{ isPlatformRole: true }] : [])
+          ]
+        }
+      : undefined,
     include: {
       permissions: {
         include: {
@@ -178,13 +348,17 @@ export async function listRoles() {
       },
       users: {
         include: {
-          user: true
+          user: true,
+          tenant: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
         }
       }
     },
-    orderBy: {
-      createdAt: 'desc'
-    }
+    orderBy: [{ isPlatformRole: 'desc' }, { name: 'asc' }]
   });
 
   return roles.map(mapRole);
@@ -194,6 +368,7 @@ export async function createRole(input: CreateRoleInput) {
   const code = normalizeCode(input.code);
   const name = input.name.trim();
   const permissionCodes = input.permissions.map(normalizeCode).filter(Boolean);
+  const tenantTypeCode = normalizeTenantTypeCode(input.tenantTypeCode);
 
   if (!code) {
     throw new Error('Role code is required');
@@ -205,6 +380,18 @@ export async function createRole(input: CreateRoleInput) {
 
   if (permissionCodes.length === 0) {
     throw new Error('At least one permission is required');
+  }
+
+  await syncTenantTypeDefinitions(prisma);
+
+  if (tenantTypeCode) {
+    const tenantType = await prisma.tenantTypeDefinition.findUnique({
+      where: { code: tenantTypeCode }
+    });
+
+    if (!tenantType) {
+      throw new Error('Tenant Type not found');
+    }
   }
 
   const permissions = await Promise.all(
@@ -226,12 +413,18 @@ export async function createRole(input: CreateRoleInput) {
     where: { code },
     update: {
       name,
-      description: input.description?.trim() || null
+      description: input.description?.trim() || null,
+      tenantTypeCode: tenantTypeCode ?? null,
+      appliesToAllTenantTypes: input.appliesToAllTenantTypes ?? false,
+      isPlatformRole: input.isPlatformRole ?? false
     },
     create: {
       code,
       name,
-      description: input.description?.trim() || null
+      description: input.description?.trim() || null,
+      tenantTypeCode: tenantTypeCode ?? null,
+      appliesToAllTenantTypes: input.appliesToAllTenantTypes ?? false,
+      isPlatformRole: input.isPlatformRole ?? false
     }
   });
 
@@ -263,7 +456,13 @@ export async function createRole(input: CreateRoleInput) {
       },
       users: {
         include: {
-          user: true
+          user: true,
+          tenant: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
         }
       }
     }
@@ -272,10 +471,20 @@ export async function createRole(input: CreateRoleInput) {
   return mapRole(hydratedRole);
 }
 
-export async function assignRoleToUser(userId: string, roleId: string, context: AuditContext = {}) {
+export async function assignRoleToUser(
+  userId: string,
+  roleId: string,
+  context: AuditContext = {},
+  options: {
+    tenantId?: string | null;
+  } = {}
+) {
   const [user, role] = await Promise.all([
     prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      include: {
+        memberships: true
+      }
     }),
     prisma.role.findUnique({
       where: { id: roleId }
@@ -290,27 +499,75 @@ export async function assignRoleToUser(userId: string, roleId: string, context: 
     throw new Error('Role not found');
   }
 
-  const tenantId = user.tenantId;
+  const tenantId =
+    options.tenantId === undefined
+      ? user.memberships.find((membership) => membership.isDefault)?.tenantId ??
+        user.tenantId ??
+        null
+      : options.tenantId;
+
+  if (role.isPlatformRole) {
+    if (tenantId !== null) {
+      throw new Error('Platform roles cannot be assigned to a tenant.');
+    }
+  } else if (!tenantId) {
+    throw new Error('Tenant-scoped roles require a tenant assignment.');
+  } else {
+    const membership = user.memberships.find((candidate) => candidate.tenantId === tenantId);
+
+    if (!membership) {
+      throw new Error('User is not a member of the selected tenant.');
+    }
+
+    const tenant = await prisma.tenant.findUnique({
+      where: {
+        id: tenantId
+      },
+      select: {
+        tenantTypeCode: true
+      }
+    });
+
+    if (!tenant) {
+      throw new Error('Tenant not found');
+    }
+
+    const roleAllowedForTenant =
+      role.appliesToAllTenantTypes ||
+      role.tenantTypeCode === null ||
+      role.tenantTypeCode === tenant.tenantTypeCode;
+
+    if (!roleAllowedForTenant) {
+      throw new Error('Role is not allowed for this Tenant Type.');
+    }
+  }
+
   const beforeState = {
-    roleIds: await prisma.userRole.findMany({
+    assignments: await prisma.userRole.findMany({
       where: { userId },
-      select: { roleId: true }
-    }).then((items) => items.map((item) => item.roleId))
+      select: {
+        roleId: true,
+        tenantId: true
+      }
+    })
   };
 
-  await prisma.userRole.upsert({
+  const existingAssignment = await prisma.userRole.findFirst({
     where: {
-      userId_roleId: {
-        userId,
-        roleId
-      }
-    },
-    update: {},
-    create: {
       userId,
-      roleId
+      roleId,
+      tenantId
     }
   });
+  const assignment =
+    existingAssignment ??
+    (await prisma.userRole.create({
+      data: {
+        userId,
+        roleId,
+        tenantId
+      }
+    }));
 
   const permissions = await prisma.permission.findMany({
     where: {
@@ -324,10 +581,6 @@ export async function assignRoleToUser(userId: string, roleId: string, context: 
       code: 'asc'
     }
   });
-  const afterRoleIds = await prisma.userRole.findMany({
-    where: { userId },
-    select: { roleId: true }
-  });
 
   if (tenantId) {
     await logAdminAction({
@@ -335,20 +588,16 @@ export async function assignRoleToUser(userId: string, roleId: string, context: 
       actorUserId: context.actorUserId ?? null,
       action: 'tenant.role-assignment.updated',
       resourceType: 'user-role',
-      resourceId: `${userId}:${roleId}`,
-      beforeState: beforeState as unknown as Prisma.InputJsonValue,
+      resourceId: assignment.id,
+      beforeState: beforeState as Prisma.InputJsonValue,
       afterState: {
-        roleIds: afterRoleIds.map((item) => item.roleId),
-        assignedRoleId: roleId,
-        assignedRoleCode: role.code
-      } satisfies Prisma.InputJsonValue,
-      ipAddress: context.ipAddress,
-      userAgent: context.userAgent,
-      metadata: {
+        tenantId,
         userId,
         roleId,
         roleCode: role.code
-      }
+      } satisfies Prisma.InputJsonValue,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent
     });
   }
 
@@ -356,95 +605,75 @@ export async function assignRoleToUser(userId: string, roleId: string, context: 
     userId,
     roleId,
     roleCode: role.code,
+    tenantId,
     permissions: permissions.map((permission) => permission.code)
   };
 }
 
-export async function removeRoleFromUser(userId: string, roleId: string, context: AuditContext = {}) {
-  const [user, role, assignment] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId }
-    }),
-    prisma.role.findUnique({
-      where: { id: roleId }
-    }),
-    prisma.userRole.findUnique({
-      where: {
-        userId_roleId: {
-          userId,
-          roleId
-        }
-      }
-    })
-  ]);
-
-  if (!user) {
-    throw new Error('User not found');
-  }
-
-  if (!role) {
-    throw new Error('Role not found');
-  }
-
-  if (!assignment) {
-    throw new Error('Role assignment not found');
-  }
-
-  const beforeRoleIds = await prisma.userRole.findMany({
-    where: { userId },
-    select: { roleId: true }
-  });
-
-  await prisma.userRole.delete({
+export async function removeRoleFromUser(
+  userId: string,
+  roleId: string,
+  context: AuditContext = {},
+  options: {
+    tenantId?: string | null;
+  } = {}
+) {
+  const assignments = await prisma.userRole.findMany({
     where: {
-      userId_roleId: {
-        userId,
-        roleId
-      }
+      userId,
+      roleId,
+      ...(options.tenantId === undefined ? {} : { tenantId: options.tenantId })
+    },
+    include: {
+      role: true
     }
   });
 
-  const afterRoleIds = await prisma.userRole.findMany({
-    where: { userId },
-    select: { roleId: true }
+  if (assignments.length === 0) {
+    throw new Error('Role assignment not found');
+  }
+
+  if (assignments.length > 1 && options.tenantId === undefined) {
+    throw new Error('Role exists in multiple tenant scopes. Tenant selection is required.');
+  }
+
+  const assignment = assignments[0]!;
+  await prisma.userRole.delete({
+    where: {
+      id: assignment.id
+    }
   });
 
-  if (user.tenantId) {
+  if (assignment.tenantId) {
     await logAdminAction({
-      tenantId: user.tenantId,
+      tenantId: assignment.tenantId,
       actorUserId: context.actorUserId ?? null,
       action: 'tenant.role-assignment.removed',
       resourceType: 'user-role',
-      resourceId: `${userId}:${roleId}`,
+      resourceId: assignment.id,
       beforeState: {
-        roleIds: beforeRoleIds.map((item) => item.roleId)
-      } satisfies Prisma.InputJsonValue,
-      afterState: {
-        roleIds: afterRoleIds.map((item) => item.roleId),
-        removedRoleId: roleId,
-        removedRoleCode: role.code
-      } satisfies Prisma.InputJsonValue,
-      ipAddress: context.ipAddress,
-      userAgent: context.userAgent,
-      metadata: {
         userId,
         roleId,
-        roleCode: role.code
-      }
+        tenantId: assignment.tenantId
+      } satisfies Prisma.InputJsonValue,
+      afterState: Prisma.JsonNull as unknown as Prisma.InputJsonValue,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent
     });
   }
 
   return {
     userId,
     roleId,
-    roleCode: role.code,
+    roleCode: assignment.role.code,
+    tenantId: assignment.tenantId,
     removed: true
   };
 }
 
 export async function listUsers() {
   const users = await prisma.user.findMany({
-    include: userInclude,
+    include: userWithAccessArgs.include,
     orderBy: {
       createdAt: 'desc'
     }
@@ -457,56 +686,56 @@ export async function createUser(
   input: CreateUserInput,
   context: AuditContext = {}
 ) {
+  await syncTenantTypeDefinitions(prisma);
+
   const email = normalizeRequired(input.email, 'Email').toLowerCase();
   const firstName = normalizeRequired(input.firstName, 'First name');
   const lastName = normalizeRequired(input.lastName, 'Last name');
   const tenantId = normalizeOptional(input.tenantId);
+  const organizationUnitId = normalizeOptional(input.organizationUnitId);
+  const status = resolveLifecycleStatus(input);
+  const isActive = status === 'ACTIVE';
+  const tenant = await resolveTenantContextForUser(tenantId, organizationUnitId);
 
   const user = await prisma.$transaction(async (tx) => {
-    if (tenantId) {
-      const tenant = await tx.tenant.findUnique({
-        where: { id: tenantId }
-      });
-
-      if (!tenant) {
-        throw new Error('Tenant not found');
-      }
-    }
-
     const createdUser = await tx.user.create({
       data: {
-        tenantId,
+        tenantId: tenantId ?? null,
         email,
         firstName,
         lastName,
-        isActive: input.isActive ?? true
-      },
-      include: userInclude
-    });
+        isActive,
+        }
+      });
 
-    if (tenantId) {
-      await tx.userTenantMembership.upsert({
-        where: {
-          userId_tenantId: {
-            userId: createdUser.id,
-            tenantId
-          }
-        },
-        update: {
-          isDefault: true
-        },
-        create: {
+    if (input.password?.trim()) {
+      await tx.userCredential.create({
+        data: {
           userId: createdUser.id,
-          tenantId,
-          isDefault: true
+          passwordHash: hashPassword(input.password),
+          mustResetPassword: status === 'INVITED',
+          passwordSetAt: new Date()
         }
       });
     }
 
-    if (createdUser.tenantId) {
+    if (tenantId) {
+      await tx.userTenantMembership.create({
+        data: {
+          userId: createdUser.id,
+          tenantId,
+          organizationUnitId: organizationUnitId ?? null,
+          isDefault: true,
+          status,
+          invitedAt: status === 'INVITED' ? new Date() : null,
+          activatedAt: status === 'ACTIVE' ? new Date() : null,
+          disabledAt: status === 'DISABLED' ? new Date() : null
+        }
+      });
+
       await logAdminAction({
         client: tx,
-        tenantId: createdUser.tenantId,
+        tenantId,
         actorUserId: context.actorUserId ?? null,
         action: 'user.created',
         resourceType: 'user',
@@ -516,8 +745,9 @@ export async function createUser(
           email,
           firstName,
           lastName,
-          isActive: input.isActive ?? true,
-          tenantId
+          status,
+          tenantId,
+          organizationUnitId: organizationUnitId ?? null
         } satisfies Prisma.InputJsonValue,
         ipAddress: context.ipAddress,
         userAgent: context.userAgent
@@ -526,18 +756,24 @@ export async function createUser(
 
     return tx.user.findUniqueOrThrow({
       where: { id: createdUser.id },
-      include: userInclude
+      include: userWithAccessArgs.include
     });
   });
 
-  if (user.tenant?.id) {
+  if (tenant?.id) {
     await createNotification({
-      tenantId: user.tenant.id,
+      tenantId: tenant.id,
       userId: user.id,
       channel: 'EMAIL',
-      template: 'user-welcome',
-      subject: 'Welcome to the portal',
-      body: `Welcome ${user.firstName}. Your portal account is ready.`
+      template: status === 'INVITED' ? 'user-invited' : 'user-welcome',
+      subject:
+        status === 'INVITED'
+          ? 'Your portal invitation is ready'
+          : 'Welcome to the portal',
+      body:
+        status === 'INVITED'
+          ? `An account has been created for ${user.firstName}. Activate it by setting credentials.`
+          : `Welcome ${user.firstName}. Your portal account is ready.`
     });
 
     publishInBackground('user.created', {
@@ -545,13 +781,13 @@ export async function createUser(
       id: randomUUID(),
       correlationId: randomUUID(),
       failureType: 'none',
-      orgUnitId: null,
+      orgUnitId: organizationUnitId ?? null,
       timestamp: new Date(),
-      tenantId: user.tenant.id,
+      tenantId: tenant.id,
       type: 'user.created',
       payload: {
         userId: user.id,
-        tenantId: user.tenant.id,
+        tenantId: tenant.id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -565,50 +801,47 @@ export async function createUser(
 
 export async function updateUser(id: string, input: UpdateUserInput, context: AuditContext = {}) {
   const existingUser = await prisma.user.findUnique({
-    where: { id }
+    where: { id },
+    include: {
+      memberships: {
+        orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
+      }
+    }
   });
 
   if (!existingUser) {
     throw new Error('User not found');
   }
 
-  const tenantId = normalizeOptional(input.tenantId) ?? existingUser.tenantId ?? undefined;
-  const email =
-    normalizeOptional(input.email)?.toLowerCase() ?? existingUser.email;
-  const firstName =
-    normalizeOptional(input.firstName) ?? existingUser.firstName;
+  const tenantId =
+    normalizeOptional(input.tenantId) ??
+    existingUser.memberships.find((membership) => membership.isDefault)?.tenantId ??
+    existingUser.tenantId ??
+    undefined;
+  const organizationUnitId =
+    input.organizationUnitId === null
+      ? null
+      : normalizeOptional(input.organizationUnitId) ??
+        existingUser.memberships.find((membership) => membership.isDefault)?.organizationUnitId ??
+        null;
+  const email = normalizeOptional(input.email)?.toLowerCase() ?? existingUser.email;
+  const firstName = normalizeOptional(input.firstName) ?? existingUser.firstName;
   const lastName = normalizeOptional(input.lastName) ?? existingUser.lastName;
-  const isActive = input.isActive ?? existingUser.isActive;
-
-  if (!email) {
-    throw new Error('Email is required');
-  }
-
-  if (!firstName) {
-    throw new Error('First name is required');
-  }
-
-  if (!lastName) {
-    throw new Error('Last name is required');
-  }
+  const status = resolveLifecycleStatus({
+    status: input.status,
+    isActive: input.isActive ?? existingUser.isActive
+  });
+  const isActive = status === 'ACTIVE';
+  const tenant = await resolveTenantContextForUser(tenantId, organizationUnitId);
 
   const user = await prisma.$transaction(async (tx) => {
-    if (tenantId) {
-      const tenant = await tx.tenant.findUnique({
-        where: { id: tenantId }
-      });
-
-      if (!tenant) {
-        throw new Error('Tenant not found');
-      }
-    }
-
     const beforeState = {
       tenantId: existingUser.tenantId,
       email: existingUser.email,
       firstName: existingUser.firstName,
       lastName: existingUser.lastName,
-      isActive: existingUser.isActive
+      isActive: existingUser.isActive,
+      status: existingUser.status
     };
 
     const updatedUser = await tx.user.update({
@@ -618,10 +851,29 @@ export async function updateUser(id: string, input: UpdateUserInput, context: Au
         email,
         firstName,
         lastName,
-        isActive
-      },
-      include: userInclude
+        isActive,
+        status
+      }
     });
+
+    if (input.password?.trim()) {
+      await tx.userCredential.upsert({
+        where: {
+          userId: id
+        },
+        update: {
+          passwordHash: hashPassword(input.password),
+          mustResetPassword: status === 'INVITED',
+          passwordSetAt: new Date()
+        },
+        create: {
+          userId: id,
+          passwordHash: hashPassword(input.password),
+          mustResetPassword: status === 'INVITED',
+          passwordSetAt: new Date()
+        }
+      });
+    }
 
     if (tenantId) {
       await tx.userTenantMembership.upsert({
@@ -632,12 +884,21 @@ export async function updateUser(id: string, input: UpdateUserInput, context: Au
           }
         },
         update: {
-          isDefault: true
+          organizationUnitId,
+          isDefault: true,
+          status,
+          activatedAt: status === 'ACTIVE' ? new Date() : null,
+          disabledAt: status === 'DISABLED' ? new Date() : null
         },
         create: {
           userId: id,
           tenantId,
-          isDefault: true
+          organizationUnitId,
+          isDefault: true,
+          status,
+          invitedAt: status === 'INVITED' ? new Date() : null,
+          activatedAt: status === 'ACTIVE' ? new Date() : null,
+          disabledAt: status === 'DISABLED' ? new Date() : null
         }
       });
 
@@ -652,9 +913,7 @@ export async function updateUser(id: string, input: UpdateUserInput, context: Au
           isDefault: false
         }
       });
-    }
 
-    if (tenantId) {
       await logAdminAction({
         client: tx,
         tenantId,
@@ -668,7 +927,9 @@ export async function updateUser(id: string, input: UpdateUserInput, context: Au
           email,
           firstName,
           lastName,
-          isActive
+          isActive,
+          status,
+          organizationUnitId
         } satisfies Prisma.InputJsonValue,
         ipAddress: context.ipAddress,
         userAgent: context.userAgent
@@ -677,7 +938,7 @@ export async function updateUser(id: string, input: UpdateUserInput, context: Au
 
     return tx.user.findUniqueOrThrow({
       where: { id: updatedUser.id },
-      include: userInclude
+      include: userWithAccessArgs.include
     });
   });
 
@@ -691,7 +952,8 @@ export async function deleteUser(id: string, context: AuditContext = {}) {
       tenant: true,
       roles: {
         include: {
-          role: true
+          role: true,
+          tenant: true
         }
       }
     }
@@ -715,7 +977,10 @@ export async function deleteUser(id: string, context: AuditContext = {}) {
           firstName: existingUser.firstName,
           lastName: existingUser.lastName,
           tenantId: existingUser.tenantId,
-          roles: existingUser.roles.map(({ role }) => role.code)
+          roles: existingUser.roles.map(({ role, tenant }) => ({
+            code: role.code,
+            tenantId: tenant?.id ?? null
+          }))
         } satisfies Prisma.InputJsonValue,
         afterState: Prisma.JsonNull as unknown as Prisma.InputJsonValue,
         ipAddress: context.ipAddress,

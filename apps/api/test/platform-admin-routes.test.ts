@@ -343,7 +343,14 @@ test('platform admins can archive inactive tenants and then delete them', async 
     }
   });
 
-  assert.equal(deletedTenant, null);
+  assert.ok(deletedTenant);
+  assert.match(deletedTenant.slug, /^platform-plane-tenant-deleted-/);
+  const lifecycle = (deletedTenant.brandingConfig as {
+    lifecycle?: {
+      deletedAt?: string;
+    };
+  }).lifecycle;
+  assert.ok(typeof lifecycle?.deletedAt === 'string');
 
   await app.close();
 });

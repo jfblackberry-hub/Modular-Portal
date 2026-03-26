@@ -17,6 +17,7 @@ type UserRecord = {
   lastName: string;
   email: string;
   isActive: boolean;
+  status?: 'INVITED' | 'ACTIVE' | 'DISABLED';
   tenant: {
     id: string;
     name: string;
@@ -51,6 +52,8 @@ type UserFormState = {
   lastName: string;
   email: string;
   isActive: boolean;
+  status: 'INVITED' | 'ACTIVE' | 'DISABLED';
+  password: string;
 };
 
 type ApiUserRecord = Omit<UserRecord, 'lastLogin'> & {
@@ -73,7 +76,9 @@ const emptyFormState: UserFormState = {
   firstName: '',
   lastName: '',
   email: '',
-  isActive: true
+  isActive: true,
+  status: 'ACTIVE',
+  password: ''
 };
 
 function formatLastLogin(value: string | null) {
@@ -227,7 +232,9 @@ function UserListPageContent({ scope }: { scope: Scope }) {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      isActive: user.isActive
+      isActive: user.isActive,
+      status: user.status ?? (user.isActive ? 'ACTIVE' : 'DISABLED'),
+      password: ''
     });
     setError('');
     setIsDrawerOpen(true);
@@ -257,7 +264,9 @@ function UserListPageContent({ scope }: { scope: Scope }) {
               email: formState.email,
               firstName: formState.firstName,
               lastName: formState.lastName,
-              isActive: formState.isActive
+              isActive: formState.isActive,
+              status: formState.status,
+              password: formState.password || undefined
             };
 
       const response = await fetch(targetPath, {
@@ -323,7 +332,8 @@ function UserListPageContent({ scope }: { scope: Scope }) {
           ...getAdminAuthHeaders()
         },
         body: JSON.stringify({
-          isActive: !user.isActive
+          isActive: !user.isActive,
+          status: !user.isActive ? 'ACTIVE' : 'DISABLED'
         })
       });
 
@@ -364,10 +374,11 @@ function UserListPageContent({ scope }: { scope: Scope }) {
           'Content-Type': 'application/json',
           ...getAdminAuthHeaders()
         },
-        body: JSON.stringify({
-          roleId: selectedRoleId
-        })
-      });
+          body: JSON.stringify({
+            roleId: selectedRoleId,
+            tenantId: selectedUser.tenant?.id ?? null
+          })
+        });
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as {
@@ -627,16 +638,18 @@ function UserListPageContent({ scope }: { scope: Scope }) {
                       )}
                     </td>
                     <td className="px-3 py-4">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
-                          user.isActive
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        {user.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
+	                      <span
+	                        className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
+	                          (user.status ?? (user.isActive ? 'ACTIVE' : 'DISABLED')) === 'ACTIVE'
+	                            ? 'bg-emerald-100 text-emerald-700'
+	                            : (user.status ?? 'DISABLED') === 'INVITED'
+	                              ? 'bg-amber-100 text-amber-700'
+	                              : 'bg-slate-100 text-slate-700'
+	                        }`}
+	                      >
+	                        {user.status ?? (user.isActive ? 'ACTIVE' : 'DISABLED')}
+	                      </span>
+	                    </td>
                     <td className="px-3 py-4 text-admin-muted">
                       {formatLastLogin(user.lastLogin)}
                     </td>

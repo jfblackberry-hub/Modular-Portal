@@ -48,12 +48,16 @@ type TenantUserRecord = {
     name: string;
   } | null;
   memberships: Array<{
+    status: 'INVITED' | 'ACTIVE' | 'DISABLED';
+    isDefault: boolean;
+    isTenantAdmin: boolean;
     tenant: {
       id: string;
       name: string;
     };
   }>;
   roles: Array<{
+    tenantId: string | null;
     role: {
       code: string;
       permissions: Array<{
@@ -66,7 +70,14 @@ type TenantUserRecord = {
 };
 
 function mapTenantUser(user: TenantUserRecord) {
-  const scopedTenant = user.memberships[0]?.tenant ?? user.tenant;
+  const scopedTenant =
+    user.memberships.find((membership) => membership.isDefault)?.tenant ??
+    user.memberships[0]?.tenant ??
+    user.tenant;
+  const scopedRoles = user.roles.filter(
+    (assignment) =>
+      assignment.tenantId === scopedTenant?.id || assignment.tenantId === null
+  );
 
   return {
     id: user.id,
@@ -75,10 +86,10 @@ function mapTenantUser(user: TenantUserRecord) {
     lastName: user.lastName,
     isActive: user.isActive,
     tenant: scopedTenant,
-    roles: user.roles.map(({ role }) => role.code),
+    roles: scopedRoles.map(({ role }) => role.code),
     permissions: Array.from(
       new Set(
-        user.roles.flatMap(({ role }) =>
+        scopedRoles.flatMap(({ role }) =>
           role.permissions.map(({ permission }) => permission.code)
         )
       )
@@ -148,8 +159,24 @@ export async function getTenantAdminSettings(
     employerKey?: string;
   } = {}
 ) {
+  const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        type: true,
+        tenantTypeCode: true,
+        status: true,
+        brandingConfig: true
+      }
+    });
+
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+
   const [
-    tenant,
     branding,
     notificationSettings,
     purchasedModules,
@@ -159,28 +186,21 @@ export async function getTenantAdminSettings(
     users,
     employerGroups
   ] = await Promise.all([
-    prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        type: true,
-        status: true,
-        brandingConfig: true
-      }
-    }),
     getBrandingForTenant(tenantId),
     getNotificationSettingsForTenant(tenantId),
     getPurchasedModulesForTenant(tenantId),
     getBillingEnrollmentModuleConfigForTenant(tenantId),
     listConnectorsForTenant(tenantId),
-    listRoles(),
+    listRoles({
+      tenantTypeCode: tenant.tenantTypeCode,
+      includePlatformRoles: false
+    }),
     prisma.user.findMany({
       where: {
         memberships: {
           some: {
-            tenantId
+            tenantId,
+            status: 'ACTIVE'
           }
         }
       },
@@ -196,6 +216,9 @@ export async function getTenantAdminSettings(
             tenantId
           },
           select: {
+            status: true,
+            isDefault: true,
+            isTenantAdmin: true,
             tenant: {
               select: {
                 id: true,
@@ -205,6 +228,9 @@ export async function getTenantAdminSettings(
           }
         },
         roles: {
+          where: {
+            OR: [{ tenantId }, { tenantId: null }]
+          },
           include: {
             role: {
               include: {
@@ -234,10 +260,6 @@ export async function getTenantAdminSettings(
       }
     })
   ]);
-
-  if (!tenant) {
-    throw new Error('Tenant not found');
-  }
 
   const tenantBrandingConfig =
     typeof tenant.brandingConfig === 'object' &&
@@ -610,7 +632,11 @@ export async function assignRoleToTenantUser(
   const user = await prisma.user.findFirst({
     where: {
       id: userId,
-      tenantId
+      memberships: {
+        some: {
+          tenantId
+        }
+      }
     }
   });
 
@@ -618,7 +644,7 @@ export async function assignRoleToTenantUser(
     throw new Error('User not found');
   }
 
-  return assignRoleToUser(userId, roleId, context);
+  return assignRoleToUser(userId, roleId, context, { tenantId });
 }
 
 export async function removeRoleFromTenantUser(
@@ -630,7 +656,11 @@ export async function removeRoleFromTenantUser(
   const user = await prisma.user.findFirst({
     where: {
       id: userId,
-      tenantId
+      memberships: {
+        some: {
+          tenantId
+        }
+      }
     }
   });
 
@@ -638,7 +668,7 @@ export async function removeRoleFromTenantUser(
     throw new Error('User not found');
   }
 
-  return removeRoleFromUser(userId, roleId, context);
+  return removeRoleFromUser(userId, roleId, context, { tenantId });
 }
 
 type TenantUserInput = {
@@ -646,6 +676,9 @@ type TenantUserInput = {
   firstName: string;
   lastName: string;
   isActive?: boolean;
+  status?: 'INVITED' | 'ACTIVE' | 'DISABLED';
+  password?: string;
+  organizationUnitId?: string | null;
 };
 
 export async function createTenantScopedUser(
@@ -671,7 +704,11 @@ export async function updateTenantScopedUser(
   const user = await prisma.user.findFirst({
     where: {
       id: userId,
-      tenantId
+      memberships: {
+        some: {
+          tenantId
+        }
+      }
     }
   });
 
@@ -697,7 +734,11 @@ export async function deleteTenantScopedUser(
   const user = await prisma.user.findFirst({
     where: {
       id: userId,
-      tenantId
+      memberships: {
+        some: {
+          tenantId
+        }
+      }
     }
   });
 

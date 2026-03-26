@@ -1,9 +1,42 @@
 import { mkdir, writeFile } from 'node:fs/promises';
+import { randomBytes, scryptSync } from 'node:crypto';
 import path from 'node:path';
 
 import type { PrismaClient } from '@prisma/client';
 
 const apiStorageDir = path.resolve(process.cwd(), '../../storage');
+const DEFAULT_PROVIDER_PASSWORD = 'demo12345';
+
+function hashPassword(password: string) {
+  const salt = randomBytes(16).toString('hex');
+  const derivedKey = scryptSync(password, salt, 64).toString('hex');
+  return `scrypt:${salt}:${derivedKey}`;
+}
+
+async function syncTenantTypeDefinitions(prisma: PrismaClient) {
+  await Promise.all(
+    [
+      ['PAYER', 'PAYER', 'Payer'],
+      ['PROVIDER', 'PROVIDER', 'Provider'],
+      ['EMPLOYER', 'EMPLOYER', 'Employer'],
+      ['BROKER', 'BROKER', 'Broker'],
+      ['MEMBER', 'MEMBER', 'Member']
+    ].map(([code, enumValue, name]) =>
+      prisma.tenantTypeDefinition.upsert({
+        where: { code },
+        update: {
+          enumValue: enumValue as 'PAYER' | 'PROVIDER' | 'EMPLOYER' | 'BROKER' | 'MEMBER',
+          name
+        },
+        create: {
+          code,
+          enumValue: enumValue as 'PAYER' | 'PROVIDER' | 'EMPLOYER' | 'BROKER' | 'MEMBER',
+          name
+        }
+      })
+    )
+  );
+}
 
 async function writeProviderMockDocument(storageKey: string, title: string) {
   const outputPath = path.join(apiStorageDir, storageKey);
@@ -458,6 +491,7 @@ export const TEST_PROVIDER_TENANT = {
 };
 
 export async function seedTestProviderTenant(prisma: PrismaClient) {
+  await syncTenantTypeDefinitions(prisma);
   const tenant = await prisma.tenant.upsert({
     where: {
       slug: TEST_PROVIDER_TENANT.slug
@@ -466,6 +500,7 @@ export async function seedTestProviderTenant(prisma: PrismaClient) {
       name: TEST_PROVIDER_TENANT.name,
       status: TEST_PROVIDER_TENANT.status,
       type: TEST_PROVIDER_TENANT.type,
+      tenantTypeCode: TEST_PROVIDER_TENANT.type,
       isActive: true,
       brandingConfig: {
         displayName: TEST_PROVIDER_TENANT.branding.displayName,
@@ -485,6 +520,7 @@ export async function seedTestProviderTenant(prisma: PrismaClient) {
       slug: TEST_PROVIDER_TENANT.slug,
       status: TEST_PROVIDER_TENANT.status,
       type: TEST_PROVIDER_TENANT.type,
+      tenantTypeCode: TEST_PROVIDER_TENANT.type,
       isActive: true,
       brandingConfig: {
         displayName: TEST_PROVIDER_TENANT.branding.displayName,
@@ -592,11 +628,17 @@ export async function seedTestProviderTenant(prisma: PrismaClient) {
         code: seedUser.roleCode
       },
       update: {
+        tenantTypeCode:
+          seedUser.roleCode === 'tenant_admin' ? null : TEST_PROVIDER_TENANT.type,
+        appliesToAllTenantTypes: seedUser.roleCode === 'tenant_admin',
         name: seedUser.roleName,
         description: `${seedUser.roleName} role for seeded provider tenant operations.`
       },
       create: {
         code: seedUser.roleCode,
+        tenantTypeCode:
+          seedUser.roleCode === 'tenant_admin' ? null : TEST_PROVIDER_TENANT.type,
+        appliesToAllTenantTypes: seedUser.roleCode === 'tenant_admin',
         name: seedUser.roleName,
         description: `${seedUser.roleName} role for seeded provider tenant operations.`
       }
@@ -632,28 +674,46 @@ export async function seedTestProviderTenant(prisma: PrismaClient) {
         tenantId: tenant.id,
         firstName: seedUser.firstName,
         lastName: seedUser.lastName,
-        isActive: true
+        isActive: true,
+        status: 'ACTIVE'
       },
       create: {
         tenantId: tenant.id,
         email: seedUser.email,
         firstName: seedUser.firstName,
         lastName: seedUser.lastName,
-        isActive: true
+        isActive: true,
+        status: 'ACTIVE'
       }
     });
 
-    await prisma.userRole.upsert({
-      where: {
-        userId_roleId: {
-          userId: user.id,
-          roleId: role.id
-        }
+    await prisma.userCredential.upsert({
+      where: { userId: user.id },
+      update: {
+        passwordHash: hashPassword(DEFAULT_PROVIDER_PASSWORD),
+        mustResetPassword: false,
+        passwordSetAt: new Date()
       },
-      update: {},
       create: {
         userId: user.id,
-        roleId: role.id
+        passwordHash: hashPassword(DEFAULT_PROVIDER_PASSWORD),
+        mustResetPassword: false,
+        passwordSetAt: new Date()
+      }
+    });
+
+    await prisma.userRole.deleteMany({
+      where: {
+        userId: user.id,
+        roleId: role.id,
+        tenantId: tenant.id
+      }
+    });
+    await prisma.userRole.create({
+      data: {
+        userId: user.id,
+        roleId: role.id,
+        tenantId: tenant.id
       }
     });
 
@@ -666,13 +726,17 @@ export async function seedTestProviderTenant(prisma: PrismaClient) {
       },
       update: {
         isDefault: true,
-        isTenantAdmin: seedUser.isTenantAdmin
+        isTenantAdmin: seedUser.isTenantAdmin,
+        status: 'ACTIVE',
+        activatedAt: new Date()
       },
       create: {
         userId: user.id,
         tenantId: tenant.id,
         isDefault: true,
-        isTenantAdmin: seedUser.isTenantAdmin
+        isTenantAdmin: seedUser.isTenantAdmin,
+        status: 'ACTIVE',
+        activatedAt: new Date()
       }
     });
 
