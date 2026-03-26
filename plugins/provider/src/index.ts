@@ -1,197 +1,128 @@
-import type { PluginManifest } from '@payer-portal/plugin-sdk';
+import type { PluginManifest, PluginNavigationItem } from '@payer-portal/plugin-sdk';
+
+export const PROVIDER_OPERATIONS_CAPABILITY_ID = 'provider_operations';
+export const PROVIDER_POC_SCOPE_EXCLUSIONS = [
+  'provider_ai_copilot_experience',
+  'provider_ai_copilot_capability',
+  'provider_agentic_workflows',
+  'provider_ai_required_core_behavior'
+] as const;
+export const PROVIDER_POC_FUTURE_EXTENSION_POINTS = [
+  'optional provider ai assistance can be added later as a separate capability',
+  'optional provider ai copilots can be added later without redesigning the tenant model',
+  'optional automation and approval layers can be added later behind explicit provider capabilities'
+] as const;
+
+export const PROVIDER_OPERATION_WIDGETS: PluginNavigationItem[] = [
+  {
+    widgetId: 'provider-operations-dashboard',
+    label: 'Dashboard',
+    href: '/provider/dashboard',
+    icon: 'home',
+    requiredPermissions: ['tenant.view', 'provider.view']
+  },
+  {
+    widgetId: 'provider-operations-eligibility',
+    label: 'Eligibility',
+    href: '/provider/eligibility',
+    icon: 'shield-check',
+    requiredPermissions: ['tenant.view', 'provider.eligibility.view'],
+    futureCapabilityId: 'provider_eligibility'
+  },
+  {
+    widgetId: 'provider-operations-authorizations',
+    label: 'Authorizations',
+    href: '/provider/authorizations',
+    icon: 'clipboard-list',
+    requiredPermissions: ['tenant.view', 'provider.authorizations.view'],
+    futureCapabilityId: 'provider_authorizations'
+  },
+  {
+    widgetId: 'provider-operations-claims-payments',
+    label: 'Claims & Payments',
+    href: '/provider/claims',
+    icon: 'file-text',
+    requiredPermissions: ['tenant.view', 'provider.claims.view'],
+    futureCapabilityId: 'provider_claims'
+  },
+  {
+    widgetId: 'provider-operations-patients',
+    label: 'Patients',
+    href: '/provider/patients',
+    icon: 'users',
+    requiredPermissions: ['tenant.view', 'provider.patients.view'],
+    futureCapabilityId: 'provider_patients'
+  },
+  {
+    widgetId: 'provider-operations-documents',
+    label: 'Documents',
+    href: '/provider/documents',
+    icon: 'folder-open',
+    requiredPermissions: ['tenant.view', 'provider.documents.view'],
+    futureCapabilityId: 'provider_resources'
+  },
+  {
+    widgetId: 'provider-operations-messages',
+    label: 'Messages',
+    href: '/provider/messages',
+    icon: 'mail',
+    requiredPermissions: ['tenant.view', 'provider.messages.view'],
+    futureCapabilityId: 'provider_messages'
+  },
+  {
+    widgetId: 'provider-operations-support',
+    label: 'Support',
+    href: '/provider/support',
+    icon: 'life-buoy',
+    requiredPermissions: ['tenant.view', 'provider.support.view'],
+    futureCapabilityId: 'provider_support'
+  },
+  {
+    widgetId: 'provider-operations-admin',
+    label: 'Admin',
+    href: '/provider/admin',
+    icon: 'settings',
+    requiredPermissions: ['tenant.view', 'provider.admin.manage'],
+    futureCapabilityId: 'provider_administration'
+  }
+];
 
 export const manifest: PluginManifest = {
   id: 'provider',
-  name: 'Provider Services',
+  name: 'Provider Experience',
   version: '0.1.0',
+  currentScopeExclusions: [...PROVIDER_POC_SCOPE_EXCLUSIONS],
+  futureExtensionPoints: [...PROVIDER_POC_FUTURE_EXTENSION_POINTS],
   capabilities: [
     {
-      id: 'provider_operations',
-      label: 'Operations',
+      id: PROVIDER_OPERATIONS_CAPABILITY_ID,
+      label: 'Provider Operations',
       description:
-        'Provider operational dashboard and work queue entry points.',
-      requiredPermissions: ['tenant.view', 'provider.view'],
-      moduleKeys: ['provider_dashboard'],
+        'Single deterministic Provider Operations capability for the initial Provider Experience POC. Widget-level persona gates control behavior and visibility while tenant-scoped capability enablement stays centralized. No AI Copilot capability, no AI Copilot experience, and no agentic workflow dependency is part of this POC path.',
+      moduleKeys: ['provider_operations'],
+      sectionTitle: 'Provider Operations',
+      currentScopeExclusions: [...PROVIDER_POC_SCOPE_EXCLUSIONS],
+      futureExtensionPoints: [...PROVIDER_POC_FUTURE_EXTENSION_POINTS],
       routes: [
-        {
-          path: '/provider/dashboard',
-          label: 'Provider Dashboard'
-        }
+        { path: '/provider/dashboard', label: 'Provider Dashboard' },
+        { path: '/provider/eligibility', label: 'Eligibility & Benefits' },
+        { path: '/provider/authorizations', label: 'Prior Authorizations' },
+        { path: '/provider/claims', label: 'Claims' },
+        { path: '/provider/payments', label: 'Payments' },
+        { path: '/provider/patients', label: 'Patients' },
+        { path: '/provider/documents', label: 'Provider Resources' },
+        { path: '/provider/messages', label: 'Messages' },
+        { path: '/provider/support', label: 'Support' },
+        { path: '/provider/admin', label: 'Administration' }
       ],
-      navigation: [
-        {
-          label: 'Dashboard',
-          href: '/provider/dashboard',
-          icon: 'home'
-        }
-      ]
-    },
-    {
-      id: 'provider_eligibility',
-      label: 'Eligibility',
-      description: 'Eligibility and benefits verification workflows.',
-      requiredPermissions: ['tenant.view', 'provider.eligibility.view'],
-      moduleKeys: ['provider_eligibility'],
-      routes: [
-        {
-          path: '/provider/eligibility',
-          label: 'Eligibility & Benefits'
-        }
-      ],
-      navigation: [
-        {
-          label: 'Eligibility',
-          href: '/provider/eligibility',
-          icon: 'shield-check'
-        }
-      ]
-    },
-    {
-      id: 'provider_authorizations',
-      label: 'Authorizations',
-      description: 'Prior authorization and referral workflows.',
-      requiredPermissions: ['tenant.view', 'provider.authorizations.view'],
-      moduleKeys: ['provider_authorizations'],
-      routes: [
-        {
-          path: '/provider/authorizations',
-          label: 'Prior Authorizations'
-        }
-      ],
-      navigation: [
-        {
-          label: 'Authorizations',
-          href: '/provider/authorizations',
-          icon: 'clipboard-list'
-        }
-      ]
-    },
-    {
-      id: 'provider_claims',
-      label: 'Claims',
-      description: 'Claim status, remittance, and payment workflows.',
-      requiredPermissions: ['tenant.view', 'provider.claims.view'],
-      moduleKeys: ['provider_claims', 'provider_payments'],
-      routes: [
-        {
-          path: '/provider/claims',
-          label: 'Claims'
-        },
-        {
-          path: '/provider/payments',
-          label: 'Payments'
-        }
-      ],
-      navigation: [
-        {
-          label: 'Claims & Payments',
-          href: '/provider/claims',
-          icon: 'file-text'
-        }
-      ]
-    },
-    {
-      id: 'provider_patients',
-      label: 'Patients',
-      description: 'Patient roster and servicing workflows.',
-      requiredPermissions: ['tenant.view', 'provider.patients.view'],
-      moduleKeys: ['provider_patients'],
-      routes: [
-        {
-          path: '/provider/patients',
-          label: 'Patients'
-        }
-      ],
-      navigation: [
-        {
-          label: 'Patients',
-          href: '/provider/patients',
-          icon: 'users'
-        }
-      ]
-    },
-    {
-      id: 'provider_resources',
-      label: 'Documents',
-      description:
-        'Provider resources, forms, manuals, and operational documents.',
-      requiredPermissions: ['tenant.view', 'provider.documents.view'],
-      moduleKeys: ['provider_documents'],
-      routes: [
-        {
-          path: '/provider/documents',
-          label: 'Provider Resources'
-        }
-      ],
-      navigation: [
-        {
-          label: 'Documents',
-          href: '/provider/documents',
-          icon: 'folder-open'
-        }
-      ]
-    },
-    {
-      id: 'provider_messages',
-      label: 'Messages',
-      description: 'Secure provider communications and notices.',
-      requiredPermissions: ['tenant.view', 'provider.messages.view'],
-      moduleKeys: ['provider_messages'],
-      routes: [
-        {
-          path: '/provider/messages',
-          label: 'Messages'
-        }
-      ],
-      navigation: [
-        {
-          label: 'Messages',
-          href: '/provider/messages',
-          icon: 'mail'
-        }
-      ]
-    },
-    {
-      id: 'provider_support',
-      label: 'Support',
-      description:
-        'Provider support resources and operational escalation paths.',
-      requiredPermissions: ['tenant.view', 'provider.support.view'],
-      moduleKeys: ['provider_support'],
-      routes: [
-        {
-          path: '/provider/support',
-          label: 'Support'
-        }
-      ],
-      navigation: [
-        {
-          label: 'Support',
-          href: '/provider/support',
-          icon: 'life-buoy'
-        }
-      ]
-    },
-    {
-      id: 'provider_administration',
-      label: 'Administration',
-      description:
-        'Practice administration, user access, and provider configuration.',
-      requiredPermissions: ['tenant.view', 'provider.admin.manage'],
-      moduleKeys: ['provider_admin'],
-      routes: [
-        {
-          path: '/provider/admin',
-          label: 'Administration'
-        }
-      ],
-      navigation: [
-        {
-          label: 'Admin',
-          href: '/provider/admin',
-          icon: 'settings'
-        }
-      ]
+      navigation: PROVIDER_OPERATION_WIDGETS.map((widget) => ({
+        widgetId: widget.widgetId,
+        label: widget.label,
+        href: widget.href,
+        icon: widget.icon,
+        requiredPermissions: widget.requiredPermissions,
+        futureCapabilityId: widget.futureCapabilityId
+      }))
     }
   ]
 };

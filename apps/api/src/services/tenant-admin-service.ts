@@ -679,6 +679,7 @@ type TenantUserInput = {
   status?: 'INVITED' | 'ACTIVE' | 'DISABLED';
   password?: string;
   organizationUnitId?: string | null;
+  organizationUnitIds?: string[] | null;
 };
 
 export async function createTenantScopedUser(

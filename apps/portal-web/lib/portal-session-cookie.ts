@@ -29,6 +29,17 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
 }
 
+function hasValidOrganizationUnit(value: unknown) {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    typeof (value as Record<string, unknown>).id === 'string' &&
+    typeof (value as Record<string, unknown>).name === 'string' &&
+    typeof (value as Record<string, unknown>).type === 'string'
+  );
+}
+
 function hasValidPortalSessionUser(user: Record<string, unknown>) {
   if (
     typeof user.id !== 'string' ||
@@ -74,7 +85,7 @@ function hasValidPortalSessionUser(user: Record<string, unknown>) {
 
   if (
     typeof session.personaType !== 'string' ||
-    !SESSION_TYPES.has(session.personaType)
+    !session.personaType.trim()
   ) {
     return false;
   }
@@ -86,7 +97,23 @@ function hasValidPortalSessionUser(user: Record<string, unknown>) {
     !isStringArray(session.permissions) ||
     (session.tenantId !== null &&
       (typeof session.tenantId !== 'string' || !(session.tenantId as string).trim())) ||
-    session.personaType !== session.type
+    typeof session.activeOrganizationUnit === 'undefined' ||
+    !Array.isArray(session.availableOrganizationUnits)
+  ) {
+    return false;
+  }
+
+  if (
+    session.activeOrganizationUnit !== null &&
+    !hasValidOrganizationUnit(session.activeOrganizationUnit)
+  ) {
+    return false;
+  }
+
+  if (
+    !(session.availableOrganizationUnits as unknown[]).every((entry) =>
+      hasValidOrganizationUnit(entry)
+    )
   ) {
     return false;
   }
@@ -115,6 +142,14 @@ function hasValidPortalSessionUser(user: Record<string, unknown>) {
     session.type === 'end_user' &&
     user.landingContext !== undefined &&
     (user.landingContext === 'tenant_admin' || user.landingContext === 'platform_admin')
+  ) {
+    return false;
+  }
+
+  if (
+    session.type !== 'end_user' &&
+    (session.activeOrganizationUnit !== null ||
+      (session.availableOrganizationUnits as unknown[]).length > 0)
   ) {
     return false;
   }

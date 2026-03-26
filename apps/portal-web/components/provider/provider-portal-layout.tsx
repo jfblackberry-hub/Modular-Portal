@@ -174,6 +174,12 @@ export function ProviderPortalLayout({
   const [collapsed, setCollapsed] = useState(false);
 
   const initials = `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`;
+  const activeOrganizationUnit = user.session.activeOrganizationUnit;
+  const providerPersonaLabel =
+    user.session.personaType
+      .split('_')
+      .map((segment) => segment[0]?.toUpperCase() + segment.slice(1))
+      .join(' ') || config.providerRoleLabel;
 
   return (
     <div
@@ -265,8 +271,13 @@ export function ProviderPortalLayout({
                   {user.firstName} {user.lastName}
                 </p>
                 <p className="tenant-provider-header__user-role text-xs text-[var(--text-muted)]">
-                  {config.providerRoleLabel}
+                  {providerPersonaLabel}
                 </p>
+                {activeOrganizationUnit ? (
+                  <p className="tenant-provider-header__user-role text-[11px] text-[var(--text-muted)]">
+                    {activeOrganizationUnit.name}
+                  </p>
+                ) : null}
               </div>
             </div>
 

@@ -335,6 +335,244 @@ const apiCatalogDefinitions: ApiCatalogDefinition[] = [
     }
   },
   {
+    key: 'google-cloud-provider-operations-warehouse',
+    label: 'Google Cloud Provider Operations Warehouse',
+    vendor: 'Google Cloud',
+    category: 'Analytics Warehouse',
+    adapterKey: 'rest-api',
+    description:
+      'Shared warehouse feed for normalized provider operations metrics and cross-workflow roll-up analytics.',
+    endpointLabel: 'Warehouse API endpoint',
+    mappingLabel: 'Provider operations warehouse dataset',
+    defaultName: 'Google Cloud Provider Operations Warehouse',
+    fields: [
+      { key: 'baseUrl', label: 'Base URL', kind: 'url', required: true },
+      {
+        key: 'endpointPath',
+        label: 'Endpoint Path',
+        kind: 'path',
+        required: true,
+        defaultValue: '/provider-operations/v1/warehouse'
+      },
+      {
+        key: 'method',
+        label: 'Method',
+        kind: 'select',
+        defaultValue: 'GET',
+        options: [{ label: 'GET', value: 'GET' }, { label: 'POST', value: 'POST' }]
+      },
+      {
+        key: 'authenticationType',
+        label: 'Authentication',
+        kind: 'select',
+        defaultValue: 'bearer',
+        options: [
+          { label: 'Bearer token', value: 'bearer' },
+          { label: 'API key', value: 'apiKey' },
+          { label: 'Basic auth', value: 'basic' }
+        ]
+      },
+      { key: 'authToken', label: 'Bearer Token', kind: 'secret' },
+      {
+        key: 'apiKeyHeaderName',
+        label: 'API Key Header',
+        kind: 'text',
+        defaultValue: 'x-api-key'
+      },
+      { key: 'apiKeyValue', label: 'API Key', kind: 'secret' },
+      { key: 'basicUsername', label: 'Basic Username', kind: 'text' },
+      { key: 'basicPassword', label: 'Basic Password', kind: 'secret' },
+      {
+        key: 'mappingKey',
+        label: 'Mapping Key',
+        kind: 'text',
+        defaultValue: 'provider-operations-warehouse'
+      }
+    ],
+    buildConfig(input) {
+      return {
+        baseUrl: requireField(input, 'baseUrl', 'Base URL'),
+        endpointPath: requireField(input, 'endpointPath', 'Endpoint Path'),
+        method: trimValue(input.method || 'GET').toUpperCase(),
+        authentication: buildAuthentication(input),
+        catalog: {
+          entryKey: 'google-cloud-provider-operations-warehouse',
+          label: 'Google Cloud Provider Operations Warehouse',
+          vendor: 'Google Cloud',
+          category: 'Analytics Warehouse'
+        },
+        providerOperationsSource: {
+          sourceType: 'google_cloud_warehouse'
+        },
+        mappingKey:
+          optionalField(input, 'mappingKey') ?? 'provider-operations-warehouse'
+      };
+    }
+  },
+  {
+    key: 'clearinghouse-provider-operations',
+    label: 'Clearinghouse Provider Operations',
+    vendor: 'Generic Clearinghouse',
+    category: 'Revenue Cycle API',
+    adapterKey: 'rest-api',
+    description:
+      'Shared clearinghouse feed for prior authorizations, claims, and billing operations.',
+    endpointLabel: 'Clearinghouse API endpoint',
+    mappingLabel: 'Provider revenue-cycle operational feed',
+    defaultName: 'Clearinghouse Provider Operations',
+    fields: [
+      { key: 'baseUrl', label: 'Base URL', kind: 'url', required: true },
+      {
+        key: 'endpointPath',
+        label: 'Endpoint Path',
+        kind: 'path',
+        required: true,
+        defaultValue: '/provider-operations/v1/clearinghouse'
+      },
+      {
+        key: 'method',
+        label: 'Method',
+        kind: 'select',
+        defaultValue: 'GET',
+        options: [{ label: 'GET', value: 'GET' }, { label: 'POST', value: 'POST' }]
+      },
+      {
+        key: 'environment',
+        label: 'Environment',
+        kind: 'select',
+        defaultValue: 'sandbox',
+        options: [
+          { label: 'Sandbox', value: 'sandbox' },
+          { label: 'Staging', value: 'staging' },
+          { label: 'Production', value: 'production' }
+        ]
+      },
+      {
+        key: 'authenticationType',
+        label: 'Authentication',
+        kind: 'select',
+        defaultValue: 'bearer',
+        options: [
+          { label: 'Bearer token', value: 'bearer' },
+          { label: 'API key', value: 'apiKey' },
+          { label: 'Basic auth', value: 'basic' }
+        ]
+      },
+      { key: 'authToken', label: 'Bearer Token', kind: 'secret' },
+      {
+        key: 'apiKeyHeaderName',
+        label: 'API Key Header',
+        kind: 'text',
+        defaultValue: 'x-api-key'
+      },
+      { key: 'apiKeyValue', label: 'API Key', kind: 'secret' },
+      { key: 'basicUsername', label: 'Basic Username', kind: 'text' },
+      { key: 'basicPassword', label: 'Basic Password', kind: 'secret' },
+      {
+        key: 'mappingKey',
+        label: 'Mapping Key',
+        kind: 'text',
+        defaultValue: 'provider-operations-clearinghouse'
+      }
+    ],
+    buildConfig(input) {
+      return {
+        baseUrl: requireField(input, 'baseUrl', 'Base URL'),
+        endpointPath: requireField(input, 'endpointPath', 'Endpoint Path'),
+        method: trimValue(input.method || 'GET').toUpperCase(),
+        authentication: buildAuthentication(input),
+        catalog: {
+          entryKey: 'clearinghouse-provider-operations',
+          label: 'Clearinghouse Provider Operations',
+          vendor: 'Generic Clearinghouse',
+          category: 'Revenue Cycle API'
+        },
+        providerOperationsSource: {
+          sourceType: 'clearinghouse_environment'
+        },
+        environment: optionalField(input, 'environment') ?? 'sandbox',
+        mappingKey:
+          optionalField(input, 'mappingKey') ??
+          'provider-operations-clearinghouse'
+      };
+    }
+  },
+  {
+    key: 'centralreach-provider-operations',
+    label: 'Central Reach Provider Operations',
+    vendor: 'CentralReach',
+    category: 'Practice Operations API',
+    adapterKey: 'rest-api',
+    description:
+      'Shared CentralReach feed for scheduling and utilization data in provider operations workflows.',
+    endpointLabel: 'CentralReach API endpoint',
+    mappingLabel: 'Provider operations scheduling and utilization feed',
+    defaultName: 'CentralReach Provider Operations',
+    fields: [
+      { key: 'baseUrl', label: 'Base URL', kind: 'url', required: true },
+      {
+        key: 'endpointPath',
+        label: 'Endpoint Path',
+        kind: 'path',
+        required: true,
+        defaultValue: '/provider-operations/v1/centralreach'
+      },
+      {
+        key: 'method',
+        label: 'Method',
+        kind: 'select',
+        defaultValue: 'GET',
+        options: [{ label: 'GET', value: 'GET' }, { label: 'POST', value: 'POST' }]
+      },
+      {
+        key: 'authenticationType',
+        label: 'Authentication',
+        kind: 'select',
+        defaultValue: 'bearer',
+        options: [
+          { label: 'Bearer token', value: 'bearer' },
+          { label: 'API key', value: 'apiKey' },
+          { label: 'Basic auth', value: 'basic' }
+        ]
+      },
+      { key: 'authToken', label: 'Bearer Token', kind: 'secret' },
+      {
+        key: 'apiKeyHeaderName',
+        label: 'API Key Header',
+        kind: 'text',
+        defaultValue: 'x-api-key'
+      },
+      { key: 'apiKeyValue', label: 'API Key', kind: 'secret' },
+      { key: 'basicUsername', label: 'Basic Username', kind: 'text' },
+      { key: 'basicPassword', label: 'Basic Password', kind: 'secret' },
+      {
+        key: 'mappingKey',
+        label: 'Mapping Key',
+        kind: 'text',
+        defaultValue: 'provider-operations-centralreach'
+      }
+    ],
+    buildConfig(input) {
+      return {
+        baseUrl: requireField(input, 'baseUrl', 'Base URL'),
+        endpointPath: requireField(input, 'endpointPath', 'Endpoint Path'),
+        method: trimValue(input.method || 'GET').toUpperCase(),
+        authentication: buildAuthentication(input),
+        catalog: {
+          entryKey: 'centralreach-provider-operations',
+          label: 'CentralReach Provider Operations',
+          vendor: 'CentralReach',
+          category: 'Practice Operations API'
+        },
+        providerOperationsSource: {
+          sourceType: 'central_reach'
+        },
+        mappingKey:
+          optionalField(input, 'mappingKey') ?? 'provider-operations-centralreach'
+      };
+    }
+  },
+  {
     key: 'broker-events-webhook',
     label: 'Broker Events Webhook',
     vendor: 'Generic',

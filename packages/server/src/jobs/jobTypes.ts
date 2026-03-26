@@ -26,6 +26,17 @@ export type QueuedPlatformEvent = {
 };
 
 export type RegisteredJobPayloads = {
+  'provider.workflow.execute': {
+    workflowExecutionId: string;
+    initiatedByUserId?: string | null;
+    personaCode?: string | null;
+    organizationUnitId?: string | null;
+    actionType: string;
+    targetType: string;
+    targetId: string;
+    capabilityId: string;
+    widgetId?: string | null;
+  };
   'event.publish': {
     event: QueuedPlatformEvent;
   };

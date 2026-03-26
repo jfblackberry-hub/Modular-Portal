@@ -8,6 +8,7 @@ import type {
   ProviderReferralItem,
   ProviderTrackedAuthorizationItem
 } from '../../../config/providerPortalConfig';
+import { ProviderWorkflowActionButton } from '../operations/provider-workflow-action-button';
 import { PageHeader, StatusBadge, SurfaceCard } from '../../portal-ui';
 
 type AuthorizationTabKey =
@@ -254,18 +255,38 @@ export function ProviderAuthorizationsPage({
             </label>
           </form>
           <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110"
-            >
-              Submit Request
-            </button>
-            <button
-              type="button"
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)] transition hover:bg-sky-50"
-            >
-              Save Draft
-            </button>
+            <ProviderWorkflowActionButton
+              label="Submit Request"
+              tone="primary"
+              request={{
+                actionType: 'authorization_update',
+                capabilityId: 'provider_operations',
+                widgetId: 'authorizations',
+                targetType: 'authorization',
+                targetId: 'authorization-request-draft',
+                targetLabel: labels.requestTerm,
+                reason: 'Provider user submitted an authorization update from the authorizations workspace.',
+                payload: {
+                  mode: 'submit_request'
+                }
+              }}
+            />
+            <ProviderWorkflowActionButton
+              label="Save Draft"
+              request={{
+                actionType: 'status_change',
+                capabilityId: 'provider_operations',
+                widgetId: 'authorizations',
+                targetType: 'authorization',
+                targetId: 'authorization-request-draft',
+                targetLabel: `${labels.requestTerm} draft`,
+                reason: 'Provider user saved an authorization draft.',
+                payload: {
+                  mode: 'save_draft',
+                  desiredStatus: 'Draft'
+                }
+              }}
+            />
           </div>
         </SurfaceCard>
       ) : null}
@@ -311,12 +332,19 @@ export function ProviderAuthorizationsPage({
       {activeTab === 'referrals' ? (
         <SurfaceCard title="Referrals" description="Create and track referral activity with status visibility.">
           <div className="mb-4 flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110"
-            >
-              Create {labels.referralTerm}
-            </button>
+            <ProviderWorkflowActionButton
+              label={`Create ${labels.referralTerm}`}
+              tone="primary"
+              request={{
+                actionType: 'operational_follow_up',
+                capabilityId: 'provider_operations',
+                widgetId: 'authorizations',
+                targetType: 'operational_task',
+                targetId: 'referral-create',
+                targetLabel: labels.referralTerm,
+                reason: 'Provider user created a referral from the authorizations workspace.'
+              }}
+            />
             <button
               type="button"
               className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] bg-white px-5 py-3 text-sm font-semibold text-[var(--tenant-primary-color)] transition hover:bg-sky-50"

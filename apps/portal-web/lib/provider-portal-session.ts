@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { resolveProviderPortalVariant } from '../config/providerPortalConfig';
 import { getPortalSessionUser } from './portal-session';
+import { assertProviderPocScopeGuardrails } from './provider-poc-scope';
 
 export async function getProviderPortalSessionContext() {
   const user = await getPortalSessionUser();
@@ -19,6 +20,15 @@ export async function getProviderPortalSessionContext() {
   if (!isProviderUser) {
     redirect('/login');
   }
+
+  if (
+    user.session.availableOrganizationUnits.length > 1 &&
+    user.session.activeOrganizationUnit === null
+  ) {
+    redirect('/provider-login');
+  }
+
+  assertProviderPocScopeGuardrails(user.tenant.brandingConfig);
 
   return {
     user,

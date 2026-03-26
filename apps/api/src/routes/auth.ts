@@ -17,6 +17,7 @@ import {
 type LoginBody = {
   email: string;
   password: string;
+  organizationUnitId?: string;
 };
 
 export async function authRoutes(app: FastifyInstance) {
@@ -49,9 +50,9 @@ export async function authRoutes(app: FastifyInstance) {
 
   app.post<{ Body: LoginBody }>('/auth/login', async (request, reply) => {
     try {
-      const { email, password } = request.body;
+      const { email, password, organizationUnitId } = request.body;
       const result = await login(
-        { email, password },
+        { email, password, organizationUnitId },
         {
           ipAddress: request.ip,
           userAgent: request.headers['user-agent']
@@ -62,6 +63,10 @@ export async function authRoutes(app: FastifyInstance) {
         return reply.status(401).send({
           message: 'Invalid login for local development'
         });
+      }
+
+      if ('organizationUnitSelectionRequired' in result) {
+        return reply.status(409).send(result);
       }
 
       return {
@@ -86,9 +91,9 @@ export async function authRoutes(app: FastifyInstance) {
     '/auth/login/provider',
     async (request, reply) => {
       try {
-        const { email, password } = request.body;
+        const { email, password, organizationUnitId } = request.body;
         const result = await login(
-          { email, password },
+          { email, password, organizationUnitId },
           {
             ipAddress: request.ip,
             userAgent: request.headers['user-agent']
@@ -102,6 +107,10 @@ export async function authRoutes(app: FastifyInstance) {
           return reply.status(401).send({
             message: 'Invalid provider login for local development'
           });
+        }
+
+        if ('organizationUnitSelectionRequired' in result) {
+          return reply.status(409).send(result);
         }
 
         return {
@@ -127,9 +136,9 @@ export async function authRoutes(app: FastifyInstance) {
     '/auth/login/employer',
     async (request, reply) => {
       try {
-        const { email, password } = request.body;
+        const { email, password, organizationUnitId } = request.body;
         const result = await login(
-          { email, password },
+          { email, password, organizationUnitId },
           {
             ipAddress: request.ip,
             userAgent: request.headers['user-agent']
@@ -143,6 +152,10 @@ export async function authRoutes(app: FastifyInstance) {
           return reply.status(401).send({
             message: 'Invalid employer login for local development'
           });
+        }
+
+        if ('organizationUnitSelectionRequired' in result) {
+          return reply.status(409).send(result);
         }
 
         return {

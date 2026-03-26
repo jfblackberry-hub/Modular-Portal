@@ -30,6 +30,11 @@ function LoginFormContent({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [organizationUnitId, setOrganizationUnitId] = useState('');
+  const [organizationUnitOptions, setOrganizationUnitOptions] = useState<
+    Array<{ id: string; name: string; type: string }>
+  >([]);
+  const [organizationUnitPrompt, setOrganizationUnitPrompt] = useState('');
   const [error, setError] = useState('');
   const [authPhase, setAuthPhase] = useState<'idle' | 'authenticating' | 'finalizing'>('idle');
   const submitLockRef = useRef(false);
@@ -78,6 +83,7 @@ function LoginFormContent({
     const resolvedEmail = emailOverride ?? email;
     submitLockRef.current = true;
     setError('');
+    setOrganizationUnitPrompt('');
     setAuthPhase('authenticating');
     console.info('[portal-auth] submit click', { loginPath, email: resolvedEmail, rememberMe });
     let navigating = false;
@@ -91,7 +97,12 @@ function LoginFormContent({
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email: resolvedEmail, password: resolvedPassword, rememberMe })
+        body: JSON.stringify({
+          email: resolvedEmail,
+          password: resolvedPassword,
+          rememberMe,
+          ...(organizationUnitId ? { organizationUnitId } : {})
+        })
       });
       console.info('[portal-auth] auth request end', {
         loginPath,
@@ -102,7 +113,35 @@ function LoginFormContent({
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as {
           message?: string;
+          organizationUnitSelectionRequired?: boolean;
+          user?: {
+            availableOrganizationUnits?: Array<{
+              id: string;
+              name: string;
+              type: string;
+            }>;
+            tenant?: {
+              name?: string;
+            } | null;
+          };
         } | null;
+        if (
+          response.status === 409 &&
+          payload?.organizationUnitSelectionRequired === true &&
+          payload.user?.availableOrganizationUnits?.length
+        ) {
+          setOrganizationUnitOptions(payload.user.availableOrganizationUnits);
+          setOrganizationUnitId((current) =>
+            current ||
+            payload.user?.availableOrganizationUnits?.[0]?.id ||
+            ''
+          );
+          setOrganizationUnitPrompt(
+            `Select the Organization Unit you want to use for this session${payload.user?.tenant?.name ? ` in ${payload.user.tenant.name}` : ''}.`
+          );
+          setError('');
+          return;
+        }
         setError(payload?.message ?? 'Unable to sign in. Check your credentials and try again.');
         return;
       }
@@ -119,6 +158,16 @@ function LoginFormContent({
             tenantId: string | null;
             roles: string[];
             permissions: string[];
+            activeOrganizationUnit: {
+              id: string;
+              name: string;
+              type: string;
+            } | null;
+            availableOrganizationUnits: Array<{
+              id: string;
+              name: string;
+              type: string;
+            }>;
           };
           landingContext?:
             | 'member'
@@ -136,6 +185,9 @@ function LoginFormContent({
           permissions: string[];
         };
       };
+
+      setOrganizationUnitOptions([]);
+      setOrganizationUnitPrompt('');
 
       console.info('[portal-auth] token write', {
         sessionEstablished: payload.sessionEstablished === true
@@ -280,7 +332,12 @@ function LoginFormContent({
             className="portal-input mt-2 px-4 py-3 text-sm outline-none focus:border-[var(--tenant-primary-color)]"
             type="text"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setOrganizationUnitOptions([]);
+              setOrganizationUnitId('');
+              setOrganizationUnitPrompt('');
+            }}
             placeholder="name@company.com"
             required
             autoComplete="username"
@@ -295,6 +352,32 @@ function LoginFormContent({
             Demo default password is <span className="font-medium">demo</span> if left blank.
           </p>
         </label>
+
+        {organizationUnitOptions.length > 0 ? (
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--text-primary)]">
+              Organization Unit
+            </span>
+            <select
+              className="portal-input mt-2 w-full px-4 py-3 text-sm outline-none focus:border-[var(--tenant-primary-color)]"
+              value={organizationUnitId}
+              onChange={(event) => setOrganizationUnitId(event.target.value)}
+              required
+              aria-label="Organization Unit"
+            >
+              {organizationUnitOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name} ({option.type.toLowerCase()})
+                </option>
+              ))}
+            </select>
+            {organizationUnitPrompt ? (
+              <p className="mt-2 text-[13px] text-[var(--text-muted)]">
+                {organizationUnitPrompt}
+              </p>
+            ) : null}
+          </label>
+        ) : null}
 
         <label className="block">
           <div className="flex items-center justify-between gap-3">
@@ -348,7 +431,13 @@ function LoginFormContent({
           className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
           disabled={authPhase !== 'idle'}
         >
-          {authPhase === 'authenticating' ? 'Signing in...' : authPhase === 'finalizing' ? 'Finishing sign in...' : 'Sign In'}
+          {authPhase === 'authenticating'
+            ? 'Signing in...'
+            : authPhase === 'finalizing'
+              ? 'Finishing sign in...'
+              : organizationUnitOptions.length > 0
+                ? 'Continue with Organization Unit'
+                : 'Sign In'}
         </button>
       </form>
 

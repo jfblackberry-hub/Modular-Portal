@@ -50,7 +50,7 @@
   ],
   "provider": [
     {
-      "title": "Provider Services",
+      "title": "Provider Operations",
       "items": [
         { "label": "Dashboard", "href": "/provider/dashboard" },
         { "label": "Eligibility", "href": "/provider/eligibility" },

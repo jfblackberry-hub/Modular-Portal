@@ -5,6 +5,7 @@ import type {
   ProviderPortalConfig,
   ProviderPortalVariant
 } from '../../../config/providerPortalConfig';
+import { ProviderWorkflowActionButton } from '../operations/provider-workflow-action-button';
 import { PageHeader, StatusBadge, SurfaceCard } from '../../portal-ui';
 
 type PaymentRow = ProviderPaymentRow;
@@ -121,18 +122,30 @@ export function ProviderPaymentsPage({
 
       <SurfaceCard title="Related Actions" description="Start common payment follow-up activities.">
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] px-4 py-2 text-sm font-semibold text-[var(--tenant-primary-color)]"
-          >
-            File Dispute
-          </button>
-          <button
-            type="button"
-            className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] px-4 py-2 text-sm font-semibold text-[var(--tenant-primary-color)]"
-          >
-            Start Appeal
-          </button>
+          <ProviderWorkflowActionButton
+            label="File Dispute"
+            request={{
+              actionType: 'operational_follow_up',
+              capabilityId: 'provider_operations',
+              widgetId: 'billing',
+              targetType: 'billing_item',
+              targetId: rows[0]?.remitId ?? 'billing-dispute-queue',
+              targetLabel: rows[0]?.remitId ?? 'Billing dispute queue',
+              reason: 'Provider user initiated a payment dispute from the payments workspace.'
+            }}
+          />
+          <ProviderWorkflowActionButton
+            label="Start Appeal"
+            request={{
+              actionType: 'status_change',
+              capabilityId: 'provider_operations',
+              widgetId: 'billing',
+              targetType: 'billing_item',
+              targetId: rows[0]?.remitId ?? 'billing-appeal-queue',
+              targetLabel: rows[0]?.remitId ?? 'Billing appeal queue',
+              reason: 'Provider user initiated a payment appeal from the payments workspace.'
+            }}
+          />
           <button
             type="button"
             className="inline-flex min-h-10 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-4 py-2 text-sm font-semibold text-white"

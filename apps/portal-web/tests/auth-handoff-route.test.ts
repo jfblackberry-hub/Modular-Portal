@@ -23,10 +23,12 @@ test('handoff consume route sets httpOnly portal session cookie and returns redi
           landingContext: 'member',
           session: {
             type: 'end_user',
-            personaType: 'end_user',
+            personaType: 'member',
             tenantId: 'tenant-1',
             roles: ['member'],
-            permissions: ['member.view']
+            permissions: ['member.view'],
+            activeOrganizationUnit: null,
+            availableOrganizationUnits: []
           },
           tenant: {
             id: 'tenant-1',

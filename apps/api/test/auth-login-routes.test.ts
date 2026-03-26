@@ -61,10 +61,28 @@ async function cleanupProvisionedAuthFixtures() {
       }
     }
   });
+  await prisma.userOrganizationUnitAssignment.deleteMany({
+    where: {
+      tenant: {
+        slug: {
+          in: ['auth-payer-tenant', 'auth-provider-tenant', 'auth-provider-multi-tenant']
+        }
+      }
+    }
+  });
+  await prisma.organizationUnit.deleteMany({
+    where: {
+      tenant: {
+        slug: {
+          in: ['auth-payer-tenant', 'auth-provider-tenant', 'auth-provider-multi-tenant']
+        }
+      }
+    }
+  });
   await prisma.tenant.deleteMany({
     where: {
       slug: {
-        in: ['auth-payer-tenant', 'auth-provider-tenant']
+        in: ['auth-payer-tenant', 'auth-provider-tenant', 'auth-provider-multi-tenant']
       }
     }
   });
@@ -84,6 +102,10 @@ async function provisionAuthUser(input: {
     roleName: string;
     permissions: string[];
     isTenantAdmin?: boolean;
+    organizationUnits?: Array<{
+      name: string;
+      type: 'ENTERPRISE' | 'REGION' | 'LOCATION' | 'DEPARTMENT' | 'TEAM';
+    }>;
   };
 }) {
   await syncTenantTypeDefinitions(prisma);
@@ -144,6 +166,18 @@ async function provisionAuthUser(input: {
     }
   });
 
+  const organizationUnits = await Promise.all(
+    (input.user.organizationUnits ?? []).map((organizationUnit) =>
+      prisma.organizationUnit.create({
+        data: {
+          tenantId: tenant.id,
+          name: organizationUnit.name,
+          type: organizationUnit.type
+        }
+      })
+    )
+  );
+
   await prisma.userCredential.create({
     data: {
       userId: user.id,
@@ -156,12 +190,24 @@ async function provisionAuthUser(input: {
     data: {
       userId: user.id,
       tenantId: tenant.id,
+      organizationUnitId: organizationUnits[0]?.id ?? null,
       isDefault: true,
       isTenantAdmin: input.user.isTenantAdmin ?? false,
       status: 'ACTIVE',
       activatedAt: new Date()
     }
   });
+
+  if (organizationUnits.length > 0) {
+    await prisma.userOrganizationUnitAssignment.createMany({
+      data: organizationUnits.map((organizationUnit, index) => ({
+        userId: user.id,
+        tenantId: tenant.id,
+        organizationUnitId: organizationUnit.id,
+        isDefault: index === 0
+      }))
+    });
+  }
 
   await prisma.userRole.create({
     data: {
@@ -278,6 +324,101 @@ test('provider login resolves through tenant type and tenant-scoped role assignm
   assert.equal(payload.user.session.type, 'end_user');
   assert.equal(typeof payload.user.session.tenantId, 'string');
   assert.ok(payload.user.session.roles.includes('clinic_manager'));
+
+  await app.close();
+});
+
+test('provider login requires organization unit selection for multi-assigned users and locks the chosen context into session', async () => {
+  const { tenant } = await provisionAuthUser({
+    tenant: {
+      slug: 'auth-provider-multi-tenant',
+      name: 'Auth Provider Multi Tenant',
+      type: 'PROVIDER'
+    },
+    user: {
+      email: 'riley.multi@auth.test',
+      firstName: 'Riley',
+      lastName: 'Multi',
+      roleCode: 'provider_support',
+      roleName: 'Provider Support',
+      permissions: ['provider.view', 'provider.messages.view'],
+      organizationUnits: [
+        { name: 'Downtown Clinic', type: 'LOCATION' },
+        { name: 'North Campus Clinic', type: 'LOCATION' }
+      ]
+    }
+  });
+
+  const northCampusUnit = await prisma.organizationUnit.findFirstOrThrow({
+    where: {
+      tenantId: tenant.id,
+      name: 'North Campus Clinic'
+    }
+  });
+
+  const app = Fastify();
+  await authRoutes(app);
+
+  const challengeResponse = await app.inject({
+    method: 'POST',
+    url: '/auth/login/provider',
+    payload: {
+      email: 'riley.multi@auth.test',
+      password: 'demo12345'
+    }
+  });
+
+  assert.equal(challengeResponse.statusCode, 409, challengeResponse.body);
+  const challengePayload = challengeResponse.json() as {
+    organizationUnitSelectionRequired: boolean;
+    user: {
+      availableOrganizationUnits: Array<{ id: string; name: string; type: string }>;
+    };
+  };
+  assert.equal(challengePayload.organizationUnitSelectionRequired, true);
+  assert.equal(challengePayload.user.availableOrganizationUnits.length, 2);
+
+  const selectedResponse = await app.inject({
+    method: 'POST',
+    url: '/auth/login/provider',
+    payload: {
+      email: 'riley.multi@auth.test',
+      password: 'demo12345',
+      organizationUnitId: northCampusUnit.id
+    }
+  });
+
+  assert.equal(selectedResponse.statusCode, 200, selectedResponse.body);
+  const selectedPayload = selectedResponse.json() as {
+    token: string;
+    user: {
+      session: {
+        personaType: string;
+        activeOrganizationUnit: { id: string; name: string; type: string } | null;
+        availableOrganizationUnits: Array<{ id: string }>;
+      };
+    };
+  };
+
+  assert.equal(selectedPayload.user.session.personaType, 'provider_support');
+  assert.equal(
+    selectedPayload.user.session.activeOrganizationUnit?.id,
+    northCampusUnit.id
+  );
+  assert.equal(
+    selectedPayload.user.session.availableOrganizationUnits.length,
+    2
+  );
+
+  const tokenPayload = JSON.parse(
+    Buffer.from(selectedPayload.token.split('.')[0]!, 'base64url').toString('utf8')
+  ) as {
+    activeOrganizationUnitId?: string;
+    activePersonaCode?: string;
+  };
+
+  assert.equal(tokenPayload.activeOrganizationUnitId, northCampusUnit.id);
+  assert.equal(tokenPayload.activePersonaCode, 'provider_support');
 
   await app.close();
 });

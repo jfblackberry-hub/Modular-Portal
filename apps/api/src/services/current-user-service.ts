@@ -26,6 +26,8 @@ export type CurrentUser = {
   id: string;
   tenantId: string;
   sessionType: 'tenant_admin' | 'end_user' | 'platform_admin';
+  activeOrganizationUnitId?: string | null;
+  activePersonaCode?: string | null;
   employerGroupId?: string | null;
   email: string;
   roles: string[];
@@ -92,7 +94,16 @@ export async function getCurrentUserFromHeaders(
         select: {
           tenantId: true,
           isDefault: true,
-          isTenantAdmin: true
+          isTenantAdmin: true,
+          organizationUnitId: true
+        },
+        orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
+      },
+      organizationUnitAssignments: {
+        select: {
+          tenantId: true,
+          organizationUnitId: true,
+          isDefault: true
         },
         orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
       },
@@ -131,6 +142,27 @@ export async function getCurrentUserFromHeaders(
     !accessibleTenantIds.includes(tokenPayload.tenantId)
   ) {
     throw new AuthenticationError('Access token tenant scope mismatch.');
+  }
+
+  const accessibleOrganizationUnitIds = Array.from(
+    new Set([
+      ...user.organizationUnitAssignments
+        .filter((assignment) => assignment.tenantId === tokenPayload.tenantId)
+        .map((assignment) => assignment.organizationUnitId),
+      ...user.memberships
+        .filter((membership) => membership.tenantId === tokenPayload.tenantId)
+        .map((membership) => membership.organizationUnitId)
+        .filter((value): value is string => Boolean(value))
+    ])
+  );
+
+  if (
+    tokenPayload.activeOrganizationUnitId &&
+    (tokenPayload.sessionType !== 'end_user' ||
+      tokenPayload.tenantId === PLATFORM_ROOT_SCOPE ||
+      !accessibleOrganizationUnitIds.includes(tokenPayload.activeOrganizationUnitId))
+  ) {
+    throw new AuthenticationError('Access token Organization Unit scope mismatch.');
   }
 
   const scopedAssignments = user.roles.filter((assignment) =>
@@ -192,6 +224,8 @@ export async function getCurrentUserFromHeaders(
     id: user.id,
     tenantId: requestTenantContext.tenantId,
     sessionType: tokenPayload.sessionType,
+    activeOrganizationUnitId: tokenPayload.activeOrganizationUnitId ?? null,
+    activePersonaCode: tokenPayload.activePersonaCode ?? null,
     employerGroupId: user.employerGroupId,
     email: user.email,
     roles: roleCodes,
@@ -207,6 +241,8 @@ export async function getCurrentUserFromGatewayClaims(claims: {
   sub: string;
   email: string;
   tenantId: string;
+  activeOrganizationUnitId?: string | null;
+  activePersonaCode?: string | null;
 }) {
   setTenantContext({
     tenantId: claims.tenantId,
@@ -219,7 +255,15 @@ export async function getCurrentUserFromGatewayClaims(claims: {
       memberships: {
         select: {
           tenantId: true,
-          isTenantAdmin: true
+          isTenantAdmin: true,
+          organizationUnitId: true
+        }
+      },
+      organizationUnitAssignments: {
+        select: {
+          tenantId: true,
+          organizationUnitId: true,
+          isDefault: true
         }
       },
       roles: {
@@ -280,6 +324,25 @@ export async function getCurrentUserFromGatewayClaims(claims: {
     throw new AuthenticationError('Access token tenant scope mismatch.');
   }
 
+  const accessibleOrganizationUnitIds = Array.from(
+    new Set([
+      ...user.organizationUnitAssignments
+        .filter((assignment) => assignment.tenantId === claims.tenantId)
+        .map((assignment) => assignment.organizationUnitId),
+      ...user.memberships
+        .filter((membership) => membership.tenantId === claims.tenantId)
+        .map((membership) => membership.organizationUnitId)
+        .filter((value): value is string => Boolean(value))
+    ])
+  );
+
+  if (
+    claims.activeOrganizationUnitId &&
+    !accessibleOrganizationUnitIds.includes(claims.activeOrganizationUnitId)
+  ) {
+    throw new AuthenticationError('Access token Organization Unit scope mismatch.');
+  }
+
   if (
     claims.tenantId === PLATFORM_ROOT_SCOPE &&
     !isPlatformAdminRoleSet(roleCodes)
@@ -295,6 +358,8 @@ export async function getCurrentUserFromGatewayClaims(claims: {
       : tenantAdminTenantIds.includes(claims.tenantId)
         ? 'tenant_admin'
         : 'end_user',
+    activeOrganizationUnitId: claims.activeOrganizationUnitId ?? null,
+    activePersonaCode: claims.activePersonaCode ?? null,
     employerGroupId: user.employerGroupId,
     email: user.email,
     roles: roleCodes,

@@ -65,11 +65,13 @@ test('preview launch consumes an opaque artifact path without a query token', as
           permissions: ['member.view'],
           landingContext: 'member',
           session: {
-            personaType: 'end_user',
+            personaType: 'member',
             type: 'end_user',
             tenantId: 'tenant-1',
             roles: ['member'],
-            permissions: ['member.view']
+            permissions: ['member.view'],
+            activeOrganizationUnit: null,
+            availableOrganizationUnits: []
           }
         }
       }),

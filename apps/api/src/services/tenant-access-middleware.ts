@@ -149,7 +149,19 @@ export async function enforceTenantAccess(
     throw error;
   }
 
-  const orgUnitId = readOrgUnitIdFromRequest(request);
+  const requestedOrgUnitId = readOrgUnitIdFromRequest(request);
+  const orgUnitId = currentUser.activeOrganizationUnitId ?? requestedOrgUnitId;
+
+  if (
+    currentUser.activeOrganizationUnitId &&
+    requestedOrgUnitId &&
+    requestedOrgUnitId !== currentUser.activeOrganizationUnitId
+  ) {
+    throw new TenantAccessMiddlewareError(
+      403,
+      'Organization Unit scope is fixed for the active session and cannot be switched mid-session.'
+    );
+  }
 
   if (orgUnitId) {
     const orgUnit = await prisma.organizationUnit.findFirst({

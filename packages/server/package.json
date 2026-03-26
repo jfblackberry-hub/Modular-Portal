@@ -14,11 +14,11 @@
   "scripts": {
     "backups:configure": "node dist/backups/runScheduledBackups.js",
     "backups:schedule": "tsx src/backups/runScheduledBackups.ts",
-    "prebuild": "pnpm --filter @payer-portal/config build",
+    "prebuild": "pnpm --filter @payer-portal/config build && pnpm --filter @payer-portal/api-contracts build",
     "build": "tsc -p tsconfig.json",
-    "prelint": "pnpm --filter @payer-portal/config build",
+    "prelint": "pnpm --filter @payer-portal/config build && pnpm --filter @payer-portal/api-contracts build",
     "lint": "tsc --noEmit",
-    "pretypecheck": "pnpm --filter @payer-portal/config build",
+    "pretypecheck": "pnpm --filter @payer-portal/config build && pnpm --filter @payer-portal/api-contracts build",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test --test-concurrency=1 tests/**/*.test.ts",
     "worker:jobs": "tsx src/jobs/runWorker.ts",
@@ -28,6 +28,7 @@
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/exporter-prometheus": "^0.204.0",
     "@opentelemetry/sdk-metrics": "^2.1.0",
+    "@payer-portal/api-contracts": "workspace:*",
     "@payer-portal/config": "workspace:*",
     "@payer-portal/database": "workspace:*"
   },

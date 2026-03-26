@@ -13,6 +13,8 @@ type AccessTokenPayload = {
   email: string;
   tenantId: string;
   sessionType: 'tenant_admin' | 'end_user' | 'platform_admin';
+  activeOrganizationUnitId?: string;
+  activePersonaCode?: string;
   previewSessionId?: string;
   previewMode?: 'READ_ONLY' | 'FUNCTIONAL';
   iat: number;
@@ -45,6 +47,8 @@ export function createAccessToken(input: {
   email: string;
   tenantId: string;
   sessionType: 'tenant_admin' | 'end_user' | 'platform_admin';
+  activeOrganizationUnitId?: string;
+  activePersonaCode?: string;
   previewSessionId?: string;
   previewMode?: 'READ_ONLY' | 'FUNCTIONAL';
   ttlSeconds?: number;
@@ -57,6 +61,12 @@ export function createAccessToken(input: {
     email: input.email,
     tenantId: input.tenantId,
     sessionType: input.sessionType,
+    ...(input.activeOrganizationUnitId
+      ? { activeOrganizationUnitId: input.activeOrganizationUnitId }
+      : {}),
+    ...(input.activePersonaCode
+      ? { activePersonaCode: input.activePersonaCode }
+      : {}),
     ...(input.previewSessionId
       ? {
           previewSessionId: input.previewSessionId,
@@ -104,6 +114,14 @@ export function verifyAccessToken(token: string | null | undefined) {
       (payload.sessionType !== 'tenant_admin' &&
         payload.sessionType !== 'end_user' &&
         payload.sessionType !== 'platform_admin') ||
+      ('activeOrganizationUnitId' in payload &&
+        payload.activeOrganizationUnitId !== undefined &&
+        (typeof payload.activeOrganizationUnitId !== 'string' ||
+          !payload.activeOrganizationUnitId.trim())) ||
+      ('activePersonaCode' in payload &&
+        payload.activePersonaCode !== undefined &&
+        (typeof payload.activePersonaCode !== 'string' ||
+          !payload.activePersonaCode.trim())) ||
       ('previewSessionId' in payload &&
         payload.previewSessionId !== undefined &&
         (typeof payload.previewSessionId !== 'string' || !payload.previewSessionId.trim())) ||
@@ -120,7 +138,9 @@ export function verifyAccessToken(token: string | null | undefined) {
 
     if (
       payload.sessionType !== 'end_user' &&
-      (payload.previewSessionId !== undefined || payload.previewMode !== undefined)
+      (payload.previewSessionId !== undefined ||
+        payload.previewMode !== undefined ||
+        payload.activeOrganizationUnitId !== undefined)
     ) {
       return null;
     }

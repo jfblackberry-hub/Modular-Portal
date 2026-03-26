@@ -15,6 +15,7 @@ export async function POST(request: Request) {
       email?: string;
       password?: string;
       rememberMe?: boolean;
+      organizationUnitId?: string;
     };
     const rememberMe = body.rememberMe !== false;
     const response = await fetch(`${config.serviceEndpoints.auth}/auth/login/employer`, {
@@ -24,7 +25,10 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         email: body.email ?? '',
-        password: body.password ?? ''
+        password: body.password ?? '',
+        ...(body.organizationUnitId?.trim()
+          ? { organizationUnitId: body.organizationUnitId.trim() }
+          : {})
       }),
       cache: 'no-store'
     });

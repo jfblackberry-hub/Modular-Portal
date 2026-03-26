@@ -11,6 +11,12 @@ export interface PortalTenant {
   brandingConfig?: Record<string, unknown>;
 }
 
+export interface PortalOrganizationUnit {
+  id: string;
+  name: string;
+  type: string;
+}
+
 export type PortalSessionType = 'tenant_admin' | 'end_user' | 'platform_admin';
 
 export type PortalSessionScope =
@@ -20,13 +26,17 @@ export type PortalSessionScope =
       tenantId: null;
       roles: string[];
       permissions: string[];
+      activeOrganizationUnit: null;
+      availableOrganizationUnits: [];
     }
   | {
-      personaType: 'tenant_admin' | 'end_user';
+      personaType: string;
       type: 'tenant_admin' | 'end_user';
       tenantId: string;
       roles: string[];
       permissions: string[];
+      activeOrganizationUnit: PortalOrganizationUnit | null;
+      availableOrganizationUnits: PortalOrganizationUnit[];
     };
 
 export interface PortalSessionUser {

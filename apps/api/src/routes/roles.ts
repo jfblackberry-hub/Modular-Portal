@@ -41,6 +41,7 @@ type CreateUserBody = {
   status?: 'INVITED' | 'ACTIVE' | 'DISABLED';
   password?: string;
   organizationUnitId?: string;
+  organizationUnitIds?: string[];
 };
 
 type UpdateUserBody = {
@@ -52,6 +53,7 @@ type UpdateUserBody = {
   status?: 'INVITED' | 'ACTIVE' | 'DISABLED';
   password?: string;
   organizationUnitId?: string | null;
+  organizationUnitIds?: string[] | null;
 };
 
 export async function roleRoutes(app: FastifyInstance) {

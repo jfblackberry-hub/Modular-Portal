@@ -16,6 +16,7 @@ import { memberRoutes } from './member';
 import { metricsRoutes } from './metrics';
 import { platformBrandingRoutes } from './platform-branding';
 import { previewSessionRoutes } from './preview-sessions';
+import { providerWorkflowRoutes } from './provider-workflows';
 import { roleRoutes } from './roles';
 import { searchRoutes } from './search';
 import { tenantAdminRoutes } from './tenant-admin';
@@ -38,6 +39,7 @@ export function registerRoutes(app: FastifyInstance) {
   app.register(metricsRoutes);
   app.register(platformBrandingRoutes);
   app.register(previewSessionRoutes);
+  app.register(providerWorkflowRoutes);
   app.register(roleRoutes);
   app.register(searchRoutes);
   app.register(tenantAdminRoutes);

@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { manifest as providerManifest } from '../../../plugins/provider/src/index';
+import {
+  manifest as providerManifest,
+  PROVIDER_POC_SCOPE_EXCLUSIONS
+} from '../../../plugins/provider/src/index';
 import type {
   PlatformFeatureFlag,
   PluginManifest
@@ -17,11 +20,13 @@ function createUser(overrides: Partial<PortalSessionUser> = {}): PortalSessionUs
     firstName: 'Alex',
     lastName: 'Taylor',
     session: {
-      personaType: 'end_user',
+      personaType: 'member',
       type: 'end_user',
       tenantId: 'tenant-1',
       roles: ['member'],
-      permissions: ['member.view']
+      permissions: ['member.view'],
+      activeOrganizationUnit: null,
+      availableOrganizationUnits: []
     },
     landingContext: 'member',
     tenant: {
@@ -167,11 +172,13 @@ test('audience-specific capabilities only appear for the requested portal experi
       roles: ['employer_group_admin'],
       permissions: [],
       session: {
-        personaType: 'end_user',
+        personaType: 'employer_group_admin',
         type: 'end_user',
         tenantId: 'tenant-1',
         roles: ['employer_group_admin'],
-        permissions: []
+        permissions: [],
+        activeOrganizationUnit: null,
+        availableOrganizationUnits: []
       }
     }),
     [plugin],
@@ -190,6 +197,9 @@ test('audience-specific capabilities only appear for the requested portal experi
 });
 
 test('provider tenant navigation is composed from plugin flags, permissions, and licensed modules', () => {
+  assert.equal(providerManifest.capabilities.length, 1);
+  assert.equal(providerManifest.capabilities[0]?.id, 'provider_operations');
+
   const tenantId = 'tenant-provider';
   const navigation = buildPortalNavigation(
     createUser({
@@ -209,20 +219,11 @@ test('provider tenant navigation is composed from plugin flags, permissions, and
         id: tenantId,
         name: 'NorthStar Medical Group',
         brandingConfig: {
-          purchasedModules: [
-            'provider_dashboard',
-            'provider_eligibility',
-            'provider_authorizations',
-            'provider_claims',
-            'provider_payments',
-            'provider_documents',
-            'provider_messages',
-            'provider_support'
-          ]
+          purchasedModules: ['provider_operations']
         }
       },
       session: {
-        personaType: 'end_user',
+        personaType: 'clinic_manager',
         type: 'end_user',
         tenantId,
         roles: ['clinic_manager'],
@@ -235,6 +236,18 @@ test('provider tenant navigation is composed from plugin flags, permissions, and
           'provider.documents.view',
           'provider.messages.view',
           'provider.support.view'
+        ],
+        activeOrganizationUnit: {
+          id: 'provider-ou-1',
+          name: 'Flint Clinic',
+          type: 'LOCATION'
+        },
+        availableOrganizationUnits: [
+          {
+            id: 'provider-ou-1',
+            name: 'Flint Clinic',
+            type: 'LOCATION'
+          }
         ]
       }
     }),
@@ -257,7 +270,7 @@ test('provider tenant navigation is composed from plugin flags, permissions, and
     })),
     [
       {
-        title: 'Provider Services',
+        title: 'Provider Operations',
         items: [
           'Dashboard',
           'Eligibility',
@@ -289,20 +302,11 @@ test('restricted provider users only see provider capabilities they are authoriz
         id: tenantId,
         name: 'NorthStar Medical Group',
         brandingConfig: {
-          purchasedModules: [
-            'provider_dashboard',
-            'provider_eligibility',
-            'provider_authorizations',
-            'provider_claims',
-            'provider_payments',
-            'provider_documents',
-            'provider_messages',
-            'provider_support'
-          ]
+          purchasedModules: ['provider_operations']
         }
       },
       session: {
-        personaType: 'end_user',
+        personaType: 'eligibility_coordinator',
         type: 'end_user',
         tenantId,
         roles: ['eligibility_coordinator'],
@@ -312,6 +316,18 @@ test('restricted provider users only see provider capabilities they are authoriz
           'provider.eligibility.view',
           'provider.messages.view',
           'provider.support.view'
+        ],
+        activeOrganizationUnit: {
+          id: 'provider-ou-2',
+          name: 'Lansing Clinic',
+          type: 'LOCATION'
+        },
+        availableOrganizationUnits: [
+          {
+            id: 'provider-ou-2',
+            name: 'Lansing Clinic',
+            type: 'LOCATION'
+          }
         ]
       }
     }),
@@ -334,7 +350,7 @@ test('restricted provider users only see provider capabilities they are authoriz
     })),
     [
       {
-        title: 'Provider Services',
+        title: 'Provider Operations',
         items: ['Dashboard', 'Eligibility', 'Messages', 'Support']
       }
     ]
@@ -361,20 +377,11 @@ test('provider end-user navigation does not leak admin-console routes', () => {
         id: tenantId,
         name: 'NorthStar Medical Group',
         brandingConfig: {
-          purchasedModules: [
-            'provider_dashboard',
-            'provider_eligibility',
-            'provider_authorizations',
-            'provider_claims',
-            'provider_payments',
-            'provider_documents',
-            'provider_messages',
-            'provider_support'
-          ]
+          purchasedModules: ['provider_operations']
         }
       },
       session: {
-        personaType: 'end_user',
+        personaType: 'clinic_manager',
         type: 'end_user',
         tenantId,
         roles: ['clinic_manager'],
@@ -387,6 +394,18 @@ test('provider end-user navigation does not leak admin-console routes', () => {
           'provider.documents.view',
           'provider.messages.view',
           'provider.support.view'
+        ],
+        activeOrganizationUnit: {
+          id: 'provider-ou-3',
+          name: 'Downtown Clinic',
+          type: 'LOCATION'
+        },
+        availableOrganizationUnits: [
+          {
+            id: 'provider-ou-3',
+            name: 'Downtown Clinic',
+            type: 'LOCATION'
+          }
         ]
       }
     }),
@@ -405,6 +424,33 @@ test('provider end-user navigation does not leak admin-console routes', () => {
   assert.equal(
     navigation.some((section) =>
       section.items.some((item) => item.href.startsWith('/admin/'))
+    ),
+    false
+  );
+});
+
+test('provider poc registration explicitly excludes ai copilot and agentic workflow scope', () => {
+  assert.deepEqual(providerManifest.currentScopeExclusions, [
+    ...PROVIDER_POC_SCOPE_EXCLUSIONS
+  ]);
+  assert.deepEqual(providerManifest.capabilities[0]?.currentScopeExclusions, [
+    ...PROVIDER_POC_SCOPE_EXCLUSIONS
+  ]);
+  assert.equal(
+    providerManifest.capabilities.some(
+      (capability) =>
+        capability.id === 'provider_ai_copilot' ||
+        capability.id === 'provider_agentic_workflows'
+    ),
+    false
+  );
+  assert.equal(
+    providerManifest.capabilities.some((capability) =>
+      capability.moduleKeys?.some(
+        (moduleKey) =>
+          moduleKey === 'provider_ai_copilot' ||
+          moduleKey === 'provider_agentic_workflows'
+      )
     ),
     false
   );

@@ -367,3 +367,76 @@ test('invalid orgUnitId usage is rejected for tenant-scoped routes', async () =>
 
   await app.close();
 });
+
+test('provider-style end-user sessions cannot switch organization units mid-session', async () => {
+  const { memberUser, tenant } = await createFixtureData();
+  const [primaryOrgUnit, secondaryOrgUnit] = await Promise.all([
+    prisma.organizationUnit.create({
+      data: {
+        tenantId: tenant.id,
+        type: 'LOCATION',
+        name: 'Guardrail Primary Clinic'
+      }
+    }),
+    prisma.organizationUnit.create({
+      data: {
+        tenantId: tenant.id,
+        type: 'LOCATION',
+        name: 'Guardrail Secondary Clinic'
+      }
+    })
+  ]);
+
+  await prisma.userTenantMembership.update({
+    where: {
+      userId_tenantId: {
+        userId: memberUser.id,
+        tenantId: tenant.id
+      }
+    },
+    data: {
+      organizationUnitId: primaryOrgUnit.id
+    }
+  });
+
+  await prisma.userOrganizationUnitAssignment.createMany({
+    data: [
+      {
+        userId: memberUser.id,
+        tenantId: tenant.id,
+        organizationUnitId: primaryOrgUnit.id,
+        isDefault: true
+      },
+      {
+        userId: memberUser.id,
+        tenantId: tenant.id,
+        organizationUnitId: secondaryOrgUnit.id,
+        isDefault: false
+      }
+    ]
+  });
+
+  const app = Fastify();
+  await connectorRoutes(app);
+  const sessionToken = createAccessToken({
+    userId: memberUser.id,
+    email: memberUser.email,
+    tenantId: tenant.id,
+    sessionType: 'end_user',
+    activeOrganizationUnitId: primaryOrgUnit.id,
+    activePersonaCode: 'provider_support'
+  });
+
+  const response = await app.inject({
+    method: 'GET',
+    url: `/api/connectors?orgUnitId=${secondaryOrgUnit.id}`,
+    headers: {
+      authorization: `Bearer ${sessionToken}`
+    }
+  });
+
+  assert.equal(response.statusCode, 403, response.body);
+  assert.match(response.body, /cannot be switched mid-session/i);
+
+  await app.close();
+});

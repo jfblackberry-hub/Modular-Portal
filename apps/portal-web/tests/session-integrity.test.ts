@@ -58,10 +58,12 @@ test('portal workspace keys include preview session identity to avoid collisions
     },
     session: {
       type: 'end_user' as const,
-      personaType: 'end_user' as const,
+      personaType: 'member' as const,
       tenantId: 'tenant-1',
       roles: ['member'],
-      permissions: ['member.view']
+      permissions: ['member.view'],
+      activeOrganizationUnit: null,
+      availableOrganizationUnits: []
     }
   };
 
@@ -117,10 +119,12 @@ test('portal workspace keys include landing and preview persona context for conc
     },
     session: {
       type: 'end_user' as const,
-      personaType: 'end_user' as const,
+      personaType: 'member' as const,
       tenantId: 'tenant-1',
       roles: ['member'],
-      permissions: ['member.view']
+      permissions: ['member.view'],
+      activeOrganizationUnit: null,
+      availableOrganizationUnits: []
     },
     landingContext: 'member' as const
   };

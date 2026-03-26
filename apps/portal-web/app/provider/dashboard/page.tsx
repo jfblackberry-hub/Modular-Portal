@@ -1,17 +1,15 @@
 import { ProviderDashboardPage } from '../../../components/provider/provider-dashboard-page';
-import { resolveProviderPortalConfig } from '../../../config/providerPortalConfig';
 import { getPortalImageSrc } from '../../../lib/portal-image-registry';
-import { buildPortalWorkspaceSessionKey } from '../../../lib/portal-workspace-session';
 import {
   resolveProviderClinicLogoSrc,
   resolveProviderClinicName,
   resolveProviderGreetingName
 } from '../../../lib/provider-hero-branding';
-import { getProviderPortalSessionContext } from '../../../lib/provider-portal-session';
+import { getProviderOperationsDashboardSnapshot } from '../../../lib/provider-operations-snapshot';
 
 export default async function ProviderDashboardRoutePage() {
-  const { user, variant } = await getProviderPortalSessionContext();
-  const config = resolveProviderPortalConfig(variant, user.tenant.brandingConfig);
+  const { config, dashboard, user, variant } =
+    await getProviderOperationsDashboardSnapshot();
   const providerHeroImage =
     variant === 'medical'
       ? '/assets/portal-images/custom/provider-dashboard-physician-hero.png'
@@ -30,19 +28,16 @@ export default async function ProviderDashboardRoutePage() {
     lastName: user.lastName,
     configuredProviderName: config.providerContext.providerName
   });
-  const workspaceSessionKey = buildPortalWorkspaceSessionKey({
-    portal: 'provider',
-    user
-  });
 
   return (
     <ProviderDashboardPage
       clinicLogoSrc={clinicLogoSrc}
       clinicName={clinicName}
+      config={config}
+      dashboard={dashboard}
       imageSrc={providerHeroImage}
       providerName={providerName}
-      sessionScopeKey={workspaceSessionKey}
-      variant={variant}
+      user={user}
     />
   );
 }

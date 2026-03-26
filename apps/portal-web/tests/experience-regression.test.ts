@@ -56,18 +56,7 @@ function createUser(audience: RegressionAudience): PortalSessionUser {
       purchasedModules: []
     },
     provider: {
-      purchasedModules: [
-        'provider_dashboard',
-        'provider_eligibility',
-        'provider_authorizations',
-        'provider_claims',
-        'provider_payments',
-        'provider_patients',
-        'provider_documents',
-        'provider_messages',
-        'provider_support',
-        'provider_admin'
-      ]
+      purchasedModules: ['provider_operations']
     }
   };
 
@@ -120,11 +109,29 @@ function createUser(audience: RegressionAudience): PortalSessionUser {
     roles: roleConfig.roles,
     permissions: roleConfig.permissions,
     session: {
-      personaType: 'end_user',
+      personaType: roleConfig.roles[0] ?? audience,
       type: 'end_user',
       tenantId,
       roles: roleConfig.roles,
-      permissions: roleConfig.permissions
+      permissions: roleConfig.permissions,
+      activeOrganizationUnit:
+        audience === 'provider'
+          ? {
+              id: 'provider-regression-ou',
+              name: 'Regression Clinic',
+              type: 'LOCATION'
+            }
+          : null,
+      availableOrganizationUnits:
+        audience === 'provider'
+          ? [
+              {
+                id: 'provider-regression-ou',
+                name: 'Regression Clinic',
+                type: 'LOCATION'
+              }
+            ]
+          : []
     }
   };
 }

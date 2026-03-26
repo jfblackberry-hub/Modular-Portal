@@ -21,6 +21,8 @@ const TEST_TENANT_ADMIN_ROLE_CODE = 'tenant_admin';
 const TEST_PLATFORM_ADMIN_EMAIL = 'platform-plane-admin@example.com';
 const TEST_TENANT_ADMIN_EMAIL = 'platform-plane-tenant-admin@example.com';
 const TEST_TENANT_SLUG = 'platform-plane-tenant';
+const TEST_PROVIDER_TENANT_SLUG = 'platform-plane-provider-tenant';
+const TEST_ISOLATED_TENANT_SLUG = 'platform-plane-isolated-tenant';
 
 async function cleanupTestData() {
   await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
@@ -54,7 +56,13 @@ async function cleanupTestData() {
 
   await prisma.tenant.deleteMany({
     where: {
-      slug: TEST_TENANT_SLUG
+      slug: {
+        in: [
+          TEST_TENANT_SLUG,
+          TEST_PROVIDER_TENANT_SLUG,
+          TEST_ISOLATED_TENANT_SLUG
+        ]
+      }
     }
   });
 }
@@ -379,6 +387,124 @@ test('platform-admin tenant creation returns a friendly error for duplicate slug
   assert.equal(response.statusCode, 400, response.body);
   assert.match(response.body, /Tenant slug 'platform-plane-tenant' already exists\./);
   assert.doesNotMatch(response.body, /Unique constraint failed/i);
+
+  await app.close();
+});
+
+test('platform admins can provision a provider tenant and provider organization units remain tenant-scoped', async () => {
+  const { platformAdminUser } = await createFixtureData();
+  const app = Fastify();
+  await tenantRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+
+  const createResponse = await app.inject({
+    method: 'POST',
+    url: '/platform-admin/tenants',
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      name: 'Provider Validation Tenant',
+      slug: TEST_PROVIDER_TENANT_SLUG,
+      status: 'ACTIVE',
+      type: 'PROVIDER',
+      brandingConfig: {
+        displayName: 'Provider Validation Tenant',
+        experiences: ['provider'],
+        capabilities: ['provider_operations']
+      }
+    }
+  });
+
+  assert.equal(createResponse.statusCode, 201, createResponse.body);
+  assert.equal(createResponse.json().type, 'PROVIDER');
+
+  const providerTenant = await prisma.tenant.findUniqueOrThrow({
+    where: {
+      slug: TEST_PROVIDER_TENANT_SLUG
+    }
+  });
+
+  assert.equal(providerTenant.type, 'PROVIDER');
+  assert.equal(providerTenant.tenantTypeCode, 'PROVIDER');
+
+  const isolatedTenant = await prisma.tenant.create({
+    data: {
+      name: 'Isolated Tenant',
+      slug: TEST_ISOLATED_TENANT_SLUG,
+      status: 'ACTIVE',
+      type: 'PAYER',
+      tenantTypeCode: 'PAYER',
+      brandingConfig: {}
+    }
+  });
+
+  const [enterpriseUnit] = await Promise.all([
+    prisma.organizationUnit.create({
+      data: {
+        tenantId: providerTenant.id,
+        type: 'ENTERPRISE',
+        name: 'Provider Validation Enterprise'
+      }
+    }),
+    prisma.organizationUnit.create({
+      data: {
+        tenantId: isolatedTenant.id,
+        type: 'ENTERPRISE',
+        name: 'Foreign Enterprise'
+      }
+    })
+  ]);
+
+  await prisma.organizationUnit.createMany({
+    data: [
+      {
+        tenantId: providerTenant.id,
+        parentId: enterpriseUnit.id,
+        type: 'LOCATION',
+        name: 'Downtown Clinic'
+      },
+      {
+        tenantId: providerTenant.id,
+        parentId: enterpriseUnit.id,
+        type: 'DEPARTMENT',
+        name: 'Cardiology'
+      }
+    ]
+  });
+
+  const organizationUnitsResponse = await app.inject({
+    method: 'GET',
+    url: `/platform-admin/tenants/${providerTenant.id}/organization-units`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(organizationUnitsResponse.statusCode, 200, organizationUnitsResponse.body);
+  const organizationUnits = organizationUnitsResponse.json() as Array<{
+    tenantId: string;
+    type: string;
+    name: string;
+  }>;
+
+  assert.equal(organizationUnits.length, 3);
+  assert.deepEqual(
+    organizationUnits.map((unit) => unit.tenantId),
+    [providerTenant.id, providerTenant.id, providerTenant.id]
+  );
+  assert.deepEqual(
+    organizationUnits.map((unit) => unit.type).sort(),
+    ['DEPARTMENT', 'ENTERPRISE', 'LOCATION']
+  );
+  assert.ok(
+    organizationUnits.every((unit) =>
+      ['Provider Validation Enterprise', 'Downtown Clinic', 'Cardiology'].includes(unit.name)
+    )
+  );
+  assert.ok(
+    organizationUnits.every((unit) => unit.tenantId !== isolatedTenant.id)
+  );
 
   await app.close();
 });

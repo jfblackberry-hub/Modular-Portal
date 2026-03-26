@@ -33,6 +33,7 @@ type CreateUserInput = {
   status?: UserLifecycleStatus | string;
   password?: string;
   organizationUnitId?: string | null;
+  organizationUnitIds?: string[] | null;
 };
 
 type UpdateUserInput = {
@@ -44,6 +45,7 @@ type UpdateUserInput = {
   status?: UserLifecycleStatus | string;
   password?: string;
   organizationUnitId?: string | null;
+  organizationUnitIds?: string[] | null;
 };
 
 type AuditContext = {
@@ -71,6 +73,18 @@ const userWithAccessArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
             tenantTypeCode: true
           }
         },
+        organizationUnit: {
+          select: {
+            id: true,
+            name: true,
+            type: true
+          }
+        }
+      },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
+    },
+    organizationUnitAssignments: {
+      include: {
         organizationUnit: {
           select: {
             id: true,
@@ -121,6 +135,26 @@ function normalizeRequired(value: string, fieldName: string) {
 function normalizeOptional(value: string | undefined | null) {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
+}
+
+function normalizeOrganizationUnitIds(
+  organizationUnitIds?: string[] | null,
+  fallbackOrganizationUnitId?: string | null
+) {
+  if (organizationUnitIds === null) {
+    return [];
+  }
+
+  const normalizedIds = (organizationUnitIds ?? [])
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+
+  if (normalizedIds.length === 0) {
+    const fallback = normalizeOptional(fallbackOrganizationUnitId);
+    return fallback ? [fallback] : [];
+  }
+
+  return Array.from(new Set(normalizedIds));
 }
 
 function normalizeTenantTypeCode(value: string | TenantType | undefined, fallback?: string) {
@@ -209,6 +243,18 @@ function mapUser(user: UserRecordWithRelations) {
           }
         : null
     })),
+    organizationUnitAssignments: user.organizationUnitAssignments.map(
+      (assignment) => ({
+        id: assignment.id,
+        tenantId: assignment.tenantId,
+        isDefault: assignment.isDefault,
+        organizationUnit: {
+          id: assignment.organizationUnit.id,
+          name: assignment.organizationUnit.name,
+          type: assignment.organizationUnit.type
+        }
+      })
+    ),
     roles: effectiveRoleAssignments.map(({ role }) => role.code),
     roleAssignments: user.roles.map((assignment) => ({
       id: assignment.id,
@@ -283,10 +329,11 @@ function mapRole(
 
 async function resolveTenantContextForUser(
   tenantId?: string,
-  organizationUnitId?: string | null
+  organizationUnitId?: string | null,
+  organizationUnitIds?: string[]
 ) {
   if (!tenantId) {
-    if (organizationUnitId) {
+    if (organizationUnitId || (organizationUnitIds?.length ?? 0) > 0) {
       throw new Error('Organization Unit requires a tenant.');
     }
 
@@ -306,10 +353,17 @@ async function resolveTenantContextForUser(
     throw new Error('Tenant not found');
   }
 
-  if (organizationUnitId) {
-    const organizationUnit = await prisma.organizationUnit.findFirst({
+  const resolvedOrganizationUnitIds = normalizeOrganizationUnitIds(
+    organizationUnitIds,
+    organizationUnitId
+  );
+
+  if (resolvedOrganizationUnitIds.length > 0) {
+    const organizationUnits = await prisma.organizationUnit.findMany({
       where: {
-        id: organizationUnitId,
+        id: {
+          in: resolvedOrganizationUnitIds
+        },
         tenantId
       },
       select: {
@@ -317,7 +371,7 @@ async function resolveTenantContextForUser(
       }
     });
 
-    if (!organizationUnit) {
+    if (organizationUnits.length !== resolvedOrganizationUnitIds.length) {
       throw new Error('Organization Unit not found for tenant.');
     }
   }
@@ -692,10 +746,18 @@ export async function createUser(
   const firstName = normalizeRequired(input.firstName, 'First name');
   const lastName = normalizeRequired(input.lastName, 'Last name');
   const tenantId = normalizeOptional(input.tenantId);
-  const organizationUnitId = normalizeOptional(input.organizationUnitId);
+  const organizationUnitIds = normalizeOrganizationUnitIds(
+    input.organizationUnitIds,
+    input.organizationUnitId
+  );
+  const organizationUnitId = organizationUnitIds[0] ?? null;
   const status = resolveLifecycleStatus(input);
   const isActive = status === 'ACTIVE';
-  const tenant = await resolveTenantContextForUser(tenantId, organizationUnitId);
+  const tenant = await resolveTenantContextForUser(
+    tenantId,
+    organizationUnitId,
+    organizationUnitIds
+  );
 
   const user = await prisma.$transaction(async (tx) => {
     const createdUser = await tx.user.create({
@@ -733,6 +795,17 @@ export async function createUser(
         }
       });
 
+      if (organizationUnitIds.length > 0) {
+        await tx.userOrganizationUnitAssignment.createMany({
+          data: organizationUnitIds.map((id, index) => ({
+            userId: createdUser.id,
+            tenantId,
+            organizationUnitId: id,
+            isDefault: index === 0
+          }))
+        });
+      }
+
       await logAdminAction({
         client: tx,
         tenantId,
@@ -747,7 +820,8 @@ export async function createUser(
           lastName,
           status,
           tenantId,
-          organizationUnitId: organizationUnitId ?? null
+          organizationUnitId: organizationUnitId ?? null,
+          organizationUnitIds
         } satisfies Prisma.InputJsonValue,
         ipAddress: context.ipAddress,
         userAgent: context.userAgent
@@ -805,6 +879,9 @@ export async function updateUser(id: string, input: UpdateUserInput, context: Au
     include: {
       memberships: {
         orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
+      },
+      organizationUnitAssignments: {
+        orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
       }
     }
   });
@@ -818,12 +895,26 @@ export async function updateUser(id: string, input: UpdateUserInput, context: Au
     existingUser.memberships.find((membership) => membership.isDefault)?.tenantId ??
     existingUser.tenantId ??
     undefined;
-  const organizationUnitId =
-    input.organizationUnitId === null
-      ? null
-      : normalizeOptional(input.organizationUnitId) ??
-        existingUser.memberships.find((membership) => membership.isDefault)?.organizationUnitId ??
-        null;
+  const existingDefaultMembership =
+    existingUser.memberships.find((membership) => membership.isDefault) ??
+    existingUser.memberships[0] ??
+    null;
+  const existingAssignmentIds = existingUser.organizationUnitAssignments
+    .filter((assignment) => assignment.tenantId === tenantId)
+    .map((assignment) => assignment.organizationUnitId);
+  const organizationUnitIds =
+    input.organizationUnitIds === null
+      ? []
+      : normalizeOrganizationUnitIds(
+          input.organizationUnitIds,
+          input.organizationUnitId === null
+            ? null
+            : input.organizationUnitId ??
+                existingAssignmentIds[0] ??
+                existingDefaultMembership?.organizationUnitId ??
+                null
+        );
+  const organizationUnitId = organizationUnitIds[0] ?? null;
   const email = normalizeOptional(input.email)?.toLowerCase() ?? existingUser.email;
   const firstName = normalizeOptional(input.firstName) ?? existingUser.firstName;
   const lastName = normalizeOptional(input.lastName) ?? existingUser.lastName;
@@ -832,7 +923,11 @@ export async function updateUser(id: string, input: UpdateUserInput, context: Au
     isActive: input.isActive ?? existingUser.isActive
   });
   const isActive = status === 'ACTIVE';
-  const tenant = await resolveTenantContextForUser(tenantId, organizationUnitId);
+  const tenant = await resolveTenantContextForUser(
+    tenantId,
+    organizationUnitId,
+    organizationUnitIds
+  );
 
   const user = await prisma.$transaction(async (tx) => {
     const beforeState = {
@@ -902,6 +997,24 @@ export async function updateUser(id: string, input: UpdateUserInput, context: Au
         }
       });
 
+      await tx.userOrganizationUnitAssignment.deleteMany({
+        where: {
+          userId: id,
+          tenantId
+        }
+      });
+
+      if (organizationUnitIds.length > 0) {
+        await tx.userOrganizationUnitAssignment.createMany({
+          data: organizationUnitIds.map((assignmentId, index) => ({
+            userId: id,
+            tenantId,
+            organizationUnitId: assignmentId,
+            isDefault: index === 0
+          }))
+        });
+      }
+
       await tx.userTenantMembership.updateMany({
         where: {
           userId: id,
@@ -929,7 +1042,8 @@ export async function updateUser(id: string, input: UpdateUserInput, context: Au
           lastName,
           isActive,
           status,
-          organizationUnitId
+          organizationUnitId,
+          organizationUnitIds
         } satisfies Prisma.InputJsonValue,
         ipAddress: context.ipAddress,
         userAgent: context.userAgent

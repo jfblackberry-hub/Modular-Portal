@@ -27,6 +27,7 @@ export * from './providers/emailProvider.js';
 export * from './services/auditService.js';
 export * from './services/connectorService.js';
 export * from './services/notificationService.js';
+export * from './services/providerWorkflowService.js';
 export * from './services/tenantSettingsService.js';
 export * from './storage/keyHelpers.js';
 export * from './storage/localStorage.js';

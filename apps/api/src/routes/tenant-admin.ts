@@ -63,6 +63,7 @@ type TenantUserBody = {
   status?: 'INVITED' | 'ACTIVE' | 'DISABLED';
   password?: string;
   organizationUnitId?: string | null;
+  organizationUnitIds?: string[] | null;
 };
 
 type PurchasedModulesBody = {

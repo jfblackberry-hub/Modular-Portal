@@ -23,6 +23,7 @@ export type TenantPurchasedModule =
   | 'member_billing'
   | 'member_support'
   | 'billing_enrollment'
+  | 'provider_operations'
   | 'provider_dashboard'
   | 'provider_eligibility'
   | 'provider_authorizations'
@@ -120,6 +121,7 @@ const DEFAULT_TENANT_PURCHASED_MODULES: TenantPurchasedModule[] = [
   'member_billing',
   'member_support',
   'billing_enrollment',
+  'provider_operations',
   'provider_dashboard',
   'provider_eligibility',
   'provider_authorizations',

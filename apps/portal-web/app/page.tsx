@@ -108,16 +108,19 @@ async function PortalLandingPage() {
     <>
       <PlatformBrandingStylesheet />
       <main className="averra-platform-screen">
-        <section className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-4 py-16 sm:px-6">
-        <div className="max-w-3xl">
-          <p className="averra-platform-pill px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em]">
-            <span className="averra-platform-logo averra-platform-logo--pill" aria-hidden="true">
+        <section className="mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-10 sm:px-6 sm:py-12">
+        <div className="flex justify-end">
+          <p className="averra-platform-pill gap-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]">
+            <span className="averra-platform-logo h-5 w-5" aria-hidden="true">
               {/* eslint-disable-next-line @next/next/no-img-element -- static platform branding asset is served from local public storage */}
               <img src="/branding/averra_logo_cutout.svg" alt="" />
             </span>
             Demo Access: {matchedDemoUser?.username ?? demoAccessUser}
           </p>
-          <div className="averra-platform-lockup mt-8">
+        </div>
+
+        <div className="mt-4 max-w-3xl">
+          <div className="averra-platform-lockup">
             <span className="averra-platform-logo averra-platform-logo--hero" aria-hidden="true">
               {/* eslint-disable-next-line @next/next/no-img-element -- static platform branding asset is served from local public storage */}
               <img src="/branding/averra_logo_cutout.svg" alt="" />

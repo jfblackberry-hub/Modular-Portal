@@ -7,6 +7,7 @@ import type {
   ProviderPortalConfig,
   ProviderPortalVariant
 } from '../../../config/providerPortalConfig';
+import { ProviderWorkflowActionButton } from '../operations/provider-workflow-action-button';
 import { PageHeader, StatusBadge, SurfaceCard } from '../../portal-ui';
 
 type ClaimStatus =
@@ -199,18 +200,38 @@ function ClaimDetailModal({
             <div className="rounded-xl border border-[var(--border-subtle)] bg-white p-4">
               <h4 className="text-sm font-semibold text-[var(--text-primary)]">Claim Actions</h4>
               <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] px-4 py-2 text-sm font-semibold text-[var(--tenant-primary-color)]"
-                >
-                  File Dispute
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] px-4 py-2 text-sm font-semibold text-[var(--tenant-primary-color)]"
-                >
-                  Start Appeal
-                </button>
+                <ProviderWorkflowActionButton
+                  label="File Dispute"
+                  request={{
+                    actionType: 'operational_follow_up',
+                    capabilityId: 'provider_operations',
+                    widgetId: 'claims',
+                    targetType: 'claim',
+                    targetId: claim.claimNumber,
+                    targetLabel: claim.claimNumber,
+                    reason: 'Provider user initiated claim dispute follow-up from the claim detail workspace.',
+                    payload: {
+                      patient: claim.patient,
+                      currentStatus: claim.status
+                    }
+                  }}
+                />
+                <ProviderWorkflowActionButton
+                  label="Start Appeal"
+                  request={{
+                    actionType: 'status_change',
+                    capabilityId: 'provider_operations',
+                    widgetId: 'claims',
+                    targetType: 'claim',
+                    targetId: claim.claimNumber,
+                    targetLabel: claim.claimNumber,
+                    reason: 'Provider user initiated an appeal from the claim detail workspace.',
+                    payload: {
+                      patient: claim.patient,
+                      desiredStatus: 'Appeal Requested'
+                    }
+                  }}
+                />
                 <button
                   type="button"
                   className="inline-flex min-h-10 items-center justify-center rounded-full bg-[var(--tenant-primary-color)] px-4 py-2 text-sm font-semibold text-white"
@@ -359,18 +380,30 @@ export function ProviderClaimsPage({
 
       <SurfaceCard title="Related Actions" description="Common next actions for claims and payment workflows.">
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] px-4 py-2 text-sm font-semibold text-[var(--tenant-primary-color)]"
-          >
-            File Dispute
-          </button>
-          <button
-            type="button"
-            className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] px-4 py-2 text-sm font-semibold text-[var(--tenant-primary-color)]"
-          >
-            Start Appeal
-          </button>
+          <ProviderWorkflowActionButton
+            label="File Dispute"
+            request={{
+              actionType: 'operational_follow_up',
+              capabilityId: 'provider_operations',
+              widgetId: 'claims',
+              targetType: 'claim',
+              targetId: rows[0]?.claimNumber ?? 'claim-follow-up-queue',
+              targetLabel: rows[0]?.claimNumber ?? 'Claims follow-up queue',
+              reason: 'Provider user initiated a claims dispute follow-up from the claims workspace.'
+            }}
+          />
+          <ProviderWorkflowActionButton
+            label="Start Appeal"
+            request={{
+              actionType: 'status_change',
+              capabilityId: 'provider_operations',
+              widgetId: 'claims',
+              targetType: 'claim',
+              targetId: rows[0]?.claimNumber ?? 'claim-appeal-queue',
+              targetLabel: rows[0]?.claimNumber ?? 'Claims appeal queue',
+              reason: 'Provider user initiated an appeal from the claims workspace.'
+            }}
+          />
           <button
             type="button"
             className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--tenant-primary-color)] px-4 py-2 text-sm font-semibold text-[var(--tenant-primary-color)]"

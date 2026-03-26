@@ -8,6 +8,7 @@ import { runConnectorSync } from '../services/connectorService.js';
 import {
   deliverNotification
 } from '../services/notificationService.js';
+import { executeProviderWorkflow } from '../services/providerWorkflowService.js';
 import { jobWorkerRuntimeConfig } from './runtime-config.js';
 import type { JobRecord, RegisteredJobPayloads, RegisteredJobType } from './jobTypes.js';
 
@@ -105,6 +106,20 @@ export function registerDefaultJobHandlers() {
       connectorId: connector.id,
       adapterKey: connector.adapterKey,
       lastSyncAt: connector.lastSyncAt
+    });
+  });
+
+  registerJobHandler('provider.workflow.execute', async ({ payload, job }) => {
+    const workflow = await executeProviderWorkflow({
+      workflowExecutionId: payload.workflowExecutionId
+    });
+
+    logger.info('provider.workflow.execute handled', {
+      jobId: job.id,
+      tenantId: workflow.tenantId,
+      workflowExecutionId: workflow.id,
+      actionType: workflow.actionType,
+      status: workflow.status
     });
   });
 

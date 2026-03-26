@@ -17,6 +17,11 @@ export interface PluginNavigationItem {
   external?: boolean;
   icon?: string;
   sectionTitle?: string;
+  widgetId?: string;
+  requiredPermissions?: string[];
+  requiredRoles?: string[];
+  moduleKeys?: string[];
+  futureCapabilityId?: string;
 }
 
 export interface PluginCapability {
@@ -31,6 +36,8 @@ export interface PluginCapability {
   requiredRoles?: string[];
   moduleKeys?: string[];
   sectionTitle?: string;
+  currentScopeExclusions?: string[];
+  futureExtensionPoints?: string[];
 }
 
 export interface PluginManifest {
@@ -40,6 +47,8 @@ export interface PluginManifest {
   capabilities: PluginCapability[];
   requiredPermissions?: string[];
   requiredRoles?: string[];
+  currentScopeExclusions?: string[];
+  futureExtensionPoints?: string[];
 }
 
 export interface PlatformFeatureFlag {
@@ -58,6 +67,12 @@ export interface ResolvedPluginNavigationItem extends PluginNavigationItem {
   requiredRoles: string[];
   sectionTitle: string;
   audiences: PluginAudience[];
+}
+
+function mergeUnique(values: Array<string[] | undefined>) {
+  return Array.from(
+    new Set(values.flatMap((value) => value ?? []))
+  );
 }
 
 export function getPluginFeatureFlagKey(pluginId: string) {
@@ -114,14 +129,22 @@ export function getPluginNavigation(plugin: PluginManifest) {
   return plugin.capabilities.flatMap((capability) =>
     capability.navigation.map((item) => ({
       ...item,
+      widgetId: item.widgetId ?? `${capability.id}:${item.href}`,
       audiences: capability.audiences ?? [],
       capabilityId: capability.id,
       featureFlagKeys: capability.featureFlagKeys ?? [],
       pluginId: plugin.id,
-      requiredPermissions:
-        capability.requiredPermissions ?? plugin.requiredPermissions ?? [],
-      requiredRoles: capability.requiredRoles ?? plugin.requiredRoles ?? [],
-      moduleKeys: capability.moduleKeys ?? [],
+      requiredPermissions: mergeUnique([
+        plugin.requiredPermissions,
+        capability.requiredPermissions,
+        item.requiredPermissions
+      ]),
+      requiredRoles: mergeUnique([
+        plugin.requiredRoles,
+        capability.requiredRoles,
+        item.requiredRoles
+      ]),
+      moduleKeys: mergeUnique([capability.moduleKeys, item.moduleKeys]),
       sectionTitle: item.sectionTitle ?? capability.sectionTitle ?? plugin.name
     }))
   ) satisfies ResolvedPluginNavigationItem[];

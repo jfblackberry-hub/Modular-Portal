@@ -60,14 +60,7 @@ export const TEST_PROVIDER_TENANT = {
     faviconUrl: '/logos/northstar-medical-group-favicon.ico'
   },
   purchasedModules: [
-    'provider_dashboard',
-    'provider_eligibility',
-    'provider_authorizations',
-    'provider_claims',
-    'provider_payments',
-    'provider_documents',
-    'provider_messages',
-    'provider_support'
+    'provider_operations'
   ] as const,
   organizationUnits: {
     enterprise: 'NorthStar Medical Group',
@@ -109,6 +102,93 @@ export const TEST_PROVIDER_TENANT = {
         { id: 'lansing-clinic', label: 'Lansing Clinic' }
       ],
       selectedLocationId: 'flint-clinic'
+    },
+    providerOperations: {
+      personaWidgetMappings: [
+        {
+          persona: 'clinic_manager',
+          widgets: ['scheduling', 'authorizations', 'claims', 'billing', 'utilization'],
+          rollupWidgets: ['claims', 'billing', 'utilization']
+        },
+        {
+          persona: 'authorization_specialist',
+          widgets: ['scheduling', 'authorizations', 'utilization']
+        },
+        {
+          persona: 'billing_specialist',
+          widgets: ['claims', 'billing', 'utilization']
+        },
+        {
+          persona: 'eligibility_coordinator',
+          widgets: ['scheduling', 'authorizations', 'utilization']
+        },
+        {
+          persona: 'provider_support',
+          widgets: ['scheduling', 'claims', 'billing']
+        }
+      ],
+      widgetData: {
+        scheduling: {
+          summary: '28 visits scheduled today',
+          detail: 'Operational scheduling workload anchored to the signed-in organization unit.',
+          highlights: [
+            '6 same-day appointment requests awaiting slot confirmation',
+            '4 pre-visit eligibility checks must clear before noon',
+            '2 provider templates need overbook approval'
+          ],
+          tone: 'info',
+          href: '/provider/dashboard',
+          ctaLabel: 'Review scheduling priorities'
+        },
+        authorizations: {
+          summary: '11 authorization requests in flight',
+          detail: 'Track clinical attachments, pending determinations, and follow-up deadlines.',
+          highlights: [
+            '3 requests need updated chart notes today',
+            '2 determinations are due before 3 PM ET',
+            '1 denial is staged for appeal review'
+          ],
+          tone: 'warning',
+          href: '/provider/authorizations',
+          ctaLabel: 'Open authorizations queue'
+        },
+        claims: {
+          summary: '19 claims need follow-up',
+          detail: 'Monitor claim edits, adjudication exceptions, and denial risk across the queue.',
+          highlights: [
+            '5 claims approach timely filing thresholds',
+            '3 corrected claims are waiting on coding review',
+            '2 denials need supporting documentation'
+          ],
+          tone: 'danger',
+          href: '/provider/claims',
+          ctaLabel: 'Open claims follow-up'
+        },
+        billing: {
+          summary: '$84,220 posted today',
+          detail: 'Billing and remittance progress for the current operational cycle.',
+          highlights: [
+            '8 remits posted since the morning batch',
+            '2 EFT files remain unreconciled',
+            '1 payment variance needs revenue-cycle escalation'
+          ],
+          tone: 'success',
+          href: '/provider/payments',
+          ctaLabel: 'Open billing and payments'
+        },
+        utilization: {
+          summary: '87% utilization target attainment',
+          detail: 'Leadership signal for queue balance, throughput, and exception volume.',
+          highlights: [
+            'Eligibility response times improved 8% today',
+            'Authorization backlog is holding steady vs yesterday',
+            'Claims closure rate is trending ahead of goal'
+          ],
+          tone: 'default',
+          href: '/provider/dashboard',
+          ctaLabel: 'Review utilization'
+        }
+      }
     },
     messagesModule: {
       inbox: [

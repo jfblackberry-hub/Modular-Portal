@@ -69,9 +69,11 @@ model Tenant {
   notifications Notification[]
   connectorConfigs ConnectorConfig[]
   integrationExecutions IntegrationExecution[]
+  providerWorkflowExecutions ProviderWorkflowExecution[]
   featureFlags FeatureFlag[]
   eventRecords  EventRecord[]
   organizationUnits OrganizationUnit[]
+  organizationUnitAssignments UserOrganizationUnitAssignment[]
   previewSessions PreviewSession[]
   portalAuthHandoffs PortalAuthHandoff[]
   createdAt     DateTime      @default(now())
@@ -93,6 +95,8 @@ model OrganizationUnit {
   parent   OrganizationUnit?  @relation("OrganizationUnitHierarchy", fields: [parentId, tenantId], references: [id, tenantId], onDelete: Restrict)
   children OrganizationUnit[] @relation("OrganizationUnitHierarchy")
   memberships UserTenantMembership[]
+  userAssignments UserOrganizationUnitAssignment[]
+  providerWorkflowExecutions ProviderWorkflowExecution[] @relation("ProviderWorkflowExecutionOrganizationUnit")
 
   @@unique([id, tenantId])
   @@index([tenantId])
@@ -129,9 +133,11 @@ model User {
   employerGroup EmployerGroup? @relation(fields: [employerGroupId], references: [id], onDelete: SetNull)
   credential  UserCredential?
   roles       UserRole[]
+  organizationUnitAssignments UserOrganizationUnitAssignment[]
   auditLogs   AuditLog[]
   documents   Document[]
   notifications Notification[]
+  providerWorkflowExecutions ProviderWorkflowExecution[] @relation("ProviderWorkflowExecutionInitiator")
   createdPreviewSessions PreviewSession[] @relation("PreviewSessionAdminUser")
   targetPreviewSessions  PreviewSession[] @relation("PreviewSessionTargetUser")
   portalAuthHandoffs PortalAuthHandoff[]
@@ -140,6 +146,24 @@ model User {
 
   @@index([tenantId])
   @@index([employerGroupId])
+}
+
+model UserOrganizationUnitAssignment {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @db.Uuid
+  tenantId           String   @db.Uuid
+  organizationUnitId String   @db.Uuid
+  isDefault          Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant           Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationUnit OrganizationUnit @relation(fields: [organizationUnitId, tenantId], references: [id, tenantId], onDelete: Cascade)
+
+  @@unique([userId, tenantId, organizationUnitId])
+  @@index([tenantId, organizationUnitId])
+  @@index([userId, tenantId, isDefault])
 }
 
 model PreviewSession {
@@ -361,6 +385,39 @@ model Job {
   @@index([tenantId])
   @@index([type])
   @@index([createdAt])
+}
+
+model ProviderWorkflowExecution {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenantId           String   @db.Uuid
+  organizationUnitId String?  @db.Uuid
+  initiatedByUserId  String?  @db.Uuid
+  capabilityId       String
+  widgetId           String?
+  workflowType       String
+  actionType         String
+  targetType         String
+  targetId           String
+  targetLabel        String?
+  personaCode        String?
+  status             String
+  jobId              String?  @db.Uuid
+  inputPayload       Json
+  resultPayload      Json?
+  auditMetadata      Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  completedAt        DateTime?
+
+  tenant            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationUnit  OrganizationUnit? @relation("ProviderWorkflowExecutionOrganizationUnit", fields: [organizationUnitId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  initiatedByUser   User?             @relation("ProviderWorkflowExecutionInitiator", fields: [initiatedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status, createdAt])
+  @@index([tenantId, organizationUnitId, createdAt])
+  @@index([initiatedByUserId, createdAt])
+  @@index([jobId])
 }
 
 model AuditLog {
