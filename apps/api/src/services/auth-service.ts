@@ -157,6 +157,15 @@ type LandingContext =
 
 type SessionType = 'tenant_admin' | 'end_user' | 'platform_admin';
 
+const PROVIDER_ROLE_CODES = new Set([
+  'provider',
+  'clinic_manager',
+  'authorization_specialist',
+  'billing_specialist',
+  'eligibility_coordinator',
+  'provider_support'
+]);
+
 export class SessionIntegrityError extends Error {
   statusCode: number;
 
@@ -282,7 +291,7 @@ function getLandingContextForUser(
       ? 'tenant_admin'
     : user.roles.some(({ role }) => role.code === 'employer_group_admin')
       ? 'employer'
-    : user.roles.some(({ role }) => role.code === 'provider')
+    : user.roles.some(({ role }) => PROVIDER_ROLE_CODES.has(role.code))
       ? 'provider'
     : 'member';
 }
