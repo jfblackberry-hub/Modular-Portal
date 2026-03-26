@@ -8,8 +8,8 @@ import type {
 } from '@payer-portal/plugin-sdk';
 import {
   areFeatureFlagsEnabled,
-  getPluginNavigation,
   getPluginFeatureFlagKey,
+  getPluginNavigation,
   getPluginRoutes,
   isPluginEnabled
 } from '@payer-portal/plugin-sdk';

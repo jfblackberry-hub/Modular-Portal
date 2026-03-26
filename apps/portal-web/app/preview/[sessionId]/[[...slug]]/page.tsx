@@ -11,11 +11,11 @@ import { resolvePortalExperience } from '../../../../lib/portal-experience';
 import { getPortalSessionUser } from '../../../../lib/portal-session';
 import { resolveProviderClinicLogoSrc } from '../../../../lib/provider-hero-branding';
 import { getProviderPortalSessionContext } from '../../../../lib/provider-portal-session';
+import { getTenantBranding } from '../../../../lib/tenant-branding';
 import {
   isTenantModuleEnabledForUser,
   type TenantPortalModuleId
 } from '../../../../lib/tenant-modules';
-import { getTenantBranding } from '../../../../lib/tenant-branding';
 import BrokerBookOfBusinessPage from '../../../broker/book-of-business/page';
 import BrokerCommissionsPage from '../../../broker/commissions/page';
 import BrokerDocumentsPage from '../../../broker/documents/page';

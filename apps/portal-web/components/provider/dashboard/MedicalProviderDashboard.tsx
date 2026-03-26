@@ -1,7 +1,7 @@
 import type { ProviderPortalConfig } from '../../../config/providerPortalConfig';
 import { PortalHeroBanner } from '../../shared/portal-hero-banner';
 import { AuthorizationQueue, type AuthorizationQueueItem } from './AuthorizationQueue';
-import { ClaimsFollowUpQueue, type ClaimsFollowUpItem } from './ClaimsFollowUpQueue';
+import { type ClaimsFollowUpItem,ClaimsFollowUpQueue } from './ClaimsFollowUpQueue';
 import { ProviderAlertsList } from './ProviderAlertsList';
 import { ProviderContextBar } from './ProviderContextBar';
 import { ProviderDashboardWorkspaceSection } from './ProviderDashboardWorkspaceSection';

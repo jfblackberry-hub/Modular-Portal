@@ -4,11 +4,11 @@ import { resolveProviderPortalConfig } from '../../config/providerPortalConfig';
 import { getPluginNavigationById } from '../../lib/plugins';
 import { resolveProviderClinicLogoSrc } from '../../lib/provider-hero-branding';
 import { getProviderPortalSessionContext } from '../../lib/provider-portal-session';
+import { getTenantBranding } from '../../lib/tenant-branding';
 import {
   isTenantModuleEnabledForUser,
   type TenantPortalModuleId
 } from '../../lib/tenant-modules';
-import { getTenantBranding } from '../../lib/tenant-branding';
 
 export default async function ProviderLayout({
   children
