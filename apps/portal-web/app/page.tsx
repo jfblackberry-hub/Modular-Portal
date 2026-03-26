@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import Link from 'next/link';
 
 import { DemoGate } from '../components/demo-gate';
+import { PlatformBrandingStylesheet } from '../components/platform-branding-stylesheet';
 import { DEMO_ACCESS_COOKIE, findDemoUser } from '../lib/demo-access';
 import { config } from '../lib/public-runtime';
 
@@ -38,7 +39,26 @@ const featureCards = [
   }
 ];
 
-const portalSignInLinks = [
+type StandardPortalSignInLink = {
+  label: string;
+  description: string;
+  href: string;
+  loginLabel: string;
+  quickLinks?: never;
+};
+
+type MultiPortalSignInLink = {
+  label: string;
+  description: string;
+  quickLinks: Array<{
+    href: string;
+    label: string;
+  }>;
+  href?: never;
+  loginLabel?: never;
+};
+
+const portalSignInLinks: Array<StandardPortalSignInLink | MultiPortalSignInLink> = [
   {
     label: 'Member Portal',
     description: 'Open the member dashboard with coverage, claims, benefits, and ID card tools.',
@@ -48,8 +68,16 @@ const portalSignInLinks = [
   {
     label: 'Provider Portal',
     description: 'Go directly to provider operations for eligibility, claims, authorizations, and payments.',
-    href: '/provider-login?user=Provider1&redirect=/provider/dashboard&auto=1',
-    loginLabel: 'Dr. Lee login'
+    quickLinks: [
+      {
+        href: '/provider-login?user=dr.lee%40northstarmedical.local&redirect=/provider/dashboard&auto=1',
+        label: 'Provider tenant Physician'
+      },
+      {
+        href: '/provider-login?user=support.user%40northstarmedical.local&redirect=/provider/dashboard&auto=1',
+        label: 'Provider tenant Staff'
+      }
+    ]
   },
   {
     label: 'Employer Portal',
@@ -77,8 +105,10 @@ async function PortalLandingPage() {
   const matchedDemoUser = findDemoUser(demoAccessUser);
 
   return (
-    <main className="averra-platform-screen">
-      <section className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-4 py-16 sm:px-6">
+    <>
+      <PlatformBrandingStylesheet />
+      <main className="averra-platform-screen">
+        <section className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-4 py-16 sm:px-6">
         <div className="max-w-3xl">
           <p className="averra-platform-pill px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em]">
             <span className="averra-platform-logo averra-platform-logo--pill" aria-hidden="true">
@@ -146,6 +176,18 @@ async function PortalLandingPage() {
                     Lakeside login
                   </Link>
                 </div>
+              ) : 'quickLinks' in portal && portal.quickLinks ? (
+                <div className="mt-5 grid gap-2">
+                  {portal.quickLinks.map((quickLink) => (
+                    <Link
+                      key={quickLink.label}
+                      href={quickLink.href}
+                      className="averra-platform-button averra-platform-button--primary text-sm"
+                    >
+                      {quickLink.label}
+                    </Link>
+                  ))}
+                </div>
               ) : (
                 <Link
                   href={portal.href}
@@ -209,8 +251,9 @@ async function PortalLandingPage() {
             </article>
           ))}
         </div>
-      </section>
-    </main>
+        </section>
+      </main>
+    </>
   );
 }
 

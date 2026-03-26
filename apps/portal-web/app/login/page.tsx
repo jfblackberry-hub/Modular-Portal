@@ -1,3 +1,4 @@
+import { PlatformBrandingStylesheet } from '../../components/platform-branding-stylesheet';
 import { LoginForm } from './login-form';
 
 type QuickSignInUser = {
@@ -23,7 +24,16 @@ const quickSignInGroups: QuickSignInGroup[] = [
   {
     title: 'Provider',
     users: [
-      { label: 'Dr. Lee', username: 'Provider1', href: '/provider-login' }
+      {
+        label: 'Provider tenant Physician',
+        username: 'dr.lee@northstarmedical.local',
+        href: '/provider-login?user=dr.lee%40northstarmedical.local&redirect=/provider/dashboard&auto=1'
+      },
+      {
+        label: 'Provider tenant Staff',
+        username: 'support.user@northstarmedical.local',
+        href: '/provider-login?user=support.user%40northstarmedical.local&redirect=/provider/dashboard&auto=1'
+      }
     ]
   },
   {
@@ -75,8 +85,10 @@ const quickSignInGroups: QuickSignInGroup[] = [
 
 export default async function LoginPage() {
   return (
-    <main className="averra-platform-screen">
-      <section className="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
+    <>
+      <PlatformBrandingStylesheet />
+      <main className="averra-platform-screen">
+        <section className="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.85fr)]">
           <section className="averra-platform-card overflow-hidden">
             <div className="relative px-10 py-12 sm:px-12 sm:py-16">
@@ -91,7 +103,7 @@ export default async function LoginPage() {
                     <img src="/branding/averra_logo_cutout.svg" alt="" />
                   </span>
                   <span className="text-sm font-semibold tracking-wide text-white">
-                    Averra Portal
+                    averra portal
                   </span>
                 </div>
 
@@ -102,7 +114,7 @@ export default async function LoginPage() {
                   </span>
                   <div>
                     <p className="averra-platform-kicker text-xs font-semibold text-[var(--averra-platform-muted)]">
-                      Averra Access
+                      averra access
                     </p>
                     <p className="mt-2 text-lg font-semibold text-white">
                       Unified platform sign-in
@@ -111,7 +123,7 @@ export default async function LoginPage() {
                 </div>
 
                 <h1 className="mt-8 text-4xl font-semibold leading-tight sm:text-5xl">
-                  Secure access to the <span className="averra-platform-wordmark">Averra</span> platform
+                  Secure access to the <span className="averra-platform-wordmark">averra</span> platform
                 </h1>
                 <p className="averra-platform-text-muted mt-5 max-w-xl text-base leading-7">
                   Sign in to open member, provider, employer, broker, and admin access paths from one protected platform gateway.
@@ -149,7 +161,8 @@ export default async function LoginPage() {
             <LoginForm helperText="Use your username/email. Employers can also use Employer Key, for example `EMP-0316043829906172-001` or `EMP-0316043829906172-002`." />
           </div>
         </div>
-      </section>
-    </main>
+        </section>
+      </main>
+    </>
   );
 }

@@ -54,6 +54,16 @@ export const TEST_PROVIDER_TENANT = {
     adminEmail: 'tenant-admin@northstarmedical.local',
     providerEmail: 'dr.lee@northstarmedical.local'
   },
+  sampleLoginUsers: {
+    physician: {
+      label: 'Provider tenant Physician',
+      email: 'dr.lee@northstarmedical.local'
+    },
+    staff: {
+      label: 'Provider tenant Staff',
+      email: 'support.user@northstarmedical.local'
+    }
+  },
   providerDemoData: {
     displayName: 'NorthStar Medical Group Provider Portal',
     providerContext: {

@@ -5,9 +5,9 @@ import '../lib/runtime-config';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Blue Horizon Health',
+  title: 'averra',
   description:
-    'Primary frontend portal for the modular healthcare payer platform.'
+    'Primary frontend portal for the averra modular platform.'
 };
 
 export default function RootLayout({
