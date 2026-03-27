@@ -24,7 +24,7 @@ export const PROVIDER_OPERATION_WIDGETS: PluginNavigationItem[] = [
   {
     widgetId: 'provider-operations-scheduling',
     label: 'Scheduling',
-    href: '/provider/dashboard?detail=scheduling&filter=all',
+    href: '/provider/scheduling',
     icon: 'calendar-days',
     requiredPermissions: ['tenant.view', 'provider.view'],
     futureCapabilityId: 'provider_scheduling'
@@ -40,7 +40,7 @@ export const PROVIDER_OPERATION_WIDGETS: PluginNavigationItem[] = [
   {
     widgetId: 'provider-operations-utilization',
     label: 'Utilization',
-    href: '/provider/dashboard?detail=utilization&filter=all',
+    href: '/provider/utilization',
     icon: 'activity',
     requiredPermissions: ['tenant.view', 'provider.view'],
     futureCapabilityId: 'provider_utilization'
@@ -113,9 +113,11 @@ export const manifest: PluginManifest = {
       futureExtensionPoints: [...PROVIDER_POC_FUTURE_EXTENSION_POINTS],
       routes: [
         { path: '/provider/dashboard', label: 'Provider Dashboard' },
+        { path: '/provider/scheduling', label: 'Scheduling' },
         { path: '/provider/eligibility', label: 'Eligibility & Benefits' },
         { path: '/provider/authorizations', label: 'Prior Authorizations' },
         { path: '/provider/claims', label: 'Claims' },
+        { path: '/provider/utilization', label: 'Utilization' },
         { path: '/provider/payments', label: 'Payments' },
         { path: '/provider/patients', label: 'Patients' },
         { path: '/provider/documents', label: 'Provider Resources' },

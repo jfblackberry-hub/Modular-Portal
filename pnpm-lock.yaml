@@ -124,6 +124,9 @@ importers:
       '@payer-portal/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@payer-portal/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@payer-portal/plugin-broker':
         specifier: workspace:*
         version: link:../../plugins/broker

@@ -31,7 +31,8 @@ const TENANT_SCOPED_MODELS = new Set([
   'EventRecord',
   'PreviewSession',
   'PortalAuthHandoff',
-  'ProviderWorkflowExecution'
+  'ProviderWorkflowExecution',
+  'ProviderResourceCalendarSlot'
 ]);
 const UNSAFE_SINGLE_RECORD_OPERATIONS = new Set([
   'findUnique',

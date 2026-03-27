@@ -101,7 +101,7 @@ function ProviderSidebar({
           collapsed ? 'w-[84px]' : 'w-[240px]'
         }`}
       >
-        <div className="tenant-provider-sidebar__inner sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto px-3 py-4">
+        <div className="tenant-provider-sidebar__inner sticky top-[var(--provider-header-offset)] h-[calc(100dvh-var(--provider-header-offset))] overflow-y-auto px-3 py-4">
           <button
             type="button"
             onClick={onToggleCollapse}
@@ -198,7 +198,8 @@ export function ProviderPortalLayout({
           '--tenant-primary-color': branding.primaryColor,
           '--tenant-primary-soft-color': branding.primarySoftColor,
           '--tenant-secondary-color': branding.secondaryColor,
-          '--tenant-secondary-soft-color': branding.secondarySoftColor
+          '--tenant-secondary-soft-color': branding.secondarySoftColor,
+          '--provider-header-offset': '5.5rem'
         } as CSSProperties
       }
     >

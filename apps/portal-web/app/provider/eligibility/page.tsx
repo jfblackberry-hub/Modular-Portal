@@ -1,10 +1,13 @@
-import { ProviderEligibilityPage } from '../../../components/provider/eligibility/ProviderEligibilityPage';
-import { resolveProviderPortalConfig } from '../../../config/providerPortalConfig';
-import { getProviderPortalSessionContext } from '../../../lib/provider-portal-session';
+import { ProviderEligibilityWorkspace } from '../../../components/provider/operations/provider-workspaces';
+import { resolveProviderClinicName } from '../../../lib/provider-hero-branding';
+import { getProviderOperationsDashboardSnapshot } from '../../../lib/provider-operations-snapshot';
 
 export default async function ProviderEligibilityRoutePage() {
-  const { user, variant } = await getProviderPortalSessionContext();
-  const config = resolveProviderPortalConfig(variant, user.tenant.brandingConfig);
+  const { config, dashboard, user } = await getProviderOperationsDashboardSnapshot();
+  const clinicName = resolveProviderClinicName({
+    tenantBrandingConfig: user.tenant.brandingConfig,
+    practiceName: config.providerContext.practiceName
+  });
 
-  return <ProviderEligibilityPage config={config} variant={variant} />;
+  return <ProviderEligibilityWorkspace clinicName={clinicName} dashboard={dashboard} />;
 }

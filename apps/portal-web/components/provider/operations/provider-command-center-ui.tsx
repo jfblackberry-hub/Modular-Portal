@@ -463,15 +463,15 @@ export function DetailDrawer({
   title: string;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-x-0 bottom-0 top-[var(--provider-header-offset,5.5rem)] z-50 flex justify-end">
       <button
         type="button"
         onClick={onClose}
         className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px]"
         aria-label="Close detail drawer"
       />
-      <aside className="relative z-10 h-full w-full max-w-[820px] overflow-y-auto border-l border-[var(--border-subtle)] bg-white p-5 shadow-[var(--shadow-surface-strong)] sm:p-6">
-        <div className="flex items-start justify-between gap-4">
+      <aside className="relative z-10 flex h-full w-full max-w-[820px] min-h-0 flex-col overflow-hidden border-l border-[var(--border-subtle)] bg-white shadow-[var(--shadow-surface-strong)]">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] px-5 py-5 sm:px-6">
           <div>
             <p className="text-[13px] font-medium text-[var(--tenant-primary-color)]">
               Drill-down
@@ -488,7 +488,9 @@ export function DetailDrawer({
             Close
           </button>
         </div>
-        <div className="mt-6">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-6">
+          {children}
+        </div>
       </aside>
     </div>
   );

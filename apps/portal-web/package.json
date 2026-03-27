@@ -18,6 +18,7 @@
   "dependencies": {
     "@payer-portal/api-contracts": "workspace:*",
     "@payer-portal/config": "workspace:*",
+    "@payer-portal/database": "workspace:*",
     "@payer-portal/plugin-broker": "workspace:*",
     "@payer-portal/plugin-enrollment": "workspace:*",
     "@payer-portal/plugin-member": "workspace:*",
