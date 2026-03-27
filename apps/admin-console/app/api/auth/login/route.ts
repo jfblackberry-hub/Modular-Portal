@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 
 import { createAdminSessionFromAuthUser } from '../../../../lib/admin-session';
-import { storePendingAdminSession } from '../../../../lib/admin-session-handoff';
+import {
+  ADMIN_SESSION_TTL_SECONDS,
+  ADMIN_SESSION_COOKIE,
+  createSignedAdminSessionCookieValue,
+  getAdminSessionCookieOptions
+} from '../../../../lib/admin-session-cookie';
 import { config } from '../../../../lib/server-runtime';
 
 type AuthUserPayload = {
@@ -110,23 +115,30 @@ export async function POST(request: Request) {
       );
     }
 
-    const artifact = storePendingAdminSession({
-      accessToken: payload.token,
-      session: adminSession
-    });
     const redirectPath = adminSession.isPlatformAdmin
       ? '/admin/platform/health'
       : '/admin/tenant/health';
-
-    return NextResponse.json(
+    const cookieValue = createSignedAdminSessionCookieValue({
+      accessToken: payload.token,
+      session: adminSession,
+      maxAgeSeconds: ADMIN_SESSION_TTL_SECONDS
+    });
+    const directResponse = NextResponse.json(
       {
-        sessionHandoff: true,
-        artifact,
-        handoffPath: '/api/auth/session/handoff',
-        redirectPath
+        session: adminSession,
+        redirectPath,
+        directSession: true
       },
       { status: response.status }
     );
+
+    directResponse.cookies.set(
+      ADMIN_SESSION_COOKIE,
+      cookieValue,
+      getAdminSessionCookieOptions({ maxAge: ADMIN_SESSION_TTL_SECONDS })
+    );
+
+    return directResponse;
   } catch {
     return NextResponse.json(
       { message: 'Local API unavailable. Start the API service and try again.' },

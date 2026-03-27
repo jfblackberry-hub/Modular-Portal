@@ -13,8 +13,10 @@ import {
   createTenant,
   deleteTenant,
   getTenantById,
+  importTenantOfficeLocations,
   listTenantOrganizationUnits,
   listTenants,
+  updateTenantOfficeLocation,
   updateTenant
 } from '../services/tenant-service';
 
@@ -32,6 +34,21 @@ type TenantUpdateBody = {
   quotaUsers?: number;
   quotaMembers?: number;
   quotaStorageGb?: number;
+};
+
+type OfficeLocationUpdateBody = {
+  activeFlag?: boolean | null;
+  city?: string | null;
+  company?: string | null;
+  locationId?: string | null;
+  name?: string;
+  notes?: string | null;
+  phone?: string | null;
+  region?: string | null;
+  servicesOffered?: string[];
+  state?: string | null;
+  streetAddress?: string | null;
+  zip?: string | null;
 };
 
 export async function tenantRoutes(app: FastifyInstance) {
@@ -186,6 +203,91 @@ export async function tenantRoutes(app: FastifyInstance) {
 
         if (error instanceof Error) {
           const status = error.message === 'Tenant not found' ? 404 : 400;
+          return reply.status(status).send({ message: error.message });
+        }
+
+        return reply.status(503).send({
+          message:
+            'Local database unavailable. Start PostgreSQL, run migrations.'
+        });
+      }
+    }
+  );
+
+  app.post<{ Params: { id: string } }>(
+    '/platform-admin/tenants/:id/office-locations/import',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        const file = await request.file();
+
+        if (!file) {
+          return reply.status(400).send({
+            message: 'A delimited office location file is required.'
+          });
+        }
+
+        const result = await importTenantOfficeLocations(request.params.id, file, {
+          actorUserId: currentUser.id,
+          ipAddress: request.ip,
+          userAgent: request.headers['user-agent']
+        });
+
+        return reply.status(201).send(result);
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          return reply.status(401).send({ message: error.message });
+        }
+
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ message: error.message });
+        }
+
+        if (error instanceof Error) {
+          const status = error.message === 'Tenant not found' ? 404 : 400;
+          return reply.status(status).send({ message: error.message });
+        }
+
+        return reply.status(503).send({
+          message:
+            'Local database unavailable. Start PostgreSQL, run migrations.'
+        });
+      }
+    }
+  );
+
+  app.patch<{ Params: { id: string; organizationUnitId: string }; Body: OfficeLocationUpdateBody }>(
+    '/platform-admin/tenants/:id/organization-units/:organizationUnitId',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        const result = await updateTenantOfficeLocation(
+          request.params.id,
+          request.params.organizationUnitId,
+          request.body,
+          {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          }
+        );
+
+        return reply.send(result);
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          return reply.status(401).send({ message: error.message });
+        }
+
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ message: error.message });
+        }
+
+        if (error instanceof Error) {
+          const status = error.message.includes('not found') ? 404 : 400;
           return reply.status(status).send({ message: error.message });
         }
 

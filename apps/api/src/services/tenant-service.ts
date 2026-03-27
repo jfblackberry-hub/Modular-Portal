@@ -2,7 +2,13 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import type { MultipartFile } from '@fastify/multipart';
-import { Prisma, prisma, syncTenantTypeDefinitions } from '@payer-portal/database';
+import {
+  createOrganizationUnit,
+  Prisma,
+  prisma,
+  syncTenantTypeDefinitions,
+  updateOrganizationUnit
+} from '@payer-portal/database';
 import type { Tenant, TenantType } from '@payer-portal/database';
 import {
   buildTenantLogoStorageKey,
@@ -40,6 +46,66 @@ type AuditContext = {
   actorUserId?: string | null;
   ipAddress?: string;
   userAgent?: string;
+};
+
+type ImportedOfficeLocation = {
+  city: string | null;
+  company: string | null;
+  activeFlag: boolean | null;
+  locationName: string;
+  locationId: string | null;
+  notes: string | null;
+  phone: string | null;
+  region: string | null;
+  servicesOffered: string[];
+  state: string | null;
+  streetAddress: string | null;
+  zip: string | null;
+};
+
+type OfficeLocationMetadata = {
+  activeFlag?: boolean | null;
+  address?: {
+    city?: string | null;
+    state?: string | null;
+    streetAddress?: string | null;
+    zip?: string | null;
+  };
+  company?: string | null;
+  importSource?: string | null;
+  locationId?: string | null;
+  notes?: string | null;
+  phone?: string | null;
+  region?: string | null;
+  servicesOffered?: string[];
+};
+
+type OfficeLocationImportResult = {
+  createdCount: number;
+  createdLocations: Array<{
+    id: string;
+    name: string;
+    parentId: string | null;
+    type: string;
+  }>;
+  parentOrganizationUnitId: string;
+  skippedCount: number;
+  updatedCount: number;
+};
+
+type OfficeLocationUpdateInput = {
+  activeFlag?: boolean | null;
+  company?: string | null;
+  locationId?: string | null;
+  name?: string;
+  notes?: string | null;
+  phone?: string | null;
+  region?: string | null;
+  servicesOffered?: string[];
+  streetAddress?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
 };
 
 const TENANT_TYPES = [
@@ -144,6 +210,293 @@ function getExtension(fileName: string, mimeType: string) {
   }
 }
 
+function normalizeOptionalText(value: string | null | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+function normalizeHeader(value: string) {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+}
+
+function normalizeBooleanFlag(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (['true', 'yes', 'y', '1', 'active'].includes(normalized)) {
+    return true;
+  }
+
+  if (['false', 'no', 'n', '0', 'inactive'].includes(normalized)) {
+    return false;
+  }
+
+  return null;
+}
+
+function normalizeServicesOffered(value: string | null) {
+  if (!value) {
+    return [];
+  }
+
+  return [...new Set(value
+    .split(/[|,/;]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean))];
+}
+
+function toSlugCode(value: string) {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.slice(0, 4))
+    .join('-');
+}
+
+function buildLocationCode(input: {
+  company: string | null;
+  locationName: string;
+  sequence: number;
+}) {
+  const companyCode = toSlugCode(input.company ?? 'tenant') || 'TENANT';
+  const locationCode = toSlugCode(input.locationName) || 'LOC';
+
+  return `${companyCode}-${locationCode}-${String(input.sequence).padStart(2, '0')}`;
+}
+
+function splitDelimitedLine(line: string, delimiter: string) {
+  const cells: string[] = [];
+  let current = '';
+  let isQuoted = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index]!;
+    const nextChar = line[index + 1];
+
+    if (char === '"') {
+      if (isQuoted && nextChar === '"') {
+        current += '"';
+        index += 1;
+        continue;
+      }
+
+      isQuoted = !isQuoted;
+      continue;
+    }
+
+    if (!isQuoted && char === delimiter) {
+      cells.push(current.trim());
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  cells.push(current.trim());
+  return cells;
+}
+
+function detectDelimiter(headerLine: string) {
+  const candidates = [',', '|', '\t', ';'];
+  const ranked = candidates
+    .map((delimiter) => ({
+      delimiter,
+      columns: splitDelimitedLine(headerLine, delimiter).length
+    }))
+    .sort((left, right) => right.columns - left.columns);
+
+  return ranked[0]?.columns && ranked[0].columns > 1 ? ranked[0].delimiter : ',';
+}
+
+function readDelimitedRows(content: string) {
+  const lines = content
+    .replace(/^\uFEFF/, '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) {
+    throw new Error(
+      'Location import file must include a header row and at least one data row.'
+    );
+  }
+
+  const delimiter = detectDelimiter(lines[0]!);
+  const headers = splitDelimitedLine(lines[0]!, delimiter).map(normalizeHeader);
+  const rows = lines.slice(1).map((line) => splitDelimitedLine(line, delimiter));
+
+  return {
+    headers,
+    rows
+  };
+}
+
+function getCellValue(headers: string[], values: string[], aliases: string[]) {
+  const headerIndex = headers.findIndex((header) => aliases.includes(header));
+
+  if (headerIndex === -1) {
+    return null;
+  }
+
+  return normalizeOptionalText(values[headerIndex]);
+}
+
+function parseImportedOfficeLocations(content: string) {
+  const { headers, rows } = readDelimitedRows(content);
+  const locations: ImportedOfficeLocation[] = [];
+
+  for (const [index, row] of rows.entries()) {
+    const locationName = getCellValue(headers, row, [
+      'location',
+      'location name',
+      'office',
+      'office name',
+      'clinic',
+      'clinic name',
+      'site',
+      'site name'
+    ]);
+
+    if (!locationName) {
+      continue;
+    }
+
+    locations.push({
+      company: getCellValue(headers, row, ['company', 'company name', 'organization']),
+      locationId: getCellValue(headers, row, [
+        'location id',
+        'location_id',
+        'clinic id',
+        'site id'
+      ]),
+      locationName,
+      streetAddress: getCellValue(headers, row, [
+        'street address',
+        'street',
+        'address',
+        'address 1',
+        'address1'
+      ]),
+      city: getCellValue(headers, row, ['city']),
+      state: getCellValue(headers, row, ['state', 'province']),
+      zip: getCellValue(headers, row, ['zip', 'zip code', 'postal code']),
+      phone: getCellValue(headers, row, ['phone', 'phone number', 'telephone']),
+      notes: getCellValue(headers, row, ['notes', 'note', 'comments']),
+      region: getCellValue(headers, row, ['region']),
+      servicesOffered: normalizeServicesOffered(
+        getCellValue(headers, row, [
+          'services offered',
+          'services_offered',
+          'services',
+          'service lines'
+        ])
+      ),
+      activeFlag: normalizeBooleanFlag(
+        getCellValue(headers, row, ['active flag', 'active_flag', 'active', 'is active'])
+      ) ?? true
+    });
+
+    locations[index]!.locationId ??= buildLocationCode({
+      company: locations[index]!.company,
+      locationName,
+      sequence: index + 1
+    });
+  }
+
+  if (locations.length === 0) {
+    throw new Error(
+      'No valid location rows were found. Include at least a Location Name column.'
+    );
+  }
+
+  return locations;
+}
+
+async function ensureProviderLocationParent(
+  tx: Prisma.TransactionClient,
+  tenant: Tenant
+) {
+  const units = await tx.organizationUnit.findMany({
+    where: {
+      tenantId: tenant.id
+    },
+    orderBy: [{ type: 'asc' }, { name: 'asc' }]
+  });
+
+  const existingRegion = units.find((unit) => unit.type === 'REGION');
+
+  if (existingRegion) {
+    return existingRegion;
+  }
+
+  const enterprise =
+    units.find((unit) => unit.type === 'ENTERPRISE') ??
+    (await createOrganizationUnit(
+      {
+        tenantId: tenant.id,
+        type: 'ENTERPRISE',
+        name: tenant.name
+      },
+      tx
+    ));
+
+  return createOrganizationUnit(
+    {
+      tenantId: tenant.id,
+      parentId: enterprise.id,
+      type: 'REGION',
+      name: 'Imported Office Locations'
+    },
+    tx
+  );
+}
+
+function normalizeLocationName(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function readOfficeLocationMetadata(
+  value: Prisma.JsonValue | null | undefined
+): OfficeLocationMetadata {
+  return isRecord(value) ? (value as OfficeLocationMetadata) : {};
+}
+
+function buildOfficeLocationMetadata(
+  input: ImportedOfficeLocation | OfficeLocationUpdateInput,
+  existing: OfficeLocationMetadata = {}
+) {
+  return {
+    importSource: 'office-location-file',
+    locationId: normalizeOptionalText(input.locationId) ?? existing.locationId ?? null,
+    company: normalizeOptionalText(input.company) ?? existing.company ?? null,
+    address: {
+      streetAddress:
+        normalizeOptionalText(input.streetAddress) ?? existing.address?.streetAddress ?? null,
+      city: normalizeOptionalText(input.city) ?? existing.address?.city ?? null,
+      state: normalizeOptionalText(input.state) ?? existing.address?.state ?? null,
+      zip: normalizeOptionalText(input.zip) ?? existing.address?.zip ?? null
+    },
+    phone: normalizeOptionalText(input.phone) ?? existing.phone ?? null,
+    notes: normalizeOptionalText(input.notes) ?? existing.notes ?? null,
+    region: normalizeOptionalText(input.region) ?? existing.region ?? null,
+    servicesOffered:
+      ('servicesOffered' in input && input.servicesOffered !== undefined
+        ? input.servicesOffered
+        : existing.servicesOffered) ?? [],
+    activeFlag:
+      ('activeFlag' in input && input.activeFlag !== undefined
+        ? input.activeFlag
+        : existing.activeFlag) ?? true
+  } satisfies Prisma.InputJsonValue;
+}
+
 export async function listTenants() {
   const tenants = await prisma.tenant.findMany({
     orderBy: {
@@ -151,7 +504,18 @@ export async function listTenants() {
     }
   });
 
-  return tenants.map(mapTenant);
+  return tenants
+    .filter((tenant) => {
+      const brandingConfig = isRecord(tenant.brandingConfig)
+        ? tenant.brandingConfig
+        : {};
+      const lifecycle = isRecord(brandingConfig.lifecycle)
+        ? (brandingConfig.lifecycle as TenantLifecycleConfig)
+        : {};
+
+      return typeof lifecycle.deletedAt !== 'string';
+    })
+    .map(mapTenant);
 }
 
 export async function getTenantById(id: string) {
@@ -185,9 +549,193 @@ export async function listTenantOrganizationUnits(tenantId: string) {
     parentId: unit.parentId,
     type: unit.type,
     name: unit.name,
+    metadata: unit.metadata,
     createdAt: unit.createdAt,
     updatedAt: unit.updatedAt
   }));
+}
+
+export async function importTenantOfficeLocations(
+  tenantId: string,
+  file: MultipartFile,
+  context: AuditContext = {}
+): Promise<OfficeLocationImportResult> {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId }
+  });
+
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+
+  if (tenant.type !== 'PROVIDER') {
+    throw new Error('Office location import is only available for Provider tenants.');
+  }
+
+  const content = (await file.toBuffer()).toString('utf-8');
+  const importedLocations = parseImportedOfficeLocations(content);
+
+  return prisma.$transaction(async (tx) => {
+    const parentUnit = await ensureProviderLocationParent(tx, tenant);
+    const existingLocations = await tx.organizationUnit.findMany({
+      where: {
+        tenantId,
+        type: 'LOCATION',
+        parentId: parentUnit.id
+      }
+    });
+    const existingByName = new Map(
+      existingLocations.map((unit) => [normalizeLocationName(unit.name), unit])
+    );
+
+    const createdLocations: OfficeLocationImportResult['createdLocations'] = [];
+    let createdCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    for (const location of importedLocations) {
+      const existing = existingByName.get(normalizeLocationName(location.locationName));
+
+      if (existing) {
+        const metadata = buildOfficeLocationMetadata(
+          location,
+          readOfficeLocationMetadata(existing.metadata)
+        );
+
+        await tx.organizationUnit.update({
+          where: {
+            id: existing.id
+          },
+          data: {
+            metadata
+          }
+        });
+        updatedCount += 1;
+        continue;
+      }
+
+      const metadata = buildOfficeLocationMetadata(location);
+      const created = await createOrganizationUnit(
+        {
+          tenantId,
+          parentId: parentUnit.id,
+          type: 'LOCATION',
+          name: location.locationName,
+          metadata
+        },
+        tx
+      );
+
+      existingByName.set(normalizeLocationName(created.name), created);
+      createdLocations.push({
+        id: created.id,
+        name: created.name,
+        parentId: created.parentId,
+        type: created.type
+      });
+      createdCount += 1;
+    }
+
+    await logAdminAction({
+      client: tx,
+      tenantId,
+      actorUserId: context.actorUserId ?? null,
+      action: 'tenant.organization_units.imported',
+      resourceType: 'organization_unit',
+      resourceId: parentUnit.id,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+      metadata: {
+        delimiterSource: file.mimetype,
+        fileName: file.filename,
+        importedRowCount: importedLocations.length,
+        createdCount,
+        updatedCount,
+        skippedCount
+      }
+    });
+
+    return {
+      createdCount,
+      createdLocations,
+      parentOrganizationUnitId: parentUnit.id,
+      skippedCount,
+      updatedCount
+    };
+  });
+}
+
+export async function updateTenantOfficeLocation(
+  tenantId: string,
+  organizationUnitId: string,
+  input: OfficeLocationUpdateInput,
+  context: AuditContext = {}
+) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId }
+  });
+
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+
+  if (tenant.type !== 'PROVIDER') {
+    throw new Error('Office location editing is only available for Provider tenants.');
+  }
+
+  const existing = await prisma.organizationUnit.findFirst({
+    where: {
+      tenantId,
+      id: organizationUnitId,
+      type: 'LOCATION'
+    }
+  });
+
+  if (!existing) {
+    throw new Error('Office location not found for tenant.');
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const nextUnit = await updateOrganizationUnit(
+      {
+        id: organizationUnitId,
+        tenantId,
+        name: input.name?.trim() ? input.name : undefined,
+        metadata: buildOfficeLocationMetadata(input, readOfficeLocationMetadata(existing.metadata))
+      },
+      tx
+    );
+
+    await logAdminAction({
+      client: tx,
+      tenantId,
+      actorUserId: context.actorUserId ?? null,
+      action: 'tenant.organization_unit.updated',
+      resourceType: 'organization_unit',
+      resourceId: nextUnit.id,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+      metadata: {
+        type: nextUnit.type,
+        name: nextUnit.name,
+        locationId:
+          readOfficeLocationMetadata(nextUnit.metadata).locationId ?? null
+      }
+    });
+
+    return nextUnit;
+  });
+
+  return {
+    id: updated.id,
+    tenantId: updated.tenantId,
+    parentId: updated.parentId,
+    type: updated.type,
+    name: updated.name,
+    metadata: updated.metadata,
+    createdAt: updated.createdAt,
+    updatedAt: updated.updatedAt
+  };
 }
 
 export async function createTenant(

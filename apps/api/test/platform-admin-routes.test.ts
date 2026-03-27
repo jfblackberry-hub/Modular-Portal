@@ -509,6 +509,160 @@ test('platform admins can provision a provider tenant and provider organization 
   await app.close();
 });
 
+test('platform admins can import provider office locations from a delimited file into the provider hierarchy', async () => {
+  const { platformAdminUser } = await createFixtureData();
+  const app = Fastify();
+  registerPlugins(app);
+  await tenantRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+
+  const createResponse = await app.inject({
+    method: 'POST',
+    url: '/platform-admin/tenants',
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      name: 'Provider Import Tenant',
+      slug: TEST_PROVIDER_TENANT_SLUG,
+      status: 'ACTIVE',
+      type: 'PROVIDER',
+      brandingConfig: {
+        displayName: 'Provider Import Tenant',
+        capabilities: ['provider_operations', 'provider_reporting']
+      }
+    }
+  });
+
+  assert.equal(createResponse.statusCode, 201, createResponse.body);
+
+  const providerTenant = await prisma.tenant.findUniqueOrThrow({
+    where: {
+      slug: TEST_PROVIDER_TENANT_SLUG
+    }
+  });
+
+  const boundary = '----codex-provider-office-import-boundary';
+  const importBody = buildMultipartBody({
+    boundary,
+    fieldName: 'file',
+    fileName: 'office-locations.psv',
+    contentType: 'text/plain',
+    content:
+      'Company|Location ID|Location Name|Street Address|City|State|Zip|Phone|Notes|Services Offered|Region|Active Flag\n' +
+      'Apara Autism Centers|APARA-FLNT-01|Flint North|123 Maple Ave|Flint|MI|48503|810-555-0100|Main intake site|center-based, telehealth|Midwest|yes\n' +
+      'Apara Autism Centers||Lansing East|456 Cedar St|Lansing|MI|48933|517-555-0199|Home-based dispatch hub|in-home|Midwest|true\n'
+  });
+
+  const importResponse = await app.inject({
+    method: 'POST',
+    url: `/platform-admin/tenants/${providerTenant.id}/office-locations/import`,
+    headers: {
+      authorization: `Bearer ${platformToken}`,
+      'content-type': `multipart/form-data; boundary=${boundary}`
+    },
+    payload: importBody
+  });
+
+  assert.equal(importResponse.statusCode, 201, importResponse.body);
+  assert.equal(importResponse.json().createdCount, 2);
+
+  const organizationUnits = await prisma.organizationUnit.findMany({
+    where: {
+      tenantId: providerTenant.id
+    },
+    orderBy: [{ type: 'asc' }, { name: 'asc' }]
+  });
+
+  const enterprise = organizationUnits.find((unit) => unit.type === 'ENTERPRISE');
+  const region = organizationUnits.find((unit) => unit.type === 'REGION');
+  const importedLocations = organizationUnits.filter((unit) => unit.type === 'LOCATION');
+
+  assert.ok(enterprise);
+  assert.ok(region);
+  assert.equal(region?.parentId, enterprise?.id ?? null);
+  assert.equal(importedLocations.length, 2);
+  assert.ok(importedLocations.every((unit) => unit.parentId === region?.id));
+
+  const flintLocation = importedLocations.find((unit) => unit.name === 'Flint North');
+  const metadata = flintLocation?.metadata as
+    | {
+        company?: string;
+        address?: { city?: string; state?: string; zip?: string; streetAddress?: string };
+        phone?: string;
+        notes?: string;
+      }
+    | null
+    | undefined;
+
+  assert.equal(metadata?.company, 'Apara Autism Centers');
+  assert.equal(metadata?.locationId, 'APARA-FLNT-01');
+  assert.equal(metadata?.address?.city, 'Flint');
+  assert.equal(metadata?.address?.streetAddress, '123 Maple Ave');
+  assert.equal(metadata?.phone, '810-555-0100');
+  assert.equal(metadata?.notes, 'Main intake site');
+  assert.equal(metadata?.region, 'Midwest');
+  assert.deepEqual(metadata?.servicesOffered, ['center-based', 'telehealth']);
+  assert.equal(metadata?.activeFlag, true);
+
+  const lansingLocation = importedLocations.find((unit) => unit.name === 'Lansing East');
+  const lansingMetadata = lansingLocation?.metadata as
+    | {
+        activeFlag?: boolean;
+        locationId?: string;
+        servicesOffered?: string[];
+      }
+    | null
+    | undefined;
+
+  assert.match(lansingMetadata?.locationId ?? '', /^APAR-/);
+  assert.deepEqual(lansingMetadata?.servicesOffered, ['in-home']);
+
+  const editResponse = await app.inject({
+    method: 'PATCH',
+    url: `/platform-admin/tenants/${providerTenant.id}/organization-units/${flintLocation?.id}`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      name: 'Flint North Clinic',
+      region: 'Texas',
+      activeFlag: false,
+      servicesOffered: ['center-based', 'telehealth', 'in-home'],
+      notes: 'Updated by platform admin'
+    }
+  });
+
+  assert.equal(editResponse.statusCode, 200, editResponse.body);
+
+  const editedLocation = await prisma.organizationUnit.findUniqueOrThrow({
+    where: {
+      id: flintLocation!.id
+    }
+  });
+  const editedMetadata = editedLocation.metadata as
+    | {
+        activeFlag?: boolean;
+        notes?: string;
+        region?: string;
+        servicesOffered?: string[];
+      }
+    | null
+    | undefined;
+
+  assert.equal(editedLocation.name, 'Flint North Clinic');
+  assert.equal(editedMetadata?.region, 'Texas');
+  assert.equal(editedMetadata?.activeFlag, false);
+  assert.deepEqual(editedMetadata?.servicesOffered, [
+    'center-based',
+    'telehealth',
+    'in-home'
+  ]);
+  assert.equal(editedMetadata?.notes, 'Updated by platform admin');
+
+  await app.close();
+});
+
 test('platform admins can upload platform branding css and public route serves it', async () => {
   const { platformAdminUser } = await createFixtureData();
   const app = Fastify();

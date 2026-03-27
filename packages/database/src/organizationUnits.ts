@@ -1,7 +1,7 @@
+import { Prisma } from '@prisma/client';
 import type {
   OrganizationUnit as PrismaOrganizationUnit,
   OrganizationUnitType as PrismaOrganizationUnitType,
-  Prisma,
   PrismaClient
 } from '@prisma/client';
 
@@ -23,6 +23,7 @@ export type OrganizationUnitWriteInput = {
   parentId?: string | null;
   type: ControlledOrganizationUnitType | string;
   name: string;
+  metadata?: Prisma.InputJsonValue | null;
 };
 
 export type UpdateOrganizationUnitInput = {
@@ -31,7 +32,16 @@ export type UpdateOrganizationUnitInput = {
   parentId?: string | null;
   type?: ControlledOrganizationUnitType | string;
   name?: string;
+  metadata?: Prisma.InputJsonValue | null;
 };
+
+function normalizeJsonMetadata(value: Prisma.InputJsonValue | null | undefined) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return value === null ? Prisma.JsonNull : value;
+}
 
 type OrganizationUnitDbClient = PrismaClient | Prisma.TransactionClient;
 
@@ -92,7 +102,8 @@ export function validateOrganizationUnitInput(
     tenantId: normalizeRequiredString(input.tenantId, 'tenantId'),
     parentId: normalizeOptionalParentId(input.parentId) ?? null,
     type: normalizeOrganizationUnitType(input.type),
-    name: normalizeRequiredString(input.name, 'name')
+    name: normalizeRequiredString(input.name, 'name'),
+    metadata: normalizeJsonMetadata(input.metadata)
   };
 }
 
@@ -215,6 +226,12 @@ export async function updateOrganizationUnit(
     input.name !== undefined
       ? normalizeRequiredString(input.name, 'name')
       : existing.name;
+  const nextMetadata =
+    input.metadata !== undefined
+      ? normalizeJsonMetadata(input.metadata)
+      : existing.metadata === null
+        ? Prisma.JsonNull
+        : existing.metadata;
 
   await assertOrganizationUnitHierarchyIntegrity(db, {
     tenantId,
@@ -230,7 +247,8 @@ export async function updateOrganizationUnit(
     data: {
       parentId: nextParentId,
       type: nextType,
-      name: nextName
+      name: nextName,
+      metadata: nextMetadata
     }
   });
 

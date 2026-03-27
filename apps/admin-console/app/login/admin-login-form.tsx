@@ -120,6 +120,8 @@ function AdminLoginFormContent() {
         handoffPath?: string;
         redirectPath?: string;
         sessionHandoff?: boolean;
+        directSession?: boolean;
+        session?: AdminSession;
       };
 
       if (payload.handoffRequired && payload.artifact && payload.handoffUrl) {
@@ -129,6 +131,12 @@ function AdminLoginFormContent() {
           handoffUrl: payload.handoffUrl
         });
         window.location.assign(new URL(redirectPath, payload.handoffUrl).toString());
+        return;
+      }
+
+      if (payload.directSession && payload.session) {
+        applySession(payload.session);
+        window.location.assign(payload.redirectPath ?? '/admin');
         return;
       }
 
