@@ -1,6 +1,7 @@
 import type { PluginManifest, PluginNavigationItem } from '@payer-portal/plugin-sdk';
 
 export const PROVIDER_OPERATIONS_CAPABILITY_ID = 'provider_operations';
+export const PROVIDER_REPORTING_CAPABILITY_ID = 'provider_reporting';
 export const PROVIDER_POC_SCOPE_EXCLUSIONS = [
   'provider_ai_copilot_experience',
   'provider_ai_copilot_capability',
@@ -44,6 +45,14 @@ export const PROVIDER_OPERATION_WIDGETS: PluginNavigationItem[] = [
     icon: 'activity',
     requiredPermissions: ['tenant.view', 'provider.view'],
     futureCapabilityId: 'provider_utilization'
+  },
+  {
+    widgetId: 'provider-operations-reporting',
+    label: 'Reporting',
+    href: '/provider/reporting',
+    icon: 'bar-chart-3',
+    requiredPermissions: ['tenant.view', 'provider.view'],
+    futureCapabilityId: 'provider_reporting'
   },
   {
     widgetId: 'provider-operations-eligibility',
@@ -133,6 +142,21 @@ export const manifest: PluginManifest = {
         requiredPermissions: widget.requiredPermissions,
         futureCapabilityId: widget.futureCapabilityId
       }))
+    },
+    {
+      id: PROVIDER_REPORTING_CAPABILITY_ID,
+      label: 'Reporting',
+      description:
+        'Centralized clinic administration reporting workspace for historical operational and business performance across the ABA provider organization.',
+      moduleKeys: ['provider_operations'],
+      sectionTitle: 'Provider Operations',
+      currentScopeExclusions: [...PROVIDER_POC_SCOPE_EXCLUSIONS],
+      futureExtensionPoints: [
+        'scheduled exports can be added later without changing the provider tenant model',
+        'saved report views and provider analytics automations can be added later as optional reporting enhancements'
+      ],
+      routes: [{ path: '/provider/reporting', label: 'Reporting' }],
+      navigation: []
     }
   ]
 };

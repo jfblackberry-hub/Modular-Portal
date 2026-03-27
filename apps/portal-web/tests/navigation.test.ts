@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import {
-  manifest as providerManifest,
-  PROVIDER_POC_SCOPE_EXCLUSIONS
-} from '../../../plugins/provider/src/index';
 import type {
   PlatformFeatureFlag,
   PluginManifest
 } from '@payer-portal/plugin-sdk';
 
+import {
+  manifest as providerManifest,
+  PROVIDER_POC_SCOPE_EXCLUSIONS
+} from '../../../plugins/provider/src/index';
 import { buildPortalNavigation } from '../lib/navigation';
 import type { PortalSessionUser } from '../lib/portal-session';
 
@@ -197,8 +197,9 @@ test('audience-specific capabilities only appear for the requested portal experi
 });
 
 test('provider tenant navigation is composed from plugin flags, permissions, and licensed modules', () => {
-  assert.equal(providerManifest.capabilities.length, 1);
+  assert.equal(providerManifest.capabilities.length, 2);
   assert.equal(providerManifest.capabilities[0]?.id, 'provider_operations');
+  assert.equal(providerManifest.capabilities[1]?.id, 'provider_reporting');
 
   const tenantId = 'tenant-provider';
   const navigation = buildPortalNavigation(
@@ -276,6 +277,7 @@ test('provider tenant navigation is composed from plugin flags, permissions, and
           'Scheduling',
           'Authorizations',
           'Utilization',
+          'Reporting',
           'Eligibility',
           'Claims & Billing',
           'Documents',
@@ -352,7 +354,7 @@ test('restricted provider users only see provider capabilities they are authoriz
     [
       {
         title: 'Provider Operations',
-        items: ['Dashboard', 'Scheduling', 'Utilization', 'Eligibility', 'Messages']
+        items: ['Dashboard', 'Scheduling', 'Utilization', 'Reporting', 'Eligibility', 'Messages']
       }
     ]
   );
