@@ -44,6 +44,9 @@ importers:
       '@payer-portal/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@payer-portal/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       lucide-react:
         specifier: ^0.542.0
         version: 0.542.0(react@19.2.4)
@@ -102,6 +105,9 @@ importers:
       '@payer-portal/server':
         specifier: workspace:*
         version: link:../../packages/server
+      '@payer-portal/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       fastify:
         specifier: ^5.2.1
         version: 5.8.2
@@ -142,6 +148,9 @@ importers:
       '@payer-portal/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
+      '@payer-portal/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       '@payer-portal/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -233,6 +242,9 @@ importers:
 
   packages/database:
     dependencies:
+      '@payer-portal/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
       '@prisma/client':
         specifier: ^6.5.0
         version: 6.19.2(prisma@6.19.2(typescript@5.9.3))(typescript@5.9.3)

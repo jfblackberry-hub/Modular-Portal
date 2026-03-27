@@ -2,8 +2,11 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import type { MultipartFile } from '@fastify/multipart';
+import type { CoreTenantType } from '@payer-portal/shared-types';
 import {
   createOrganizationUnit,
+  isProviderClassTenantTypeCode,
+  normalizeTenantTypeCode,
   Prisma,
   prisma,
   syncTenantTypeDefinitions,
@@ -16,12 +19,15 @@ import {
   logAdminAction,
   publishInBackground
 } from '@payer-portal/server';
+import { applyTenantTemplateDefaults, syncAdminControlPlaneDefaults } from './admin-control-plane-service';
 
 type TenantInput = {
   name: string;
   slug: string;
   status: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
   type: TenantType;
+  templateId?: string | null;
+  metadata?: Record<string, unknown>;
   brandingConfig: Record<string, unknown>;
 };
 
@@ -110,10 +116,9 @@ type OfficeLocationUpdateInput = {
 
 const TENANT_TYPES = [
   'PAYER',
-  'EMPLOYER',
-  'BROKER',
-  'MEMBER',
-  'PROVIDER'
+  'CLINIC',
+  'PHYSICIAN_GROUP',
+  'HOSPITAL'
 ] as const satisfies readonly TenantType[];
 
 const tenantTypeSet = new Set<string>(TENANT_TYPES);
@@ -141,6 +146,7 @@ function mapTenant(tenant: Tenant) {
     slug: tenant.slug,
     status: tenant.status,
     type: tenant.type,
+    templateId: tenant.templateId ?? null,
     healthStatus:
       tenant.status === 'ACTIVE'
         ? 'HEALTHY'
@@ -167,9 +173,9 @@ function mapTenant(tenant: Tenant) {
 }
 
 function normalizeTenantType(value: TenantType | string) {
-  const normalized = value.trim().toUpperCase();
+  const normalized = normalizeTenantTypeCode(value);
 
-  if (!tenantTypeSet.has(normalized)) {
+  if (!normalized || !tenantTypeSet.has(normalized)) {
     throw new Error(`Tenant type must be one of: ${TENANT_TYPES.join(', ')}`);
   }
 
@@ -568,8 +574,10 @@ export async function importTenantOfficeLocations(
     throw new Error('Tenant not found');
   }
 
-  if (tenant.type !== 'PROVIDER') {
-    throw new Error('Office location import is only available for Provider tenants.');
+  if (!isProviderClassTenantTypeCode(tenant.tenantTypeCode ?? tenant.type)) {
+    throw new Error(
+      'Office location import is only available for Clinic, Physician Group, and Hospital tenants.'
+    );
   }
 
   const content = (await file.toBuffer()).toString('utf-8');
@@ -679,8 +687,10 @@ export async function updateTenantOfficeLocation(
     throw new Error('Tenant not found');
   }
 
-  if (tenant.type !== 'PROVIDER') {
-    throw new Error('Office location editing is only available for Provider tenants.');
+  if (!isProviderClassTenantTypeCode(tenant.tenantTypeCode ?? tenant.type)) {
+    throw new Error(
+      'Office location editing is only available for Clinic, Physician Group, and Hospital tenants.'
+    );
   }
 
   const existing = await prisma.organizationUnit.findFirst({
@@ -755,11 +765,28 @@ export async function createTenant(
 
   const type = normalizeTenantType(input.type);
   await syncTenantTypeDefinitions(prisma);
+  await syncAdminControlPlaneDefaults();
 
   let tenant: Tenant;
 
   try {
     tenant = await prisma.$transaction(async (tx) => {
+      const templateId = input.templateId?.trim() || null;
+      const baseBrandingConfig = {
+        ...(input.brandingConfig ?? {}),
+        control_plane: {
+          tenant_id: null,
+          tenant_type: type,
+          scope: 'tenant'
+        },
+        metadata: {
+          tenant_id: null,
+          tenant_type: type,
+          scope: 'tenant_metadata',
+          ...(input.metadata ?? {})
+        }
+      } satisfies Prisma.InputJsonObject;
+
       const createdTenant = await tx.tenant.create({
         data: {
           name,
@@ -767,10 +794,42 @@ export async function createTenant(
           status: input.status,
           type,
           tenantTypeCode: type,
+          templateId,
           isActive: input.status === 'ACTIVE',
-          brandingConfig: input.brandingConfig as Prisma.InputJsonValue
+          brandingConfig: baseBrandingConfig
         }
       });
+
+      await tx.tenant.update({
+        where: {
+          id: createdTenant.id
+        },
+        data: {
+          brandingConfig: {
+            ...(baseBrandingConfig as Prisma.InputJsonObject),
+            control_plane: {
+              tenant_id: createdTenant.id,
+              tenant_type: type,
+              scope: 'tenant'
+            },
+            metadata: {
+              tenant_id: createdTenant.id,
+              tenant_type: type,
+              scope: 'tenant_metadata',
+              ...(input.metadata ?? {})
+            }
+          }
+        }
+      });
+
+      if (templateId) {
+        await applyTenantTemplateDefaults({
+          tenantId: createdTenant.id,
+          tenantTypeCode: type as CoreTenantType,
+          templateId,
+          client: tx
+        });
+      }
 
       await logAdminAction({
         client: tx,

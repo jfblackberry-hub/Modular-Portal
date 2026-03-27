@@ -1,5 +1,10 @@
 import type { Prisma } from '@payer-portal/database';
-import { prisma, verifyPassword } from '@payer-portal/database';
+import {
+  isProviderClassTenantTypeCode,
+  normalizeTenantTypeCode,
+  prisma,
+  verifyPassword
+} from '@payer-portal/database';
 import { logAuthenticationEvent } from '@payer-portal/server';
 
 import { createAccessToken } from './access-token-service';
@@ -46,6 +51,42 @@ const PROVIDER_ROLE_CODES = new Set([
   'eligibility_coordinator',
   'provider_support'
 ]);
+
+function getPurchasedModules(brandingConfig: unknown) {
+  if (!brandingConfig || typeof brandingConfig !== 'object' || Array.isArray(brandingConfig)) {
+    return [];
+  }
+
+  const modules = (brandingConfig as Record<string, unknown>).purchasedModules;
+  return Array.isArray(modules) ? modules.filter((value): value is string => typeof value === 'string') : [];
+}
+
+function isProviderExperienceTenantContext(user: UserWithRelations) {
+  const scopedAssignments = getScopedRoleAssignments(user);
+  const scopedRoleCodes = scopedAssignments.map(({ role }) => role.code);
+  const permissions = new Set(
+    scopedAssignments.flatMap(({ role }) => role.permissions.map(({ permission }) => permission.code))
+  );
+  const effectiveTenant = getEffectiveTenant(user);
+  const tenantTypeCode = normalizeTenantTypeCode(
+    effectiveTenant?.tenantTypeCode ?? user.tenant?.tenantTypeCode ?? null
+  );
+  const purchasedModules = getPurchasedModules(effectiveTenant?.brandingConfig);
+
+  if (isProviderClassTenantTypeCode(tenantTypeCode)) {
+    return true;
+  }
+
+  if (tenantTypeCode === 'PAYER') {
+    return (
+      scopedRoleCodes.some((code) => PROVIDER_ROLE_CODES.has(code)) ||
+      permissions.has('provider.view') ||
+      purchasedModules.includes('provider_operations')
+    );
+  }
+
+  return scopedRoleCodes.some((code) => PROVIDER_ROLE_CODES.has(code));
+}
 
 export class SessionIntegrityError extends Error {
   statusCode: number;
@@ -219,8 +260,6 @@ function getScopedRoleAssignments(user: UserWithRelations) {
 function getLandingContextForUser(user: UserWithRelations): LandingContext {
   const scopedAssignments = getScopedRoleAssignments(user);
   const scopedRoleCodes = scopedAssignments.map(({ role }) => role.code);
-  const effectiveTenant = getEffectiveTenant(user);
-  const tenantTypeCode = effectiveTenant?.tenantTypeCode ?? user.tenant?.tenantTypeCode ?? null;
 
   if (scopedAssignments.some(({ role }) => role.isPlatformRole || role.code === 'platform_admin')) {
     return 'platform_admin';
@@ -233,11 +272,16 @@ function getLandingContextForUser(user: UserWithRelations): LandingContext {
     return 'tenant_admin';
   }
 
-  if (tenantTypeCode === 'PROVIDER' || scopedRoleCodes.some((code) => PROVIDER_ROLE_CODES.has(code))) {
+  if (isProviderExperienceTenantContext(user)) {
     return 'provider';
   }
 
-  if (tenantTypeCode === 'EMPLOYER' || scopedRoleCodes.includes('employer_group_admin')) {
+  const effectiveTenant = getEffectiveTenant(user);
+  const tenantTypeCode = normalizeTenantTypeCode(
+    effectiveTenant?.tenantTypeCode ?? user.tenant?.tenantTypeCode ?? null
+  );
+
+  if (scopedRoleCodes.includes('employer_group_admin')) {
     return 'employer';
   }
 

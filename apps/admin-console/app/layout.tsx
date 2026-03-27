@@ -9,8 +9,8 @@ import { AdminShell } from '../components/admin-shell';
 import { config } from '../lib/public-runtime';
 
 export const metadata: Metadata = {
-  title: 'averra control center',
-  description: 'Administrative control center for the averra platform.'
+  title: 'averra control plane',
+  description: 'Administrative control plane for the averra platform.'
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
           href={`${config.serviceEndpoints.api}/public/platform-branding/custom.css`}
         />
       </head>
-      <body className="averra-admin">
+      <body>
         <AdminSessionProvider>
           <AdminShell>{children}</AdminShell>
         </AdminSessionProvider>

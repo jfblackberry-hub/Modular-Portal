@@ -64,12 +64,12 @@ async function main() {
       detail: `${tenant.name} (${tenant.slug}) exists.`
     });
 
-    assert.equal(tenant.type, 'PROVIDER');
+    assert.equal(tenant.type, 'CLINIC');
     assert.equal(tenant.status, 'ACTIVE');
     checks.push({
       name: 'tenant.core-shape',
       status: 'pass',
-      detail: 'Tenant type/status match PROVIDER + ACTIVE.'
+      detail: 'Tenant type/status match CLINIC + ACTIVE.'
     });
 
     const brandingConfig = asRecord(tenant.brandingConfig);

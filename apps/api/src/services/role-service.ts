@@ -2,7 +2,9 @@ import { randomUUID } from 'node:crypto';
 
 import type { TenantType, UserLifecycleStatus } from '@payer-portal/database';
 import {
+  getCompatibleTenantTypeCodes,
   hashPassword,
+  normalizeTenantTypeCode,
   normalizeUserLifecycleStatus,
   Prisma,
   prisma,
@@ -155,16 +157,6 @@ function normalizeOrganizationUnitIds(
   }
 
   return Array.from(new Set(normalizedIds));
-}
-
-function normalizeTenantTypeCode(value: string | TenantType | undefined, fallback?: string) {
-  const candidate = value?.trim().toUpperCase() ?? fallback?.trim().toUpperCase();
-
-  if (!candidate) {
-    return undefined;
-  }
-
-  return candidate;
 }
 
 function resolveLifecycleStatus(input: {
@@ -388,7 +380,11 @@ export async function listRoles(options: {
     where: normalizedTenantTypeCode
       ? {
           OR: [
-            { tenantTypeCode: normalizedTenantTypeCode },
+            {
+              tenantTypeCode: {
+                in: getCompatibleTenantTypeCodes(normalizedTenantTypeCode)
+              }
+            },
             { appliesToAllTenantTypes: true },
             ...(options.includePlatformRoles ? [{ isPlatformRole: true }] : [])
           ]
@@ -586,10 +582,14 @@ export async function assignRoleToUser(
       throw new Error('Tenant not found');
     }
 
+    const normalizedRoleTenantTypeCode = normalizeTenantTypeCode(role.tenantTypeCode);
     const roleAllowedForTenant =
       role.appliesToAllTenantTypes ||
       role.tenantTypeCode === null ||
-      role.tenantTypeCode === tenant.tenantTypeCode;
+      (normalizedRoleTenantTypeCode !== undefined &&
+        getCompatibleTenantTypeCodes(tenant.tenantTypeCode).includes(
+          normalizedRoleTenantTypeCode
+        ));
 
     if (!roleAllowedForTenant) {
       throw new Error('Role is not allowed for this Tenant Type.');

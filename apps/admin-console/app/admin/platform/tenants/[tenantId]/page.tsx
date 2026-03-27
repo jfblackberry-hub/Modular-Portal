@@ -1,16 +1,10 @@
-import { PlatformAdminGate } from '../../../../../components/platform-admin-gate';
-import { TenantDetailPage } from '../tenant-pages';
+import { redirect } from 'next/navigation';
 
-export default async function AdminPlatformTenantDetailPage({
+export default async function LegacyPlatformTenantDetailPage({
   params
 }: {
   params: Promise<{ tenantId: string }>;
 }) {
   const { tenantId } = await params;
-
-  return (
-    <PlatformAdminGate>
-      <TenantDetailPage tenantId={tenantId} />
-    </PlatformAdminGate>
-  );
+  redirect(`/admin/tenants/${tenantId}/organization`);
 }

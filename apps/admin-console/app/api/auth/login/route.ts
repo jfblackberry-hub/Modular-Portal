@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 
 import { createAdminSessionFromAuthUser } from '../../../../lib/admin-session';
 import {
-  ADMIN_SESSION_TTL_SECONDS,
   ADMIN_SESSION_COOKIE,
+  ADMIN_SESSION_TTL_SECONDS,
   createSignedAdminSessionCookieValue,
   getAdminSessionCookieOptions
 } from '../../../../lib/admin-session-cookie';
@@ -116,8 +116,10 @@ export async function POST(request: Request) {
     }
 
     const redirectPath = adminSession.isPlatformAdmin
-      ? '/admin/platform/health'
-      : '/admin/tenant/health';
+      ? '/admin/overview/health'
+      : adminSession.tenantId
+        ? `/admin/tenants/${adminSession.tenantId}/organization`
+        : '/admin';
     const cookieValue = createSignedAdminSessionCookieValue({
       accessToken: payload.token,
       session: adminSession,

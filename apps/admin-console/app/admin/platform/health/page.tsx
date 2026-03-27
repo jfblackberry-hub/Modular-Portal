@@ -1,10 +1,5 @@
-import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
-import { PlatformHealthPage } from './platform-health-page';
+import { redirect } from 'next/navigation';
 
-export default function AdminPlatformHealthPage() {
-  return (
-    <PlatformAdminGate>
-      <PlatformHealthPage />
-    </PlatformAdminGate>
-  );
+export default function LegacyPlatformHealthPage() {
+  redirect('/admin/overview/health');
 }

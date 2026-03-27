@@ -19,20 +19,30 @@ async function syncTenantTypeDefinitions() {
   await Promise.all(
     [
       ['PAYER', 'PAYER', 'Payer'],
-      ['PROVIDER', 'PROVIDER', 'Provider'],
-      ['EMPLOYER', 'EMPLOYER', 'Employer'],
-      ['BROKER', 'BROKER', 'Broker'],
-      ['MEMBER', 'MEMBER', 'Member']
+      ['CLINIC', 'CLINIC', 'Clinic'],
+      ['PHYSICIAN_GROUP', 'PHYSICIAN_GROUP', 'Physician Group'],
+      ['HOSPITAL', 'HOSPITAL', 'Hospital'],
+      ['PROVIDER', 'PROVIDER', 'Provider (Legacy)']
     ].map(([code, enumValue, name]) =>
       prisma.tenantTypeDefinition.upsert({
         where: { code },
         update: {
-          enumValue: enumValue as 'PAYER' | 'PROVIDER' | 'EMPLOYER' | 'BROKER' | 'MEMBER',
+          enumValue: enumValue as
+            | 'PAYER'
+            | 'CLINIC'
+            | 'PHYSICIAN_GROUP'
+            | 'HOSPITAL'
+            | 'PROVIDER',
           name
         },
         create: {
           code,
-          enumValue: enumValue as 'PAYER' | 'PROVIDER' | 'EMPLOYER' | 'BROKER' | 'MEMBER',
+          enumValue: enumValue as
+            | 'PAYER'
+            | 'CLINIC'
+            | 'PHYSICIAN_GROUP'
+            | 'HOSPITAL'
+            | 'PROVIDER',
           name
         }
       })

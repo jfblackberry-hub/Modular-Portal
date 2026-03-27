@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { PrismaClient } from '@prisma/client';
+import { normalizeTenantTypeCode } from './accessModel.js';
 
 export type TenantRequestContext = {
   tenantId: string;
@@ -132,6 +133,53 @@ function assertSafeTenantOperation(model: string, operation: string) {
   );
 }
 
+function normalizeTenantMutationArgs(operation: string, args: unknown) {
+  if (!args || typeof args !== 'object' || Array.isArray(args)) {
+    return args;
+  }
+
+  const record = args as Record<string, unknown>;
+
+  const normalizeTenantData = (data: unknown) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return data;
+    }
+
+    const tenantRecord = data as Record<string, unknown>;
+    const normalizedType = normalizeTenantTypeCode(
+      (tenantRecord.tenantTypeCode as string | undefined) ??
+        (tenantRecord.type as string | undefined)
+    );
+
+    if (!normalizedType) {
+      return data;
+    }
+
+    return {
+      ...tenantRecord,
+      type: normalizedType,
+      tenantTypeCode: normalizedType
+    };
+  };
+
+  if (operation === 'create' || operation === 'update') {
+    return {
+      ...record,
+      data: normalizeTenantData(record.data)
+    };
+  }
+
+  if (operation === 'upsert') {
+    return {
+      ...record,
+      create: normalizeTenantData(record.create),
+      update: normalizeTenantData(record.update)
+    };
+  }
+
+  return args;
+}
+
 export function createPrismaClient() {
   const client = new PrismaClient();
 
@@ -143,6 +191,10 @@ export function createPrismaClient() {
           const runQuery = (nextArgs: unknown) => query(nextArgs as never);
 
           if (!shouldApplyTenantContext(model) || !context) {
+            if (model === 'Tenant') {
+              return runQuery(normalizeTenantMutationArgs(operation, args));
+            }
+
             return runQuery(args);
           }
 

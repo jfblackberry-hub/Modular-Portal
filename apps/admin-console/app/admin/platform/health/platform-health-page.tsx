@@ -391,13 +391,13 @@ export function PlatformHealthPage() {
 
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/admin/platform/connectivity"
+                href="/admin/operations/connectivity"
                 className="admin-button admin-button--primary"
               >
                 Open connectivity workspace
               </Link>
               <Link
-                href="/admin/platform/connectivity/adapters"
+                href="/admin/developer/adapters"
                 className="admin-button admin-button--secondary admin-button--content"
               >
                 API / adapter status
@@ -434,14 +434,14 @@ export function PlatformHealthPage() {
                     <tr key={tenant.id} className="border-b border-admin-border/70">
                       <td className="px-3 py-4 font-medium text-admin-text">
                         <Link
-                          href={`/admin/platform/tenants/${tenant.id}`}
+                          href={`/admin/tenants/${tenant.id}/organization`}
                           className="text-admin-text underline-offset-4 transition hover:text-admin-accent hover:underline"
                         >
                           {tenant.name}
                         </Link>
                       </td>
                       <td className="px-3 py-4">
-                        <Link href={`/admin/platform/tenants/${tenant.id}`}>
+                        <Link href={`/admin/tenants/${tenant.id}/organization`}>
                           <span
                             className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
                               tenant.status === 'Healthy'
@@ -457,7 +457,7 @@ export function PlatformHealthPage() {
                       </td>
                       <td className="px-3 py-4 text-admin-text">
                         <Link
-                          href="/admin/platform/users"
+                          href="/admin/shared/identity"
                           className="underline-offset-4 transition hover:text-admin-accent hover:underline"
                         >
                           {tenant.activeUsers}
@@ -466,7 +466,7 @@ export function PlatformHealthPage() {
                       <td className="px-3 py-4 text-admin-muted">{formatTimestamp(tenant.lastSync)}</td>
                       <td className="px-3 py-4 text-admin-muted">
                         <Link
-                          href="/admin/platform/tenants/configuration"
+                          href="/admin/tenants/types"
                           className="underline-offset-4 transition hover:text-admin-accent hover:underline"
                         >
                           {tenant.configurationStatus}
@@ -474,7 +474,7 @@ export function PlatformHealthPage() {
                       </td>
                       <td className="px-3 py-4 text-admin-text">
                         <Link
-                          href={`/admin/platform/operations/logs?tenantId=${tenant.id}`}
+                          href={`/admin/governance/audit?tenantId=${tenant.id}`}
                           className="underline-offset-4 transition hover:text-admin-accent hover:underline"
                         >
                           {tenant.openAlerts}
@@ -526,7 +526,7 @@ export function PlatformHealthPage() {
                     </p>
                     <div className="mt-3">
                       <Link
-                        href="/admin/platform/operations/logs"
+                        href="/admin/governance/audit"
                         className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-accent underline-offset-4 hover:underline"
                       >
                         View related logs

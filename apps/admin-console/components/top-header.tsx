@@ -1,12 +1,13 @@
 'use client';
 
-import { ChevronRight, LogOut } from 'lucide-react';
+import { ChevronRight, LogOut, ToggleLeft, ToggleRight } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { portalPublicOrigin } from '../lib/public-runtime';
 import type { AdminSession } from '../lib/admin-session';
+import { portalPublicOrigin } from '../lib/public-runtime';
 import { getAdminRouteContext, getDefaultAdminHref } from './admin-route-config';
+import { useAdminTenantContext } from './admin-tenant-context-provider';
 
 type TopHeaderProps = {
   session: AdminSession | null;
@@ -25,9 +26,15 @@ function getInitials(email: string) {
 
 export function TopHeader({ session, signOut }: TopHeaderProps) {
   const pathname = usePathname();
-  const routeContext = getAdminRouteContext(pathname);
-  const workspaceLabel = session?.isPlatformAdmin ? 'averra admin' : 'Tenant Admin';
-  const homeHref = session ? getDefaultAdminHref(session.isPlatformAdmin) : '/admin';
+  const { selectedTenant, developerMode, setDeveloperMode } = useAdminTenantContext();
+  const routeContext = getAdminRouteContext(pathname, session, {
+    selectedTenant,
+    developerMode
+  });
+  const workspaceLabel = session?.isPlatformAdmin ? 'Platform Admin' : 'Tenant Admin';
+  const homeHref = session
+    ? getDefaultAdminHref(session.isPlatformAdmin, selectedTenant?.id ?? session.tenantId)
+    : '/admin';
 
   return (
     <header className="admin-top-header sticky top-0 z-40 border-b border-admin-border">
@@ -41,17 +48,35 @@ export function TopHeader({ session, signOut }: TopHeaderProps) {
             <p className="admin-top-header__eyebrow">averra control plane</p>
             <div className="admin-top-header__brand-row">
               <Link href={homeHref} className="admin-top-header__title admin-top-header__title-link">
-                averra control center
+                averra control plane
               </Link>
               <span className="admin-top-header__divider" aria-hidden="true">
                 <ChevronRight size={14} />
               </span>
               <span className="admin-top-header__subtitle">{routeContext?.route.label ?? 'Workspace'}</span>
+              {selectedTenant ? (
+                <>
+                  <span className="admin-top-header__divider" aria-hidden="true">
+                    <ChevronRight size={14} />
+                  </span>
+                  <span className="admin-top-header__subtitle">{selectedTenant.name}</span>
+                </>
+              ) : null}
             </div>
           </div>
         </div>
 
         <div className="admin-top-header__profile">
+          {session?.isPlatformAdmin ? (
+            <button
+              type="button"
+              onClick={() => setDeveloperMode(!developerMode)}
+              className="admin-button admin-button--secondary"
+            >
+              {developerMode ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+              <span>Developer Mode</span>
+            </button>
+          ) : null}
           <div className="admin-top-header__profile-card">
             <div className="admin-top-header__avatar" aria-hidden="true">
               {session ? getInitials(session.email) : 'A'}

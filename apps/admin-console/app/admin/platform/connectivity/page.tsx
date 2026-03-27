@@ -1,10 +1,5 @@
-import { ConnectivityStatusPage } from '../../../../components/connectivity-status-page';
-import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
+import { redirect } from 'next/navigation';
 
-export default function AdminPlatformConnectivityPage() {
-  return (
-    <PlatformAdminGate>
-      <ConnectivityStatusPage scope="platform" />
-    </PlatformAdminGate>
-  );
+export default function LegacyPlatformConnectivityPage() {
+  redirect('/admin/operations/connectivity');
 }

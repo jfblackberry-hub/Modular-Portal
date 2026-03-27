@@ -28,7 +28,12 @@ export interface TenantCreatedEvent extends BaseEvent {
     name: string;
     slug: string;
     status: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
-    tenantType: 'PAYER' | 'EMPLOYER' | 'BROKER' | 'MEMBER' | 'PROVIDER';
+    tenantType:
+      | 'PAYER'
+      | 'CLINIC'
+      | 'PHYSICIAN_GROUP'
+      | 'HOSPITAL'
+      | 'PROVIDER';
   };
 }
 

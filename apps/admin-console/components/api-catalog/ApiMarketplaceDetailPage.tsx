@@ -152,7 +152,7 @@ export function ApiMarketplaceDetailPage({
         description="The requested API catalog entry is not available for the current session."
         action={
           <Link
-            href="/admin/platform/connectivity/catalog"
+            href="/admin/shared/api-catalog"
             className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100"
           >
             Back to catalog
@@ -206,7 +206,7 @@ export function ApiMarketplaceDetailPage({
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
-            href="/admin/platform/connectivity/catalog"
+            href="/admin/shared/api-catalog"
             className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-50"
           >
             Back to catalog
@@ -271,7 +271,7 @@ export function ApiMarketplaceDetailPage({
               {relatedEntries.map((relatedEntry) => (
                 <Link
                   key={relatedEntry.slug}
-                  href={`/admin/platform/connectivity/catalog/${relatedEntry.slug}`}
+                  href={`/admin/shared/api-catalog/${relatedEntry.slug}`}
                   className="block rounded-[1.2rem] border border-slate-200 px-4 py-4 transition hover:border-slate-300 hover:bg-slate-50"
                 >
                   <p className="font-semibold text-slate-950">{relatedEntry.name}</p>

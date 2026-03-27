@@ -1,10 +1,5 @@
-import { ApiCatalogPage } from '../../../../../components/api-catalog/ApiCatalogPage';
-import { PlatformAdminGate } from '../../../../../components/platform-admin-gate';
+import { redirect } from 'next/navigation';
 
-export default function AdminPlatformApiCatalogPage() {
-  return (
-    <PlatformAdminGate>
-      <ApiCatalogPage />
-    </PlatformAdminGate>
-  );
+export default function LegacyPlatformApiCatalogPage() {
+  redirect('/admin/shared/api-catalog');
 }

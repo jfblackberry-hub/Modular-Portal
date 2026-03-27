@@ -1,32 +1,5 @@
-import { AuditLogPage } from '../../../../../components/audit-log-page';
-import { PlatformAdminGate } from '../../../../../components/platform-admin-gate';
+import { redirect } from 'next/navigation';
 
-export default async function AdminPlatformLogsPage({
-  searchParams
-}: {
-  searchParams: Promise<{
-    tenantId?: string;
-    tenant_id?: string;
-    eventType?: string;
-    resourceType?: string;
-    resourceId?: string;
-  }>;
-}) {
-  const params = await searchParams;
-  const initialTenantId = params.tenantId ?? params.tenant_id ?? 'ALL';
-  const initialEventType = params.eventType ?? '';
-  const initialResourceType = params.resourceType ?? '';
-  const initialResourceId = params.resourceId ?? '';
-
-  return (
-    <PlatformAdminGate>
-      <AuditLogPage
-        scope="platform"
-        initialTenantId={initialTenantId}
-        initialEventType={initialEventType}
-        initialResourceType={initialResourceType}
-        initialResourceId={initialResourceId}
-      />
-    </PlatformAdminGate>
-  );
+export default function LegacyPlatformLogsPage() {
+  redirect('/admin/governance/audit');
 }

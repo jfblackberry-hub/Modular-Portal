@@ -11,7 +11,11 @@ type Tenant = {
   name: string;
   slug: string;
   status: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
-  type: 'PAYER' | 'EMPLOYER' | 'BROKER' | 'MEMBER' | 'PROVIDER';
+  type:
+    | 'PAYER'
+    | 'CLINIC'
+    | 'PHYSICIAN_GROUP'
+    | 'HOSPITAL';
   healthStatus: 'HEALTHY' | 'PROVISIONING' | 'SUSPENDED';
   brandingConfig: Record<string, unknown>;
   quotaMembers: number | null;

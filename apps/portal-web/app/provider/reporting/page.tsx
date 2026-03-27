@@ -10,6 +10,11 @@ import {
 
 export default async function ProviderReportingRoutePage() {
   const { config, user } = await getProviderOperationsDashboardSnapshot();
+  const reportingScope = {
+    tenantId: user.tenant.id,
+    tenantName: user.tenant.name,
+    tenantTypeCode: user.tenant.tenantTypeCode
+  };
   const clinicName = resolveProviderClinicName({
     tenantBrandingConfig: user.tenant.brandingConfig,
     practiceName: config.providerContext.practiceName
@@ -21,9 +26,9 @@ export default async function ProviderReportingRoutePage() {
       clinicName={clinicName}
       initialFilters={initialFilters}
       initialPayload={{
-        options: getProviderReportingStaticOptionsFromWarehouse(),
-        report: runProviderReport(initialFilters),
-        summary: getProviderReportingWarehouseSummary()
+        options: getProviderReportingStaticOptionsFromWarehouse(reportingScope),
+        report: runProviderReport(initialFilters, reportingScope),
+        summary: getProviderReportingWarehouseSummary(reportingScope)
       }}
     />
   );

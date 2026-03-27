@@ -17,20 +17,30 @@ async function syncTenantTypeDefinitions(prisma: PrismaClient) {
   await Promise.all(
     [
       ['PAYER', 'PAYER', 'Payer'],
-      ['PROVIDER', 'PROVIDER', 'Provider'],
-      ['EMPLOYER', 'EMPLOYER', 'Employer'],
-      ['BROKER', 'BROKER', 'Broker'],
-      ['MEMBER', 'MEMBER', 'Member']
+      ['CLINIC', 'CLINIC', 'Clinic'],
+      ['PHYSICIAN_GROUP', 'PHYSICIAN_GROUP', 'Physician Group'],
+      ['HOSPITAL', 'HOSPITAL', 'Hospital'],
+      ['PROVIDER', 'PROVIDER', 'Provider (Legacy)']
     ].map(([code, enumValue, name]) =>
       prisma.tenantTypeDefinition.upsert({
         where: { code },
         update: {
-          enumValue: enumValue as 'PAYER' | 'PROVIDER' | 'EMPLOYER' | 'BROKER' | 'MEMBER',
+          enumValue: enumValue as
+            | 'PAYER'
+            | 'CLINIC'
+            | 'PHYSICIAN_GROUP'
+            | 'HOSPITAL'
+            | 'PROVIDER',
           name
         },
         create: {
           code,
-          enumValue: enumValue as 'PAYER' | 'PROVIDER' | 'EMPLOYER' | 'BROKER' | 'MEMBER',
+          enumValue: enumValue as
+            | 'PAYER'
+            | 'CLINIC'
+            | 'PHYSICIAN_GROUP'
+            | 'HOSPITAL'
+            | 'PROVIDER',
           name
         }
       })
@@ -50,7 +60,7 @@ async function writeProviderMockDocument(storageKey: string, title: string) {
 export const TEST_PROVIDER_TENANT = {
   name: 'NorthStar Medical Group',
   slug: 'northstar-medical-group',
-  type: 'PROVIDER' as const,
+  type: 'CLINIC' as const,
   status: 'ACTIVE' as const,
   branding: {
     displayName: 'NorthStar Medical Group',

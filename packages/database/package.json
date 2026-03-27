@@ -29,6 +29,7 @@
     "test": "node -e \"console.log('No tests configured for @payer-portal/database')\""
   },
   "dependencies": {
+    "@payer-portal/shared-types": "workspace:*",
     "@prisma/client": "^6.5.0"
   },
   "devDependencies": {

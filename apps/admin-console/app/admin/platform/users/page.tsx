@@ -1,12 +1,5 @@
-import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
-import { UserListPage } from '../../../../components/user-list-page';
+import { redirect } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
-
-export default function AdminPlatformUsersPage() {
-  return (
-    <PlatformAdminGate>
-      <UserListPage scope="platform" />
-    </PlatformAdminGate>
-  );
+export default function LegacyPlatformUsersPage() {
+  redirect('/admin/shared/identity');
 }

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { after, test } from 'node:test';
+import { after, afterEach, test } from 'node:test';
 
 process.env.DATABASE_URL ??=
   'postgresql://dev:dev@127.0.0.1:5432/payer_portal?schema=public';
@@ -15,6 +15,83 @@ function createFixtureSuffix(testName: string) {
   return `${testName}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`.toLowerCase();
 }
 
+const ownedTenantIds = new Set<string>();
+
+async function withAuditLogDeletion<T>(callback: () => Promise<T>) {
+  await prisma.$executeRawUnsafe('ALTER TABLE audit_logs DISABLE TRIGGER USER');
+
+  try {
+    return await callback();
+  } finally {
+    await prisma.$executeRawUnsafe('ALTER TABLE audit_logs ENABLE TRIGGER USER');
+  }
+}
+
+async function cleanupOwnedFixtures() {
+  const tenantIds = Array.from(ownedTenantIds);
+
+  if (tenantIds.length === 0) {
+    return;
+  }
+
+  await prisma.portalAuthHandoff.deleteMany({
+    where: {
+      tenantId: {
+        in: tenantIds
+      }
+    }
+  });
+
+  await prisma.userRole.deleteMany({
+    where: {
+      user: {
+        tenantId: {
+          in: tenantIds
+        }
+      }
+    }
+  });
+
+  await withAuditLogDeletion(async () => {
+    await prisma.auditLog.deleteMany({
+      where: {
+        OR: [
+          {
+            tenantId: {
+              in: tenantIds
+            }
+          },
+          {
+            actorUser: {
+              tenantId: {
+                in: tenantIds
+              }
+            }
+          }
+        ]
+      }
+    });
+
+    await prisma.user.deleteMany({
+      where: {
+        tenantId: {
+          in: tenantIds
+        }
+      }
+    });
+
+    await prisma.tenant.deleteMany({
+      where: {
+        id: {
+          in: tenantIds
+        }
+      }
+    });
+  });
+
+  ownedTenantIds.clear();
+}
+
 async function createFixtureData(testName: string) {
   const suffix = createFixtureSuffix(testName);
   const tenantSlug = `auth-portal-handoff-tenant-${suffix}`;
@@ -27,6 +104,7 @@ async function createFixtureData(testName: string) {
       brandingConfig: {}
     }
   });
+  ownedTenantIds.add(tenant.id);
 
   const user = await prisma.user.create({
     data: {
@@ -59,6 +137,7 @@ async function createAdminFixtureData(testName: string) {
       brandingConfig: {}
     }
   });
+  ownedTenantIds.add(tenant.id);
 
   const role = await prisma.role.upsert({
     where: {
@@ -100,7 +179,12 @@ async function createAdminFixtureData(testName: string) {
 }
 
 after(async () => {
+  await cleanupOwnedFixtures();
   await prisma.$disconnect();
+});
+
+afterEach(async () => {
+  await cleanupOwnedFixtures();
 });
 
 test('portal auth handoff can be issued and consumed once', async () => {

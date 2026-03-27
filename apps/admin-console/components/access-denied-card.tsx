@@ -12,7 +12,7 @@ type AccessDeniedCardProps = {
 export function AccessDeniedCard({
   title = 'Access denied',
   description = 'This area is restricted to platform administrators.',
-  href = '/admin/tenant/health',
+  href = '/admin',
   hrefLabel = 'Go to tenant workspace'
 }: AccessDeniedCardProps) {
   return (

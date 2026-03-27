@@ -1,4 +1,5 @@
 import type { PortalSessionUser } from './portal-session';
+import { isProviderClassTenantType } from '@payer-portal/shared-types';
 
 export type PortalExperience = 'member' | 'employer' | 'provider' | 'broker';
 
@@ -18,7 +19,11 @@ const EMPLOYER_ROLE_SET = new Set([
 ]);
 
 export function resolvePortalExperience(user: PortalSessionUser): PortalExperience {
-  if (user.landingContext === 'provider' || user.roles.includes('provider')) {
+  if (
+    user.landingContext === 'provider' ||
+    user.roles.includes('provider') ||
+    isProviderClassTenantType(user.tenant.tenantTypeCode)
+  ) {
     return 'provider';
   }
 

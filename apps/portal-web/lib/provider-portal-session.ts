@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { isProviderClassTenantType } from '@payer-portal/shared-types';
 
 import { resolveProviderPortalVariant } from '../config/providerPortalConfig';
 import { getPortalSessionUser } from './portal-session';
@@ -14,8 +15,9 @@ export async function getProviderPortalSessionContext() {
   const isProviderUser =
     user.session.type === 'end_user' &&
     (user.landingContext === 'provider' ||
-    user.roles.includes('provider') ||
-    user.permissions.includes('provider.view'));
+      user.roles.includes('provider') ||
+      user.permissions.includes('provider.view') ||
+      isProviderClassTenantType(user.tenant.tenantTypeCode));
 
   if (!isProviderUser) {
     redirect('/login');

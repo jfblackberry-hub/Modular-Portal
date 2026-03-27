@@ -4,8 +4,8 @@ import type { FormEvent } from 'react';
 import { Suspense, useRef, useState } from 'react';
 
 import { useAdminSession } from '../../components/admin-session-provider';
-import { clearAdminSession } from '../../lib/api-auth';
 import type { AdminSession } from '../../lib/admin-session';
+import { clearAdminSession } from '../../lib/api-auth';
 
 async function establishPortalHandoffSession(input: {
   artifact: string;

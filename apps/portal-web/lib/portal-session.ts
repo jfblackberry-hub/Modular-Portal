@@ -8,6 +8,7 @@ import {
 export interface PortalTenant {
   id: string;
   name: string;
+  tenantTypeCode?: string;
   brandingConfig?: Record<string, unknown>;
 }
 

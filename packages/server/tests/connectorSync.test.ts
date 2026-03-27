@@ -20,6 +20,62 @@ import { runNextJob } from '../src/jobs/jobWorker.js';
 let tempDirectory = '';
 const CONNECTOR_TEST_TENANT_SLUG_PREFIX = 'server-connector-sync-test';
 
+async function withAuditLogDeletion<T>(callback: () => Promise<T>) {
+  await prisma.$executeRawUnsafe('ALTER TABLE audit_logs DISABLE TRIGGER USER');
+
+  try {
+    return await callback();
+  } finally {
+    await prisma.$executeRawUnsafe('ALTER TABLE audit_logs ENABLE TRIGGER USER');
+  }
+}
+
+async function cleanupOwnedTenants() {
+  const tenants = await prisma.tenant.findMany({
+    where: {
+      slug: {
+        startsWith: CONNECTOR_TEST_TENANT_SLUG_PREFIX
+      }
+    },
+    select: {
+      id: true
+    }
+  });
+
+  const tenantIds = tenants.map((tenant) => tenant.id);
+
+  if (tenantIds.length === 0) {
+    return;
+  }
+
+  const eventIds = (
+    await prisma.eventRecord.findMany({
+      where: {
+        tenantId: {
+          in: tenantIds
+        }
+      },
+      select: {
+        id: true
+      }
+    })
+  ).map((event) => event.id);
+
+  await withAuditLogDeletion(async () => {
+    await prisma.$transaction([
+      prisma.integrationExecution.deleteMany({ where: { tenantId: { in: tenantIds } } }),
+      prisma.connectorConfig.deleteMany({ where: { tenantId: { in: tenantIds } } }),
+      prisma.job.deleteMany({ where: { tenantId: { in: tenantIds } } }),
+      prisma.auditLog.deleteMany({ where: { tenantId: { in: tenantIds } } }),
+      ...(eventIds.length > 0
+        ? [prisma.eventDelivery.deleteMany({ where: { eventId: { in: eventIds } } })]
+        : []),
+      prisma.eventRecord.deleteMany({ where: { tenantId: { in: tenantIds } } }),
+      prisma.tenant.deleteMany({ where: { id: { in: tenantIds } } })
+    ]);
+  });
+}
+
 async function createOwnedTenant(testName: string) {
   const slug = `${CONNECTOR_TEST_TENANT_SLUG_PREFIX}-${testName}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`.toLowerCase();
 
@@ -39,10 +95,12 @@ async function createOwnedTenant(testName: string) {
 beforeEach(async () => {
   clear();
   tempDirectory = await mkdtemp(path.join(os.tmpdir(), 'connector-sync-'));
+  await cleanupOwnedTenants();
 });
 
 afterEach(async () => {
   await waitForBackgroundPublishes();
+  await cleanupOwnedTenants();
 
   if (tempDirectory) {
     await rm(tempDirectory, { recursive: true, force: true });
@@ -53,6 +111,7 @@ afterEach(async () => {
 after(async () => {
   clear();
   await waitForBackgroundPublishes();
+  await cleanupOwnedTenants();
   await prisma.$disconnect();
 });
 

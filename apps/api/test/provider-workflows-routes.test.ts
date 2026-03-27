@@ -118,7 +118,7 @@ async function createProviderWorkflowFixture() {
     data: {
       code: TEST_PROVIDER_ROLE_CODE,
       name: 'Provider Workflow Clinic Manager',
-      tenantTypeCode: 'PROVIDER'
+      tenantTypeCode: 'CLINIC'
     }
   });
 
@@ -133,8 +133,8 @@ async function createProviderWorkflowFixture() {
     data: {
       name: 'Provider Workflow Test Tenant',
       slug: TEST_PROVIDER_TENANT_SLUG,
-      type: 'PROVIDER',
-      tenantTypeCode: 'PROVIDER',
+      type: 'CLINIC',
+      tenantTypeCode: 'CLINIC',
       status: 'ACTIVE',
       isActive: true,
       brandingConfig: {}
@@ -145,8 +145,8 @@ async function createProviderWorkflowFixture() {
     data: {
       name: 'Provider Workflow Other Tenant',
       slug: TEST_OTHER_PROVIDER_TENANT_SLUG,
-      type: 'PROVIDER',
-      tenantTypeCode: 'PROVIDER',
+      type: 'CLINIC',
+      tenantTypeCode: 'CLINIC',
       status: 'ACTIVE',
       isActive: true,
       brandingConfig: {}

@@ -50,7 +50,7 @@ async function cleanupProvisionedAuthFixtures() {
   await prisma.role.deleteMany({
     where: {
       code: {
-        in: ['auth_member', 'clinic_manager', 'tenant_admin']
+        in: ['auth_member', 'clinic_manager', 'provider_support', 'tenant_admin']
       }
     }
   });
@@ -65,7 +65,12 @@ async function cleanupProvisionedAuthFixtures() {
     where: {
       tenant: {
         slug: {
-          in: ['auth-payer-tenant', 'auth-provider-tenant', 'auth-provider-multi-tenant']
+          in: [
+            'auth-payer-tenant',
+            'auth-provider-tenant',
+            'auth-provider-multi-tenant',
+            'auth-payer-provider-experience'
+          ]
         }
       }
     }
@@ -74,7 +79,12 @@ async function cleanupProvisionedAuthFixtures() {
     where: {
       tenant: {
         slug: {
-          in: ['auth-payer-tenant', 'auth-provider-tenant', 'auth-provider-multi-tenant']
+          in: [
+            'auth-payer-tenant',
+            'auth-provider-tenant',
+            'auth-provider-multi-tenant',
+            'auth-payer-provider-experience'
+          ]
         }
       }
     }
@@ -82,7 +92,12 @@ async function cleanupProvisionedAuthFixtures() {
   await prisma.tenant.deleteMany({
     where: {
       slug: {
-        in: ['auth-payer-tenant', 'auth-provider-tenant', 'auth-provider-multi-tenant']
+        in: [
+          'auth-payer-tenant',
+          'auth-provider-tenant',
+          'auth-provider-multi-tenant',
+          'auth-payer-provider-experience'
+        ]
       }
     }
   });
@@ -92,7 +107,7 @@ async function provisionAuthUser(input: {
   tenant: {
     slug: string;
     name: string;
-    type: 'PAYER' | 'PROVIDER';
+    type: 'PAYER' | 'CLINIC' | 'PHYSICIAN_GROUP' | 'HOSPITAL';
   };
   user: {
     email: string;
@@ -137,8 +152,16 @@ async function provisionAuthUser(input: {
     )
   );
 
-  const role = await prisma.role.create({
-    data: {
+  const role = await prisma.role.upsert({
+    where: {
+      code: input.user.roleCode
+    },
+    update: {
+      name: input.user.roleName,
+      tenantTypeCode: input.tenant.type,
+      appliesToAllTenantTypes: input.user.roleCode === 'tenant_admin'
+    },
+    create: {
       code: input.user.roleCode,
       name: input.user.roleName,
       tenantTypeCode: input.tenant.type,
@@ -147,8 +170,15 @@ async function provisionAuthUser(input: {
   });
 
   for (const permission of permissions) {
-    await prisma.rolePermission.create({
-      data: {
+    await prisma.rolePermission.upsert({
+      where: {
+        roleId_permissionId: {
+          roleId: role.id,
+          permissionId: permission.id
+        }
+      },
+      update: {},
+      create: {
         roleId: role.id,
         permissionId: permission.id
       }
@@ -284,7 +314,7 @@ test('provider login resolves through tenant type and tenant-scoped role assignm
     tenant: {
       slug: 'auth-provider-tenant',
       name: 'Auth Provider Tenant',
-      type: 'PROVIDER'
+      type: 'CLINIC'
     },
     user: {
       email: 'dr.lee@auth.test',
@@ -328,12 +358,57 @@ test('provider login resolves through tenant type and tenant-scoped role assignm
   await app.close();
 });
 
+test('provider experience inside a payer tenant resolves as provider without creating a standalone clinic tenant', async () => {
+  await provisionAuthUser({
+    tenant: {
+      slug: 'auth-payer-provider-experience',
+      name: 'Auth Payer Provider Experience',
+      type: 'PAYER'
+    },
+    user: {
+      email: 'payer.provider@auth.test',
+      firstName: 'Taylor',
+      lastName: 'Coordinator',
+      roleCode: 'provider_support',
+      roleName: 'Provider Support',
+      permissions: ['provider.view', 'tenant.view']
+    }
+  });
+
+  const app = Fastify();
+  await authRoutes(app);
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/auth/login/provider',
+    payload: {
+      email: 'payer.provider@auth.test',
+      password: 'demo12345'
+    }
+  });
+
+  assert.equal(response.statusCode, 200, response.body);
+  const payload = response.json() as {
+    user: {
+      landingContext: string;
+      tenant: { tenantTypeCode: string };
+      session: { type: string };
+    };
+  };
+
+  assert.equal(payload.user.landingContext, 'provider');
+  assert.equal(payload.user.tenant.tenantTypeCode, 'PAYER');
+  assert.equal(payload.user.session.type, 'end_user');
+
+  await app.close();
+});
+
 test('provider login requires organization unit selection for multi-assigned users and locks the chosen context into session', async () => {
   const { tenant } = await provisionAuthUser({
     tenant: {
       slug: 'auth-provider-multi-tenant',
       name: 'Auth Provider Multi Tenant',
-      type: 'PROVIDER'
+      type: 'CLINIC'
     },
     user: {
       email: 'riley.multi@auth.test',

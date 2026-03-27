@@ -1,5 +1,5 @@
-import { TenantHealthPage } from './tenant-health-page';
+import { redirect } from 'next/navigation';
 
-export default function AdminTenantHealthPage() {
-  return <TenantHealthPage />;
+export default function LegacyTenantHealthPage() {
+  redirect('/admin');
 }

@@ -1,4 +1,8 @@
 import { restAdapter } from './adapters/rest.adapter.js';
+import {
+  northstarClaimsFeedAdapter,
+  northstarEligibilityFeedAdapter
+} from './adapters/northstarDemoFeeds.adapter.js';
 import { localFileAdapter } from './adapters/sftp.adapter.js';
 import { webhookAdapter } from './adapters/webhook.adapter.js';
 import type {
@@ -121,6 +125,14 @@ export function registerDefaultIntegrations() {
 
   if (!getIntegrationAdapter(webhookAdapter.key)) {
     registerIntegrationAdapter(webhookAdapter);
+  }
+
+  if (!getIntegrationAdapter(northstarEligibilityFeedAdapter.key)) {
+    registerIntegrationAdapter(northstarEligibilityFeedAdapter);
+  }
+
+  if (!getIntegrationAdapter(northstarClaimsFeedAdapter.key)) {
+    registerIntegrationAdapter(northstarClaimsFeedAdapter);
   }
 
   return listIntegrationAdapters();

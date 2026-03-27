@@ -1,20 +1,10 @@
-import { ApiMarketplaceDetailPage } from '../../../../../../components/api-catalog/ApiMarketplaceDetailPage';
-import { PlatformAdminGate } from '../../../../../../components/platform-admin-gate';
+import { redirect } from 'next/navigation';
 
-type AdminPlatformApiCatalogDetailPageProps = {
-  params: Promise<{
-    slug: string;
-  }>;
-};
-
-export default async function AdminPlatformApiCatalogDetailPage({
+export default async function LegacyPlatformApiCatalogDetailPage({
   params
-}: AdminPlatformApiCatalogDetailPageProps) {
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
-
-  return (
-    <PlatformAdminGate>
-      <ApiMarketplaceDetailPage slug={slug} />
-    </PlatformAdminGate>
-  );
+  redirect(`/admin/shared/api-catalog/${slug}`);
 }

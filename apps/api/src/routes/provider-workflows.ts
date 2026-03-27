@@ -1,4 +1,4 @@
-import { prisma } from '@payer-portal/database';
+import { isProviderClassTenantTypeCode, prisma } from '@payer-portal/database';
 import type { ProviderWorkflowActionRequest } from '@payer-portal/api-contracts';
 import {
   createProviderWorkflowExecution,
@@ -35,9 +35,9 @@ async function assertProviderTenantAccess(tenantId: string) {
     throw new Error('Tenant not found');
   }
 
-  if (tenant.tenantTypeCode !== 'PROVIDER') {
+  if (!isProviderClassTenantTypeCode(tenant.tenantTypeCode)) {
     throw new AuthorizationError(
-      'Provider workflow actions are only available inside Provider tenants.'
+      'Provider workflow actions are only available inside Clinic, Physician Group, and Hospital tenants.'
     );
   }
 }

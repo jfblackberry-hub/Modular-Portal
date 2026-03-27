@@ -125,9 +125,20 @@ test('default integration adapters expose pluggable transports and capabilities'
 
   assert.deepEqual(
     adapters.map((adapter) => adapter.key),
-    ['local-file', 'rest-api', 'webhook']
+    [
+      'local-file',
+      'northstar-claims-feed',
+      'northstar-eligibility-feed',
+      'rest-api',
+      'webhook'
+    ]
   );
   assert.equal(adapters.find((adapter) => adapter.key === 'rest-api')?.capabilities?.rest, true);
+  assert.equal(
+    adapters.find((adapter) => adapter.key === 'northstar-eligibility-feed')?.capabilities
+      ?.scheduled,
+    true
+  );
   assert.equal(
     adapters.find((adapter) => adapter.key === 'local-file')?.capabilities?.fileBased,
     true

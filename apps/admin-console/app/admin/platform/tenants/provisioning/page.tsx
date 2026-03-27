@@ -1,17 +1,5 @@
-import { AdminPageLayout } from '../../../../../components/admin-ui';
-import { PlatformAdminGate } from '../../../../../components/platform-admin-gate';
-import { CreateTenantPanel } from '../../../../tenants/create-tenant-panel';
+import { redirect } from 'next/navigation';
 
-export default function AdminPlatformTenantProvisioningPage() {
-  return (
-    <PlatformAdminGate>
-      <AdminPageLayout
-        eyebrow="Platform"
-        title="Tenant provisioning wizard"
-        description="Guide new tenants through modules, limits, connectivity, accounts, and default behaviors before handoff."
-      >
-        <CreateTenantPanel />
-      </AdminPageLayout>
-    </PlatformAdminGate>
-  );
+export default function LegacyPlatformProvisioningPage() {
+  redirect('/admin/tenants/create');
 }

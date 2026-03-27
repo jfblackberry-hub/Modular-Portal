@@ -1,15 +1,20 @@
 'use client';
 
+import type { AdminSession } from '../lib/admin-session';
 import { AdminNav } from './admin-nav';
 import { getAdminMenu } from './admin-route-config';
-import type { AdminSession } from '../lib/admin-session';
+import { useAdminTenantContext } from './admin-tenant-context-provider';
 
 type LeftAdminMenuProps = {
   session: AdminSession | null;
 };
 
 export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
-  const menu = getAdminMenu(session);
+  const { selectedTenant, developerMode } = useAdminTenantContext();
+  const menu = getAdminMenu(session, {
+    selectedTenant,
+    developerMode
+  });
 
   if (!menu) {
     return (
@@ -20,10 +25,10 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
               {/* eslint-disable-next-line @next/next/no-img-element -- platform logo is served from local static branding assets */}
               <img src="/branding/averra_logo_cutout.svg" alt="" className="admin-brand-logo" />
             </div>
-            <div>
-              <p className="admin-left-rail__eyebrow">averra platform</p>
-              <h1 className="admin-left-rail__title">averra control center</h1>
-            </div>
+          <div>
+            <p className="admin-left-rail__eyebrow">averra platform</p>
+            <h1 className="admin-left-rail__title">averra control plane</h1>
+          </div>
           </div>
           <p className="text-sm text-admin-nav-muted">Admin session required.</p>
         </div>
@@ -32,7 +37,7 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
   }
 
   return (
-    <aside className="admin-left-rail shrink-0 border-r border-admin-border xl:w-[420px] 2xl:w-[624px]">
+    <aside className="admin-left-rail shrink-0 border-r border-admin-border xl:w-[360px] 2xl:w-[400px]">
       <div className="admin-left-rail__inner">
         <div className="admin-left-rail__brand">
           <div className="admin-left-rail__brand-mark" aria-hidden="true">
@@ -41,17 +46,19 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
           </div>
           <div>
             <p className="admin-left-rail__eyebrow">averra platform</p>
-            <h1 className="admin-left-rail__title">averra control center</h1>
+            <h1 className="admin-left-rail__title">averra control plane</h1>
             <p className="admin-left-rail__description">
-              Operational control, tenant lifecycle management, and integration oversight across the averra platform.
+              Platform governance, tenant configuration, and shared service operations.
             </p>
           </div>
         </div>
 
-        <div className="admin-left-rail__context-card">
-          <span className="admin-left-rail__context-label">Current workspace</span>
-          <span className="admin-left-rail__context-value">{menu.label}</span>
-        </div>
+        {selectedTenant ? (
+          <div className="admin-left-rail__context-card">
+            <span className="admin-left-rail__context-label">Selected tenant</span>
+            <span className="admin-left-rail__context-value">{selectedTenant.name}</span>
+          </div>
+        ) : null}
 
         <AdminNav menu={menu} />
       </div>

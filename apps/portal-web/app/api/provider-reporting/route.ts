@@ -23,15 +23,20 @@ function sanitizeFilters(payload: Partial<ProviderReportingFilters> | null | und
 
 export async function GET() {
   try {
-    await getProviderOperationsDashboardSnapshot();
+    const { user } = await getProviderOperationsDashboardSnapshot();
+    const reportingScope = {
+      tenantId: user.tenant.id,
+      tenantName: user.tenant.name,
+      tenantTypeCode: user.tenant.tenantTypeCode
+    };
 
     const filters = createDefaultProviderReportingFilters();
 
     return NextResponse.json(
       {
-        options: getProviderReportingStaticOptionsFromWarehouse(),
-        report: runProviderReport(filters),
-        summary: getProviderReportingWarehouseSummary()
+        options: getProviderReportingStaticOptionsFromWarehouse(reportingScope),
+        report: runProviderReport(filters, reportingScope),
+        summary: getProviderReportingWarehouseSummary(reportingScope)
       },
       {
         status: 200,
@@ -50,16 +55,21 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    await getProviderOperationsDashboardSnapshot();
+    const { user } = await getProviderOperationsDashboardSnapshot();
+    const reportingScope = {
+      tenantId: user.tenant.id,
+      tenantName: user.tenant.name,
+      tenantTypeCode: user.tenant.tenantTypeCode
+    };
 
     const payload = (await request.json()) as Partial<ProviderReportingFilters> | undefined;
     const filters = sanitizeFilters(payload);
 
     return NextResponse.json(
       {
-        options: getProviderReportingStaticOptionsFromWarehouse(),
-        report: runProviderReport(filters),
-        summary: getProviderReportingWarehouseSummary()
+        options: getProviderReportingStaticOptionsFromWarehouse(reportingScope),
+        report: runProviderReport(filters, reportingScope),
+        summary: getProviderReportingWarehouseSummary(reportingScope)
       },
       {
         status: 200,

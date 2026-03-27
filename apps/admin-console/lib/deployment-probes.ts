@@ -3,6 +3,7 @@ import { config } from './server-runtime';
 type HealthCheckStatus = 'ok' | 'degraded' | 'down';
 
 type HealthResponse = {
+  service?: string;
   checks: Record<string, HealthCheckStatus>;
   status: HealthCheckStatus;
 };
@@ -55,7 +56,18 @@ function getAdminConfigStatus() {
 }
 
 export function getAdminLiveness() {
-  return buildRuntimeLivenessResponse();
+  const response = buildRuntimeLivenessResponse();
+
+  return {
+    service: 'admin-console',
+    status: response.status,
+    checks: {
+      process: {
+        status: 'ok',
+        uptimeSeconds: Math.round(process.uptime())
+      }
+    }
+  };
 }
 
 export async function getAdminReadiness() {

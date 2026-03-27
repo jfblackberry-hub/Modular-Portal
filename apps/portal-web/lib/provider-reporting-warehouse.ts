@@ -135,6 +135,12 @@ export interface ProviderReportingWarehouse {
   summary: ReportingWarehouseSummary;
 }
 
+export interface ProviderReportingWarehouseScope {
+  tenantId: string;
+  tenantName?: string | null;
+  tenantTypeCode?: string | null;
+}
+
 const TODAY = new Date('2026-03-26T12:00:00Z');
 const LOOKBACK_MONTHS = 24;
 const PAYERS = [
@@ -200,25 +206,50 @@ function monthsBetween(start: Date, end: Date) {
   );
 }
 
-function makeId(prefix: string, index: number) {
-  return `${prefix}-${String(index + 1).padStart(4, '0')}`;
+function normalizeScopeKey(scope: ProviderReportingWarehouseScope | undefined) {
+  const raw =
+    scope?.tenantId ??
+    scope?.tenantName ??
+    scope?.tenantTypeCode ??
+    'default-provider-tenant';
+
+  return raw.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
 }
 
-function buildLocations() {
+function resolveScopeBrand(scope: ProviderReportingWarehouseScope | undefined) {
+  const tenantName = scope?.tenantName?.trim();
+
+  if (!tenantName) {
+    return 'Apara';
+  }
+
+  return tenantName
+    .replace(/\b(autism|centers|center|medical|group|clinic|hospital|health)\b/gi, '')
+    .trim()
+    .split(/\s+/)[0] ?? 'Apara';
+}
+
+function makeId(prefix: string, index: number, scopeKey: string) {
+  return `${scopeKey}-${prefix}-${String(index + 1).padStart(4, '0')}`;
+}
+
+function buildLocations(scope: ProviderReportingWarehouseScope | undefined, scopeKey: string) {
+  const brand = resolveScopeBrand(scope);
+
   return LOCATION_BLUEPRINTS.map((name, index) => ({
-    id: makeId('loc', index),
-    name
+    id: makeId('loc', index, scopeKey),
+    name: name.replace(/^Apara\b/, brand)
   }));
 }
 
-function buildStaff(locations: ReportingWarehouseLocation[]) {
+function buildStaff(locations: ReportingWarehouseLocation[], scopeKey: string) {
   const staff: ReportingWarehouseStaff[] = [];
 
   locations.forEach((location, locationIndex) => {
     for (let index = 0; index < 6; index += 1) {
       const name = `${FIRST_NAMES[(locationIndex * 7 + index) % FIRST_NAMES.length]} ${LAST_NAMES[(locationIndex * 11 + index) % LAST_NAMES.length]}`;
       staff.push({
-        id: makeId('ther', locationIndex * 6 + index),
+        id: makeId('ther', locationIndex * 6 + index, scopeKey),
         name,
         role: 'therapist',
         locationId: location.id,
@@ -230,7 +261,7 @@ function buildStaff(locations: ReportingWarehouseLocation[]) {
     for (let index = 0; index < 2; index += 1) {
       const name = `Dr. ${FIRST_NAMES[(locationIndex * 5 + index + 12) % FIRST_NAMES.length]} ${LAST_NAMES[(locationIndex * 9 + index + 4) % LAST_NAMES.length]}`;
       staff.push({
-        id: makeId('sup', locationIndex * 2 + index),
+        id: makeId('sup', locationIndex * 2 + index, scopeKey),
         name,
         role: 'supervising_clinician',
         locationId: location.id,
@@ -246,7 +277,8 @@ function buildStaff(locations: ReportingWarehouseLocation[]) {
 function buildPatients(
   locations: ReportingWarehouseLocation[],
   therapists: ReportingWarehouseStaff[],
-  supervisors: ReportingWarehouseStaff[]
+  supervisors: ReportingWarehouseStaff[],
+  scopeKey: string
 ) {
   const patients: ReportingWarehousePatient[] = [];
   const baseMonth = startOfMonth(addMonths(TODAY, -LOOKBACK_MONTHS + 1));
@@ -279,7 +311,7 @@ function buildPatients(
     const dob = addDays(TODAY, -(ageYears * 365 + (index % 180)));
 
     patients.push({
-      id: makeId('pat', index),
+      id: makeId('pat', index, scopeKey),
       firstName: FIRST_NAMES[index % FIRST_NAMES.length]!,
       lastName: LAST_NAMES[(index * 3) % LAST_NAMES.length]!,
       dateOfBirth: formatIsoDate(dob),
@@ -300,7 +332,7 @@ function buildPatients(
   return patients;
 }
 
-function buildSessions(patients: ReportingWarehousePatient[]) {
+function buildSessions(patients: ReportingWarehousePatient[], scopeKey: string) {
   const sessions: ReportingWarehouseSession[] = [];
   const baseMonth = startOfMonth(addMonths(TODAY, -LOOKBACK_MONTHS + 1));
   let sessionIndex = 0;
@@ -346,7 +378,7 @@ function buildSessions(patients: ReportingWarehousePatient[]) {
           !supervisionExpected || (sessionStatus === 'completed' ? statusSeed % 5 !== 0 : true);
 
         sessions.push({
-          id: makeId('sess', sessionIndex),
+          id: makeId('sess', sessionIndex, scopeKey),
           patientId: patient.id,
           locationId: patient.primaryLocationId,
           locationName: patient.primaryLocationName,
@@ -373,7 +405,8 @@ function buildSessions(patients: ReportingWarehousePatient[]) {
 
 function buildAuthorizations(
   patients: ReportingWarehousePatient[],
-  sessions: ReportingWarehouseSession[]
+  sessions: ReportingWarehouseSession[],
+  scopeKey: string
 ) {
   const authorizations: ReportingWarehouseAuthorization[] = [];
   let authIndex = 0;
@@ -419,7 +452,7 @@ function buildAuthorizations(
       }
 
       authorizations.push({
-        id: makeId('auth', authIndex),
+        id: makeId('auth', authIndex, scopeKey),
         patientId: patient.id,
         locationId: patient.primaryLocationId,
         locationName: patient.primaryLocationName,
@@ -439,9 +472,7 @@ function buildAuthorizations(
   return authorizations;
 }
 
-function buildEligibilityChecks(
-  sessions: ReportingWarehouseSession[]
-) {
+function buildEligibilityChecks(sessions: ReportingWarehouseSession[], scopeKey: string) {
   const checks: ReportingWarehouseEligibilityCheck[] = [];
 
   sessions.forEach((session, index) => {
@@ -457,7 +488,7 @@ function buildEligibilityChecks(
     }
 
     checks.push({
-      id: makeId('elig', index),
+      id: makeId('elig', index, scopeKey),
       patientId: session.patientId,
       locationId: session.locationId,
       locationName: session.locationName,
@@ -474,7 +505,7 @@ function buildEligibilityChecks(
   return checks;
 }
 
-function buildClaims(sessions: ReportingWarehouseSession[]) {
+function buildClaims(sessions: ReportingWarehouseSession[], scopeKey: string) {
   const claims: ReportingWarehouseClaim[] = [];
   let claimIndex = 0;
 
@@ -519,7 +550,7 @@ function buildClaims(sessions: ReportingWarehouseSession[]) {
     }
 
     claims.push({
-      id: makeId('clm', claimIndex),
+      id: makeId('clm', claimIndex, scopeKey),
       patientId: session.patientId,
       locationId: session.locationId,
       locationName: session.locationName,
@@ -563,24 +594,27 @@ function buildSummary(warehouse: Omit<ProviderReportingWarehouse, 'summary'>): R
   };
 }
 
-let cachedWarehouse: ProviderReportingWarehouse | null = null;
+const cachedWarehouses = new Map<string, ProviderReportingWarehouse>();
 
-export function getProviderReportingWarehouse() {
+export function getProviderReportingWarehouse(scope?: ProviderReportingWarehouseScope) {
+  const scopeKey = normalizeScopeKey(scope);
+  const cachedWarehouse = cachedWarehouses.get(scopeKey);
+
   if (cachedWarehouse) {
     return cachedWarehouse;
   }
 
-  const locations = buildLocations();
-  const staff = buildStaff(locations);
+  const locations = buildLocations(scope, scopeKey);
+  const staff = buildStaff(locations, scopeKey);
   const therapists = staff.filter((record) => record.role === 'therapist');
   const supervisors = staff.filter((record) => record.role === 'supervising_clinician');
-  const patients = buildPatients(locations, therapists, supervisors);
-  const sessions = buildSessions(patients);
-  const authorizations = buildAuthorizations(patients, sessions);
-  const eligibilityChecks = buildEligibilityChecks(sessions);
-  const claims = buildClaims(sessions);
+  const patients = buildPatients(locations, therapists, supervisors, scopeKey);
+  const sessions = buildSessions(patients, scopeKey);
+  const authorizations = buildAuthorizations(patients, sessions, scopeKey);
+  const eligibilityChecks = buildEligibilityChecks(sessions, scopeKey);
+  const claims = buildClaims(sessions, scopeKey);
 
-  cachedWarehouse = {
+  const warehouse = {
     locations,
     staff,
     patients,
@@ -599,5 +633,6 @@ export function getProviderReportingWarehouse() {
     })
   };
 
-  return cachedWarehouse;
+  cachedWarehouses.set(scopeKey, warehouse);
+  return warehouse;
 }

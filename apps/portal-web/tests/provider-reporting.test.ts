@@ -93,3 +93,30 @@ test('therapist utilization report can isolate a single therapist', () => {
   assert.ok(report.table.rows.length >= 1);
   assert.ok(report.table.rows.every((row) => row.values.therapist === therapist));
 });
+
+test('reporting warehouse and report options stay tenant-scoped', () => {
+  const clinicScope = {
+    tenantId: 'tenant-clinic-a',
+    tenantName: 'Apara Autism Centers',
+    tenantTypeCode: 'CLINIC'
+  } as const;
+  const hospitalScope = {
+    tenantId: 'tenant-hospital-a',
+    tenantName: 'Riverside Hospital',
+    tenantTypeCode: 'HOSPITAL'
+  } as const;
+
+  const clinicSummary = getProviderReportingWarehouseSummary(clinicScope);
+  const hospitalSummary = getProviderReportingWarehouseSummary(hospitalScope);
+  const clinicOptions = getProviderReportingStaticOptionsFromWarehouse(clinicScope);
+  const hospitalOptions = getProviderReportingStaticOptionsFromWarehouse(hospitalScope);
+  const clinicReport = runProviderReport(createDefaultProviderReportingFilters(), clinicScope);
+  const hospitalReport = runProviderReport(createDefaultProviderReportingFilters(), hospitalScope);
+
+  assert.equal(clinicSummary.approximateRecordCounts.patients, 300);
+  assert.equal(hospitalSummary.approximateRecordCounts.patients, 300);
+  assert.notDeepEqual(clinicOptions.locations, hospitalOptions.locations);
+  assert.ok(clinicOptions.locations.some((option) => option.label.includes('Apara')));
+  assert.ok(hospitalOptions.locations.some((option) => option.label.includes('Riverside')));
+  assert.notDeepEqual(clinicReport.table.rows, hospitalReport.table.rows);
+});

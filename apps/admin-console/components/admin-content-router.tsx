@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { getAdminRouteContext } from './admin-route-config';
+import { useAdminSession } from './admin-session-provider';
+import { useAdminTenantContext } from './admin-tenant-context-provider';
 
 type AdminContentRouterProps = {
   children: ReactNode;
@@ -13,37 +15,17 @@ type AdminContentRouterProps = {
 
 export function AdminContentRouter({ children }: AdminContentRouterProps) {
   const pathname = usePathname();
-  const routeContext = getAdminRouteContext(pathname);
+  const { session } = useAdminSession();
+  const { selectedTenant, developerMode } = useAdminTenantContext();
+  const routeContext = getAdminRouteContext(pathname, session, {
+    selectedTenant,
+    developerMode
+  });
   const containerRef = useRef<HTMLElement | null>(null);
-  const [zoom, setZoom] = useState(100);
 
   useEffect(() => {
     containerRef.current?.scrollTo({ top: 0, behavior: 'auto' });
   }, [pathname]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const storedZoom = window.sessionStorage.getItem('admin-content-zoom');
-
-    if (storedZoom) {
-      const nextZoom = Number(storedZoom);
-
-      if (!Number.isNaN(nextZoom)) {
-        setZoom(nextZoom);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    window.sessionStorage.setItem('admin-content-zoom', String(zoom));
-  }, [zoom]);
 
   return (
     <main ref={containerRef} className="admin-content-router min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-admin-bg">
@@ -70,42 +52,9 @@ export function AdminContentRouter({ children }: AdminContentRouterProps) {
                 {routeContext?.route.description ?? 'Select an admin workspace route from the left menu.'}
               </span>
             </div>
-
-            <div className="admin-content-router__zoom-controls" aria-label="Main content zoom controls">
-              <span className="admin-content-router__zoom-label">Zoom</span>
-              <button
-                type="button"
-                className="admin-button admin-button--secondary"
-                onClick={() => setZoom((current) => Math.max(90, current - 10))}
-              >
-                A-
-              </button>
-              <button
-                type="button"
-                className="admin-button admin-button--secondary"
-                onClick={() => setZoom(100)}
-              >
-                {zoom}%
-              </button>
-              <button
-                type="button"
-                className="admin-button admin-button--secondary"
-                onClick={() => setZoom((current) => Math.min(160, current + 10))}
-              >
-                A+
-              </button>
-            </div>
           </div>
         </div>
-
-        <div className="admin-content-router__zoom-frame">
-          <div
-            className="admin-content-router__body"
-            style={{ zoom: `${zoom}%` }}
-          >
-            {children}
-          </div>
-        </div>
+        <div className="admin-content-router__body">{children}</div>
       </div>
     </main>
   );

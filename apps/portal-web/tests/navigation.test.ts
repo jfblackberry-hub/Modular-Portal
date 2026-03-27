@@ -11,7 +11,12 @@ import {
   PROVIDER_POC_SCOPE_EXCLUSIONS
 } from '../../../plugins/provider/src/index';
 import { buildPortalNavigation } from '../lib/navigation';
+import { resolvePortalExperience } from '../lib/portal-experience';
 import type { PortalSessionUser } from '../lib/portal-session';
+import {
+  CORE_TENANT_TYPES,
+  PROVIDER_CLASS_TENANT_TYPES
+} from '@payer-portal/shared-types';
 
 function createUser(overrides: Partial<PortalSessionUser> = {}): PortalSessionUser {
   return {
@@ -286,6 +291,50 @@ test('provider tenant navigation is composed from plugin flags, permissions, and
       }
     ]
   );
+});
+
+test('provider-class tenant types are explicit siblings and resolve the provider experience without using legacy PROVIDER tenant type', () => {
+  assert.deepEqual(CORE_TENANT_TYPES, ['PAYER', 'CLINIC', 'PHYSICIAN_GROUP', 'HOSPITAL']);
+  assert.deepEqual(PROVIDER_CLASS_TENANT_TYPES, ['CLINIC', 'PHYSICIAN_GROUP', 'HOSPITAL']);
+
+  const clinicUser = createUser({
+    landingContext: 'provider',
+    tenant: {
+      id: 'tenant-clinic',
+      name: 'Apara Autism Centers',
+      tenantTypeCode: 'CLINIC',
+      brandingConfig: {
+        purchasedModules: ['provider_operations']
+      }
+    },
+    roles: ['clinic_manager'],
+    permissions: ['tenant.view', 'provider.view'],
+    session: {
+      personaType: 'clinic_manager',
+      type: 'end_user',
+      tenantId: 'tenant-clinic',
+      roles: ['clinic_manager'],
+      permissions: ['tenant.view', 'provider.view'],
+      activeOrganizationUnit: null,
+      availableOrganizationUnits: []
+    }
+  });
+
+  assert.equal(resolvePortalExperience(clinicUser), 'provider');
+
+  const payerUser = createUser({
+    landingContext: 'member',
+    tenant: {
+      id: 'tenant-payer',
+      name: 'Blue Horizon Health',
+      tenantTypeCode: 'PAYER',
+      brandingConfig: {
+        purchasedModules: ['member_home']
+      }
+    }
+  });
+
+  assert.equal(resolvePortalExperience(payerUser), 'member');
 });
 
 test('restricted provider users only see provider capabilities they are authorized for', () => {

@@ -25,11 +25,18 @@ export async function POST(request: Request) {
     );
     const tenantId = request.headers.get('x-tenant-id');
 
-    if (sessionEnvelope?.accessToken) {
+    const authorizationHeader = request.headers.get('authorization');
+    const bearerToken =
+      sessionEnvelope?.accessToken ??
+      (authorizationHeader?.toLowerCase().startsWith('bearer ')
+        ? authorizationHeader.slice(7)
+        : null);
+
+    if (bearerToken) {
       await fetch(`${config.serviceEndpoints.auth}/auth/logout`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${sessionEnvelope.accessToken}`,
+          Authorization: `Bearer ${bearerToken}`,
           ...(tenantId
             ? {
                 'x-tenant-id': tenantId

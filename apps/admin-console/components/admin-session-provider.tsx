@@ -10,13 +10,13 @@ import {
 } from 'react';
 
 import { requestAdminLogout } from '../lib/admin-logout';
+import type { AdminSession } from '../lib/admin-session';
+import { hasAdminConsoleAccess } from '../lib/admin-session';
 import {
   clearAdminSession,
   getStoredAdminSessionSnapshot,
   storeAdminSessionSnapshot
 } from '../lib/api-auth';
-import type { AdminSession } from '../lib/admin-session';
-import { hasAdminConsoleAccess } from '../lib/admin-session';
 
 type AdminSessionContextValue = {
   session: AdminSession | null;

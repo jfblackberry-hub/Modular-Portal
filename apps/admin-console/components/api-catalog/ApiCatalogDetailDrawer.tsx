@@ -142,7 +142,7 @@ export function ApiCatalogDetailDrawer({
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/admin/platform/connectivity/adapters"
+              href="/admin/developer/adapters"
               className="inline-flex min-h-11 items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
             >
               Open applied APIs

@@ -30,7 +30,7 @@ function AdminLoginPageContent() {
 
   if (returnToPortal) {
     return (
-      <main className="min-h-screen bg-admin-bg px-6 py-12 text-admin-text">
+      <main className="admin-auth-page averra-admin min-h-screen bg-admin-bg px-6 py-12 text-admin-text">
         <div className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center justify-center">
           <section className="admin-form-card w-full p-10 text-center">
             <div className="admin-login-brand justify-center">
@@ -64,7 +64,7 @@ function AdminLoginPageContent() {
   }
 
   return (
-    <main className="min-h-screen bg-admin-bg px-6 py-12 text-admin-text">
+    <main className="admin-auth-page averra-admin min-h-screen bg-admin-bg px-6 py-12 text-admin-text">
       <div className="mx-auto flex min-h-[80vh] w-full max-w-3xl items-center justify-center">
         <div className="w-full space-y-5">
           <div className="admin-login-brand justify-center">
@@ -89,7 +89,7 @@ function AdminLoginPageContent() {
 
 export default function AdminLoginPage() {
   return (
-    <Suspense fallback={<main className="min-h-screen bg-admin-bg px-6 py-12 text-admin-text" />}>
+    <Suspense fallback={<main className="admin-auth-page averra-admin min-h-screen bg-admin-bg px-6 py-12 text-admin-text" />}>
       <AdminLoginPageContent />
     </Suspense>
   );

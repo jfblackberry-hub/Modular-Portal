@@ -1,5 +1,5 @@
-import { AuditLogPage } from '../../../../components/audit-log-page';
+import { redirect } from 'next/navigation';
 
-export default function AdminTenantAuditPage() {
-  return <AuditLogPage scope="tenant" />;
+export default function LegacyTenantAuditPage() {
+  redirect('/admin');
 }

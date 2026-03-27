@@ -1,5 +1,5 @@
-import { ConnectivityStatusPage } from '../../../../components/connectivity-status-page';
+import { redirect } from 'next/navigation';
 
-export default function AdminTenantConnectivityPage() {
-  return <ConnectivityStatusPage scope="tenant" />;
+export default function LegacyTenantConnectivityPage() {
+  redirect('/admin');
 }

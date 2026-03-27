@@ -15,9 +15,9 @@ enum TenantStatus {
 
 enum TenantType {
   PAYER
-  EMPLOYER
-  BROKER
-  MEMBER
+  CLINIC
+  PHYSICIAN_GROUP
+  HOSPITAL
   PROVIDER
 }
 
@@ -56,8 +56,10 @@ model Tenant {
   status        TenantStatus  @default(ONBOARDING)
   type          TenantType    @default(PAYER)
   tenantTypeCode String       @default("PAYER")
+  templateId    String?       @db.Uuid
   brandingConfig Json         @default("{}")
   tenantTypeDefinition TenantTypeDefinition @relation(fields: [tenantTypeCode], references: [code], onDelete: Restrict)
+  template      TenantTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   branding      TenantBranding?
   employerGroups EmployerGroup[]
   users         User[]        @relation("UserPrimaryTenant")
@@ -71,6 +73,8 @@ model Tenant {
   integrationExecutions IntegrationExecution[]
   providerWorkflowExecutions ProviderWorkflowExecution[]
   providerResourceCalendarSlots ProviderResourceCalendarSlot[]
+  experiences   TenantExperience[]
+  capabilityConfigs TenantCapabilityConfig[]
   featureFlags FeatureFlag[]
   eventRecords  EventRecord[]
   organizationUnits OrganizationUnit[]
@@ -81,6 +85,7 @@ model Tenant {
   updatedAt     DateTime      @updatedAt
 
   @@index([tenantTypeCode])
+  @@index([templateId])
 }
 
 model OrganizationUnit {
@@ -255,6 +260,85 @@ model TenantTypeDefinition {
 
   tenants Tenant[]
   roles   Role[]
+  templates TenantTemplate[]
+  experiences TenantExperience[]
+  capabilityConfigs TenantCapabilityConfig[]
+}
+
+model TenantTemplate {
+  id                      String   @id @default(uuid()) @db.Uuid
+  code                    String   @unique
+  name                    String
+  tenantTypeCode          String
+  description             String?
+  defaultOrganizationUnitStructure Json @default("[]")
+  defaultCapabilities     Json     @default("[]")
+  defaultExperiences      Json     @default("[]")
+  config                  Json     @default("{}")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  tenantTypeDefinition TenantTypeDefinition @relation(fields: [tenantTypeCode], references: [code], onDelete: Restrict)
+  tenants              Tenant[]
+
+  @@index([tenantTypeCode])
+}
+
+model CapabilityRegistryEntry {
+  id           String   @id
+  name         String
+  category     String
+  description  String?
+  configSchema Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenantCapabilityConfigs TenantCapabilityConfig[]
+}
+
+model TenantExperience {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  tenantTypeCode String
+  key            String
+  name           String
+  description    String?
+  scope          String   @default("tenant")
+  layout         Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant                Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantTypeDefinition  TenantTypeDefinition @relation(fields: [tenantTypeCode], references: [code], onDelete: Restrict)
+  capabilityConfigs     TenantCapabilityConfig[]
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
+  @@index([tenantTypeCode])
+}
+
+model TenantCapabilityConfig {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  tenantTypeCode String
+  experienceId   String   @db.Uuid
+  capabilityId   String
+  enabled        Boolean  @default(true)
+  scope          String   @default("tenant")
+  displayOrder   Int      @default(0)
+  config         Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant               Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantTypeDefinition TenantTypeDefinition    @relation(fields: [tenantTypeCode], references: [code], onDelete: Restrict)
+  experience           TenantExperience        @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  capability           CapabilityRegistryEntry @relation(fields: [capabilityId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, experienceId, capabilityId])
+  @@index([tenantId])
+  @@index([tenantTypeCode])
+  @@index([capabilityId])
 }
 
 model UserCredential {

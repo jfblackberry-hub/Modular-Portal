@@ -1,10 +1,5 @@
-import { PlatformAdminGate } from '../../../../../components/platform-admin-gate';
-import { PreviewSessionControl } from '../../../../../components/preview-session-control';
+import { redirect } from 'next/navigation';
 
-export default function AdminPlatformSessionsPage() {
-  return (
-    <PlatformAdminGate>
-      <PreviewSessionControl />
-    </PlatformAdminGate>
-  );
+export default function LegacyPlatformSessionsPage() {
+  redirect('/admin/shared/identity');
 }

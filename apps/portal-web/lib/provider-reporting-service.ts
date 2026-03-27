@@ -12,6 +12,7 @@ import {
   type ProviderReportView} from './provider-reporting';
 import {
   getProviderReportingWarehouse,
+  type ProviderReportingWarehouseScope,
   type ProviderReportingWarehouse,
   type ReportingWarehouseAuthorization,
   type ReportingWarehouseClaim,
@@ -1066,8 +1067,10 @@ function buildExecutiveSummaryReport(filters: ProviderReportingFilters, data: Fi
   };
 }
 
-export function getProviderReportingStaticOptionsFromWarehouse() {
-  const warehouse = getProviderReportingWarehouse();
+export function getProviderReportingStaticOptionsFromWarehouse(
+  scope?: ProviderReportingWarehouseScope
+) {
+  const warehouse = getProviderReportingWarehouse(scope);
 
   return buildProviderReportingStaticOptions({
     locations: uniqueOptions(warehouse.locations.map((location) => location.name)),
@@ -1089,12 +1092,15 @@ export function getProviderReportingStaticOptionsFromWarehouse() {
   });
 }
 
-export function getProviderReportingWarehouseSummary() {
-  return getProviderReportingWarehouse().summary;
+export function getProviderReportingWarehouseSummary(scope?: ProviderReportingWarehouseScope) {
+  return getProviderReportingWarehouse(scope).summary;
 }
 
-export function runProviderReport(filters: ProviderReportingFilters): ProviderReportView {
-  const warehouse = getProviderReportingWarehouse();
+export function runProviderReport(
+  filters: ProviderReportingFilters,
+  scope?: ProviderReportingWarehouseScope
+): ProviderReportView {
+  const warehouse = getProviderReportingWarehouse(scope);
   const data = filterWarehouse(warehouse, filters);
 
   switch (filters.reportId) {

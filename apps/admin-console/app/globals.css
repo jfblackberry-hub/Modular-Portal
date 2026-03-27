@@ -31,7 +31,7 @@ body {
   background: var(--admin-content-bg);
 }
 
-body.averra-admin {
+.admin-control-plane {
   --admin-primary: var(--averra-pink);
   --admin-primary-strong: var(--averra-blue);
   --admin-primary-soft: rgba(216, 79, 163, 0.18);
@@ -84,7 +84,7 @@ textarea {
   outline-offset: 2px;
 }
 
-.averra-admin :focus-visible {
+.admin-control-plane :focus-visible {
   outline: 3px solid rgba(76, 159, 204, 0.36);
 }
 
@@ -1185,7 +1185,7 @@ textarea {
   box-shadow: var(--portal-shadow-md);
 }
 
-.averra-admin .admin-form-card {
+.admin-control-plane .admin-form-card {
   backdrop-filter: blur(18px);
 }
 
@@ -1203,12 +1203,18 @@ textarea {
   height: 3.25rem;
   flex-shrink: 0;
   border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.admin-control-plane .admin-login-brand__mark {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background:
     linear-gradient(135deg, rgba(216, 79, 163, 0.16), rgba(76, 159, 204, 0.12)),
     rgba(255, 255, 255, 0.05);
   box-shadow: var(--portal-glow-pink), var(--portal-shadow-sm);
-  overflow: hidden;
 }
 
 .admin-login-brand__label {
@@ -1226,7 +1232,7 @@ textarea {
   background: var(--admin-surface-muted);
 }
 
-.averra-admin .admin-subtle-surface {
+.admin-control-plane .admin-subtle-surface {
   background:
     linear-gradient(135deg, rgba(216, 79, 163, 0.12), rgba(76, 159, 204, 0.1)),
     rgba(255, 255, 255, 0.05);
@@ -1446,4 +1452,548 @@ textarea {
     flex: 1 1 auto;
     padding-right: 1.5rem;
   }
+}
+
+.admin-control-plane {
+  --admin-primary: #6f5bd3;
+  --admin-primary-strong: #5a48be;
+  --admin-primary-soft: rgba(111, 91, 211, 0.12);
+  --admin-shell-bg: #f7f9fc;
+  --admin-sidebar-bg: #ffffff;
+  --admin-section-bg: #ffffff;
+  --admin-hover: #f8fafc;
+  --admin-active: #6f5bd3;
+  --admin-active-accent: rgba(111, 91, 211, 0.18);
+  --admin-sidebar-border: #e5e7eb;
+  --admin-sidebar-text: #1f2937;
+  --admin-sidebar-text-muted: #6b7280;
+  --admin-sidebar-text-section: #94a3b8;
+  --admin-content-bg: #f7f9fc;
+  --admin-surface: #ffffff;
+  --admin-surface-muted: #f8fafc;
+  --admin-text: #1f2937;
+  --admin-muted: #6b7280;
+  --admin-border: #e5e7eb;
+  --admin-success: #15803d;
+  --admin-warning: #b45309;
+  --admin-danger: #b91c1c;
+  background: #f7f9fc;
+  color: var(--admin-text);
+}
+
+.admin-control-plane {
+  color-scheme: light;
+}
+
+.admin-control-plane :focus-visible {
+  outline: 3px solid rgba(111, 91, 211, 0.22);
+}
+
+.admin-control-plane .admin-shell,
+.admin-control-plane .bg-admin-bg,
+.admin-control-plane .admin-content-router,
+.admin-control-plane .admin-shell__content {
+  background: #f7f9fc;
+}
+
+.admin-control-plane .admin-surface,
+.admin-control-plane .admin-panel,
+.admin-control-plane .admin-panel-muted,
+.admin-control-plane .admin-table-shell,
+.admin-control-plane .admin-link-tile,
+.admin-control-plane .bg-white,
+.admin-control-plane .bg-white\/88,
+.admin-control-plane .bg-slate-50,
+.admin-control-plane .bg-slate-100 {
+  background: #ffffff;
+  border-color: #e5e7eb;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  backdrop-filter: none;
+}
+
+.admin-control-plane .admin-top-header,
+.admin-control-plane .admin-left-rail {
+  background: #ffffff;
+  color: #1f2937;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-left-rail,
+.admin-control-plane .admin-shell__content,
+.admin-control-plane .admin-top-header {
+  border-color: #e5e7eb;
+}
+
+.admin-control-plane .admin-top-header__brand-mark,
+.admin-control-plane .admin-top-header__avatar,
+.admin-control-plane .admin-left-rail__brand-mark {
+  background: #f3f4f6;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-top-header__title,
+.admin-control-plane .admin-left-rail__title,
+.admin-control-plane .admin-top-header__profile-name,
+.admin-control-plane .admin-left-rail__context-value,
+.admin-control-plane .text-admin-text,
+.admin-control-plane .text-slate-950,
+.admin-control-plane .text-slate-900 {
+  color: #1f2937;
+}
+
+.admin-control-plane .admin-top-header__eyebrow,
+.admin-control-plane .admin-left-rail__eyebrow,
+.admin-control-plane .admin-left-rail__description,
+.admin-control-plane .admin-left-rail__context-label,
+.admin-control-plane .admin-top-header__profile-role,
+.admin-control-plane .admin-top-header__subtitle,
+.admin-control-plane .admin-content-router__context-note,
+.admin-control-plane .text-admin-muted,
+.admin-control-plane .text-slate-700,
+.admin-control-plane .text-slate-600,
+.admin-control-plane .text-slate-500,
+.admin-control-plane .text-slate-400,
+.admin-control-plane .text-zinc-700,
+.admin-control-plane .text-zinc-600 {
+  color: #6b7280;
+}
+
+.admin-control-plane .admin-top-header__divider,
+.admin-control-plane .admin-nav__item-icon,
+.admin-control-plane .text-admin-accent,
+.admin-control-plane .text-cyan-700,
+.admin-control-plane .text-emerald-700 {
+  color: #6f5bd3;
+}
+
+.admin-control-plane .admin-left-rail__context-card,
+.admin-control-plane .admin-top-header__profile-card,
+.admin-control-plane .admin-content-router__context,
+.admin-control-plane .admin-content-router__context-pill,
+.admin-control-plane .admin-nav__section {
+  background: #ffffff;
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-content-router__context-pill--link:hover,
+.admin-control-plane .admin-nav__section-header:hover,
+.admin-control-plane .admin-nav__group-toggle:hover,
+.admin-control-plane .admin-nav__item:hover,
+.admin-control-plane .hover\:bg-slate-50:hover,
+.admin-control-plane .hover\:bg-slate-300:hover {
+  background: #f8fafc;
+  color: #1f2937;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-nav__group-toggle--active,
+.admin-control-plane .admin-nav__item--active {
+  background: rgba(111, 91, 211, 0.12);
+  color: #1f2937;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-nav__group-toggle--active .admin-nav__item-line,
+.admin-control-plane .admin-nav__item--active .admin-nav__item-line {
+  background: #6f5bd3;
+}
+
+.admin-control-plane .admin-button--primary,
+.admin-control-plane .bg-admin-accent,
+.admin-control-plane input[type="file"]::file-selector-button {
+  background: #d84fa3;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-button--primary:hover {
+  background: #bf3b8f;
+}
+
+.admin-control-plane .admin-button--secondary,
+.admin-control-plane .admin-button--header {
+  background: #ffffff;
+  color: #1f2937;
+  border-color: #d1d5db;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-button--secondary:hover,
+.admin-control-plane .admin-button--header:hover {
+  background: #f8fafc;
+  color: #1f2937;
+  border-color: #cbd5e1;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-input {
+  background: #ffffff;
+  color: #1f2937;
+  border-color: #d1d5db;
+}
+
+.admin-control-plane .admin-input:focus,
+.admin-control-plane .focus\:border-admin-accent:focus,
+.admin-control-plane .focus\:border-emerald-500:focus {
+  border-color: rgba(111, 91, 211, 0.55);
+  box-shadow: 0 0 0 4px rgba(111, 91, 211, 0.12);
+  outline: none;
+}
+
+.admin-control-plane .admin-page-header,
+.admin-control-plane .admin-action-bar,
+.admin-control-plane .admin-empty-state,
+.admin-control-plane .admin-info-state,
+.admin-control-plane .admin-error-state {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+.admin-control-plane .admin-badge--success {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+.admin-control-plane .admin-badge--warning {
+  background: #fff7ed;
+  color: #b45309;
+}
+
+.admin-control-plane .admin-badge--danger {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.admin-control-plane .admin-badge--info,
+.admin-control-plane .admin-badge--neutral {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.admin-subsection {
+  border: 1px solid var(--admin-border);
+  border-radius: 1rem;
+  background: #ffffff;
+  padding: 1rem 1.125rem;
+}
+
+.admin-subsection__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-subsection__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+.admin-subsection__description {
+  margin: 0.2rem 0 0;
+  font-size: 0.875rem;
+  color: var(--admin-muted);
+}
+
+/* Final control-plane readability overrides */
+.admin-control-plane {
+  --admin-primary: #6f5bd3;
+  --admin-primary-strong: #5a48be;
+  --admin-primary-soft: rgba(111, 91, 211, 0.1);
+  --admin-shell-bg: #f7f9fc;
+  --admin-sidebar-bg: #ffffff;
+  --admin-section-bg: #ffffff;
+  --admin-hover: #f1f5f9;
+  --admin-active: #6f5bd3;
+  --admin-active-accent: #6f5bd3;
+  --admin-sidebar-border: #e5e7eb;
+  --admin-sidebar-text: #1f2937;
+  --admin-sidebar-text-muted: #6b7280;
+  --admin-sidebar-text-section: #9ca3af;
+  --admin-content-bg: #f7f9fc;
+  --admin-surface: #ffffff;
+  --admin-surface-muted: #ffffff;
+  --admin-text: #374151;
+  --admin-muted: #6b7280;
+  --admin-border: #e5e7eb;
+  --admin-success: #15803d;
+  --admin-warning: #b45309;
+  --admin-danger: #b91c1c;
+  color-scheme: light;
+  background: #f7f9fc;
+  color: var(--admin-text);
+}
+
+.admin-control-plane,
+.admin-control-plane .admin-shell,
+.admin-control-plane .bg-admin-bg,
+.admin-control-plane .admin-content-router,
+.admin-control-plane .admin-shell__content,
+.admin-control-plane .admin-content-router__frame {
+  background: #f7f9fc;
+}
+
+.admin-control-plane :focus-visible {
+  outline: 3px solid rgba(111, 91, 211, 0.2);
+}
+
+.admin-control-plane .admin-surface,
+.admin-control-plane .admin-panel,
+.admin-control-plane .admin-panel-muted,
+.admin-control-plane .admin-table-shell,
+.admin-control-plane .admin-link-tile,
+.admin-control-plane .admin-subtle-surface,
+.admin-control-plane .admin-page-header,
+.admin-control-plane .admin-action-bar,
+.admin-control-plane .admin-section-card,
+.admin-control-plane .admin-stat-card,
+.admin-control-plane .admin-empty-state,
+.admin-control-plane .admin-info-state,
+.admin-control-plane .admin-error-state,
+.admin-control-plane .admin-action-workspace,
+.admin-control-plane .admin-left-rail__brand,
+.admin-control-plane .admin-left-rail__context-card,
+.admin-control-plane .admin-top-header__profile-card,
+.admin-control-plane .admin-content-router__context,
+.admin-control-plane .admin-nav__section,
+.admin-control-plane .bg-white,
+.admin-control-plane .bg-white\/88,
+.admin-control-plane .bg-slate-50,
+.admin-control-plane .bg-slate-100 {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: none;
+  backdrop-filter: none;
+  border-radius: 8px;
+}
+
+.admin-control-plane .admin-page-header,
+.admin-control-plane .admin-action-bar,
+.admin-control-plane .admin-section-card,
+.admin-control-plane .admin-stat-card,
+.admin-control-plane .admin-empty-state,
+.admin-control-plane .admin-info-state,
+.admin-control-plane .admin-error-state,
+.admin-control-plane .admin-action-workspace,
+.admin-control-plane .admin-panel-muted,
+.admin-control-plane .admin-link-tile {
+  padding: 16px 20px;
+}
+
+.admin-control-plane .admin-top-header,
+.admin-control-plane .admin-left-rail {
+  background: #ffffff;
+  color: #1f2937;
+  box-shadow: none;
+  border-color: #e5e7eb;
+}
+
+.admin-control-plane .admin-top-header__brand-mark,
+.admin-control-plane .admin-top-header__avatar,
+.admin-control-plane .admin-left-rail__brand-mark {
+  background: #f3f4f6;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-left-rail__title,
+.admin-control-plane .admin-top-header__title,
+.admin-control-plane .admin-top-header__profile-name,
+.admin-control-plane .admin-left-rail__context-value,
+.admin-control-plane .admin-section-card__title,
+.admin-control-plane .admin-empty-state__title,
+.admin-control-plane .admin-info-state__title,
+.admin-control-plane .admin-action-workspace__empty-title,
+.admin-control-plane .text-admin-text,
+.admin-control-plane .text-slate-950,
+.admin-control-plane .text-slate-900 {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.admin-control-plane .admin-page-header__title {
+  color: #111827;
+  font-weight: 700;
+}
+
+.admin-control-plane .admin-page-header__description,
+.admin-control-plane .admin-empty-state__description,
+.admin-control-plane .admin-info-state__description,
+.admin-control-plane .admin-action-workspace__empty-description,
+.admin-control-plane .admin-stat-card__detail {
+  color: #374151;
+}
+
+.admin-control-plane .admin-page-header__eyebrow,
+.admin-control-plane .admin-left-rail__eyebrow,
+.admin-control-plane .admin-left-rail__context-label,
+.admin-control-plane .admin-top-header__eyebrow,
+.admin-control-plane .admin-nav__section-heading,
+.admin-control-plane .text-slate-400,
+.admin-control-plane .text-slate-500 {
+  color: #9ca3af;
+}
+
+.admin-control-plane .admin-left-rail__description,
+.admin-control-plane .admin-top-header__subtitle,
+.admin-control-plane .admin-top-header__profile-role,
+.admin-control-plane .admin-content-router__context-note,
+.admin-control-plane .admin-section-card__description,
+.admin-control-plane .admin-stat-card__label,
+.admin-control-plane .text-admin-muted,
+.admin-control-plane .text-slate-700,
+.admin-control-plane .text-slate-600,
+.admin-control-plane .text-zinc-700,
+.admin-control-plane .text-zinc-600 {
+  color: #6b7280;
+}
+
+.admin-control-plane .admin-nav__section {
+  padding: 0.5rem;
+}
+
+.admin-control-plane .admin-nav__section-header {
+  color: #9ca3af;
+}
+
+.admin-control-plane .admin-nav__group-toggle,
+.admin-control-plane .admin-nav__item {
+  border-radius: 8px;
+}
+
+.admin-control-plane .admin-nav__item-label {
+  color: #6b7280;
+}
+
+.admin-control-plane .admin-nav__item-description {
+  color: #9ca3af;
+}
+
+.admin-control-plane .admin-nav__group-toggle:hover,
+.admin-control-plane .admin-nav__item:hover {
+  background: #f1f5f9;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-nav__group-toggle--active,
+.admin-control-plane .admin-nav__item--active {
+  background: #eef2ff;
+  color: #1f2937;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-nav__group-toggle--active .admin-nav__item-label,
+.admin-control-plane .admin-nav__item--active .admin-nav__item-label,
+.admin-control-plane .admin-nav__group-toggle--active .admin-nav__item-description,
+.admin-control-plane .admin-nav__item--active .admin-nav__item-description,
+.admin-control-plane .admin-nav__group-toggle--active .admin-nav__item-icon,
+.admin-control-plane .admin-nav__item--active .admin-nav__item-icon {
+  color: #1f2937;
+}
+
+.admin-control-plane .admin-nav__item-icon,
+.admin-control-plane .admin-top-header__divider,
+.admin-control-plane .text-admin-accent,
+.admin-control-plane .text-cyan-700,
+.admin-control-plane .text-emerald-700 {
+  color: #6f5bd3;
+}
+
+.admin-control-plane .admin-nav__group-toggle--active .admin-nav__item-line,
+.admin-control-plane .admin-nav__item--active .admin-nav__item-line {
+  width: 3px;
+  background: #6f5bd3;
+}
+
+.admin-control-plane .admin-table-shell {
+  background: #ffffff;
+}
+
+.admin-control-plane .admin-table-head {
+  background: #f9fafb;
+}
+
+.admin-control-plane .admin-table-head th {
+  color: #374151;
+  font-weight: 600;
+}
+
+.admin-control-plane .admin-table-row {
+  color: #1f2937;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-control-plane .admin-table-row:hover {
+  background: #f1f5f9;
+}
+
+.admin-control-plane .admin-button--primary,
+.admin-control-plane .bg-admin-accent,
+.admin-control-plane input[type='file']::file-selector-button {
+  background: #6f5bd3;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-button--primary:hover {
+  background: #5a48be;
+}
+
+.admin-control-plane .admin-button--secondary,
+.admin-control-plane .admin-button--header {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-button--secondary:hover,
+.admin-control-plane .admin-button--header:hover {
+  background: #ffffff;
+  border-color: #d1d5db;
+  color: #374151;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-input {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+}
+
+.admin-control-plane .admin-input:focus,
+.admin-control-plane .focus\:border-admin-accent:focus,
+.admin-control-plane .focus\:border-emerald-500:focus {
+  border-color: rgba(111, 91, 211, 0.55);
+  box-shadow: 0 0 0 4px rgba(111, 91, 211, 0.12);
+  outline: none;
+}
+
+.admin-list-row {
+  border: 1px solid var(--admin-border);
+  border-radius: 0.9rem;
+  background: #ffffff;
+  padding: 1rem 1.05rem;
+}
+
+.admin-notice {
+  border-radius: 0.9rem;
+  border: 1px solid var(--admin-border);
+  padding: 0.85rem 1rem;
+  font-size: 0.925rem;
+}
+
+.admin-notice--success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.admin-notice--danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
 }

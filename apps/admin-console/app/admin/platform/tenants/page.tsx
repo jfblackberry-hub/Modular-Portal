@@ -1,10 +1,5 @@
-import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
-import { TenantListPage } from './tenant-pages';
+import { redirect } from 'next/navigation';
 
-export default function AdminPlatformTenantsPage() {
-  return (
-    <PlatformAdminGate>
-      <TenantListPage />
-    </PlatformAdminGate>
-  );
+export default function LegacyPlatformTenantsPage() {
+  redirect('/admin/tenants');
 }

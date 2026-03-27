@@ -95,7 +95,7 @@ export function ApiMarketplaceCard({ entry }: ApiMarketplaceCardProps) {
           </div>
 
           <Link
-            href={`/admin/platform/connectivity/catalog/${entry.slug}`}
+            href={`/admin/shared/api-catalog/${entry.slug}`}
             className="rounded-full bg-slate-950 px-4 py-2 text-[0.8rem] font-semibold text-white transition hover:bg-emerald-700"
           >
             View API

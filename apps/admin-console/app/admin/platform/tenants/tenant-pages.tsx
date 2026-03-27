@@ -12,7 +12,11 @@ type Tenant = {
   name: string;
   slug: string;
   status: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
-  type: 'PAYER' | 'EMPLOYER' | 'BROKER' | 'MEMBER' | 'PROVIDER';
+  type:
+    | 'PAYER'
+    | 'CLINIC'
+    | 'PHYSICIAN_GROUP'
+    | 'HOSPITAL';
   healthStatus: 'HEALTHY' | 'PROVISIONING' | 'SUSPENDED';
   brandingConfig: Record<string, unknown>;
   quotaMembers: number | null;
@@ -63,6 +67,13 @@ type OfficeLocationFormState = {
   zip: string;
 };
 
+type TenantDetailFormState = {
+  quotaMembers: string;
+  quotaStorageGb: string;
+  status: Tenant['status'];
+  type: Tenant['type'];
+};
+
 type Connector = {
   id: string;
   tenantId: string;
@@ -91,7 +102,11 @@ type SettingsPayload = {
     name: string;
     slug: string;
     status: 'ACTIVE' | 'ONBOARDING' | 'INACTIVE';
-    type: 'PAYER' | 'EMPLOYER' | 'BROKER' | 'MEMBER' | 'PROVIDER';
+    type:
+      | 'PAYER'
+      | 'CLINIC'
+      | 'PHYSICIAN_GROUP'
+      | 'HOSPITAL';
   };
   branding: {
     displayName: string;
@@ -135,6 +150,12 @@ type TenantListRow = {
   alerts: number;
 };
 
+const PROVIDER_CLASS_TENANT_TYPES = new Set([
+  'CLINIC',
+  'PHYSICIAN_GROUP',
+  'HOSPITAL'
+]);
+
 const alertKeywords = ['fail', 'error', 'warning', 'denied', 'timeout'];
 
 function formatTimestamp(value: string | null | undefined) {
@@ -174,7 +195,7 @@ function buildTenantLogHref(tenantId: string, event?: { eventType: string; resou
     }
   }
 
-  return `/admin/platform/operations/logs?${query.toString()}`;
+  return `/admin/governance/audit?${query.toString()}`;
 }
 
 async function fetchTenantSettings(tenantId: string) {
@@ -293,6 +314,17 @@ function createOfficeLocationFormState(unit: OrganizationUnit): OfficeLocationFo
   };
 }
 
+function createTenantDetailFormState(tenant: Tenant): TenantDetailFormState {
+  return {
+    status: tenant.status,
+    type: tenant.type,
+    quotaMembers:
+      typeof tenant.quotaMembers === 'number' ? String(tenant.quotaMembers) : '',
+    quotaStorageGb:
+      typeof tenant.quotaStorageGb === 'number' ? String(tenant.quotaStorageGb) : ''
+  };
+}
+
 export function TenantListPage() {
   const [rows, setRows] = useState<TenantListRow[]>([]);
   const [error, setError] = useState('');
@@ -347,7 +379,7 @@ export function TenantListPage() {
           Platform
         </p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight text-admin-text">
-          Tenant List
+          Tenant Directory
         </h1>
         <p className="mt-3 max-w-3xl text-base leading-7 text-admin-muted">
           Review tenant status, users, connectivity posture, configuration readiness, and alerts from one platform-wide directory.
@@ -389,7 +421,7 @@ export function TenantListPage() {
                     <td className="px-3 py-4">
                       <div>
                         <Link
-                          href={`/admin/platform/tenants/${row.tenant.id}`}
+                          href={`/admin/tenants/${row.tenant.id}/organization`}
                           className="font-medium text-admin-text underline-offset-4 transition hover:text-admin-accent hover:underline"
                         >
                           {row.tenant.name}
@@ -414,7 +446,7 @@ export function TenantListPage() {
                     <td className="px-3 py-4">
                       <div className="flex gap-2">
                         <Link
-                          href={`/admin/platform/tenants/${row.tenant.id}`}
+                          href={`/admin/tenants/${row.tenant.id}/organization`}
                           className="admin-button admin-button--secondary text-xs uppercase tracking-[0.18em]"
                         >
                           Open
@@ -449,6 +481,8 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
   const [officeLocationForm, setOfficeLocationForm] = useState<OfficeLocationFormState | null>(null);
   const [isSavingOfficeLocation, setIsSavingOfficeLocation] = useState(false);
+  const [tenantDetailForm, setTenantDetailForm] = useState<TenantDetailFormState | null>(null);
+  const [isSavingTenant, setIsSavingTenant] = useState(false);
 
   async function loadDetailState() {
     const [tenantPayload, enrichment] = await Promise.all([
@@ -460,6 +494,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
     ]);
 
     setTenant(tenantPayload);
+    setTenantDetailForm(createTenantDetailFormState(tenantPayload));
     setSettings(enrichment.settings);
     setEvents(enrichment.auditEvents);
     setOrganizationUnits(enrichment.organizationUnits);
@@ -483,6 +518,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
         }
 
         setTenant(tenantPayload);
+        setTenantDetailForm(createTenantDetailFormState(tenantPayload));
         setSettings(enrichment.settings);
         setEvents(enrichment.auditEvents);
         setOrganizationUnits(enrichment.organizationUnits);
@@ -545,6 +581,55 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
     }
   }
 
+  async function handleSaveTenantDetails() {
+    if (!tenant || !tenantDetailForm) {
+      setError('Tenant detail unavailable.');
+      return;
+    }
+
+    setError('');
+    setSuccess('');
+    setIsSavingTenant(true);
+
+    try {
+      const response = await fetch(
+        `${config.apiBaseUrl}/platform-admin/tenants/${tenant.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAdminAuthHeaders()
+          },
+          body: JSON.stringify({
+            status: tenantDetailForm.status,
+            type: tenantDetailForm.type,
+            quotaMembers: tenantDetailForm.quotaMembers
+              ? Number.parseInt(tenantDetailForm.quotaMembers, 10)
+              : null,
+            quotaStorageGb: tenantDetailForm.quotaStorageGb
+              ? Number.parseInt(tenantDetailForm.quotaStorageGb, 10)
+              : null
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setError(payload?.message ?? 'Unable to save tenant details.');
+        return;
+      }
+
+      await loadDetailState();
+      setSuccess('Tenant details updated.');
+    } catch {
+      setError('Unable to save tenant details.');
+    } finally {
+      setIsSavingTenant(false);
+    }
+  }
+
   async function handleDecomTenant() {
     if (!tenant) {
       setError('Tenant detail unavailable.');
@@ -580,7 +665,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
         return;
       }
 
-      window.location.assign('/admin/platform/tenants');
+      window.location.assign('/admin/tenants');
     } catch {
       setError('Unable to decom tenant.');
     } finally {
@@ -769,7 +854,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
         </div>
 
         <Link
-          href="/admin/platform/tenants"
+          href="/admin/tenants"
           className="admin-button admin-button--secondary text-sm"
         >
           Back to tenants
@@ -843,28 +928,151 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
 
           <SectionCard
             title="Tenant Profile"
-            description="Core tenant identity, lifecycle, and platform limits."
+            description="Review tenant identity and update the editable platform-controlled fields."
           >
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {[
-                { label: 'Status', value: tenant.status },
-                { label: 'Tenant Type', value: tenant.type },
-                { label: 'Health', value: tenant.healthStatus },
-                { label: 'Member Limit', value: tenant.quotaMembers ? String(tenant.quotaMembers) : 'Uncapped' },
-                {
-                  label: 'Storage Limit',
-                  value: tenant.quotaStorageGb ? `${tenant.quotaStorageGb} GB` : 'Uncapped'
-                }
-              ].map((item) => (
-                <div key={item.label} className="admin-panel-muted">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
-                    {item.label}
-                  </p>
-                  <p className="mt-3 text-base font-semibold text-admin-text">
-                    {item.value}
-                  </p>
+            <div className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {[
+                  { label: 'Tenant Name', value: tenant.name },
+                  { label: 'Slug', value: tenant.slug },
+                  { label: 'Health', value: tenant.healthStatus },
+                  {
+                    label: 'Created',
+                    value: new Date(tenant.createdAt).toLocaleDateString()
+                  }
+                ].map((item) => (
+                  <div key={item.label} className="admin-panel-muted">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">
+                      {item.label}
+                    </p>
+                    <p className="mt-3 text-base font-semibold text-admin-text">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {tenantDetailForm ? (
+                <div className="admin-panel-muted rounded-2xl p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <p className="text-base font-semibold text-admin-text">
+                        Editable tenant fields
+                      </p>
+                      <p className="mt-1 text-sm text-admin-muted">
+                        Update lifecycle status, tenant type, and platform limits for this tenant.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleSaveTenantDetails()}
+                      disabled={isSavingTenant}
+                      className="admin-button admin-button--primary w-full text-sm lg:w-auto"
+                    >
+                      {isSavingTenant ? 'Saving tenant...' : 'Save tenant changes'}
+                    </button>
+                  </div>
+
+                  <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                    <label className="block">
+                      <span className="text-sm font-medium text-admin-text">
+                        Tenant status
+                      </span>
+                      <select
+                        className="admin-input mt-2"
+                        value={tenantDetailForm.status}
+                        onChange={(event) =>
+                          setTenantDetailForm((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  status: event.target.value as Tenant['status']
+                                }
+                              : current
+                          )
+                        }
+                      >
+                        <option value="ONBOARDING">Onboarding</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="INACTIVE">Inactive</option>
+                      </select>
+                    </label>
+
+                    <label className="block">
+                      <span className="text-sm font-medium text-admin-text">
+                        Tenant type
+                      </span>
+                      <select
+                        className="admin-input mt-2"
+                        value={tenantDetailForm.type}
+                        onChange={(event) =>
+                          setTenantDetailForm((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  type: event.target.value as Tenant['type']
+                                }
+                              : current
+                          )
+                        }
+                      >
+                        <option value="PAYER">Payer</option>
+                        <option value="CLINIC">Clinic</option>
+                        <option value="PHYSICIAN_GROUP">Physician Group</option>
+                        <option value="HOSPITAL">Hospital</option>
+                      </select>
+                    </label>
+
+                    <label className="block">
+                      <span className="text-sm font-medium text-admin-text">
+                        Member limit
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        className="admin-input mt-2"
+                        value={tenantDetailForm.quotaMembers}
+                        onChange={(event) =>
+                          setTenantDetailForm((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  quotaMembers: event.target.value
+                                }
+                              : current
+                          )
+                        }
+                        placeholder="Leave blank for uncapped"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-sm font-medium text-admin-text">
+                        Storage limit (GB)
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        className="admin-input mt-2"
+                        value={tenantDetailForm.quotaStorageGb}
+                        onChange={(event) =>
+                          setTenantDetailForm((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  quotaStorageGb: event.target.value
+                                }
+                              : current
+                          )
+                        }
+                        placeholder="Leave blank for uncapped"
+                      />
+                    </label>
+                  </div>
                 </div>
-              ))}
+              ) : null}
             </div>
           </SectionCard>
 
@@ -873,7 +1081,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             description="Canonical tenant organization hierarchy used for provider and operating-structure testing."
           >
             <div className="space-y-4">
-              {tenant.type === 'PROVIDER' ? (
+              {PROVIDER_CLASS_TENANT_TYPES.has(tenant.type) ? (
                 <div className="rounded-3xl border border-admin-border bg-white/60 p-5">
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                     <div className="max-w-3xl">
@@ -881,7 +1089,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                         Office Location Import
                       </p>
                       <h3 className="mt-2 text-lg font-semibold text-admin-text">
-                        Load provider office locations from a delimited file
+                        Load provider-class office locations from a delimited file
                       </h3>
                       <p className="mt-2 text-sm leading-6 text-admin-muted">
                         Accepts CSV, pipe-delimited, tab-delimited, and semicolon-delimited files. Expected columns include company, location name, street address, city, state, zip, phone, and notes. Imported offices are added as LOCATION units beneath the tenant&apos;s established Provider hierarchy.
@@ -1129,10 +1337,10 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
           >
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 {[
-                  { label: 'Active Users', value: String(activeUsers), href: '/admin/platform/users' },
-                { label: 'Purchased Modules', value: String(purchasedModules.length), href: `/admin/platform/tenants/configuration?tenantId=${tenant.id}` },
-                { label: 'Warning Events', value: String(warningEvents), href: `/admin/platform/operations/logs?tenantId=${tenant.id}` },
-                { label: 'Integrations', value: String(settings.integrations.length), href: '/admin/platform/connectivity/adapters' }
+                  { label: 'Active Users', value: String(activeUsers), href: `/admin/tenants/${tenant.id}/users` },
+                { label: 'Purchased Modules', value: String(purchasedModules.length), href: `/admin/tenants/${tenant.id}/capabilities` },
+                { label: 'Warning Events', value: String(warningEvents), href: `/admin/governance/audit?tenantId=${tenant.id}` },
+                { label: 'Integrations', value: String(settings.integrations.length), href: `/admin/tenants/${tenant.id}/data` }
               ].map((item) => (
                 <Link
                   key={item.label}
@@ -1172,7 +1380,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             </div>
             <div className="mt-4">
               <Link
-                href={`/admin/tenant/configuration?tenantId=${tenant.id}`}
+                href={`/admin/tenants/${tenant.id}/capabilities`}
                 className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-accent underline-offset-4 hover:underline"
               >
                 Open configuration workspace
@@ -1186,21 +1394,21 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
           >
             <div className="grid gap-4 md:grid-cols-3">
               <Link
-                href={`/admin/platform/tenants/configuration?tenantId=${tenant.id}&moduleScope=member`}
+                href={`/admin/tenants/${tenant.id}/capabilities`}
                 className="admin-link-tile"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">Member Modules</p>
                 <p className="mt-2 text-2xl font-semibold text-admin-text">{memberModuleCount}</p>
               </Link>
               <Link
-                href={`/admin/platform/tenants/configuration?tenantId=${tenant.id}&moduleScope=provider`}
+                href={`/admin/tenants/${tenant.id}/capabilities`}
                 className="admin-link-tile"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">Provider Modules</p>
                 <p className="mt-2 text-2xl font-semibold text-admin-text">{providerModuleCount}</p>
               </Link>
               <Link
-                href={`/admin/platform/tenants/configuration?tenantId=${tenant.id}&moduleScope=all`}
+                href={`/admin/tenants/${tenant.id}/capabilities`}
                 className="admin-link-tile"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">Total Purchased</p>
@@ -1209,7 +1417,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             </div>
             <div className="mt-4">
               <Link
-                href={`/admin/platform/tenants/configuration?tenantId=${tenant.id}`}
+                href={`/admin/tenants/${tenant.id}/limits`}
                 className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-accent underline-offset-4 hover:underline"
               >
                 Manage licensing and modules
@@ -1250,7 +1458,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
               )}
               <div className="mt-4">
                 <Link
-                  href="/admin/platform/connectivity/adapters"
+                  href={`/admin/tenants/${tenant.id}/data`}
                   className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-accent underline-offset-4 hover:underline"
                 >
                   Open connectivity workspace
@@ -1291,7 +1499,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
               )}
               <div className="mt-4">
                 <Link
-                  href="/admin/platform/users"
+                  href={`/admin/tenants/${tenant.id}/users`}
                   className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-accent underline-offset-4 hover:underline"
                 >
                   Open user management
@@ -1305,16 +1513,16 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             description="Deep links into platform workspaces for this tenant."
           >
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <Link href={`/admin/platform/operations/jobs?tenantId=${tenant.id}`} className="admin-link-tile text-sm font-medium">
+              <Link href={`/admin/tenants/${tenant.id}/data`} className="admin-link-tile text-sm font-medium">
                 Tenant jobs
               </Link>
               <Link href={buildTenantLogHref(tenant.id)} className="admin-link-tile text-sm font-medium">
                 Tenant logs
               </Link>
-              <Link href={`/admin/platform/audit?tenantId=${tenant.id}`} className="admin-link-tile text-sm font-medium">
+              <Link href={`/admin/governance/audit?tenantId=${tenant.id}`} className="admin-link-tile text-sm font-medium">
                 Tenant audit
               </Link>
-              <Link href="/admin/platform/tenants/configuration" className="admin-link-tile text-sm font-medium">
+              <Link href={`/admin/tenants/${tenant.id}/experiences`} className="admin-link-tile text-sm font-medium">
                 Tenant configuration
               </Link>
             </div>

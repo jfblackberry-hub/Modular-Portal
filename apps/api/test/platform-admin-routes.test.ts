@@ -56,13 +56,23 @@ async function cleanupTestData() {
 
   await prisma.tenant.deleteMany({
     where: {
-      slug: {
-        in: [
-          TEST_TENANT_SLUG,
-          TEST_PROVIDER_TENANT_SLUG,
-          TEST_ISOLATED_TENANT_SLUG
-        ]
-      }
+      OR: [
+        {
+          slug: {
+            startsWith: TEST_TENANT_SLUG
+          }
+        },
+        {
+          slug: {
+            startsWith: TEST_PROVIDER_TENANT_SLUG
+          }
+        },
+        {
+          slug: {
+            startsWith: TEST_ISOLATED_TENANT_SLUG
+          }
+        }
+      ]
     }
   });
 }
@@ -379,7 +389,7 @@ test('platform-admin tenant creation returns a friendly error for duplicate slug
       name: 'Duplicate Slug Tenant',
       slug: TEST_TENANT_SLUG,
       status: 'ACTIVE',
-      type: 'PROVIDER',
+      type: 'CLINIC',
       brandingConfig: {}
     }
   });
@@ -391,7 +401,7 @@ test('platform-admin tenant creation returns a friendly error for duplicate slug
   await app.close();
 });
 
-test('platform admins can provision a provider tenant and provider organization units remain tenant-scoped', async () => {
+test('platform admins can provision a clinic tenant and provider-class organization units remain tenant-scoped', async () => {
   const { platformAdminUser } = await createFixtureData();
   const app = Fastify();
   await tenantRoutes(app);
@@ -407,7 +417,7 @@ test('platform admins can provision a provider tenant and provider organization 
       name: 'Provider Validation Tenant',
       slug: TEST_PROVIDER_TENANT_SLUG,
       status: 'ACTIVE',
-      type: 'PROVIDER',
+      type: 'CLINIC',
       brandingConfig: {
         displayName: 'Provider Validation Tenant',
         experiences: ['provider'],
@@ -417,7 +427,7 @@ test('platform admins can provision a provider tenant and provider organization 
   });
 
   assert.equal(createResponse.statusCode, 201, createResponse.body);
-  assert.equal(createResponse.json().type, 'PROVIDER');
+  assert.equal(createResponse.json().type, 'CLINIC');
 
   const providerTenant = await prisma.tenant.findUniqueOrThrow({
     where: {
@@ -425,8 +435,8 @@ test('platform admins can provision a provider tenant and provider organization 
     }
   });
 
-  assert.equal(providerTenant.type, 'PROVIDER');
-  assert.equal(providerTenant.tenantTypeCode, 'PROVIDER');
+  assert.equal(providerTenant.type, 'CLINIC');
+  assert.equal(providerTenant.tenantTypeCode, 'CLINIC');
 
   const isolatedTenant = await prisma.tenant.create({
     data: {
@@ -526,7 +536,7 @@ test('platform admins can import provider office locations from a delimited file
       name: 'Provider Import Tenant',
       slug: TEST_PROVIDER_TENANT_SLUG,
       status: 'ACTIVE',
-      type: 'PROVIDER',
+      type: 'CLINIC',
       brandingConfig: {
         displayName: 'Provider Import Tenant',
         capabilities: ['provider_operations', 'provider_reporting']

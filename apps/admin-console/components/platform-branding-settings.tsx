@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { config } from '../lib/public-runtime';
 import { getAdminAuthHeaders } from '../lib/api-auth';
+import { config } from '../lib/public-runtime';
 import { SectionCard } from './section-card';
 
 type PlatformBrandingState = {
@@ -153,7 +153,7 @@ export function PlatformBrandingSettings() {
   return (
     <SectionCard
       title="Platform styling override"
-      description="Upload a CSS file to restyle platform-only pages like the control center and login/entry screens without touching tenant experiences."
+      description="Upload a CSS file to restyle platform-only admin surfaces like the control plane shell and login/entry screens without touching tenant experiences."
     >
       <div className="space-y-4">
         <div className="admin-panel-muted space-y-3">

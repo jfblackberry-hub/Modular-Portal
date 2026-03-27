@@ -22,6 +22,62 @@ import { runNextJob } from '../src/jobs/jobWorker.js';
 
 const WEBHOOK_TEST_TENANT_SLUG_PREFIX = 'server-webhook-test';
 
+async function withAuditLogDeletion<T>(callback: () => Promise<T>) {
+  await prisma.$executeRawUnsafe('ALTER TABLE audit_logs DISABLE TRIGGER USER');
+
+  try {
+    return await callback();
+  } finally {
+    await prisma.$executeRawUnsafe('ALTER TABLE audit_logs ENABLE TRIGGER USER');
+  }
+}
+
+async function cleanupOwnedTenants() {
+  const tenants = await prisma.tenant.findMany({
+    where: {
+      slug: {
+        startsWith: WEBHOOK_TEST_TENANT_SLUG_PREFIX
+      }
+    },
+    select: {
+      id: true
+    }
+  });
+
+  const tenantIds = tenants.map((tenant) => tenant.id);
+
+  if (tenantIds.length === 0) {
+    return;
+  }
+
+  const eventIds = (
+    await prisma.eventRecord.findMany({
+      where: {
+        tenantId: {
+          in: tenantIds
+        }
+      },
+      select: {
+        id: true
+      }
+    })
+  ).map((event) => event.id);
+
+  await withAuditLogDeletion(async () => {
+    await prisma.$transaction([
+      prisma.integrationExecution.deleteMany({ where: { tenantId: { in: tenantIds } } }),
+      prisma.connectorConfig.deleteMany({ where: { tenantId: { in: tenantIds } } }),
+      prisma.job.deleteMany({ where: { tenantId: { in: tenantIds } } }),
+      prisma.auditLog.deleteMany({ where: { tenantId: { in: tenantIds } } }),
+      ...(eventIds.length > 0
+        ? [prisma.eventDelivery.deleteMany({ where: { eventId: { in: eventIds } } })]
+        : []),
+      prisma.eventRecord.deleteMany({ where: { tenantId: { in: tenantIds } } }),
+      prisma.tenant.deleteMany({ where: { id: { in: tenantIds } } })
+    ]);
+  });
+}
+
 async function createOwnedTenant(testName: string) {
   const slug = `${WEBHOOK_TEST_TENANT_SLUG_PREFIX}-${testName}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`.toLowerCase();
 
@@ -42,6 +98,7 @@ beforeEach(async () => {
   clearIntegrationAdapters();
   clearIntegrationEventSubscriptions();
   await waitForBackgroundPublishes();
+  await cleanupOwnedTenants();
 });
 
 after(async () => {
@@ -49,6 +106,7 @@ after(async () => {
   clearIntegrationAdapters();
   clearIntegrationEventSubscriptions();
   await waitForBackgroundPublishes();
+  await cleanupOwnedTenants();
   await prisma.$disconnect();
 });
 

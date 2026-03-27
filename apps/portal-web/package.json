@@ -24,6 +24,7 @@
     "@payer-portal/plugin-member": "workspace:*",
     "@payer-portal/plugin-provider": "workspace:*",
     "@payer-portal/plugin-sdk": "workspace:*",
+    "@payer-portal/shared-types": "workspace:*",
     "@payer-portal/ui": "workspace:*",
     "lucide-react": "^0.542.0",
     "next": "^15.3.0",

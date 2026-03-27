@@ -1,17 +1,5 @@
-import { AdminPageLayout } from '../../../../components/admin-ui';
-import { LicensingManagement } from '../../../../components/licensing-management';
-import { PlatformAdminGate } from '../../../../components/platform-admin-gate';
+import { redirect } from 'next/navigation';
 
-export default function AdminPlatformLicensingPage() {
-  return (
-    <PlatformAdminGate>
-      <AdminPageLayout
-        eyebrow="Platform"
-        title="Licensing"
-        description="Manage tenant licensing and module entitlements as a dedicated control-plane function."
-      >
-        <LicensingManagement scope="platform" />
-      </AdminPageLayout>
-    </PlatformAdminGate>
-  );
+export default function LegacyPlatformLicensingPage() {
+  redirect('/admin/governance/licensing');
 }

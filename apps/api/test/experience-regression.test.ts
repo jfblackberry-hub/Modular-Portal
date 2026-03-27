@@ -14,40 +14,40 @@ import { createAccessToken } from '../src/services/access-token-service.js';
 const EXPERIENCE_FIXTURES = [
   {
     key: 'member',
-    tenantType: 'MEMBER' as const,
+    tenantType: 'PAYER' as const,
     roleCode: 'member',
     roleName: 'Member',
-    tenantSlug: 'regression-member-tenant',
-    tenantName: 'Regression Member Tenant',
+    tenantSlug: 'regression-member-payer-tenant',
+    tenantName: 'Regression Member Payer Tenant',
     email: 'regression-member@example.com',
     fileName: 'member-exclusive-report.pdf',
     searchTerm: 'member-exclusive'
   },
   {
     key: 'employer',
-    tenantType: 'EMPLOYER' as const,
+    tenantType: 'PAYER' as const,
     roleCode: 'employer_group_admin',
     roleName: 'Employer Group Admin',
-    tenantSlug: 'regression-employer-tenant',
-    tenantName: 'Regression Employer Tenant',
+    tenantSlug: 'regression-employer-payer-tenant',
+    tenantName: 'Regression Employer Payer Tenant',
     email: 'regression-employer@example.com',
     fileName: 'employer-exclusive-report.pdf',
     searchTerm: 'employer-exclusive'
   },
   {
     key: 'broker',
-    tenantType: 'BROKER' as const,
+    tenantType: 'PAYER' as const,
     roleCode: 'broker',
     roleName: 'Broker',
-    tenantSlug: 'regression-broker-tenant',
-    tenantName: 'Regression Broker Tenant',
+    tenantSlug: 'regression-broker-payer-tenant',
+    tenantName: 'Regression Broker Payer Tenant',
     email: 'regression-broker@example.com',
     fileName: 'broker-exclusive-report.pdf',
     searchTerm: 'broker-exclusive'
   },
   {
     key: 'provider',
-    tenantType: 'PROVIDER' as const,
+    tenantType: 'CLINIC' as const,
     roleCode: 'provider',
     roleName: 'Provider',
     tenantSlug: 'regression-provider-tenant',
@@ -217,7 +217,7 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-test('search remains tenant-scoped across member, employer, broker, and provider experiences', async () => {
+test('search remains tenant-scoped across payer-hosted member, employer, broker, and provider experiences', async () => {
   const fixtures = await createFixtureData();
   const app = Fastify();
   await searchRoutes(app);

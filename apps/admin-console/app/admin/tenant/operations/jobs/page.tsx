@@ -1,5 +1,5 @@
-import { JobsMonitoringPage } from '../../../../../components/jobs-monitoring-page';
+import { redirect } from 'next/navigation';
 
-export default function AdminTenantJobsPage() {
-  return <JobsMonitoringPage scope="tenant" />;
+export default function LegacyTenantJobsPage() {
+  redirect('/admin');
 }

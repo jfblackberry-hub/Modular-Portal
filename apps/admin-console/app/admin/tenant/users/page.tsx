@@ -1,7 +1,5 @@
-import { UserListPage } from '../../../../components/user-list-page';
+import { redirect } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
-
-export default function AdminTenantUsersPage() {
-  return <UserListPage scope="tenant" />;
+export default function LegacyTenantUsersPage() {
+  redirect('/admin');
 }
