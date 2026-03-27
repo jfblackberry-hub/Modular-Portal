@@ -1,9 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-
 import type {
   ProviderOperationsAuthorizationRecord,
   ProviderOperationsClaimRecord,
@@ -11,16 +7,18 @@ import type {
   ProviderOperationsSessionRecord,
   ProviderOperationsUtilizationRecord
 } from '@payer-portal/api-contracts';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-import type { PortalSessionUser } from '../../../lib/portal-session';
 import type { ResourceCalendarMoveRequest, ResourceCalendarWeek } from '../../../lib/provider-resource-calendar';
 import {
-  RESOURCE_CALENDAR_SLOT_LABELS,
   buildResourceCalendarWeeks,
-  moveBookedResourceCalendarSlot
+  moveBookedResourceCalendarSlot,
+  RESOURCE_CALENDAR_SLOT_LABELS
 } from '../../../lib/provider-resource-calendar';
+import { PageHeader, SurfaceCard } from '../../portal-ui';
 import { ProviderWorkflowActionButton } from './provider-workflow-action-button';
-import { PageHeader, StatusBadge, SurfaceCard } from '../../portal-ui';
 
 function toneClass(status: string) {
   if (/denied|expired|open_slot|at_risk|pending_resubmission/i.test(status)) {
@@ -112,13 +110,11 @@ function workspaceHrefWithParams(
 function FilterRow({
   basePath,
   filters,
-  selected,
-  selectedKey
+  selected
 }: {
   basePath: string;
   filters: Array<{ id: string; label: string }>;
   selected: string;
-  selectedKey?: string | null;
 }) {
   return (
     <div className="flex flex-wrap gap-2">

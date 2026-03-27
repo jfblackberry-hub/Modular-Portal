@@ -1,11 +1,9 @@
 'use client';
 
 import type {
-  ProviderOperationsDashboardContract,
-  ProviderOperationsWidgetTone
+  ProviderOperationsDashboardContract
 } from '@payer-portal/api-contracts';
 
-import type { PortalSessionUser } from '../../../lib/portal-session';
 import { useProviderOperationsLiveDashboard } from '../../../lib/use-provider-operations-live-dashboard';
 import {
   AttentionStrip,
@@ -13,22 +11,6 @@ import {
   CommandCenterShell,
   type PriorityBriefRow
 } from './provider-command-center-ui';
-
-function toneFromStatus(status: string): ProviderOperationsWidgetTone {
-  if (/denied|expired|open_slot|at_risk|pending_resubmission/i.test(status)) {
-    return 'danger';
-  }
-
-  if (/due_soon|low_visits|pending|in_review|documentation_needed/i.test(status)) {
-    return 'warning';
-  }
-
-  if (/paid|active|ready|confirmed|resubmitted/i.test(status)) {
-    return 'success';
-  }
-
-  return 'info';
-}
 
 function normalizeProviderWorkspaceHref(href: string) {
   if (!href.startsWith('/provider/dashboard?')) {
@@ -137,13 +119,11 @@ function buildPriorityBriefRows(dashboard: ProviderOperationsDashboardContract):
 export function ProviderOperationsDashboard({
   clinicName,
   dashboard,
-  providerName,
-  user
+  providerName
 }: {
   clinicName: string;
   dashboard: ProviderOperationsDashboardContract;
   providerName: string;
-  user: PortalSessionUser;
 }) {
   const { dashboard: liveDashboard } = useProviderOperationsLiveDashboard(dashboard);
 

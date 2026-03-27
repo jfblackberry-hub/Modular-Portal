@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { getProviderOperationsDashboardSnapshot } from '../../../../../lib/provider-operations-snapshot';
-import { moveProviderResourceCalendarBooking, getProviderResourceCalendarWeeks } from '../../../../../lib/provider-resource-calendar-store';
 import type { ResourceCalendarMoveRequest } from '../../../../../lib/provider-resource-calendar';
+import { getProviderResourceCalendarWeeks,moveProviderResourceCalendarBooking } from '../../../../../lib/provider-resource-calendar-store';
 
 function findRequestedResource(resourceId: string, dashboard: Awaited<ReturnType<typeof getProviderOperationsDashboardSnapshot>>['dashboard']) {
   return dashboard.utilization.therapists.find((row) => row.id === resourceId) ?? null;

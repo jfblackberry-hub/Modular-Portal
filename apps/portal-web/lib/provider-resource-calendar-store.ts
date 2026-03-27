@@ -1,12 +1,12 @@
 import 'server-only';
 
+import type { ProviderOperationsUtilizationRecord } from '@payer-portal/api-contracts';
 import { prisma, runWithTenantContext } from '@payer-portal/database';
 
 import type { PortalSessionUser } from './portal-session';
 import type {
   ResourceCalendarMoveRequest,
-  ResourceCalendarOverrideRecord,
-  ResourceCalendarWeek
+  ResourceCalendarOverrideRecord
 } from './provider-resource-calendar';
 import {
   buildResourceCalendarWeeks,
@@ -14,7 +14,6 @@ import {
   getResourceCalendarDateRange,
   mergeProviderResourceCalendarOverrides
 } from './provider-resource-calendar';
-import type { ProviderOperationsUtilizationRecord } from '@payer-portal/api-contracts';
 
 function toDateOnlyValue(dateKey: string) {
   return new Date(`${dateKey}T00:00:00.000Z`);

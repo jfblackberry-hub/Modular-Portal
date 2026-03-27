@@ -23,7 +23,6 @@ export default async function ProviderDashboardRoutePage() {
       clinicName={clinicName}
       dashboard={dashboard}
       providerName={providerName}
-      user={user}
     />
   );
 }

@@ -8,8 +8,8 @@ import type {
   ProviderReferralItem,
   ProviderTrackedAuthorizationItem
 } from '../../../config/providerPortalConfig';
-import { ProviderWorkflowActionButton } from '../operations/provider-workflow-action-button';
 import { PageHeader, StatusBadge, SurfaceCard } from '../../portal-ui';
+import { ProviderWorkflowActionButton } from '../operations/provider-workflow-action-button';
 
 type AuthorizationTabKey =
   | 'check-requirement'
