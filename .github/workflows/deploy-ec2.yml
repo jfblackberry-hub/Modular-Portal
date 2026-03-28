@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - staging
     paths:
       - '.github/workflows/deploy-ec2.yml'
       - 'apps/admin-console/**'
@@ -35,7 +34,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'staging' && 'qa' || 'dev') }}
+  ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }}
 
 jobs:
   build-and-push:
