@@ -10,7 +10,18 @@ import { config } from '../../../../lib/server-runtime';
 import { PORTAL_SESSION_COOKIE } from '../../../../lib/session-constants';
 
 function buildCorsHeaders(origin: string | null) {
-  if (!origin || origin !== config.serviceEndpoints.admin) {
+  if (!origin) {
+    return null;
+  }
+
+  try {
+    const requestOrigin = new URL(origin).origin;
+    const allowedOrigin = new URL(config.serviceEndpoints.admin).origin;
+
+    if (requestOrigin !== allowedOrigin) {
+      return null;
+    }
+  } catch {
     return null;
   }
 

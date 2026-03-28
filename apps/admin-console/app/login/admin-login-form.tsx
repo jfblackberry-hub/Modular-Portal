@@ -81,7 +81,7 @@ function AdminLoginFormContent() {
   const submitLockRef = useRef(false);
   const handoffHandledRef = useRef(false);
   const [email, setEmail] = useState('tenant');
-  const [password, setPassword] = useState('password');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -131,6 +131,11 @@ function AdminLoginFormContent() {
     setIsSubmitting(true);
 
     try {
+      if (!password.trim()) {
+        setError('Enter your password to continue.');
+        return;
+      }
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -232,7 +237,7 @@ function AdminLoginFormContent() {
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="Any password"
+            placeholder="Enter password"
             required
           />
         </label>

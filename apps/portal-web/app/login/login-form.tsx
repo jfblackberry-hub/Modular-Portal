@@ -95,7 +95,11 @@ function LoginFormContent({
 
     try {
       clearLegacyAuthStorage();
-      const resolvedPassword = password.trim() || 'demo';
+      const resolvedPassword = password.trim();
+      if (!resolvedPassword) {
+        setError('Enter your password to continue.');
+        return;
+      }
       console.info('[portal-auth] auth request start', { loginPath });
       const response = await fetch(loginPath, {
         method: 'POST',
