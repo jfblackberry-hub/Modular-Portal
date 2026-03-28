@@ -38,16 +38,40 @@ if [[ -z "${INSTANCE_ID}" || "${INSTANCE_ID}" == "None" ]]; then
   exit 1
 fi
 
-compose_targets="${SERVICES[*]}"
+ACCOUNT_ID="$(aws sts get-caller-identity \
+  --region "${REGION}" \
+  --query "Account" \
+  --output text)"
 
-REMOTE_PULL_COMMAND="pull_output=\$(docker compose pull ${compose_targets} 2>&1); pull_status=\$?; printf '%s\n' \"\$pull_output\"; if [[ \$pull_status -ne 0 ]] || grep -qiE 'authorization token has expired|pull access denied|error response from daemon|denied:' <<<\"\$pull_output\"; then exit 1; fi"
+if [[ -z "${ACCOUNT_ID}" || "${ACCOUNT_ID}" == "None" ]]; then
+  echo "Unable to determine AWS account id." >&2
+  exit 1
+fi
+
+compose_targets="${SERVICES[*]}"
+PARAMETERS_FILE="$(mktemp)"
+trap 'rm -f "${PARAMETERS_FILE}"' EXIT
+
+cat > "${PARAMETERS_FILE}" <<EOF
+{
+  "commands": [
+    "aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com",
+    "cd /opt/modular-portal",
+    "docker compose pull ${compose_targets} 2>&1 | tee /tmp/modular-portal-compose-pull.log",
+    "if grep -qiE 'authorization token has expired|pull access denied|error response from daemon|denied:' /tmp/modular-portal-compose-pull.log; then exit 1; fi",
+    "docker compose up -d ${compose_targets}",
+    "sleep 15",
+    "docker ps --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'"
+  ]
+}
+EOF
 
 COMMAND_ID="$(
   aws ssm send-command \
     --region "${REGION}" \
     --instance-ids "${INSTANCE_ID}" \
     --document-name AWS-RunShellScript \
-    --parameters "commands=[\"ACCOUNT_ID=\\\$(aws sts get-caller-identity --query Account --output text)\",\"aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin \\\${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com\",\"cd /opt/modular-portal\",\"${REMOTE_PULL_COMMAND}\",\"docker compose up -d ${compose_targets}\",\"sleep 15\",\"docker ps --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'\"]" \
+    --parameters "file://${PARAMETERS_FILE}" \
     --query "Command.CommandId" \
     --output text
 )"
