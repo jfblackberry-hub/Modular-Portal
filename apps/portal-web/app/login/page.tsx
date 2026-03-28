@@ -1,166 +1,113 @@
+import { cookies } from 'next/headers';
+
+import { DemoGate } from '../../components/demo-gate';
 import { PlatformBrandingStylesheet } from '../../components/platform-branding-stylesheet';
-import { LoginForm } from './login-form';
-
-type QuickSignInUser = {
-  label: string;
-  username: string;
-  href?: string;
-};
-
-type QuickSignInGroup = {
-  title: string;
-  users: QuickSignInUser[];
-};
-
-const quickSignInGroups: QuickSignInGroup[] = [
-  {
-    title: 'Member',
-    users: [
-      { label: 'Portal member', username: 'maria' },
-      { label: 'Real Health SQL member', username: 'm0000002' },
-      { label: 'Real Health demo member', username: 'realmember' }
-    ]
-  },
-  {
-    title: 'Provider',
-    users: [
-      {
-        label: 'Provider tenant Physician',
-        username: 'dr.lee@northstarmedical.local',
-        href: '/provider-login?user=dr.lee%40northstarmedical.local&redirect=/provider/dashboard&auto=1'
-      },
-      {
-        label: 'Provider tenant Staff',
-        username: 'support.user@northstarmedical.local',
-        href: '/provider-login?user=support.user%40northstarmedical.local&redirect=/provider/dashboard&auto=1'
-      }
-    ]
-  },
-  {
-    title: 'Administrative',
-    users: [
-      { label: 'Blue Horizon tenant admin', username: 'tenant' },
-      { label: 'Real Health tenant admin', username: 'realtenantadmin' },
-      { label: 'Platform admin', username: 'admin' }
-    ]
-  },
-  {
-    title: 'Enrollment and Benefits',
-    users: [
-      {
-        label: 'Employer portal',
-        username: 'EMP-0316043829906172-001',
-        href: '/login?user=EMP-0316043829906172-001&redirect=/employer&auto=1'
-      },
-      {
-        label: 'Northstar employer admin',
-        username: 'EMP-0316043829906172-001',
-        href: '/login?user=EMP-0316043829906172-001&redirect=/employer&auto=1'
-      },
-      {
-        label: 'Lakeside employer admin',
-        username: 'EMP-0316043829906172-002',
-        href: '/login?user=EMP-0316043829906172-002&redirect=/employer&auto=1'
-      },
-      { label: 'Northbridge Benefits Group', username: 'william.schultz' },
-      { label: 'E&B internal operations', username: 'ops' }
-    ]
-  },
-  {
-    title: 'Shop and Enroll',
-    users: [
-      {
-        label: 'Shop and Enroll Individual',
-        username: 'chris',
-        href: '/login?user=chris&redirect=/individual'
-      },
-      {
-        label: 'Shop and Enroll Individual demo',
-        username: 'chris',
-        href: '/login?user=chris&redirect=/individual'
-      }
-    ]
-  }
-];
+import { DEMO_ACCESS_COOKIE, findDemoUser } from '../../lib/demo-access';
+import { AutoLoginPicker } from './auto-login-picker';
 
 export default async function LoginPage() {
+  const cookieStore = await cookies();
+  const demoAccessCookie = cookieStore.get(DEMO_ACCESS_COOKIE)?.value ?? '';
+  const hasDemoAccess = Boolean(findDemoUser(demoAccessCookie));
+
+  if (!hasDemoAccess) {
+    return <DemoGate />;
+  }
+
   return (
     <>
       <PlatformBrandingStylesheet />
       <main className="averra-platform-screen">
         <section className="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.85fr)]">
-          <section className="averra-platform-card overflow-hidden">
-            <div className="relative px-10 py-12 sm:px-12 sm:py-16">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(216,79,163,0.18),transparent_24%),radial-gradient(circle_at_85%_0%,rgba(76,159,204,0.16),transparent_26%)]" aria-hidden="true" />
-              <div className="absolute -right-14 top-8 h-36 w-36 rounded-full bg-[rgba(216,79,163,0.24)] blur-xl" aria-hidden="true" />
-              <div className="absolute -bottom-10 left-6 h-24 w-24 rounded-full bg-[rgba(76,159,204,0.22)] blur-lg" aria-hidden="true" />
+          <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(460px,0.88fr)]">
+            <section className="averra-platform-card overflow-hidden">
+              <div className="relative px-10 py-12 sm:px-12 sm:py-16">
+                <div
+                  className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(216,79,163,0.18),transparent_24%),radial-gradient(circle_at_85%_0%,rgba(76,159,204,0.16),transparent_26%)]"
+                  aria-hidden="true"
+                />
+                <div
+                  className="absolute -right-14 top-8 h-36 w-36 rounded-full bg-[rgba(216,79,163,0.24)] blur-xl"
+                  aria-hidden="true"
+                />
+                <div
+                  className="absolute -bottom-10 left-6 h-24 w-24 rounded-full bg-[rgba(76,159,204,0.22)] blur-lg"
+                  aria-hidden="true"
+                />
 
-              <div className="relative max-w-2xl">
-                <div className="averra-platform-pill px-4 py-2">
-                  <span className="averra-platform-logo averra-platform-logo--pill" aria-hidden="true">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- static platform branding asset is served from local public storage */}
-                    <img src="/branding/averra_logo_cutout.svg" alt="" />
-                  </span>
-                  <span className="text-sm font-semibold tracking-wide text-white">
-                    averra portal
-                  </span>
-                </div>
-
-                <div className="averra-platform-lockup mt-8">
-                  <span className="averra-platform-logo averra-platform-logo--hero" aria-hidden="true">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- static platform branding asset is served from local public storage */}
-                    <img src="/branding/averra_logo_cutout.svg" alt="" />
-                  </span>
-                  <div>
-                    <p className="averra-platform-kicker text-xs font-semibold text-[var(--averra-platform-muted)]">
+                <div className="relative max-w-2xl">
+                  <div className="averra-platform-pill px-4 py-2">
+                    <span className="averra-platform-logo averra-platform-logo--pill" aria-hidden="true">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- static platform branding asset is served from local public storage */}
+                      <img src="/branding/averra_logo_cutout.svg" alt="" />
+                    </span>
+                    <span className="text-sm font-semibold tracking-wide text-white">
                       averra access
-                    </p>
-                    <p className="mt-2 text-lg font-semibold text-white">
-                      Unified platform sign-in
-                    </p>
+                    </span>
                   </div>
-                </div>
 
-                <h1 className="mt-8 text-4xl font-semibold leading-tight sm:text-5xl">
-                  Secure access to the <span className="averra-platform-wordmark">averra</span> platform
-                </h1>
-                <p className="averra-platform-text-muted mt-5 max-w-xl text-base leading-7">
-                  Sign in to open member, provider, employer, broker, and admin access paths from one protected platform gateway.
-                </p>
+                  <div className="averra-platform-lockup mt-8">
+                    <span className="averra-platform-logo averra-platform-logo--hero" aria-hidden="true">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- static platform branding asset is served from local public storage */}
+                      <img src="/branding/averra_logo_cutout.svg" alt="" />
+                    </span>
+                    <div>
+                      <p className="averra-platform-kicker text-xs font-semibold text-[var(--averra-platform-muted)]">
+                        averra access
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-white">
+                        Standardized workspace sign-in
+                      </p>
+                    </div>
+                  </div>
 
-                <section className="mt-8 rounded-2xl border border-[var(--averra-border)] bg-[rgba(255,255,255,0.05)] p-5" aria-label="Quick sign-in users">
-                  <h2 className="text-sm font-semibold text-white">Quick sign-in users</h2>
-                  <div className="mt-3 space-y-3">
-                    {quickSignInGroups.map((group) => (
-                      <div key={group.title}>
+                  <h1 className="mt-8 text-4xl font-semibold leading-tight sm:text-5xl">
+                    Open the right <span className="averra-platform-wordmark">averra</span> workspace from one login surface
+                  </h1>
+                  <p className="averra-platform-text-muted mt-5 max-w-xl text-base leading-7">
+                    Use one standardized sign-in flow for admin, payer, and clinic access. Companies, personas, and active users are loaded directly from the live platform database.
+                  </p>
+
+                  <section className="mt-8 rounded-2xl border border-[var(--averra-border)] bg-[rgba(255,255,255,0.05)] p-5">
+                    <h2 className="text-sm font-semibold text-white">How it works</h2>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-xl border border-[var(--averra-border)] bg-[rgba(255,255,255,0.04)] px-4 py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--averra-platform-muted)]">
-                          {group.title}
+                          Step 1
                         </p>
-                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                          {group.users.map((user) => (
-                            <a
-                              key={`${group.title}-${user.label}-${user.username}`}
-                              href={user.href ?? `/login?user=${encodeURIComponent(user.username)}`}
-                              className="flex items-center justify-between gap-2 rounded-xl border border-[var(--averra-border)] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-xs transition hover:border-[var(--averra-blue)]"
-                            >
-                              <span className="truncate text-[var(--averra-platform-muted)]">{user.label}</span>
-                              <span className="font-semibold text-white">{user.username}</span>
-                            </a>
-                          ))}
-                        </div>
+                        <p className="mt-2 text-sm font-semibold text-white">Choose tenant type</p>
+                        <p className="mt-2 text-sm leading-6 text-[var(--averra-platform-muted)]">
+                          Start with Admin, Payer, or Clinic.
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                </section>
+                      <div className="rounded-xl border border-[var(--averra-border)] bg-[rgba(255,255,255,0.04)] px-4 py-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--averra-platform-muted)]">
+                          Step 2
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-white">Pick company and persona</p>
+                        <p className="mt-2 text-sm leading-6 text-[var(--averra-platform-muted)]">
+                          Narrow the login path to the exact audience you need.
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-[var(--averra-border)] bg-[rgba(255,255,255,0.04)] px-4 py-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--averra-platform-muted)]">
+                          Step 3
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-white">Open an active user</p>
+                        <p className="mt-2 text-sm leading-6 text-[var(--averra-platform-muted)]">
+                          The user list stays current as real users are added.
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          <div className="flex flex-col items-center gap-4 lg:items-end">
-            <LoginForm helperText="Use your username/email. Employers can also use Employer Key, for example `EMP-0316043829906172-001` or `EMP-0316043829906172-002`." />
+            <div className="flex flex-col items-center gap-4 lg:items-end">
+              <AutoLoginPicker />
+            </div>
           </div>
-        </div>
         </section>
       </main>
     </>

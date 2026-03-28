@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 
@@ -11,7 +10,6 @@ export function DemoGate({
 }: {
   redirectPath?: string;
 }) {
-  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -36,13 +34,7 @@ export function DemoGate({
         return;
       }
 
-      if (redirectPath) {
-        router.push(redirectPath);
-        router.refresh();
-        return;
-      }
-
-      router.refresh();
+      window.location.assign(redirectPath ?? '/login');
     } catch {
       setError('Demo access is temporarily unavailable. Please try again.');
     } finally {
