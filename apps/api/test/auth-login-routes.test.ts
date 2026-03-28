@@ -313,7 +313,7 @@ test('provider login resolves through tenant type and tenant-scoped role assignm
   await provisionAuthUser({
     tenant: {
       slug: 'auth-provider-tenant',
-      name: 'Auth Provider Tenant',
+      name: 'Auth Clinic Tenant',
       type: 'CLINIC'
     },
     user: {
@@ -494,6 +494,67 @@ test('provider login requires organization unit selection for multi-assigned use
 
   assert.equal(tokenPayload.activeOrganizationUnitId, northCampusUnit.id);
   assert.equal(tokenPayload.activePersonaCode, 'provider_support');
+
+  await app.close();
+});
+
+test('login catalog shows clinic-safe fallback persona labels when clinic users have no explicit roles', async () => {
+  const { user } = await provisionAuthUser({
+    tenant: {
+      slug: 'auth-provider-tenant',
+      name: 'Auth Clinic Tenant',
+      type: 'CLINIC'
+    },
+    user: {
+      email: 'clinic.user@auth.test',
+      firstName: 'Clinic',
+      lastName: 'User',
+      roleCode: 'clinic_manager',
+      roleName: 'Clinic Manager',
+      permissions: ['provider.view', 'tenant.view']
+    }
+  });
+
+  await prisma.userRole.deleteMany({
+    where: {
+      userId: user.id
+    }
+  });
+
+  const app = Fastify();
+  await authRoutes(app);
+
+  const response = await app.inject({
+    method: 'GET',
+    url: '/auth/login/catalog'
+  });
+
+  assert.equal(response.statusCode, 200, response.body);
+  const payload = response.json() as {
+    audiences: Array<{
+      key: string;
+      companies: Array<{
+        name: string;
+        personas: Array<{
+          key: string;
+          label: string;
+          users: Array<{ email: string }>;
+        }>;
+      }>;
+    }>;
+  };
+
+  const providerAudience = payload.audiences.find((audience) => audience.key === 'provider');
+  const clinicCompany = providerAudience?.companies.find(
+    (company) => company.name === 'Auth Clinic Tenant'
+  );
+  const fallbackPersona = clinicCompany?.personas.find((persona) => persona.key === 'provider');
+
+  assert.ok(fallbackPersona);
+  assert.equal(fallbackPersona?.label, 'Clinic Team');
+  assert.ok(
+    fallbackPersona?.users.some((catalogUser) => catalogUser.email === 'clinic.user@auth.test')
+  );
 
   await app.close();
 });

@@ -80,7 +80,7 @@ function ProviderSidebar({
         onClick={onCloseMobile}
         className={`tenant-provider-sidebar__item ${isActive ? 'tenant-provider-sidebar__item--active' : ''} flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
           isActive
-            ? 'border-[var(--tenant-primary-color)] bg-[var(--tenant-primary-soft-color)] text-[var(--tenant-primary-color)]'
+            ? 'border-[var(--tenant-provider-sidebar-item-active-bg)] bg-[var(--tenant-provider-sidebar-item-active-bg)] text-[var(--tenant-provider-sidebar-item-active-text)]'
             : 'border-transparent text-[var(--text-secondary)] hover:border-[var(--border-subtle)] hover:bg-slate-50 hover:text-[var(--text-primary)]'
         }`}
       >
@@ -196,6 +196,7 @@ export function ProviderPortalLayout({
           '--tenant-primary': branding.primaryColor,
           '--tenant-secondary': branding.secondaryColor,
           '--tenant-primary-color': branding.primaryColor,
+          '--tenant-primary-contrast-color': branding.primaryContrastColor,
           '--tenant-primary-soft-color': branding.primarySoftColor,
           '--tenant-secondary-color': branding.secondaryColor,
           '--tenant-secondary-soft-color': branding.secondarySoftColor,

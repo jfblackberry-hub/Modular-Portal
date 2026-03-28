@@ -69,6 +69,7 @@
   --tenant-secondary: #eaf4fb;
   --tenant-font: Inter, Aptos, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   --tenant-primary-color: var(--tenant-primary);
+  --tenant-primary-contrast-color: #ffffff;
   --tenant-primary-soft-color: rgba(61, 134, 191, 0.14);
   --tenant-secondary-color: var(--tenant-secondary);
   --tenant-secondary-soft-color: rgba(76, 158, 154, 0.12);
@@ -82,8 +83,8 @@
   --tenant-side-nav-item-description: var(--text-muted);
   --tenant-side-nav-item-hover-bg: rgba(248, 250, 252, 0.78);
   --tenant-side-nav-item-hover-text: var(--text-primary);
-  --tenant-side-nav-item-active-bg: var(--tenant-primary-soft-color);
-  --tenant-side-nav-item-active-text: var(--tenant-primary-color);
+  --tenant-side-nav-item-active-bg: var(--tenant-primary-color);
+  --tenant-side-nav-item-active-text: var(--tenant-primary-contrast-color);
   --tenant-utility-bar-bg: rgba(255, 255, 255, 0.95);
   --tenant-utility-bar-border: var(--border-subtle);
   --tenant-utility-bar-user-bg: var(--bg-card);
@@ -134,8 +135,8 @@
   --tenant-provider-sidebar-item-text: var(--text-secondary);
   --tenant-provider-sidebar-item-hover-bg: rgba(248, 250, 252, 0.78);
   --tenant-provider-sidebar-item-hover-text: var(--text-primary);
-  --tenant-provider-sidebar-item-active-bg: var(--tenant-primary-soft-color);
-  --tenant-provider-sidebar-item-active-text: var(--tenant-primary-color);
+  --tenant-provider-sidebar-item-active-bg: var(--tenant-primary-color);
+  --tenant-provider-sidebar-item-active-text: var(--tenant-primary-contrast-color);
 }
 
 * {

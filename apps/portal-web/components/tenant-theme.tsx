@@ -13,6 +13,7 @@ export function TenantTheme({ branding }: { branding: TenantBranding }) {
     root.style.setProperty('--tenant-primary', branding.primaryColor);
     root.style.setProperty('--tenant-secondary', branding.secondaryColor);
     root.style.setProperty('--tenant-primary-color', branding.primaryColor);
+    root.style.setProperty('--tenant-primary-contrast-color', branding.primaryContrastColor);
     root.style.setProperty('--tenant-primary-soft-color', branding.primarySoftColor);
     root.style.setProperty('--tenant-secondary-color', branding.secondaryColor);
     root.style.setProperty('--tenant-secondary-soft-color', branding.secondarySoftColor);
@@ -67,6 +68,7 @@ export function TenantTheme({ branding }: { branding: TenantBranding }) {
     branding.faviconUrl,
     branding.fontFamily,
     branding.primaryColor,
+    branding.primaryContrastColor,
     branding.primarySoftColor,
     branding.secondaryColor,
     branding.secondarySoftColor,

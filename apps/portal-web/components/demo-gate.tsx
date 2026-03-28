@@ -6,7 +6,11 @@ import { useState } from 'react';
 
 import { PlatformBrandingStylesheet } from './platform-branding-stylesheet';
 
-export function DemoGate() {
+export function DemoGate({
+  redirectPath
+}: {
+  redirectPath?: string;
+}) {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +33,12 @@ export function DemoGate() {
 
       if (!response.ok) {
         setError('Demo access denied. Check the assigned username and password.');
+        return;
+      }
+
+      if (redirectPath) {
+        router.push(redirectPath);
+        router.refresh();
         return;
       }
 

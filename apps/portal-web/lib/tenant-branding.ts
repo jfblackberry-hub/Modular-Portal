@@ -23,6 +23,7 @@ export interface TenantBranding {
   heroImageUrl?: string;
   themeKey?: string;
   primaryColor: string;
+  primaryContrastColor: string;
   primarySoftColor: string;
   secondaryColor: string;
   secondarySoftColor: string;
@@ -85,6 +86,37 @@ function getStringValueFromKeys(
   return undefined;
 }
 
+function getCssCustomPropertyValue(css: string | undefined, propertyName: string) {
+  if (!css) {
+    return undefined;
+  }
+
+  const escapedPropertyName = propertyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = css.match(new RegExp(`${escapedPropertyName}\\s*:\\s*([^;]+);`, 'i'));
+  const value = match?.[1]?.trim();
+  return value ? value : undefined;
+}
+
+function resolveThemeOverridesFromCustomCss(css: string | undefined) {
+  return {
+    primaryColor:
+      getCssCustomPropertyValue(css, '--tenant-primary-color') ??
+      getCssCustomPropertyValue(css, '--tenant-color-primary'),
+    primarySoftColor:
+      getCssCustomPropertyValue(css, '--tenant-primary-soft-color') ??
+      getCssCustomPropertyValue(css, '--tenant-color-primary-soft'),
+    secondaryColor:
+      getCssCustomPropertyValue(css, '--tenant-secondary-color') ??
+      getCssCustomPropertyValue(css, '--tenant-color-secondary'),
+    secondarySoftColor:
+      getCssCustomPropertyValue(css, '--tenant-secondary-soft-color') ??
+      getCssCustomPropertyValue(css, '--tenant-color-accent-soft'),
+    fontFamily:
+      getCssCustomPropertyValue(css, '--tenant-font') ??
+      getCssCustomPropertyValue(css, '--tenant-font-body')
+  };
+}
+
 function createAccentSoft(accent: string) {
   if (accent.startsWith('#') && accent.length === 7) {
     const red = parseInt(accent.slice(1, 3), 16);
@@ -95,6 +127,24 @@ function createAccentSoft(accent: string) {
   }
 
   return 'rgba(56, 189, 248, 0.18)';
+}
+
+function createContrastColor(color: string) {
+  if (!(color.startsWith('#') && color.length === 7)) {
+    return '#ffffff';
+  }
+
+  const red = parseInt(color.slice(1, 3), 16) / 255;
+  const green = parseInt(color.slice(3, 5), 16) / 255;
+  const blue = parseInt(color.slice(5, 7), 16) / 255;
+  const linearize = (channel: number) =>
+    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  const luminance =
+    0.2126 * linearize(red) +
+    0.7152 * linearize(green) +
+    0.0722 * linearize(blue);
+
+  return luminance > 0.45 ? '#0f172a' : '#ffffff';
 }
 
 function withCacheBuster(url: string | null | undefined, version: string | null | undefined) {
@@ -125,13 +175,19 @@ function buildBranding(
   });
   const config = tenant.brandingConfig;
   const experience = options.experience;
+  const resolvedCustomCss =
+    (typeof brandingOverride?.customCss === 'string' ? brandingOverride.customCss : undefined) ??
+    getStringValue(config, 'customCss');
+  const customCssOverrides = resolveThemeOverridesFromCustomCss(resolvedCustomCss);
 
   const basePrimaryColor =
+    customCssOverrides.primaryColor ??
     brandingOverride?.primaryColor ??
     getStringValue(config, 'primaryColor') ??
     tenantTheme.primaryColor ??
     DEFAULT_PRIMARY_COLOR;
   const baseSecondaryColor =
+    customCssOverrides.secondaryColor ??
     brandingOverride?.secondaryColor ??
     getStringValue(config, 'secondaryColor') ??
     tenantTheme.secondaryColor ??
@@ -243,20 +299,24 @@ function buildBranding(
       brandingOverride?.faviconUrl ?? getStringValue(config, 'faviconUrl'),
       brandingOverride?.updatedAt
     ),
-    customCss:
-      (typeof brandingOverride?.customCss === 'string' ? brandingOverride.customCss : undefined) ??
-      getStringValue(config, 'customCss'),
+    customCss: resolvedCustomCss,
     themeKey: getStringValueFromKeys(config, ['themeKey', 'theme', 'tenantThemeKey']),
     heroImageUrl:
       brandingOverride?.heroImageUrl ??
       getStringValue(config, 'heroImageUrl') ??
       getStringValue(config, 'heroImage') ??
       tenantTheme.heroImage,
-    fontFamily: getStringValue(config, 'font') ?? tenantTheme.font,
+    fontFamily:
+      customCssOverrides.fontFamily ??
+      getStringValue(config, 'font') ??
+      tenantTheme.font,
     primaryColor,
-    primarySoftColor: createAccentSoft(primaryColor),
+    primaryContrastColor: createContrastColor(primaryColor),
+    primarySoftColor:
+      customCssOverrides.primarySoftColor ?? createAccentSoft(primaryColor),
     secondaryColor,
-    secondarySoftColor: createAccentSoft(secondaryColor),
+    secondarySoftColor:
+      customCssOverrides.secondarySoftColor ?? createAccentSoft(secondaryColor),
     badgeLabel:
       experience === 'member'
         ? 'Health Plan'

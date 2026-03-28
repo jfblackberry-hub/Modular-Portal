@@ -12,6 +12,8 @@ import {
 const DEFAULT_PRIMARY_COLOR = '#38bdf8';
 const DEFAULT_SECONDARY_COLOR = '#ffffff';
 const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+const GENERATED_THEME_BRIDGE_START = '/* === tenant-theme-bridge:start === */';
+const GENERATED_THEME_BRIDGE_END = '/* === tenant-theme-bridge:end === */';
 type BrandingInput = {
   displayName?: string;
   primaryColor?: string;
@@ -95,6 +97,87 @@ function normalizeOptionalCss(value: string | undefined) {
 
   const normalized = value.trim();
   return normalized ? normalized : null;
+}
+
+function stripGeneratedThemeBridge(css: string) {
+  const startIndex = css.indexOf(GENERATED_THEME_BRIDGE_START);
+  const endIndex = css.indexOf(GENERATED_THEME_BRIDGE_END);
+
+  if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+    return css.trim();
+  }
+
+  const before = css.slice(0, startIndex).trimEnd();
+  const after = css.slice(endIndex + GENERATED_THEME_BRIDGE_END.length).trimStart();
+
+  return [before, after].filter(Boolean).join('\n\n').trim();
+}
+
+export function normalizeTenantCustomCss(css: string) {
+  const baseCss = stripGeneratedThemeBridge(css.trim());
+
+  if (!baseCss) {
+    return '';
+  }
+
+  const compatibilityLayer = `${GENERATED_THEME_BRIDGE_START}
+/* Generated compatibility layer: maps legacy tenant theme variables/selectors onto the current portal contract. */
+[data-tenant-theme] {
+  --tenant-primary: var(--tenant-color-primary, var(--tenant-primary));
+  --tenant-secondary: var(--tenant-color-secondary, var(--tenant-secondary));
+  --tenant-font: var(--tenant-font-body, var(--tenant-font));
+  --tenant-primary-color: var(--tenant-color-primary, var(--tenant-primary-color));
+  --tenant-primary-contrast-color: var(--tenant-color-primary-contrast, var(--tenant-primary-contrast-color));
+  --tenant-primary-soft-color: var(--tenant-color-primary-soft, var(--tenant-primary-soft-color));
+  --tenant-secondary-color: var(--tenant-color-secondary, var(--tenant-secondary-color));
+  --tenant-secondary-soft-color: var(--tenant-color-accent-soft, var(--tenant-secondary-soft-color));
+  --tenant-side-nav-item-active-bg: var(--tenant-color-primary, var(--tenant-side-nav-item-active-bg));
+  --tenant-side-nav-item-active-text: var(--tenant-color-primary-contrast, var(--tenant-primary-contrast-color, var(--tenant-side-nav-item-active-text)));
+  --tenant-provider-header-bg: var(--tenant-color-surface, var(--tenant-provider-header-bg));
+  --tenant-provider-header-border: var(--tenant-color-border, var(--tenant-provider-header-border));
+  --tenant-provider-header-surface: var(--tenant-color-surface, var(--tenant-provider-header-surface));
+  --tenant-provider-header-text: var(--tenant-color-text, var(--tenant-provider-header-text));
+  --tenant-provider-header-muted: var(--tenant-color-text-soft, var(--tenant-provider-header-muted));
+  --tenant-provider-sidebar-bg: var(--tenant-color-surface, var(--tenant-provider-sidebar-bg));
+  --tenant-provider-sidebar-border: var(--tenant-color-border, var(--tenant-provider-sidebar-border));
+  --tenant-provider-sidebar-item-text: var(--tenant-color-text-soft, var(--tenant-provider-sidebar-item-text));
+  --tenant-provider-sidebar-item-hover-bg: var(--tenant-color-surface-alt, var(--tenant-provider-sidebar-item-hover-bg));
+  --tenant-provider-sidebar-item-hover-text: var(--tenant-color-primary, var(--tenant-provider-sidebar-item-hover-text));
+  --tenant-provider-sidebar-item-active-bg: var(--tenant-color-primary, var(--tenant-provider-sidebar-item-active-bg));
+  --tenant-provider-sidebar-item-active-text: var(--tenant-color-primary-contrast, var(--tenant-primary-contrast-color, var(--tenant-provider-sidebar-item-active-text)));
+}
+
+[data-tenant-theme] .tenant-hero-panel {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--tenant-primary-color) 78%, #0f172a),
+      color-mix(in srgb, var(--tenant-secondary-color) 55%, var(--tenant-primary-color))
+    ),
+    linear-gradient(180deg, var(--tenant-primary-color), var(--tenant-primary-color));
+}
+
+[data-tenant-theme] .tenant-hero-title {
+  font-family: var(--tenant-font-heading, var(--tenant-font));
+}
+
+[data-tenant-theme] .tenant-provider-header {
+  background: var(--tenant-provider-header-bg);
+  border-bottom-color: var(--tenant-provider-header-border);
+}
+
+[data-tenant-theme] .tenant-provider-sidebar {
+  background: var(--tenant-provider-sidebar-bg);
+  border-right-color: var(--tenant-provider-sidebar-border);
+}
+
+[data-tenant-theme] .tenant-provider-sidebar__item--active {
+  background: var(--tenant-provider-sidebar-item-active-bg);
+  color: var(--tenant-provider-sidebar-item-active-text);
+}
+${GENERATED_THEME_BRIDGE_END}`;
+
+  return `${baseCss}\n\n${compatibilityLayer}\n`;
 }
 
 function validateColor(value: string | null, fieldName: string) {
@@ -326,20 +409,22 @@ export async function updateBrandingForTenant(
       }
     });
 
-    await tx.tenant.update({
+    const nextBrandingConfig = {
+      ...currentBrandingConfig,
+      ...buildTenantBrandingConfig({
+        displayName: nextDisplayName,
+        primaryColor: nextPrimaryColor ?? DEFAULT_PRIMARY_COLOR,
+        secondaryColor: nextSecondaryColor ?? DEFAULT_SECONDARY_COLOR,
+        logoUrl: nextLogoUrl,
+        faviconUrl: nextFaviconUrl,
+        customCss: nextCustomCss
+      })
+    } satisfies Prisma.InputJsonValue;
+
+    const updatedTenantRecord = await tx.tenant.update({
       where: { id: tenant.id },
       data: {
-        brandingConfig: {
-          ...currentBrandingConfig,
-          ...buildTenantBrandingConfig({
-            displayName: nextDisplayName,
-            primaryColor: nextPrimaryColor ?? DEFAULT_PRIMARY_COLOR,
-            secondaryColor: nextSecondaryColor ?? DEFAULT_SECONDARY_COLOR,
-            logoUrl: nextLogoUrl,
-            faviconUrl: nextFaviconUrl,
-            customCss: nextCustomCss
-          })
-        } satisfies Prisma.InputJsonValue
+        brandingConfig: nextBrandingConfig
       }
     });
 
@@ -367,7 +452,7 @@ export async function updateBrandingForTenant(
     });
 
     return {
-      ...tenant,
+      ...updatedTenantRecord,
       branding
     };
   });
@@ -401,6 +486,33 @@ export async function uploadBrandingLogoForTenant(
     tenantId,
     {
       logoUrl
+    },
+    context
+  );
+}
+
+export async function uploadBrandingCssForTenant(
+  tenantId: string,
+  file: MultipartFile,
+  context: AuditContext
+) {
+  const supportedMimeTypes = new Set(['text/css', 'text/plain', 'application/octet-stream']);
+  const fileName = file.filename.toLowerCase();
+
+  if (!supportedMimeTypes.has(file.mimetype) && !fileName.endsWith('.css')) {
+    throw new Error('CSS upload must be a .css file');
+  }
+
+  const customCss = normalizeTenantCustomCss((await file.toBuffer()).toString('utf8'));
+
+  if (!customCss) {
+    throw new Error('CSS file cannot be empty');
+  }
+
+  return updateBrandingForTenant(
+    tenantId,
+    {
+      customCss
     },
     context
   );

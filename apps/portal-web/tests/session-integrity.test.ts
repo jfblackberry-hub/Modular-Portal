@@ -9,7 +9,7 @@ import {
 import { buildAdminHandoffUrl } from '../lib/admin-redirect';
 import { buildPortalWorkspaceSessionKey } from '../lib/portal-workspace-session';
 
-test('admin handoff url no longer embeds query-param bootstrap payloads', () => {
+test('platform-admin portal users are routed into the admin console login shell only', () => {
   const url = buildAdminHandoffUrl({
     roles: ['platform_admin'],
     landingContext: 'platform_admin'
@@ -17,7 +17,7 @@ test('admin handoff url no longer embeds query-param bootstrap payloads', () => 
 
   assert.ok(url);
   const parsed = new URL(url);
-  assert.equal(parsed.pathname, '/admin/platform/health');
+  assert.equal(parsed.pathname, '/login');
   assert.equal(parsed.search, '');
 });
 

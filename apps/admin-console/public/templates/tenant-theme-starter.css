@@ -1,0 +1,62 @@
+/*
+  Tenant Theme Starter
+  This starter matches the current Clinic Command Center theme contract.
+  The upload pipeline also appends a compatibility bridge for older tenant theme variables.
+*/
+
+[data-tenant-theme="your-tenant-key"] {
+  /* Current runtime theme tokens */
+  --tenant-primary-color: #203a63;
+  --tenant-primary-contrast-color: #ffffff;
+  --tenant-primary-soft-color: rgba(32, 58, 99, 0.16);
+  --tenant-secondary-color: #4d6f97;
+  --tenant-secondary-soft-color: rgba(77, 111, 151, 0.16);
+  --tenant-font: "Aptos", "Segoe UI", Arial, sans-serif;
+
+  /* Optional legacy aliases still supported by the upload normalizer */
+  --tenant-color-primary: var(--tenant-primary-color);
+  --tenant-color-primary-soft: var(--tenant-primary-soft-color);
+  --tenant-color-secondary: var(--tenant-secondary-color);
+  --tenant-color-accent-soft: var(--tenant-secondary-soft-color);
+  --tenant-font-body: var(--tenant-font);
+  --tenant-font-heading: "Iowan Old Style", Georgia, "Times New Roman", serif;
+
+  /* Provider shell tokens */
+  --tenant-provider-header-bg: rgba(255, 255, 255, 0.95);
+  --tenant-provider-header-border: rgba(32, 58, 99, 0.12);
+  --tenant-side-nav-item-active-bg: var(--tenant-primary-color);
+  --tenant-side-nav-item-active-text: var(--tenant-primary-contrast-color);
+  --tenant-provider-sidebar-bg: #ffffff;
+  --tenant-provider-sidebar-border: rgba(32, 58, 99, 0.1);
+  --tenant-provider-sidebar-item-active-bg: var(--tenant-primary-color);
+  --tenant-provider-sidebar-item-active-text: var(--tenant-primary-contrast-color);
+}
+
+[data-tenant-theme="your-tenant-key"] .tenant-hero-panel {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--tenant-primary-color) 82%, #0f172a),
+      color-mix(in srgb, var(--tenant-secondary-color) 46%, var(--tenant-primary-color))
+    ),
+    linear-gradient(180deg, var(--tenant-primary-color), var(--tenant-primary-color));
+}
+
+[data-tenant-theme="your-tenant-key"] .tenant-hero-title {
+  font-family: var(--tenant-font-heading);
+}
+
+[data-tenant-theme="your-tenant-key"] .tenant-provider-header {
+  background: var(--tenant-provider-header-bg);
+  border-bottom-color: var(--tenant-provider-header-border);
+}
+
+[data-tenant-theme="your-tenant-key"] .tenant-provider-sidebar {
+  background: var(--tenant-provider-sidebar-bg);
+  border-right-color: var(--tenant-provider-sidebar-border);
+}
+
+[data-tenant-theme="your-tenant-key"] .tenant-provider-sidebar__item--active {
+  background: var(--tenant-provider-sidebar-item-active-bg);
+  color: var(--tenant-provider-sidebar-item-active-text);
+}

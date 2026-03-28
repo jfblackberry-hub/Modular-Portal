@@ -35,7 +35,10 @@ export function buildAdminHandoffUrl(
     return null;
   }
 
-  if (destination === '/admin/tenant/health') {
+  if (
+    destination === '/admin/tenant/health' ||
+    destination === '/admin/platform/health'
+  ) {
     return `${config.serviceEndpoints.admin}/login`;
   }
 

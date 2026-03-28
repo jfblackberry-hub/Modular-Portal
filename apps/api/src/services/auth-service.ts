@@ -28,6 +28,8 @@ type LandingContext =
   | 'tenant_admin'
   | 'platform_admin';
 
+export type AutoLoginAudience = 'admin' | 'payer' | 'provider';
+
 type SessionType = 'tenant_admin' | 'end_user' | 'platform_admin';
 
 type SessionOrganizationUnit = {
@@ -43,6 +45,45 @@ type SessionOrganizationUnitSelection = {
   organizationUnit: SessionOrganizationUnit;
 };
 
+type AutoLoginCatalogUser = {
+  id: string;
+  label: string;
+  email: string;
+  persona: string;
+  personaLabel: string;
+};
+
+type AutoLoginCatalogPersona = {
+  key: string;
+  label: string;
+  users: AutoLoginCatalogUser[];
+};
+
+type AutoLoginCatalogCompany = {
+  key: string;
+  tenantId: string | null;
+  tenantTypeCode: string;
+  name: string;
+  personas: AutoLoginCatalogPersona[];
+};
+
+export type AutoLoginCatalogAudience = {
+  key: AutoLoginAudience;
+  label: string;
+  companies: AutoLoginCatalogCompany[];
+};
+
+type AutoLoginCandidate = {
+  audience: AutoLoginAudience;
+  companyKey: string;
+  tenantId: string | null;
+  tenantTypeCode: string;
+  companyName: string;
+  personaKey: string;
+  personaLabel: string;
+  user: AutoLoginCatalogUser;
+};
+
 const PROVIDER_ROLE_CODES = new Set([
   'provider',
   'clinic_manager',
@@ -52,6 +93,19 @@ const PROVIDER_ROLE_CODES = new Set([
   'provider_support'
 ]);
 
+const PAYER_PROVIDER_ROLE_CODES = new Set([
+  'provider',
+  'provider_support'
+]);
+
+const BROKER_ROLE_CODES = new Set([
+  'broker',
+  'broker_admin',
+  'broker_staff',
+  'broker_readonly',
+  'broker_read_only'
+]);
+
 function getPurchasedModules(brandingConfig: unknown) {
   if (!brandingConfig || typeof brandingConfig !== 'object' || Array.isArray(brandingConfig)) {
     return [];
@@ -59,6 +113,17 @@ function getPurchasedModules(brandingConfig: unknown) {
 
   const modules = (brandingConfig as Record<string, unknown>).purchasedModules;
   return Array.isArray(modules) ? modules.filter((value): value is string => typeof value === 'string') : [];
+}
+
+function humanizeRoleCode(roleCode: string) {
+  return roleCode
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function getUserDisplayLabel(user: UserWithRelations) {
+  const fullName = `${user.firstName} ${user.lastName}`.trim();
+  return fullName || user.email;
 }
 
 function isProviderExperienceTenantContext(user: UserWithRelations) {
@@ -183,6 +248,35 @@ function buildSessionBrandingConfig(
         }
       : {})
   };
+}
+
+function getTenantDisplayName(
+  tenant:
+    | {
+        name: string;
+        brandingConfig?: unknown;
+        branding?: {
+          displayName: string | null;
+          primaryColor: string | null;
+          secondaryColor: string | null;
+          logoUrl: string | null;
+          faviconUrl: string | null;
+        } | null;
+      }
+    | null
+) {
+  if (!tenant) {
+    return 'Platform';
+  }
+
+  const branding = buildSessionBrandingConfig(
+    tenant.brandingConfig,
+    tenant.branding ?? null
+  ) as { displayName?: unknown };
+
+  return typeof branding.displayName === 'string' && branding.displayName.trim().length > 0
+    ? branding.displayName.trim()
+    : tenant.name;
 }
 
 type UserWithRelations = NonNullable<Awaited<ReturnType<typeof getUserWithRelationsByEmail>>>;
@@ -319,6 +413,194 @@ function getPrimaryPersonaCode(
   }
 
   return scopedRoleCodes[0] ?? landingContext;
+}
+
+function getAdminPersonaLabel(user: UserWithRelations) {
+  const scopedAssignments = getScopedRoleAssignments(user);
+
+  if (
+    scopedAssignments.some(({ role }) => role.isPlatformRole || role.code === 'platform_admin')
+  ) {
+    return {
+      key: 'platform_admin',
+      label: 'Platform Admin'
+    };
+  }
+
+  return {
+    key: 'tenant_admin',
+    label: 'Tenant Admin'
+  };
+}
+
+function getPayerPersonaLabel(user: UserWithRelations) {
+  const scopedAssignments = getScopedRoleAssignments(user);
+  const scopedRoleCodes = scopedAssignments.map(({ role }) => role.code);
+
+  if (scopedRoleCodes.includes('member')) {
+    return { key: 'member', label: 'Member' };
+  }
+
+  if (scopedRoleCodes.includes('employer_group_admin')) {
+    return { key: 'employer_group_admin', label: 'Employer' };
+  }
+
+  const brokerRole = scopedRoleCodes.find((code) => BROKER_ROLE_CODES.has(code));
+  if (brokerRole) {
+    return { key: brokerRole, label: 'Broker' };
+  }
+
+  const providerRole = scopedRoleCodes.find((code) => PAYER_PROVIDER_ROLE_CODES.has(code));
+  if (providerRole) {
+    return { key: providerRole, label: 'Payer Provider' };
+  }
+
+  const nonAdminRole = scopedRoleCodes.find(
+    (code) => code !== 'tenant_admin' && code !== 'platform_admin'
+  );
+
+  return {
+    key: nonAdminRole ?? 'payer_user',
+    label: humanizeRoleCode(nonAdminRole ?? 'payer_user')
+  };
+}
+
+function getProviderPersonaLabel(user: UserWithRelations) {
+  const scopedAssignments = getScopedRoleAssignments(user);
+  const scopedRoleCodes = scopedAssignments.map(({ role }) => role.code);
+
+  if (scopedRoleCodes.includes('clinic_manager')) {
+    return { key: 'clinic_manager', label: 'Office Manager' };
+  }
+
+  if (scopedRoleCodes.includes('tenant_admin')) {
+    return { key: 'tenant_admin', label: 'Practice Manager' };
+  }
+
+  if (scopedRoleCodes.includes('authorization_specialist')) {
+    return { key: 'authorization_specialist', label: 'Authorization Specialist' };
+  }
+
+  if (scopedRoleCodes.includes('billing_specialist')) {
+    return { key: 'billing_specialist', label: 'Billing Specialist' };
+  }
+
+  if (scopedRoleCodes.includes('eligibility_coordinator')) {
+    return { key: 'eligibility_coordinator', label: 'Eligibility Coordinator' };
+  }
+
+  if (scopedRoleCodes.includes('provider_support')) {
+    return { key: 'provider_support', label: 'Provider Support' };
+  }
+
+  if (scopedRoleCodes.includes('provider')) {
+    return { key: 'provider', label: 'Clinician' };
+  }
+
+  const nonAdminRole = scopedRoleCodes.find((code) => code !== 'platform_admin');
+  return {
+    key: nonAdminRole ?? 'provider',
+    label: nonAdminRole ? humanizeRoleCode(nonAdminRole) : 'Clinic Team'
+  };
+}
+
+function buildAutoLoginCandidatesForUser(user: UserWithRelations): AutoLoginCandidate[] {
+  if (user.status !== 'ACTIVE' || !user.isActive) {
+    return [];
+  }
+
+  const activeTenant = getEffectiveTenant(user);
+  const tenantTypeCode = normalizeTenantTypeCode(
+    activeTenant?.tenantTypeCode ?? user.tenant?.tenantTypeCode ?? null
+  );
+  const userLabel = getUserDisplayLabel(user);
+  const baseUser = {
+    id: user.id,
+    label: userLabel,
+    email: user.email
+  };
+
+  const candidates: AutoLoginCandidate[] = [];
+  const isPlatformAdminUser = getScopedRoleAssignments(user).some(
+    ({ role }) => role.isPlatformRole || role.code === 'platform_admin'
+  );
+  const isTenantAdminUser =
+    getScopedRoleAssignments(user).some(({ role }) => role.code === 'tenant_admin') ||
+    getDefaultMembership(user)?.isTenantAdmin === true;
+
+  if (isPlatformAdminUser) {
+    const persona = getAdminPersonaLabel(user);
+    candidates.push({
+      audience: 'admin',
+      companyKey: 'platform',
+      tenantId: null,
+      tenantTypeCode: 'PLATFORM',
+      companyName: 'averra',
+      personaKey: persona.key,
+      personaLabel: persona.label,
+      user: {
+        ...baseUser,
+        persona: persona.key,
+        personaLabel: persona.label
+      }
+    });
+  }
+
+  if (isTenantAdminUser && activeTenant) {
+    const persona = getAdminPersonaLabel(user);
+    candidates.push({
+      audience: 'admin',
+      companyKey: activeTenant.id,
+      tenantId: activeTenant.id,
+      tenantTypeCode: tenantTypeCode ?? 'UNKNOWN',
+      companyName: getTenantDisplayName(activeTenant),
+      personaKey: persona.key,
+      personaLabel: persona.label,
+      user: {
+        ...baseUser,
+        persona: persona.key,
+        personaLabel: persona.label
+      }
+    });
+  }
+
+  if (tenantTypeCode === 'PAYER' && activeTenant) {
+    const persona = getPayerPersonaLabel(user);
+    candidates.push({
+      audience: 'payer',
+      companyKey: activeTenant.id,
+      tenantId: activeTenant.id,
+      tenantTypeCode,
+      companyName: getTenantDisplayName(activeTenant),
+      personaKey: persona.key,
+      personaLabel: persona.label,
+      user: {
+        ...baseUser,
+        persona: persona.key,
+        personaLabel: persona.label
+      }
+    });
+  }
+
+  if (isProviderClassTenantTypeCode(tenantTypeCode) && activeTenant) {
+    const persona = getProviderPersonaLabel(user);
+    candidates.push({
+      audience: 'provider',
+      companyKey: activeTenant.id,
+      tenantId: activeTenant.id,
+      tenantTypeCode: tenantTypeCode ?? 'CLINIC',
+      companyName: getTenantDisplayName(activeTenant),
+      personaKey: persona.key,
+      personaLabel: persona.label,
+      user: {
+        ...baseUser,
+        persona: persona.key,
+        personaLabel: persona.label
+      }
+    });
+  }
+
+  return candidates;
 }
 
 function requireTenantForSession(
@@ -470,6 +752,103 @@ async function getUserWithRelationsById(userId: string) {
   return prisma.user.findUnique({
     where: { id: userId },
     include: userSessionInclude
+  });
+}
+
+export async function listAutoLoginCatalog() {
+  const users = await prisma.user.findMany({
+    where: {
+      status: 'ACTIVE',
+      isActive: true
+    },
+    include: userSessionInclude,
+    orderBy: [
+      { firstName: 'asc' },
+      { lastName: 'asc' },
+      { email: 'asc' }
+    ]
+  });
+
+  const grouped = new Map<
+    AutoLoginAudience,
+    Map<
+      string,
+      {
+        tenantId: string | null;
+        tenantTypeCode: string;
+        name: string;
+        personas: Map<
+          string,
+          {
+            label: string;
+            users: Map<string, AutoLoginCatalogUser>;
+          }
+        >;
+      }
+    >
+  >();
+
+  for (const user of users) {
+    const candidates = buildAutoLoginCandidatesForUser(user);
+
+    for (const candidate of candidates) {
+      if (!grouped.has(candidate.audience)) {
+        grouped.set(candidate.audience, new Map());
+      }
+
+      const audienceCompanies = grouped.get(candidate.audience)!;
+      if (!audienceCompanies.has(candidate.companyKey)) {
+        audienceCompanies.set(candidate.companyKey, {
+          tenantId: candidate.tenantId,
+          tenantTypeCode: candidate.tenantTypeCode,
+          name: candidate.companyName,
+          personas: new Map()
+        });
+      }
+
+      const company = audienceCompanies.get(candidate.companyKey)!;
+      if (!company.personas.has(candidate.personaKey)) {
+        company.personas.set(candidate.personaKey, {
+          label: candidate.personaLabel,
+          users: new Map()
+        });
+      }
+
+      company.personas.get(candidate.personaKey)!.users.set(candidate.user.id, candidate.user);
+    }
+  }
+
+  const audienceOrder: AutoLoginAudience[] = ['admin', 'payer', 'provider'];
+  const audienceLabels: Record<AutoLoginAudience, string> = {
+    admin: 'Admin',
+    payer: 'Payer',
+    provider: 'Clinic'
+  };
+
+  return audienceOrder.map((audienceKey) => {
+    const companies = Array.from(grouped.get(audienceKey)?.entries() ?? [])
+      .map(([key, company]) => ({
+        key,
+        tenantId: company.tenantId,
+        tenantTypeCode: company.tenantTypeCode,
+        name: company.name,
+        personas: Array.from(company.personas.entries())
+          .map(([personaKey, persona]) => ({
+            key: personaKey,
+            label: persona.label,
+            users: Array.from(persona.users.values()).sort((left, right) =>
+              left.label.localeCompare(right.label)
+            )
+          }))
+          .sort((left, right) => left.label.localeCompare(right.label))
+      }))
+      .sort((left, right) => left.name.localeCompare(right.name));
+
+    return {
+      key: audienceKey,
+      label: audienceLabels[audienceKey],
+      companies
+    };
   });
 }
 
@@ -672,6 +1051,78 @@ export async function login(
             ? sessionResult.user.session.activeOrganizationUnit?.id ?? null
             : null,
         personaCode: sessionResult.user.session.personaType
+      } satisfies Prisma.InputJsonValue,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent
+    });
+  }
+
+  return sessionResult;
+}
+
+export async function autoLoginByUserId(
+  input: {
+    userId: string;
+    audience?: AutoLoginAudience;
+    tenantId?: string | null;
+    persona?: string;
+  },
+  context: LoginContext = {}
+) {
+  const user = await getUserWithRelationsById(input.userId);
+
+  if (!user || user.status !== 'ACTIVE' || !user.isActive) {
+    return null;
+  }
+
+  const candidates = buildAutoLoginCandidatesForUser(user);
+  const matchingCandidate = candidates.find((candidate) => {
+    if (input.audience && candidate.audience !== input.audience) {
+      return false;
+    }
+
+    if (
+      typeof input.tenantId === 'string' &&
+      input.tenantId.trim() &&
+      candidate.tenantId !== input.tenantId.trim()
+    ) {
+      return false;
+    }
+
+    if (input.persona && candidate.personaKey !== input.persona) {
+      return false;
+    }
+
+    return true;
+  });
+
+  if (!matchingCandidate) {
+    return null;
+  }
+
+  const updatedUser = await recordSuccessfulLogin(user.id);
+  const sessionResult = buildAuthenticatedSessionResult(updatedUser);
+  const resolvedActiveTenant = getEffectiveTenant(updatedUser);
+
+  if (resolvedActiveTenant) {
+    await logAuthenticationEvent({
+      tenantId: resolvedActiveTenant.id,
+      actorUserId: updatedUser.id,
+      action: 'auth.login.success',
+      resourceType: 'user',
+      resourceId: updatedUser.id,
+      beforeState: {
+        lastLoginAt: user.lastLoginAt?.toISOString() ?? null
+      } satisfies Prisma.InputJsonValue,
+      afterState: {
+        lastLoginAt: updatedUser.lastLoginAt?.toISOString() ?? null,
+        sessionType: sessionResult.sessionType,
+        activeOrganizationUnitId:
+          sessionResult.user.session.type === 'end_user'
+            ? sessionResult.user.session.activeOrganizationUnit?.id ?? null
+            : null,
+        personaCode: sessionResult.user.session.personaType,
+        autoLogin: true
       } satisfies Prisma.InputJsonValue,
       ipAddress: context.ipAddress,
       userAgent: context.userAgent

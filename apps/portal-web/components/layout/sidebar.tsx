@@ -66,7 +66,7 @@ function NavLinks({
             onClick={onNavigate}
             className={`flex items-center rounded-xl border px-3 py-2 text-sm font-medium transition ${
               active
-                ? 'border-[var(--tenant-primary-color)] bg-[var(--tenant-primary-soft-color)] text-[var(--tenant-primary-color)]'
+                ? 'border-[var(--tenant-side-nav-item-active-bg)] bg-[var(--tenant-side-nav-item-active-bg)] text-[var(--tenant-side-nav-item-active-text)]'
                 : 'border-transparent text-[var(--text-secondary)] hover:border-[var(--border-subtle)] hover:bg-slate-50 hover:text-[var(--text-primary)]'
             }`}
           >

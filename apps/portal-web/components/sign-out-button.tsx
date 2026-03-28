@@ -16,6 +16,9 @@ export function SignOutButton() {
     setError('');
     try {
       await requestPortalLogout();
+      await fetch('/api/demo-access', {
+        method: 'DELETE'
+      }).catch(() => undefined);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : 'Unable to sign out right now.'
@@ -26,7 +29,7 @@ export function SignOutButton() {
     localStorage.removeItem(LEGACY_PORTAL_TOKEN_COOKIE);
     localStorage.removeItem(LEGACY_PORTAL_USER_COOKIE);
     document.cookie = `${LEGACY_PORTAL_SESSION_COOKIE}=; Max-Age=0; path=/`;
-    window.location.assign('/');
+    window.location.assign('/login');
   }
 
   return (
