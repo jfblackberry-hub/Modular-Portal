@@ -15,6 +15,7 @@ export async function POST(request: Request) {
       email?: string;
       password?: string;
       rememberMe?: boolean;
+      tenantId?: string;
       organizationUnitId?: string;
     };
     const rememberMe = body.rememberMe !== false;
@@ -26,6 +27,9 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         email: body.email ?? '',
         password: body.password ?? '',
+        ...(body.tenantId?.trim()
+          ? { tenantId: body.tenantId.trim() }
+          : {}),
         ...(body.organizationUnitId?.trim()
           ? { organizationUnitId: body.organizationUnitId.trim() }
           : {})

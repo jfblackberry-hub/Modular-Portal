@@ -13,6 +13,7 @@ import { PLATFORM_ROOT_SCOPE } from './current-user-service';
 type LoginInput = {
   email: string;
   password: string;
+  tenantId?: string;
   organizationUnitId?: string;
 };
 
@@ -43,6 +44,13 @@ type SessionOrganizationUnitSelection = {
   tenantId: string;
   isDefault: boolean;
   organizationUnit: SessionOrganizationUnit;
+};
+
+type SessionTenantSelection = {
+  id: string;
+  name: string;
+  tenantTypeCode: string;
+  isDefault: boolean;
 };
 
 type AutoLoginCatalogUser = {
@@ -126,13 +134,16 @@ function getUserDisplayLabel(user: UserWithRelations) {
   return fullName || user.email;
 }
 
-function isProviderExperienceTenantContext(user: UserWithRelations) {
-  const scopedAssignments = getScopedRoleAssignments(user);
+function isProviderExperienceTenantContextForTenant(
+  user: UserWithRelations,
+  tenantId?: string | null
+) {
+  const scopedAssignments = getScopedRoleAssignmentsForTenant(user, tenantId);
   const scopedRoleCodes = scopedAssignments.map(({ role }) => role.code);
   const permissions = new Set(
     scopedAssignments.flatMap(({ role }) => role.permissions.map(({ permission }) => permission.code))
   );
-  const effectiveTenant = getEffectiveTenant(user);
+  const effectiveTenant = getEffectiveTenant(user, tenantId);
   const tenantTypeCode = normalizeTenantTypeCode(
     effectiveTenant?.tenantTypeCode ?? user.tenant?.tenantTypeCode ?? null
   );
@@ -293,8 +304,60 @@ function getDefaultMembership(user: UserWithRelations) {
   );
 }
 
-function getEffectiveTenant(user: UserWithRelations) {
-  return getDefaultMembership(user)?.tenant ?? user.tenant ?? null;
+function getActiveMemberships(user: UserWithRelations) {
+  return user.memberships.filter((membership) => membership.status === 'ACTIVE');
+}
+
+function getAvailableTenantSelections(user: UserWithRelations): SessionTenantSelection[] {
+  const memberships = getActiveMemberships(user);
+  const seenTenantIds = new Set<string>();
+
+  return memberships.flatMap((membership) => {
+    if (seenTenantIds.has(membership.tenantId)) {
+      return [];
+    }
+
+    seenTenantIds.add(membership.tenantId);
+    return [
+      {
+        id: membership.tenant.id,
+        name: membership.tenant.name,
+        tenantTypeCode: membership.tenant.tenantTypeCode,
+        isDefault: membership.isDefault
+      }
+    ];
+  });
+}
+
+function getEffectiveTenant(
+  user: UserWithRelations,
+  requestedTenantId?: string | null
+) {
+  const normalizedRequestedTenantId = requestedTenantId?.trim() || null;
+  const activeMemberships = getActiveMemberships(user);
+
+  if (normalizedRequestedTenantId) {
+    const matchingMembership = activeMemberships.find(
+      (membership) => membership.tenantId === normalizedRequestedTenantId
+    );
+
+    if (matchingMembership) {
+      return matchingMembership.tenant;
+    }
+
+    if (user.tenant?.id === normalizedRequestedTenantId) {
+      return user.tenant;
+    }
+
+    return null;
+  }
+
+  return (
+    activeMemberships.find((membership) => membership.isDefault)?.tenant ??
+    activeMemberships[0]?.tenant ??
+    user.tenant ??
+    null
+  );
 }
 
 function getAvailableOrganizationUnitSelections(
@@ -344,15 +407,28 @@ function getAvailableOrganizationUnitSelections(
 function getScopedRoleAssignments(user: UserWithRelations) {
   const effectiveTenant = getEffectiveTenant(user);
 
+  return getScopedRoleAssignmentsForTenant(user, effectiveTenant?.id);
+}
+
+function getScopedRoleAssignmentsForTenant(
+  user: UserWithRelations,
+  tenantId: string | null | undefined
+) {
+  const normalizedTenantId = tenantId?.trim() || null;
+
   return user.roles.filter((assignment) =>
-    effectiveTenant
-      ? assignment.tenantId === effectiveTenant.id || assignment.tenantId === null
+    normalizedTenantId
+      ? assignment.tenantId === normalizedTenantId || assignment.tenantId === null
       : assignment.tenantId === null
   );
 }
 
-function getLandingContextForUser(user: UserWithRelations): LandingContext {
-  const scopedAssignments = getScopedRoleAssignments(user);
+function getLandingContextForUser(
+  user: UserWithRelations,
+  requestedTenantId?: string | null
+): LandingContext {
+  const effectiveTenant = getEffectiveTenant(user, requestedTenantId);
+  const scopedAssignments = getScopedRoleAssignmentsForTenant(user, effectiveTenant?.id);
   const scopedRoleCodes = scopedAssignments.map(({ role }) => role.code);
 
   if (scopedAssignments.some(({ role }) => role.isPlatformRole || role.code === 'platform_admin')) {
@@ -366,11 +442,10 @@ function getLandingContextForUser(user: UserWithRelations): LandingContext {
     return 'tenant_admin';
   }
 
-  if (isProviderExperienceTenantContext(user)) {
+  if (isProviderExperienceTenantContextForTenant(user, effectiveTenant?.id)) {
     return 'provider';
   }
 
-  const effectiveTenant = getEffectiveTenant(user);
   const tenantTypeCode = normalizeTenantTypeCode(
     effectiveTenant?.tenantTypeCode ?? user.tenant?.tenantTypeCode ?? null
   );
@@ -626,17 +701,18 @@ function requireTenantForSession(
 function buildAuthenticatedSessionResult(
   user: UserWithRelations,
   options: {
+    tenantId?: string | null;
     activeOrganizationUnitId?: string | null;
   } = {}
 ) {
-  const activeTenant = getEffectiveTenant(user);
-  const landingContext = getLandingContextForUser(user);
+  const activeTenant = getEffectiveTenant(user, options.tenantId);
+  const landingContext = getLandingContextForUser(user, activeTenant?.id);
   const sessionType = getSessionTypeForLandingContext(landingContext);
   const sessionTenantId =
     sessionType === 'platform_admin'
       ? null
       : requireTenantForSession(sessionType, activeTenant);
-  const scopedAssignments = getScopedRoleAssignments(user);
+  const scopedAssignments = getScopedRoleAssignmentsForTenant(user, activeTenant?.id);
   const scopedRoleCodes = scopedAssignments.map(({ role }) => role.code);
   const activeOrganizationUnits = getAvailableOrganizationUnitSelections(
     user,
@@ -921,9 +997,9 @@ async function recordSuccessfulLogin(userId: string) {
 
 function buildOrganizationUnitSelectionRequiredResult(user: UserWithRelations) {
   const activeTenant = getEffectiveTenant(user);
-  const scopedAssignments = getScopedRoleAssignments(user);
+  const scopedAssignments = getScopedRoleAssignmentsForTenant(user, activeTenant?.id);
   const scopedRoleCodes = scopedAssignments.map(({ role }) => role.code);
-  const landingContext = getLandingContextForUser(user);
+  const landingContext = getLandingContextForUser(user, activeTenant?.id);
   const availableOrganizationUnits = getAvailableOrganizationUnitSelections(
     user,
     activeTenant?.id
@@ -953,8 +1029,23 @@ function buildOrganizationUnitSelectionRequiredResult(user: UserWithRelations) {
   };
 }
 
+function buildTenantSelectionRequiredResult(user: UserWithRelations) {
+  const availableTenants = getAvailableTenantSelections(user);
+
+  return {
+    tenantSelectionRequired: true as const,
+    user: {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      availableTenants
+    }
+  };
+}
+
 export async function login(
-  { email, password, organizationUnitId }: LoginInput,
+  { email, password, tenantId, organizationUnitId }: LoginInput,
   context: LoginContext = {},
   options: {
     requiredLandingContext?: LandingContext;
@@ -977,8 +1068,28 @@ export async function login(
   }
 
   const activeMembership = getDefaultMembership(user);
-  const activeTenant = getEffectiveTenant(user);
-  const landingContext = getLandingContextForUser(user);
+  const availableTenants = getAvailableTenantSelections(user);
+  const normalizedTenantId = tenantId?.trim() || null;
+
+  if (
+    availableTenants.length > 1 &&
+    !normalizedTenantId
+  ) {
+    return buildTenantSelectionRequiredResult(user);
+  }
+
+  if (
+    normalizedTenantId &&
+    !availableTenants.some((tenant) => tenant.id === normalizedTenantId)
+  ) {
+    throw new SessionIntegrityError(
+      'The selected tenant is not available for this user.',
+      403
+    );
+  }
+
+  const activeTenant = getEffectiveTenant(user, normalizedTenantId);
+  const landingContext = getLandingContextForUser(user, activeTenant?.id);
   const availableOrganizationUnits = getAvailableOrganizationUnitSelections(
     user,
     activeTenant?.id
@@ -1020,6 +1131,7 @@ export async function login(
 
   const updatedUser = await recordSuccessfulLogin(user.id);
   const sessionResult = buildAuthenticatedSessionResult(updatedUser, {
+    tenantId: activeTenant?.id ?? null,
     activeOrganizationUnitId: organizationUnitId?.trim() ?? null
   });
   const resolvedLandingContext = sessionResult.landingContext;
@@ -1101,7 +1213,9 @@ export async function autoLoginByUserId(
   }
 
   const updatedUser = await recordSuccessfulLogin(user.id);
-  const sessionResult = buildAuthenticatedSessionResult(updatedUser);
+  const sessionResult = buildAuthenticatedSessionResult(updatedUser, {
+    tenantId: matchingCandidate.tenantId ?? null
+  });
   const resolvedActiveTenant = getEffectiveTenant(updatedUser);
 
   if (resolvedActiveTenant) {

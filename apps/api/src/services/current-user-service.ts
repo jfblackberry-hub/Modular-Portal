@@ -198,8 +198,7 @@ export async function getCurrentUserFromHeaders(
     tokenPayload.sessionType === 'tenant_admin' &&
     (tokenPayload.tenantId === PLATFORM_ROOT_SCOPE ||
       (!tenantAdminTenantIds.includes(tokenPayload.tenantId) &&
-        !permissionCodes.includes('admin.manage') &&
-        !accessibleTenantIds.includes(tokenPayload.tenantId)))
+        !permissionCodes.includes('admin.manage')))
   ) {
     throw new AuthenticationError('Tenant admin session requires a valid tenant scope.');
   }

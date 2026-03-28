@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { readProcessEnv } from '@payer-portal/config';
 import { clearTenantContext, setTenantContext } from '@payer-portal/database';
+import { isPublicAuthRoute } from '@payer-portal/shared-types';
 import {
   createStructuredLogger,
   initializeMonitoring,
@@ -72,9 +73,7 @@ function isTenantContextExemptRoute(url: string) {
     url.startsWith('/api/health/') ||
     url === '/public/platform-branding/custom.css' ||
     url === '/metrics' ||
-    url === '/auth/login' ||
-    url === '/auth/login/provider' ||
-    url === '/auth/login/employer' ||
+    isPublicAuthRoute(url) ||
     url === '/auth/portal-handoffs/consume' ||
     url.startsWith('/preview-sessions/launch/')
   );

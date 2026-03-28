@@ -498,6 +498,146 @@ test('provider login requires organization unit selection for multi-assigned use
   await app.close();
 });
 
+test('login requires explicit tenant selection for users with multiple active tenant memberships', async () => {
+  const { user } = await provisionAuthUser({
+    tenant: {
+      slug: 'auth-payer-tenant',
+      name: 'Auth Payer Tenant',
+      type: 'PAYER'
+    },
+    user: {
+      email: 'multitenant.user@auth.test',
+      firstName: 'Morgan',
+      lastName: 'Scope',
+      roleCode: 'auth_member',
+      roleName: 'Member',
+      permissions: ['member.view']
+    }
+  });
+
+  const clinicTenant = await prisma.tenant.create({
+    data: {
+      name: 'Auth Secondary Clinic',
+      slug: 'auth-provider-tenant',
+      type: 'CLINIC',
+      tenantTypeCode: 'CLINIC',
+      status: 'ACTIVE',
+      isActive: true,
+      brandingConfig: {}
+    }
+  });
+
+  const clinicRole = await prisma.role.upsert({
+    where: {
+      code: 'provider_support'
+    },
+    update: {
+      name: 'Provider Support',
+      tenantTypeCode: 'CLINIC'
+    },
+    create: {
+      code: 'provider_support',
+      name: 'Provider Support',
+      tenantTypeCode: 'CLINIC'
+    }
+  });
+
+  const providerViewPermission = await prisma.permission.upsert({
+    where: { code: 'provider.view' },
+    update: { name: 'provider.view' },
+    create: { code: 'provider.view', name: 'provider.view' }
+  });
+
+  await prisma.rolePermission.upsert({
+    where: {
+      roleId_permissionId: {
+        roleId: clinicRole.id,
+        permissionId: providerViewPermission.id
+      }
+    },
+    update: {},
+    create: {
+      roleId: clinicRole.id,
+      permissionId: providerViewPermission.id
+    }
+  });
+
+  await prisma.userTenantMembership.create({
+    data: {
+      userId: user.id,
+      tenantId: clinicTenant.id,
+      isDefault: false,
+      isTenantAdmin: false,
+      status: 'ACTIVE',
+      activatedAt: new Date()
+    }
+  });
+
+  await prisma.userRole.create({
+    data: {
+      userId: user.id,
+      roleId: clinicRole.id,
+      tenantId: clinicTenant.id
+    }
+  });
+
+  const app = Fastify();
+  await authRoutes(app);
+
+  const challengedResponse = await app.inject({
+    method: 'POST',
+    url: '/auth/login',
+    payload: {
+      email: 'multitenant.user@auth.test',
+      password: 'demo12345'
+    }
+  });
+
+  assert.equal(challengedResponse.statusCode, 409, challengedResponse.body);
+  const challengedPayload = challengedResponse.json() as {
+    tenantSelectionRequired: boolean;
+    user: {
+      availableTenants: Array<{ id: string; name: string; tenantTypeCode: string }>;
+    };
+  };
+
+  assert.equal(challengedPayload.tenantSelectionRequired, true);
+  assert.equal(challengedPayload.user.availableTenants.length, 2);
+
+  const selectedResponse = await app.inject({
+    method: 'POST',
+    url: '/auth/login',
+    payload: {
+      email: 'multitenant.user@auth.test',
+      password: 'demo12345',
+      tenantId: clinicTenant.id
+    }
+  });
+
+  assert.equal(selectedResponse.statusCode, 200, selectedResponse.body);
+  const selectedPayload = selectedResponse.json() as {
+    user: {
+      landingContext: string;
+      tenant: {
+        id: string;
+        tenantTypeCode: string;
+      };
+      session: {
+        tenantId: string | null;
+        roles: string[];
+      };
+    };
+  };
+
+  assert.equal(selectedPayload.user.tenant.id, clinicTenant.id);
+  assert.equal(selectedPayload.user.tenant.tenantTypeCode, 'CLINIC');
+  assert.equal(selectedPayload.user.session.tenantId, clinicTenant.id);
+  assert.equal(selectedPayload.user.landingContext, 'provider');
+  assert.ok(selectedPayload.user.session.roles.includes('provider_support'));
+
+  await app.close();
+});
+
 test('login catalog shows clinic-safe fallback persona labels when clinic users have no explicit roles', async () => {
   const { user } = await provisionAuthUser({
     tenant: {

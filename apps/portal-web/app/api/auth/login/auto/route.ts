@@ -12,27 +12,24 @@ import { PORTAL_SESSION_COOKIE } from '../../../../../lib/session-constants';
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
-      email?: string;
-      password?: string;
+      userId?: string;
+      audience?: 'admin' | 'payer' | 'provider';
+      tenantId?: string | null;
+      persona?: string;
       rememberMe?: boolean;
-      tenantId?: string;
-      organizationUnitId?: string;
     };
     const rememberMe = body.rememberMe !== false;
-    const response = await fetch(`${config.serviceEndpoints.auth}/auth/login/provider`, {
+
+    const response = await fetch(`${config.serviceEndpoints.auth}/auth/login/auto`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        email: body.email ?? '',
-        password: body.password ?? '',
-        ...(body.tenantId?.trim()
-          ? { tenantId: body.tenantId.trim() }
-          : {}),
-        ...(body.organizationUnitId?.trim()
-          ? { organizationUnitId: body.organizationUnitId.trim() }
-          : {})
+        userId: body.userId ?? '',
+        audience: body.audience,
+        tenantId: body.tenantId ?? null,
+        persona: body.persona
       }),
       cache: 'no-store'
     });

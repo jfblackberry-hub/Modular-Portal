@@ -1,5 +1,6 @@
 import './lib/runtime-config';
 
+import { isPublicAuthRoute } from '@payer-portal/shared-types';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
@@ -116,11 +117,11 @@ export async function middleware(request: NextRequest) {
   const isProtectedDemoPage =
     pathname === '/login' ||
     pathname.startsWith('/login') ||
+    pathname === '/provider-login' ||
+    pathname.startsWith('/provider-login') ||
     pathname === '/employer-login' ||
     pathname.startsWith('/employer-login');
-  const isProtectedDemoAuthApi =
-    pathname === '/api/auth/login' ||
-    pathname === '/api/auth/login/employer';
+  const isProtectedDemoAuthApi = isPublicAuthRoute(pathname, { prefix: '/api' });
 
   if (isDemoAccessApi) {
     return NextResponse.next();
@@ -139,9 +140,7 @@ export async function middleware(request: NextRequest) {
 
   if (
     isApiRoute &&
-    pathname !== '/api/auth/login' &&
-    pathname !== '/api/auth/login/employer' &&
-    pathname !== '/api/auth/login/provider' &&
+    !isPublicAuthRoute(pathname, { prefix: '/api' }) &&
     pathname !== '/api/auth/logout' &&
     pathname !== '/api/auth/session'
   ) {

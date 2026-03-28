@@ -30,6 +30,11 @@ function LoginFormContent({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [tenantId, setTenantId] = useState('');
+  const [tenantOptions, setTenantOptions] = useState<
+    Array<{ id: string; name: string; tenantTypeCode: string; isDefault: boolean }>
+  >([]);
+  const [tenantPrompt, setTenantPrompt] = useState('');
   const [organizationUnitId, setOrganizationUnitId] = useState('');
   const [organizationUnitOptions, setOrganizationUnitOptions] = useState<
     Array<{ id: string; name: string; type: string }>
@@ -83,6 +88,7 @@ function LoginFormContent({
     const resolvedEmail = emailOverride ?? email;
     submitLockRef.current = true;
     setError('');
+    setTenantPrompt('');
     setOrganizationUnitPrompt('');
     setAuthPhase('authenticating');
     console.info('[portal-auth] submit click', { loginPath, email: resolvedEmail, rememberMe });
@@ -101,6 +107,7 @@ function LoginFormContent({
           email: resolvedEmail,
           password: resolvedPassword,
           rememberMe,
+          ...(tenantId ? { tenantId } : {}),
           ...(organizationUnitId ? { organizationUnitId } : {})
         })
       });
@@ -113,8 +120,15 @@ function LoginFormContent({
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as {
           message?: string;
+          tenantSelectionRequired?: boolean;
           organizationUnitSelectionRequired?: boolean;
           user?: {
+            availableTenants?: Array<{
+              id: string;
+              name: string;
+              tenantTypeCode: string;
+              isDefault: boolean;
+            }>;
             availableOrganizationUnits?: Array<{
               id: string;
               name: string;
@@ -127,9 +141,30 @@ function LoginFormContent({
         } | null;
         if (
           response.status === 409 &&
+          payload?.tenantSelectionRequired === true &&
+          payload.user?.availableTenants?.length
+        ) {
+          setTenantOptions(payload.user.availableTenants);
+          setTenantId((current) =>
+            current ||
+            payload.user?.availableTenants?.find((tenant) => tenant.isDefault)?.id ||
+            payload.user?.availableTenants?.[0]?.id ||
+            ''
+          );
+          setTenantPrompt('Select the tenant you want to use for this session.');
+          setOrganizationUnitOptions([]);
+          setOrganizationUnitId('');
+          setOrganizationUnitPrompt('');
+          setError('');
+          return;
+        }
+        if (
+          response.status === 409 &&
           payload?.organizationUnitSelectionRequired === true &&
           payload.user?.availableOrganizationUnits?.length
         ) {
+          setTenantOptions([]);
+          setTenantPrompt('');
           setOrganizationUnitOptions(payload.user.availableOrganizationUnits);
           setOrganizationUnitId((current) =>
             current ||
@@ -186,6 +221,8 @@ function LoginFormContent({
         };
       };
 
+      setTenantOptions([]);
+      setTenantPrompt('');
       setOrganizationUnitOptions([]);
       setOrganizationUnitPrompt('');
 
@@ -283,7 +320,9 @@ function LoginFormContent({
     password,
     rememberMe,
     requestedRedirect,
-    successPath
+    successPath,
+    tenantId,
+    organizationUnitId
   ]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -334,6 +373,9 @@ function LoginFormContent({
             value={email}
             onChange={(event) => {
               setEmail(event.target.value);
+              setTenantOptions([]);
+              setTenantId('');
+              setTenantPrompt('');
               setOrganizationUnitOptions([]);
               setOrganizationUnitId('');
               setOrganizationUnitPrompt('');
@@ -352,6 +394,37 @@ function LoginFormContent({
             Demo default password is <span className="font-medium">demo</span> if left blank.
           </p>
         </label>
+
+        {tenantOptions.length > 0 ? (
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--text-primary)]">
+              Tenant
+            </span>
+            <select
+              className="portal-input mt-2 w-full px-4 py-3 text-sm outline-none focus:border-[var(--tenant-primary-color)]"
+              value={tenantId}
+              onChange={(event) => {
+                setTenantId(event.target.value);
+                setOrganizationUnitOptions([]);
+                setOrganizationUnitId('');
+                setOrganizationUnitPrompt('');
+              }}
+              required
+              aria-label="Tenant"
+            >
+              {tenantOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name} ({option.tenantTypeCode.toLowerCase()})
+                </option>
+              ))}
+            </select>
+            {tenantPrompt ? (
+              <p className="mt-2 text-[13px] text-[var(--text-muted)]">
+                {tenantPrompt}
+              </p>
+            ) : null}
+          </label>
+        ) : null}
 
         {organizationUnitOptions.length > 0 ? (
           <label className="block">
@@ -435,6 +508,8 @@ function LoginFormContent({
             ? 'Signing in...'
             : authPhase === 'finalizing'
               ? 'Finishing sign in...'
+              : tenantOptions.length > 0
+                ? 'Continue with Tenant'
               : organizationUnitOptions.length > 0
                 ? 'Continue with Organization Unit'
                 : 'Sign In'}
