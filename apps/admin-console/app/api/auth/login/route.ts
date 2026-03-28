@@ -14,6 +14,13 @@ type AuthUserPayload = {
   email: string;
   permissions: string[];
   roles: string[];
+  landingContext?: string;
+  session?: {
+    type?: string;
+    tenantId?: string | null;
+    roles?: string[];
+    permissions?: string[];
+  };
   tenant?: {
     id?: string;
   };

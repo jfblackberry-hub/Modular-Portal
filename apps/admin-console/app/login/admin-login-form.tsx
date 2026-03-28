@@ -1,7 +1,8 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
-import { Suspense, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 
 import { useAdminSession } from '../../components/admin-session-provider';
 import type { AdminSession } from '../../lib/admin-session';
@@ -75,12 +76,48 @@ async function establishAdminHandoffSession(input: {
 }
 
 function AdminLoginFormContent() {
+  const searchParams = useSearchParams();
   const { applySession } = useAdminSession();
   const submitLockRef = useRef(false);
+  const handoffHandledRef = useRef(false);
   const [email, setEmail] = useState('tenant');
   const [password, setPassword] = useState('password');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const artifact = searchParams.get('artifact')?.trim();
+    const redirectPath = searchParams.get('redirectPath')?.trim() || undefined;
+
+    if (!artifact || handoffHandledRef.current) {
+      return;
+    }
+
+    handoffHandledRef.current = true;
+    setError('');
+    setIsSubmitting(true);
+
+    void establishAdminHandoffSession({
+      artifact,
+      handoffPath: '/api/auth/session/handoff',
+      redirectPath
+    })
+      .then((handoffPayload) => {
+        applySession(handoffPayload.session);
+        window.location.assign(handoffPayload.redirectPath ?? redirectPath ?? '/admin');
+      })
+      .catch((nextError) => {
+        setError(
+          nextError instanceof Error
+            ? nextError.message
+            : 'Admin session handoff failed.'
+        );
+        handoffHandledRef.current = false;
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
+  }, [applySession, searchParams]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

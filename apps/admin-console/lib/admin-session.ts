@@ -19,15 +19,46 @@ export function createAdminSessionFromAuthUser(user: {
   email: string;
   roles: string[];
   permissions: string[];
+  landingContext?: string | null;
+  session?: {
+    type?: string | null;
+    tenantId?: string | null;
+    roles?: string[] | null;
+    permissions?: string[] | null;
+  } | null;
+  tenantId?: string | null;
   tenant?: {
     id?: string;
   };
 }): AdminSession | null {
-  const roles = Array.isArray(user.roles) ? user.roles : [];
-  const permissions = Array.isArray(user.permissions) ? user.permissions : [];
+  const sessionRoles = Array.isArray(user.session?.roles) ? user.session.roles : [];
+  const sessionPermissions = Array.isArray(user.session?.permissions)
+    ? user.session.permissions
+    : [];
+  const roles = Array.from(
+    new Set([
+      ...(Array.isArray(user.roles) ? user.roles : []),
+      ...sessionRoles
+    ])
+  );
+  const permissions = Array.from(
+    new Set([
+      ...(Array.isArray(user.permissions) ? user.permissions : []),
+      ...sessionPermissions
+    ])
+  );
+  const normalizedLandingContext = user.landingContext?.trim().toLowerCase() ?? '';
+  const normalizedSessionType = user.session?.type?.trim().toLowerCase() ?? '';
   const isPlatformAdmin =
-    roles.includes('platform_admin') || roles.includes('platform-admin');
-  const isTenantAdmin = roles.includes('tenant_admin') || isPlatformAdmin;
+    roles.includes('platform_admin') ||
+    roles.includes('platform-admin') ||
+    normalizedLandingContext === 'platform_admin' ||
+    normalizedSessionType === 'platform_admin';
+  const isTenantAdmin =
+    roles.includes('tenant_admin') ||
+    normalizedLandingContext === 'tenant_admin' ||
+    normalizedSessionType === 'tenant_admin' ||
+    isPlatformAdmin;
 
   if (!user.id?.trim() || !user.email?.trim() || !hasAdminConsoleAccess({
     isPlatformAdmin,
@@ -39,7 +70,11 @@ export function createAdminSessionFromAuthUser(user: {
   return {
     id: user.id,
     email: user.email,
-    tenantId: user.tenant?.id?.trim() || '',
+    tenantId:
+      user.tenant?.id?.trim() ||
+      user.tenantId?.trim() ||
+      user.session?.tenantId?.trim() ||
+      '',
     roles,
     permissions,
     isPlatformAdmin,

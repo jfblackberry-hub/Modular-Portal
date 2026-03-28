@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { apiBaseUrl, getAdminAuthHeaders, getStoredAdminUserId } from '../lib/api-auth';
+import { apiBaseUrl, getAdminAuthHeaders } from '../lib/api-auth';
 import { clearAdminClientCache } from '../lib/admin-client-data';
 import { portalPublicOrigin } from '../lib/public-runtime';
 import { SectionCard } from './section-card';
@@ -244,14 +244,6 @@ function TenantAdminSettingsContent({ tenantId }: { tenantId?: string }) {
   const userDirectoryWindowHeight = 'max-h-[36rem]';
 
   const loadSettings = useCallback(async function loadSettings() {
-    if (!getStoredAdminUserId()) {
-      setError(
-        'Sign in with a tenant admin account to load tenant settings.'
-      );
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
     setError('');
 

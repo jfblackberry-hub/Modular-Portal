@@ -4,7 +4,6 @@ import { useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
-import { buildAdminHandoffUrl } from '../../lib/admin-redirect';
 import {
   LEGACY_PORTAL_SESSION_COOKIE,
   LEGACY_PORTAL_TOKEN_COOKIE,
@@ -183,6 +182,8 @@ function LoginFormContent({
 
       const payload = (await response.json()) as {
         sessionEstablished?: boolean;
+        sessionHandoff?: boolean;
+        handoffUrl?: string;
         user: {
           id: string;
           firstName: string;
@@ -227,8 +228,16 @@ function LoginFormContent({
       setOrganizationUnitPrompt('');
 
       console.info('[portal-auth] token write', {
-        sessionEstablished: payload.sessionEstablished === true
+        sessionEstablished: payload.sessionEstablished === true,
+        sessionHandoff: payload.sessionHandoff === true
       });
+
+      if (payload.sessionHandoff === true && payload.handoffUrl) {
+        console.info('[portal-auth] redirect/navigation', { to: payload.handoffUrl });
+        navigating = true;
+        window.location.assign(payload.handoffUrl);
+        return;
+      }
 
       if (payload.sessionEstablished !== true) {
         setError('Sign-in state could not be established. Please try again.');
@@ -243,18 +252,10 @@ function LoginFormContent({
       }
 
       console.info('[portal-auth] auth state change', { state: 'authenticated' });
-      const adminRedirectUrl = buildAdminHandoffUrl(payload.user);
       const redirectPath =
         requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')
           ? requestedRedirect
           : successPath;
-
-      if (adminRedirectUrl) {
-        console.info('[portal-auth] redirect/navigation', { to: adminRedirectUrl });
-        navigating = true;
-        window.location.assign(adminRedirectUrl);
-        return;
-      }
 
       if (requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')) {
         console.info('[portal-auth] redirect/navigation', { to: requestedRedirect });
@@ -267,10 +268,7 @@ function LoginFormContent({
         payload.user.session.type === 'platform_admin' ||
         payload.user.session.type === 'tenant_admin'
       ) {
-        const target = adminRedirectUrl ?? '/login';
-        console.info('[portal-auth] redirect/navigation', { to: target });
-        navigating = true;
-        window.location.assign(target);
+        setError('Admin sign-in handoff did not complete. Please try again.');
         return;
       }
 

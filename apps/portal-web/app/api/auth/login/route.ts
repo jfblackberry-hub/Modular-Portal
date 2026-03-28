@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 
+import {
+  createAdminSessionHandoff,
+  requiresAdminSessionHandoff
+} from '../../../../lib/admin-session-handoff';
 import { clearLegacyPortalAuthCookies } from '../../../../lib/legacy-auth-cookies';
 import {
   createSignedPortalSessionCookieValue,
@@ -47,6 +51,15 @@ export async function POST(request: Request) {
       return NextResponse.json(payload, { status: response.status });
     }
 
+    if (requiresAdminSessionHandoff(payload.user as never)) {
+      const handoff = await createAdminSessionHandoff({
+        accessToken: payload.token,
+        user: payload.user as never
+      });
+
+      return NextResponse.json(handoff, { status: 200 });
+    }
+
     const maxAge = getSessionMaxAge(rememberMe);
     const sessionCookieValue = await createSignedPortalSessionCookieValue({
       accessToken: payload.token,
@@ -74,7 +87,7 @@ export async function POST(request: Request) {
     return nextResponse;
   } catch {
     return NextResponse.json(
-      { message: 'Local API unavailable. Start the API service and try again.' },
+      { message: 'Local sign-in unavailable. Start the local services and try again.' },
       { status: 503 }
     );
   }

@@ -3,8 +3,6 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { buildAdminHandoffUrl } from '../../lib/admin-redirect';
-
 type AutoLoginAudienceKey = 'admin' | 'payer' | 'provider';
 
 type AutoLoginUser = {
@@ -275,6 +273,8 @@ function AutoLoginPickerContent({
 
       const payload = (await response.json()) as {
         sessionEstablished?: boolean;
+        sessionHandoff?: boolean;
+        handoffUrl?: string;
         message?: string;
         user?: {
           landingContext?:
@@ -290,7 +290,16 @@ function AutoLoginPickerContent({
         };
       };
 
-      if (!response.ok || payload.sessionEstablished !== true || !payload.user) {
+      if (!response.ok) {
+        throw new Error(payload.message ?? 'Unable to sign in with the selected user.');
+      }
+
+      if (payload.sessionHandoff && payload.handoffUrl) {
+        window.location.assign(payload.handoffUrl);
+        return;
+      }
+
+      if (payload.sessionEstablished !== true || !payload.user) {
         throw new Error(payload.message ?? 'Unable to sign in with the selected user.');
       }
 
@@ -299,19 +308,13 @@ function AutoLoginPickerContent({
         throw new Error('Sign-in state is still initializing. Please try again.');
       }
 
-      const adminRedirectUrl = buildAdminHandoffUrl(payload.user as never);
-      if (adminRedirectUrl) {
-        window.location.assign(adminRedirectUrl);
-        return;
-      }
-
       if (requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')) {
         window.location.assign(requestedRedirect);
         return;
       }
 
       if (payload.user.session?.type === 'platform_admin' || payload.user.session?.type === 'tenant_admin') {
-        window.location.assign('/login');
+        throw new Error('Admin sign-in handoff did not complete. Please try again.');
         return;
       }
 

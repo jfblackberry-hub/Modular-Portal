@@ -1,4 +1,4 @@
-import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { loadAdminConsoleServiceConfig } from '@payer-portal/config';
 
@@ -8,19 +8,12 @@ export const ADMIN_SESSION_HANDOFF_AUDIENCE = 'admin-console';
 export const ADMIN_SESSION_HANDOFF_TTL_SECONDS = 60;
 
 type AdminSessionHandoffClaims = {
+  accessToken: string;
   aud: string;
   exp: number;
-  handoffId: string;
   iat: number;
-};
-
-type PendingAdminSession = {
-  accessToken: string;
-  expiresAt: number;
   session: AdminSession;
 };
-
-const pendingAdminSessions = new Map<string, PendingAdminSession>();
 
 function toBase64Url(value: string) {
   return Buffer.from(value, 'utf8').toString('base64url');
@@ -40,21 +33,12 @@ function signSegment(value: string) {
     .digest('base64url');
 }
 
-function pruneExpiredPendingSessions() {
-  const now = Date.now();
-
-  for (const [handoffId, pendingSession] of pendingAdminSessions.entries()) {
-    if (pendingSession.expiresAt <= now) {
-      pendingAdminSessions.delete(handoffId);
-    }
-  }
-}
-
 export function createAdminSessionHandoffArtifact(input: {
+  accessToken: string;
   audience?: string;
   expiresAt?: Date;
-  handoffId: string;
   issuedAt?: Date;
+  session: AdminSession;
 }) {
   const issuedAt = input.issuedAt ?? new Date();
   const expiresAt =
@@ -62,10 +46,11 @@ export function createAdminSessionHandoffArtifact(input: {
     new Date(issuedAt.getTime() + ADMIN_SESSION_HANDOFF_TTL_SECONDS * 1_000);
 
   const claims: AdminSessionHandoffClaims = {
+    accessToken: input.accessToken,
     aud: input.audience ?? ADMIN_SESSION_HANDOFF_AUDIENCE,
     exp: Math.floor(expiresAt.getTime() / 1_000),
-    handoffId: input.handoffId,
-    iat: Math.floor(issuedAt.getTime() / 1_000)
+    iat: Math.floor(issuedAt.getTime() / 1_000),
+    session: input.session
   };
 
   const payload = toBase64Url(JSON.stringify(claims));
@@ -77,26 +62,16 @@ export function storePendingAdminSession(input: {
   accessToken: string;
   session: AdminSession;
 }) {
-  pruneExpiredPendingSessions();
-
-  const handoffId = randomUUID();
-  const expiresAt = Date.now() + ADMIN_SESSION_HANDOFF_TTL_SECONDS * 1_000;
-
-  pendingAdminSessions.set(handoffId, {
+  return createAdminSessionHandoffArtifact({
     accessToken: input.accessToken,
-    expiresAt,
     session: input.session
   });
-
-  return createAdminSessionHandoffArtifact({ handoffId });
 }
 
 export function consumePendingAdminSession(
   artifact: string,
   expectedAudience = ADMIN_SESSION_HANDOFF_AUDIENCE
 ) {
-  pruneExpiredPendingSessions();
-
   const [payload, signature] = artifact.split('.');
 
   if (!payload || !signature) {
@@ -118,21 +93,20 @@ export function consumePendingAdminSession(
     throw new Error('Admin session handoff audience mismatch.');
   }
 
-  if (!claims.handoffId?.trim()) {
-    throw new Error('Admin session handoff identifier missing.');
-  }
-
   if (claims.exp * 1_000 <= Date.now()) {
     throw new Error('Admin session handoff expired.');
   }
 
-  const pendingSession = pendingAdminSessions.get(claims.handoffId);
-
-  if (!pendingSession || pendingSession.expiresAt <= Date.now()) {
-    pendingAdminSessions.delete(claims.handoffId);
-    throw new Error('Admin session handoff is unavailable.');
+  if (!claims.accessToken?.trim()) {
+    throw new Error('Admin session handoff access token missing.');
   }
 
-  pendingAdminSessions.delete(claims.handoffId);
-  return pendingSession;
+  if (!claims.session) {
+    throw new Error('Admin session handoff session payload missing.');
+  }
+
+  return {
+    accessToken: claims.accessToken,
+    session: claims.session
+  };
 }
