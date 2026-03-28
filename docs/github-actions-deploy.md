@@ -58,6 +58,7 @@ In practice that means access similar to:
 ## Trigger behavior
 
 - pushes to `main` automatically deploy to `dev`
+- pushes to `staging` automatically deploy to `qa`
 - the workflow can also be started manually from GitHub Actions for:
   - `dev`
   - `qa`
@@ -82,10 +83,31 @@ To make shared URLs stable across instance replacements, move the public origins
 to a stable DNS name or static IP and keep those values in the application
 stack/bootstrap configuration.
 
+## Lightweight staging branch strategy
+
+Use a simple two-branch promotion flow:
+
+1. do normal development locally
+2. push ready-to-share work to `staging`
+3. let GitHub Actions auto-deploy `staging` to the `qa` AWS environment
+4. validate there with the team
+5. merge the verified change to `main`
+6. let GitHub Actions auto-deploy `main` to `dev`
+
+This keeps the cloud environment close to local work without requiring manual EC2 sync steps after every change.
+
+Recommended conventions:
+
+- use `staging` for integration-ready work, not half-finished experiments
+- keep `main` as the branch for changes that passed staging validation
+- if a staging deploy breaks, fix on a short-lived branch and merge back into `staging`
+- only promote `staging` to `main` after login flows, branding, and tenant-specific behavior are checked in AWS
+
 ## Suggested branch protection
 
 To keep releases traceable, pair this workflow with:
 
+- pull requests into `staging` for shared QA changes
 - pull requests into `main`
 - required GitHub Actions checks before merge
-- direct deploys only from `main`
+- direct deploys only from `staging` and `main`

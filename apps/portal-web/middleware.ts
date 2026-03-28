@@ -116,11 +116,15 @@ export async function middleware(request: NextRequest) {
   const isProtectedDemoPage =
     pathname === '/login' ||
     pathname.startsWith('/login') ||
+    pathname === '/provider-login' ||
+    pathname.startsWith('/provider-login') ||
     pathname === '/employer-login' ||
     pathname.startsWith('/employer-login');
   const isProtectedDemoAuthApi =
     pathname === '/api/auth/login' ||
-    pathname === '/api/auth/login/employer';
+    pathname === '/api/auth/login/employer' ||
+    pathname === '/api/auth/login/catalog' ||
+    pathname === '/api/auth/login/auto';
 
   if (isDemoAccessApi) {
     return NextResponse.next();
@@ -142,6 +146,8 @@ export async function middleware(request: NextRequest) {
     pathname !== '/api/auth/login' &&
     pathname !== '/api/auth/login/employer' &&
     pathname !== '/api/auth/login/provider' &&
+    pathname !== '/api/auth/login/catalog' &&
+    pathname !== '/api/auth/login/auto' &&
     pathname !== '/api/auth/logout' &&
     pathname !== '/api/auth/session'
   ) {

@@ -73,6 +73,8 @@ function isTenantContextExemptRoute(url: string) {
     url === '/public/platform-branding/custom.css' ||
     url === '/metrics' ||
     url === '/auth/login' ||
+    url === '/auth/login/catalog' ||
+    url === '/auth/login/auto' ||
     url === '/auth/login/provider' ||
     url === '/auth/login/employer' ||
     url === '/auth/portal-handoffs/consume' ||

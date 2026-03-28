@@ -1,7 +1,12 @@
 import { logAuthenticationEvent } from '@payer-portal/server';
 import type { FastifyInstance } from 'fastify';
 
-import { login, SessionIntegrityError } from '../services/auth-service';
+import {
+  autoLoginByUserId,
+  listAutoLoginCatalog,
+  login,
+  SessionIntegrityError
+} from '../services/auth-service';
 import {
   AuthenticationError,
   getCurrentUserFromHeaders,
@@ -18,6 +23,13 @@ type LoginBody = {
   email: string;
   password: string;
   organizationUnitId?: string;
+};
+
+type AutoLoginBody = {
+  userId: string;
+  audience?: 'admin' | 'payer' | 'provider';
+  tenantId?: string | null;
+  persona?: string;
 };
 
 export async function authRoutes(app: FastifyInstance) {
@@ -67,6 +79,57 @@ export async function authRoutes(app: FastifyInstance) {
 
       if ('organizationUnitSelectionRequired' in result) {
         return reply.status(409).send(result);
+      }
+
+      return {
+        token: result.token,
+        user: result.user
+      };
+    } catch (error) {
+      if (error instanceof SessionIntegrityError) {
+        return reply.status(error.statusCode).send({
+          message: error.message
+        });
+      }
+
+      return reply.status(503).send({
+        message:
+          'Local database unavailable. Start PostgreSQL, run migrations.'
+      });
+    }
+  });
+
+  app.get('/auth/login/catalog', async (_request, reply) => {
+    try {
+      const catalog = await listAutoLoginCatalog();
+      return reply.send({ audiences: catalog });
+    } catch {
+      return reply.status(503).send({
+        message:
+          'Local database unavailable. Start PostgreSQL, run migrations.'
+      });
+    }
+  });
+
+  app.post<{ Body: AutoLoginBody }>('/auth/login/auto', async (request, reply) => {
+    try {
+      const result = await autoLoginByUserId(
+        {
+          userId: request.body.userId,
+          audience: request.body.audience,
+          tenantId: request.body.tenantId,
+          persona: request.body.persona
+        },
+        {
+          ipAddress: request.ip,
+          userAgent: request.headers['user-agent']
+        }
+      );
+
+      if (!result) {
+        return reply.status(401).send({
+          message: 'No active user is available for the selected tenant and persona.'
+        });
       }
 
       return {
