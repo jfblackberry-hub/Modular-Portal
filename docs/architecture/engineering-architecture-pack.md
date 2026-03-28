@@ -225,7 +225,7 @@ flowchart LR
 
 Engineering note:
 
-- The repo contains a target security redesign that moves toward a more fully server-trusted session model and stricter tenant isolation. Use [multitenant-security-login-architecture.md](/Users/jfrank/Projects/Modular%20portal/docs/multitenant-security-login-architecture.md) as the reference for that hardening direction.
+- The repo contains a target security redesign that moves toward a more fully server-trusted session model and stricter tenant isolation. Use [multitenant-security-login-architecture.md](../multitenant-security-login-architecture.md) as the reference for that hardening direction.
 
 ## 9. Target AWS Runtime Topology
 
@@ -337,8 +337,8 @@ flowchart LR
 
 ## 14. Recommended Companion Docs
 
-- [system-and-flow-architecture-pack.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-and-flow-architecture-pack.md)
-- [executive-architecture-deck-outline.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/executive-architecture-deck-outline.md)
-- [runtime-config-model.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/runtime-config-model.md)
-- [observability-baseline.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/observability-baseline.md)
-- [multitenant-security-login-architecture.md](/Users/jfrank/Projects/Modular%20portal/docs/multitenant-security-login-architecture.md)
+- [system-and-flow-architecture-pack.md](system-and-flow-architecture-pack.md)
+- [executive-architecture-deck-outline.md](executive-architecture-deck-outline.md)
+- [runtime-config-model.md](runtime-config-model.md)
+- [observability-baseline.md](observability-baseline.md)
+- [multitenant-security-login-architecture.md](../multitenant-security-login-architecture.md)

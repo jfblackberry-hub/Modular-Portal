@@ -13,7 +13,7 @@ The implementation is structural rather than cosmetic. Existing employer and con
 
 - The existing portal shell, header, footer, side navigation styling, cards, tables, forms, and typography
 - Shared Billing & Enrollment components such as `EnrollmentExperience`, `BillingExperience`, `SupportingExperiences`, and the dashboard presentation patterns
-- Shared API/service layer in [`apps/portal-web/lib/billing-enrollment-api.ts`](/Users/jfrank/Projects/Modular%20portal/apps/portal-web/lib/billing-enrollment-api.ts)
+- Shared API/service layer in [`apps/portal-web/lib/billing-enrollment-api.ts`](../apps/portal-web/lib/billing-enrollment-api.ts)
 - Shared tenant branding and theme resolution
 - Shared module gating through `billing_enrollment`
 
@@ -29,11 +29,11 @@ The implementation is structural rather than cosmetic. Existing employer and con
 
 ## How Audience Routing Works
 
-- Audience resolution is centralized in [`apps/portal-web/lib/billing-portal-audience.ts`](/Users/jfrank/Projects/Modular%20portal/apps/portal-web/lib/billing-portal-audience.ts).
+- Audience resolution is centralized in [`apps/portal-web/lib/billing-portal-audience.ts`](../apps/portal-web/lib/billing-portal-audience.ts).
 - Employer roles resolve to the employer portal.
 - Member roles resolve to the individual portal.
 - Legacy `/dashboard/billing-enrollment*` URLs are redirected to the appropriate audience route by middleware.
-- New dedicated layouts at [`apps/portal-web/app/employer/layout.tsx`](/Users/jfrank/Projects/Modular%20portal/apps/portal-web/app/employer/layout.tsx) and [`apps/portal-web/app/individual/layout.tsx`](/Users/jfrank/Projects/Modular%20portal/apps/portal-web/app/individual/layout.tsx) reuse the current portal shell and branding while loading audience-specific navigation.
+- New dedicated layouts at [`apps/portal-web/app/employer/layout.tsx`](../apps/portal-web/app/employer/layout.tsx) and [`apps/portal-web/app/individual/layout.tsx`](../apps/portal-web/app/individual/layout.tsx) reuse the current portal shell and branding while loading audience-specific navigation.
 
 ## How Labels And Content Differ
 

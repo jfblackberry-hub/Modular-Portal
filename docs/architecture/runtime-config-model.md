@@ -71,7 +71,7 @@ Security/edge behavior:
 
 Entrypoint:
 
-- [portal-web-entrypoint.sh](/Users/jfrank/Projects/Modular%20portal/scripts/docker/portal-web-entrypoint.sh)
+- [portal-web-entrypoint.sh](../../scripts/docker/portal-web-entrypoint.sh)
 
 ### `admin-console`
 
@@ -87,7 +87,7 @@ Security/edge behavior:
 
 Entrypoint:
 
-- [admin-console-entrypoint.sh](/Users/jfrank/Projects/Modular%20portal/scripts/docker/admin-console-entrypoint.sh)
+- [admin-console-entrypoint.sh](../../scripts/docker/admin-console-entrypoint.sh)
 
 ### `api`
 
@@ -111,7 +111,7 @@ Observability/edge behavior:
 
 Entrypoint:
 
-- [api-entrypoint.sh](/Users/jfrank/Projects/Modular%20portal/scripts/docker/api-entrypoint.sh)
+- [api-entrypoint.sh](../../scripts/docker/api-entrypoint.sh)
 
 ### `job-worker`
 
@@ -129,7 +129,7 @@ Optional:
 
 Entrypoint:
 
-- [job-worker-entrypoint.sh](/Users/jfrank/Projects/Modular%20portal/scripts/docker/job-worker-entrypoint.sh)
+- [job-worker-entrypoint.sh](../../scripts/docker/job-worker-entrypoint.sh)
 
 The worker owns job execution. Web and admin services may enqueue work through the API, but they must not run job loops.
 
@@ -195,13 +195,13 @@ Storage profiles:
 
 Shared config loading and validation lives in:
 
-- [packages/config/src/index.ts](/Users/jfrank/Projects/Modular%20portal/packages/config/src/index.ts)
+- [packages/config/src/index.ts](../../packages/config/src/index.ts)
 
 App wrappers live in:
 
-- [apps/portal-web/lib/public-runtime.ts](/Users/jfrank/Projects/Modular%20portal/apps/portal-web/lib/public-runtime.ts)
-- [apps/portal-web/lib/server-runtime.ts](/Users/jfrank/Projects/Modular%20portal/apps/portal-web/lib/server-runtime.ts)
-- [apps/admin-console/lib/public-runtime.ts](/Users/jfrank/Projects/Modular%20portal/apps/admin-console/lib/public-runtime.ts)
-- [apps/admin-console/lib/server-runtime.ts](/Users/jfrank/Projects/Modular%20portal/apps/admin-console/lib/server-runtime.ts)
-- [apps/api/src/runtime-config.ts](/Users/jfrank/Projects/Modular%20portal/apps/api/src/runtime-config.ts)
-- [packages/server/src/jobs/runtime-config.ts](/Users/jfrank/Projects/Modular%20portal/packages/server/src/jobs/runtime-config.ts)
+- [apps/portal-web/lib/public-runtime.ts](../../apps/portal-web/lib/public-runtime.ts)
+- [apps/portal-web/lib/server-runtime.ts](../../apps/portal-web/lib/server-runtime.ts)
+- [apps/admin-console/lib/public-runtime.ts](../../apps/admin-console/lib/public-runtime.ts)
+- [apps/admin-console/lib/server-runtime.ts](../../apps/admin-console/lib/server-runtime.ts)
+- [apps/api/src/runtime-config.ts](../../apps/api/src/runtime-config.ts)
+- [packages/server/src/jobs/runtime-config.ts](../../packages/server/src/jobs/runtime-config.ts)

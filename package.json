@@ -26,6 +26,7 @@
     "build": "pnpm -r --if-present run build",
     "lint": "eslint apps packages plugins --ext .ts,.tsx",
     "format": "prettier --write .",
+    "audit:repo": "node ./scripts/audit-repo-hygiene.mjs",
     "test:smoke": "node ./scripts/testing/run-smoke-tests.mjs",
     "test:integration": "node ./scripts/testing/run-integration-tests.mjs",
     "validate:release": "node ./scripts/testing/validate-release.mjs",

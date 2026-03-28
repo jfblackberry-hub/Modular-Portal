@@ -6,15 +6,15 @@ This repo now includes a reproducible golden regression dataset captured from th
 
 Golden snapshot directory:
 
-- [`backups/golden/2026-03-23-regression-pass`](/Users/jfrank/Projects/Modular%20portal/backups/golden/2026-03-23-regression-pass)
+- [`backups/golden/2026-03-23-regression-pass`](../../backups/golden/2026-03-23-regression-pass)
 
 Included artifacts:
 
-- [`modular-portal.bundle`](/Users/jfrank/Projects/Modular%20portal/backups/golden/2026-03-23-regression-pass/modular-portal.bundle)
-- [`database-snapshot.json`](/Users/jfrank/Projects/Modular%20portal/backups/golden/2026-03-23-regression-pass/database-snapshot.json)
-- [`storage`](/Users/jfrank/Projects/Modular%20portal/backups/golden/2026-03-23-regression-pass/storage)
-- [`.env.golden.local`](/Users/jfrank/Projects/Modular%20portal/backups/golden/2026-03-23-regression-pass/.env.golden.local)
-- [`manifest.json`](/Users/jfrank/Projects/Modular%20portal/backups/golden/2026-03-23-regression-pass/manifest.json)
+- [`modular-portal.bundle`](../../backups/golden/2026-03-23-regression-pass/modular-portal.bundle)
+- [`database-snapshot.json`](../../backups/golden/2026-03-23-regression-pass/database-snapshot.json)
+- [`storage`](../../backups/golden/2026-03-23-regression-pass/storage)
+- [`.env.golden.local`](../../backups/golden/2026-03-23-regression-pass/.env.golden.local)
+- [`manifest.json`](../../backups/golden/2026-03-23-regression-pass/manifest.json)
 
 ## Provenance
 
@@ -26,7 +26,7 @@ Included artifacts:
 
 - The code baseline was exported as a Git bundle so the exact source snapshot can be recreated without relying on the current local branch state.
 - The database was exported as a Prisma JSON snapshot because `pg_dump` was not installed on the host at capture time.
-- The validated local release credentials are captured in [`.env.golden.local`](/Users/jfrank/Projects/Modular%20portal/backups/golden/2026-03-23-regression-pass/.env.golden.local) for deterministic local reruns.
+- The validated local release credentials are captured in [`.env.golden.local`](../../backups/golden/2026-03-23-regression-pass/.env.golden.local) for deterministic local reruns.
 
 ## Restore
 

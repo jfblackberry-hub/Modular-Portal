@@ -37,7 +37,7 @@ The platform already has clear runtime separation and multitenant boundaries. Th
 
 **Visual**
 
-Use Diagram 9 from [system-and-flow-architecture-pack.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-and-flow-architecture-pack.md).
+Use Diagram 9 from [system-and-flow-architecture-pack.md](system-and-flow-architecture-pack.md).
 
 ## Slide 3: Business Context
 
@@ -54,7 +54,7 @@ The platform is more than a single portal. It is a multichannel digital platform
 
 **Visual**
 
-Use Diagram 1 from [system-and-flow-architecture-pack.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-and-flow-architecture-pack.md).
+Use Diagram 1 from [system-and-flow-architecture-pack.md](system-and-flow-architecture-pack.md).
 
 ## Slide 4: Current-State Architecture
 
@@ -72,7 +72,7 @@ Today’s architecture is already split into business-facing experiences, a cent
 
 **Visual**
 
-Use Diagram 2 from [system-and-flow-architecture-pack.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-and-flow-architecture-pack.md).
+Use Diagram 2 from [system-and-flow-architecture-pack.md](system-and-flow-architecture-pack.md).
 
 ## Slide 5: How The Platform Works
 
@@ -89,7 +89,7 @@ User journeys are handled synchronously through the web and API layers, while he
 
 **Visual**
 
-Use Diagram 3 from [system-and-flow-architecture-pack.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-and-flow-architecture-pack.md).
+Use Diagram 3 from [system-and-flow-architecture-pack.md](system-and-flow-architecture-pack.md).
 
 ## Slide 6: Operational And Integration Model
 
@@ -106,7 +106,7 @@ The platform already has the core control points needed for scale: queue-backed 
 
 **Visual**
 
-Use Diagram 4 from [system-and-flow-architecture-pack.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-and-flow-architecture-pack.md).
+Use Diagram 4 from [system-and-flow-architecture-pack.md](system-and-flow-architecture-pack.md).
 
 ## Slide 7: Why AWS Migration
 
@@ -140,7 +140,7 @@ The AWS target state preserves the platform’s current service split while movi
 
 **Visual**
 
-Use Diagram 5 from [system-and-flow-architecture-pack.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-and-flow-architecture-pack.md).
+Use Diagram 5 from [system-and-flow-architecture-pack.md](system-and-flow-architecture-pack.md).
 
 ## Slide 9: AWS Deployment View
 
@@ -158,7 +158,7 @@ The target infrastructure cleanly separates edge routing, application runtimes, 
 
 **Visual**
 
-Use Diagram 6 from [system-and-flow-architecture-pack.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-and-flow-architecture-pack.md).
+Use Diagram 6 from [system-and-flow-architecture-pack.md](system-and-flow-architecture-pack.md).
 
 ## Slide 10: End-State User Flow
 
@@ -175,7 +175,7 @@ The user-facing experience stays familiar, but the runtime path becomes more pro
 
 **Visual**
 
-Use Diagram 7 from [system-and-flow-architecture-pack.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-and-flow-architecture-pack.md).
+Use Diagram 7 from [system-and-flow-architecture-pack.md](system-and-flow-architecture-pack.md).
 
 ## Slide 11: End-State Background Flow
 
@@ -192,7 +192,7 @@ Background processing becomes more resilient and more operationally intentional 
 
 **Visual**
 
-Use Diagram 8 from [system-and-flow-architecture-pack.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-and-flow-architecture-pack.md).
+Use Diagram 8 from [system-and-flow-architecture-pack.md](system-and-flow-architecture-pack.md).
 
 ## Slide 12: Current State Vs. Target State
 
@@ -208,7 +208,7 @@ The target state is an evolution of the current platform, not a replacement.
 
 **Visual**
 
-Use Diagram 9 from [system-and-flow-architecture-pack.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-and-flow-architecture-pack.md).
+Use Diagram 9 from [system-and-flow-architecture-pack.md](system-and-flow-architecture-pack.md).
 
 ## Slide 13: Strategic Benefits
 
@@ -262,10 +262,10 @@ Leadership alignment is needed on the migration shape, not on every implementati
 
 **References**
 
-- [system-and-flow-architecture-pack.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-and-flow-architecture-pack.md)
-- [system-architecture-overview.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-architecture-overview.md)
-- [runtime-config-model.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/runtime-config-model.md)
-- [observability-baseline.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/observability-baseline.md)
+- [system-and-flow-architecture-pack.md](system-and-flow-architecture-pack.md)
+- [system-architecture-overview.md](system-architecture-overview.md)
+- [runtime-config-model.md](runtime-config-model.md)
+- [observability-baseline.md](observability-baseline.md)
 
 ## Presenter Guidance
 

@@ -263,12 +263,12 @@ flowchart LR
 
 ## Source References
 
-- [README.md](/Users/jfrank/Projects/Modular%20portal/README.md)
-- [docs/architecture/runtime-config-model.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/runtime-config-model.md)
-- [docs/architecture/observability-baseline.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/observability-baseline.md)
-- [docs/architecture/system-architecture-overview.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/system-architecture-overview.md)
-- [infra/README.md](/Users/jfrank/Projects/Modular%20portal/infra/README.md)
-- [infra/docs/service-model.md](/Users/jfrank/Projects/Modular%20portal/infra/docs/service-model.md)
-- [infra/terraform/environments/staging/README.md](/Users/jfrank/Projects/Modular%20portal/infra/terraform/environments/staging/README.md)
-- [infra/terraform/environments/production/README.md](/Users/jfrank/Projects/Modular%20portal/infra/terraform/environments/production/README.md)
-- [packages/server/README.backups.md](/Users/jfrank/Projects/Modular%20portal/packages/server/README.backups.md)
+- [README.md](../../README.md)
+- [docs/architecture/runtime-config-model.md](runtime-config-model.md)
+- [docs/architecture/observability-baseline.md](observability-baseline.md)
+- [docs/architecture/system-architecture-overview.md](system-architecture-overview.md)
+- [infra/README.md](../../infra/README.md)
+- [infra/docs/service-model.md](../../infra/docs/service-model.md)
+- [infra/terraform/environments/staging/README.md](../../infra/terraform/environments/staging/README.md)
+- [infra/terraform/environments/production/README.md](../../infra/terraform/environments/production/README.md)
+- [packages/server/README.backups.md](../../packages/server/README.backups.md)

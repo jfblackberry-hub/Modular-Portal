@@ -71,7 +71,7 @@ Canonical local defaults:
 - `API_INTERNAL_ORIGIN=http://localhost:3002`
 - `ADMIN_CONSOLE_PUBLIC_ORIGIN=http://localhost:3003`
 
-Shared runtime documentation lives in [docs/architecture/runtime-config-model.md](/Users/jfrank/Projects/Modular%20portal/docs/architecture/runtime-config-model.md).
+Shared runtime documentation lives in [docs/architecture/runtime-config-model.md](docs/architecture/runtime-config-model.md).
 
 Default local-development logins after seeding:
 
@@ -168,10 +168,10 @@ The repository includes a Docker Compose environment that follows the same runti
 
 Service Dockerfiles:
 
-- [apps/portal-web/Dockerfile](/Users/jfrank/Projects/Modular%20portal/apps/portal-web/Dockerfile)
-- [apps/admin-console/Dockerfile](/Users/jfrank/Projects/Modular%20portal/apps/admin-console/Dockerfile)
-- [apps/api/Dockerfile](/Users/jfrank/Projects/Modular%20portal/apps/api/Dockerfile)
-- [packages/server/Dockerfile.worker](/Users/jfrank/Projects/Modular%20portal/packages/server/Dockerfile.worker)
+- [apps/portal-web/Dockerfile](apps/portal-web/Dockerfile)
+- [apps/admin-console/Dockerfile](apps/admin-console/Dockerfile)
+- [apps/api/Dockerfile](apps/api/Dockerfile)
+- [packages/server/Dockerfile.worker](packages/server/Dockerfile.worker)
 
 Postgres credentials:
 
@@ -271,7 +271,7 @@ Recommended AWS deployment path:
 
 ## AWS Scaffold
 
-Deployment placeholders now live under [infra](/Users/jfrank/Projects/Modular%20portal/infra):
+Deployment placeholders now live under [infra](infra):
 
 - Terraform-style environment stubs for `staging` and `production`
 - ECS service module placeholder
@@ -280,12 +280,12 @@ Deployment placeholders now live under [infra](/Users/jfrank/Projects/Modular%20
 
 ## Staging And Cutover
 
-Operational readiness docs now live under [docs/operations](/Users/jfrank/Projects/Modular%20portal/docs/operations):
+Operational readiness docs now live under [docs/operations](docs/operations):
 
-- [staging-readiness.md](/Users/jfrank/Projects/Modular%20portal/docs/operations/staging-readiness.md)
-- [migration-rehearsal-plan.md](/Users/jfrank/Projects/Modular%20portal/docs/operations/migration-rehearsal-plan.md)
-- [production-cutover-runbook.md](/Users/jfrank/Projects/Modular%20portal/docs/operations/production-cutover-runbook.md)
-- [rollback-checklist.md](/Users/jfrank/Projects/Modular%20portal/docs/operations/rollback-checklist.md)
+- [staging-readiness.md](docs/operations/staging-readiness.md)
+- [migration-rehearsal-plan.md](docs/operations/migration-rehearsal-plan.md)
+- [production-cutover-runbook.md](docs/operations/production-cutover-runbook.md)
+- [rollback-checklist.md](docs/operations/rollback-checklist.md)
 
 Validation scripts:
 

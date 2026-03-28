@@ -3,6 +3,8 @@ node_modules
 dist
 build
 coverage
+.next
+.next-dev
 .DS_Store
 *.tsbuildinfo
 *.log
