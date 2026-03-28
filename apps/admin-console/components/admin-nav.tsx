@@ -29,7 +29,91 @@ const SECTION_ICON_MAP = {
 } satisfies Record<AdminSectionIcon, typeof LayoutDashboard>;
 
 function isItemActive(pathname: string, item: AdminMenuItem): boolean {
-  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+  return (
+    pathname === item.href ||
+    pathname.startsWith(`${item.href}/`) ||
+    (item.children ?? []).some((child) => isItemActive(pathname, child))
+  );
+}
+
+function AdminNavItemNode({
+  depth,
+  item,
+  pathname,
+  expanded,
+  onToggle
+}: {
+  depth: number;
+  item: AdminMenuItem;
+  pathname: string;
+  expanded: Record<string, boolean>;
+  onToggle: (key: string) => void;
+}) {
+  const active = isItemActive(pathname, item);
+  const hasChildren = (item.children?.length ?? 0) > 0;
+  const isOpen = expanded[item.key] ?? active;
+
+  if (!hasChildren) {
+    return (
+      <Link
+        href={item.href}
+        scroll={false}
+        className={`admin-nav__item ${active ? 'admin-nav__item--active' : ''}`}
+        style={{ '--admin-nav-depth': depth } as CSSProperties}
+      >
+        <span className="admin-nav__item-line" />
+        <ChevronRight
+          size={16}
+          className={`admin-nav__item-icon ${active ? 'admin-nav__item-icon--active' : ''}`}
+        />
+        <span className="admin-nav__item-copy">
+          <span className="admin-nav__item-label">{item.label}</span>
+          {item.description ? (
+            <span className="admin-nav__item-description">{item.description}</span>
+          ) : null}
+        </span>
+      </Link>
+    );
+  }
+
+  return (
+    <div className="admin-nav__group">
+      <button
+        type="button"
+        onClick={() => onToggle(item.key)}
+        className={`admin-nav__group-toggle ${active ? 'admin-nav__group-toggle--active' : ''}`}
+        aria-expanded={isOpen}
+        style={{ '--admin-nav-depth': depth } as CSSProperties}
+      >
+        <span className="admin-nav__item-line" />
+        <ChevronRight
+          size={16}
+          className={`admin-nav__item-icon ${active ? 'admin-nav__item-icon--active' : ''} ${isOpen ? 'admin-nav__item-icon--open' : ''}`}
+        />
+        <span className="admin-nav__item-copy">
+          <span className="admin-nav__item-label">{item.label}</span>
+          {item.description ? (
+            <span className="admin-nav__item-description">{item.description}</span>
+          ) : null}
+        </span>
+      </button>
+
+      {isOpen ? (
+        <div className="admin-nav__children">
+          {item.children?.map((child) => (
+            <AdminNavItemNode
+              key={child.key}
+              depth={depth + 1}
+              item={child}
+              pathname={pathname}
+              expanded={expanded}
+              onToggle={onToggle}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function AdminNav({ menu }: { menu: AdminMenuConfig }) {
@@ -67,22 +151,19 @@ export function AdminNav({ menu }: { menu: AdminMenuConfig }) {
             {expanded[section.key] ?? true ? (
               <div className="admin-nav__section-items">
                 {section.items.map((item) => (
-                  <Link
+                  <AdminNavItemNode
                     key={item.key}
-                    href={item.href}
-                    scroll={false}
-                    className={`admin-nav__item ${isItemActive(pathname, item) ? 'admin-nav__item--active' : ''}`}
-                    style={{ '--admin-nav-depth': 0 } as CSSProperties}
-                  >
-                    <span className="admin-nav__item-line" />
-                    <ChevronRight size={16} className={`admin-nav__item-icon ${isItemActive(pathname, item) ? 'admin-nav__item-icon--active' : ''}`} />
-                    <span className="admin-nav__item-copy">
-                      <span className="admin-nav__item-label">{item.label}</span>
-                      {item.description ? (
-                        <span className="admin-nav__item-description">{item.description}</span>
-                      ) : null}
-                    </span>
-                  </Link>
+                    depth={0}
+                    item={item}
+                    pathname={pathname}
+                    expanded={expanded}
+                    onToggle={(key) =>
+                      setExpanded((current) => ({
+                        ...current,
+                        [key]: !(current[key] ?? true)
+                      }))
+                    }
+                  />
                 ))}
               </div>
             ) : null}

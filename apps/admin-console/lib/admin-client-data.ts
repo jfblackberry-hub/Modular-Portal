@@ -8,6 +8,11 @@ type CacheEntry = {
 const responseCache = new Map<string, CacheEntry>();
 const inflightRequests = new Map<string, Promise<unknown>>();
 
+export function clearAdminClientCache() {
+  responseCache.clear();
+  inflightRequests.clear();
+}
+
 function normalizeHeaders(headers?: HeadersInit) {
   if (!headers) {
     return '';

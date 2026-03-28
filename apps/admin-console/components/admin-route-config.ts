@@ -14,6 +14,7 @@ export type AdminMenuItem = {
   label: string;
   href: string;
   description?: string;
+  children?: AdminMenuItem[];
 };
 
 export type AdminMenuSection = {
@@ -110,12 +111,72 @@ function buildTenantSection(selectedTenant: { id: string; name: string }): Admin
     label: 'Tenant',
     icon: 'tenant',
     items: [
-      { key: 'organization-structure', label: 'Organization Structure', href: `${base}/organization`, description: 'Tenant hierarchy and Organization Units.' },
-      { key: 'experiences', label: 'Experiences', href: `${base}/experiences`, description: 'Experience builder and composition.' },
-      { key: 'capabilities', label: 'Capabilities', href: `${base}/capabilities`, description: 'Tenant capability configuration.' },
-      { key: 'users-personas', label: 'Users & Personas', href: `${base}/users`, description: 'Tenant users, admins, and personas.' },
-      { key: 'data-integrations', label: 'Data & Integrations', href: `${base}/data`, description: 'Tenant data sources and integrations.' },
-      { key: 'limits-usage', label: 'Limits & Usage', href: `${base}/limits`, description: 'Limits, quotas, licensing, and usage.' }
+      {
+        key: 'tenant-foundation',
+        label: 'Foundation',
+        href: `${base}/organization`,
+        description: 'Core tenant structure, branding, and operational setup.',
+        children: [
+          {
+            key: 'organization-structure',
+            label: 'Organization Structure',
+            href: `${base}/organization`,
+            description: 'Tenant hierarchy and organization units.'
+          },
+          {
+            key: 'tenant-configuration',
+            label: 'Configuration & Branding',
+            href: `${base}/configuration`,
+            description: 'Logos, CSS, notifications, and tenant settings.'
+          },
+          {
+            key: 'limits-usage',
+            label: 'Limits & Usage',
+            href: `${base}/limits`,
+            description: 'Limits, quotas, licensing, and usage.'
+          }
+        ]
+      },
+      {
+        key: 'tenant-experience-group',
+        label: 'Experience',
+        href: `${base}/experiences`,
+        description: 'Experience composition and capability rollout.',
+        children: [
+          {
+            key: 'experiences',
+            label: 'Experiences',
+            href: `${base}/experiences`,
+            description: 'Experience builder and composition.'
+          },
+          {
+            key: 'capabilities',
+            label: 'Capabilities',
+            href: `${base}/capabilities`,
+            description: 'Tenant capability configuration.'
+          }
+        ]
+      },
+      {
+        key: 'tenant-operations-group',
+        label: 'Operations',
+        href: `${base}/users`,
+        description: 'People, integrations, and operational data.',
+        children: [
+          {
+            key: 'users-personas',
+            label: 'Users & Personas',
+            href: `${base}/users`,
+            description: 'Tenant users, admins, and personas.'
+          },
+          {
+            key: 'data-integrations',
+            label: 'Data & Integrations',
+            href: `${base}/data`,
+            description: 'Tenant data sources and integrations.'
+          }
+        ]
+      }
     ]
   };
 }
@@ -134,8 +195,12 @@ function buildDeveloperSection(): AdminMenuSection {
 }
 
 function flattenAdminMenuSections(sections: AdminMenuSection[]) {
+  function flattenItems(items: AdminMenuItem[]): AdminMenuItem[] {
+    return items.flatMap((item) => [item, ...flattenItems(item.children ?? [])]);
+  }
+
   return sections.flatMap((section) =>
-    section.items.map((route) => ({
+    flattenItems(section.items).map((route) => ({
       section,
       route
     }))

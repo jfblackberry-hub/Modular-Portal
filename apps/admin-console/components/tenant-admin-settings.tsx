@@ -5,6 +5,7 @@ import type { FormEvent } from 'react';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { apiBaseUrl, getAdminAuthHeaders, getStoredAdminUserId } from '../lib/api-auth';
+import { clearAdminClientCache } from '../lib/admin-client-data';
 import { portalPublicOrigin } from '../lib/public-runtime';
 import { SectionCard } from './section-card';
 
@@ -155,9 +156,19 @@ function resolveBrandingLogoPreviewUrl(settings: SettingsPayload | null, logoUrl
   return resolveBrandingAssetUrl(logoUrl, resolveBrandingAssetVersion(settings));
 }
 
-function TenantAdminSettingsContent() {
+function replaceStarterThemeKey(css: string, tenantKey: string) {
+  return css.replaceAll('your-tenant-key', tenantKey);
+}
+
+function buildTenantThemeKey(tenantId: string, slug?: string | null) {
+  const source = slug?.trim() || tenantId.trim();
+  return source.toLowerCase();
+}
+
+function TenantAdminSettingsContent({ tenantId }: { tenantId?: string }) {
   const searchParams = useSearchParams();
-  const queryTenantId = searchParams.get('tenantId') ?? searchParams.get('tenant_id');
+  const queryTenantId =
+    tenantId ?? searchParams.get('tenantId') ?? searchParams.get('tenant_id');
   const initialEmployerKey = searchParams.get('employer_key')?.trim() ?? '';
   const [selectedEmployerKey, setSelectedEmployerKey] = useState(initialEmployerKey);
 
@@ -210,12 +221,14 @@ function TenantAdminSettingsContent() {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedRoleId, setSelectedRoleId] = useState('');
   const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+  const [selectedCssFile, setSelectedCssFile] = useState<File | null>(null);
   const [selectedEmployerGroupLogoFile, setSelectedEmployerGroupLogoFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingBranding, setIsSavingBranding] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingCss, setIsUploadingCss] = useState(false);
   const [isSavingEmployerGroupBranding, setIsSavingEmployerGroupBranding] = useState(false);
   const [isUploadingEmployerGroupLogo, setIsUploadingEmployerGroupLogo] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
@@ -281,6 +294,7 @@ function TenantAdminSettingsContent() {
       });
       setPurchasedModulesForm(payload.purchasedModules);
       setSelectedLogoFile(null);
+      setSelectedCssFile(null);
       setSelectedEmployerGroupLogoFile(null);
       setSelectedUserId((current) => current || payload.users[0]?.id || '');
       setSelectedRoleId((current) => current || payload.roles[0]?.id || '');
@@ -291,6 +305,12 @@ function TenantAdminSettingsContent() {
       setIsLoading(false);
     }
   }, [selectedEmployerKey, tenantQuery]);
+
+  async function handleRefresh() {
+    clearAdminClientCache();
+    setSuccess('');
+    await loadSettings();
+  }
 
   async function handleLogoUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -380,6 +400,51 @@ function TenantAdminSettingsContent() {
   useEffect(() => {
     void loadSettings();
   }, [loadSettings]);
+
+  async function handleCssUpload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!selectedCssFile) {
+      setError('Choose a CSS file before uploading.');
+      return;
+    }
+
+    setIsUploadingCss(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedCssFile);
+
+      const response = await fetch(`${apiBaseUrl}/api/tenant-admin/branding/css${tenantQuery}`, {
+        method: 'POST',
+        headers: {
+          ...getAdminAuthHeaders()
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setError(payload?.message ?? 'Unable to translate and upload tenant CSS.');
+        return;
+      }
+
+      setSuccess('Tenant CSS translated for the current theme contract and applied.');
+      await handleRefresh();
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to translate and upload tenant CSS.'
+      );
+    } finally {
+      setIsUploadingCss(false);
+    }
+  }
 
   async function handleBrandingSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -776,6 +841,9 @@ function TenantAdminSettingsContent() {
       [user.firstName, user.lastName, user.email].join(' ').toLowerCase().includes(normalizedSearch)
     );
   }, [roleAssignmentSearch, settings]);
+  const tenantThemeKey = settings
+    ? buildTenantThemeKey(settings.tenant.id, settings.tenant.slug)
+    : '';
 
   return (
     <div className="space-y-6">
@@ -843,6 +911,26 @@ function TenantAdminSettingsContent() {
             <SectionCard
               title="Branding"
               description="Changes are persisted to tenant branding records and applied dynamically."
+              action={
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleRefresh()}
+                    disabled={isLoading}
+                    className="admin-button admin-button--secondary text-sm"
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    type="submit"
+                    form="tenant-branding-form"
+                    disabled={isSavingBranding}
+                    className="admin-button admin-button--primary text-sm"
+                  >
+                    {isSavingBranding ? 'Applying...' : 'Apply branding'}
+                  </button>
+                </div>
+              }
             >
               <div className="space-y-4">
                 <div className="rounded-2xl border border-admin-border bg-slate-50 p-4">
@@ -890,7 +978,50 @@ function TenantAdminSettingsContent() {
                   </div>
                 </div>
 
-                <form className="space-y-4" onSubmit={handleBrandingSave}>
+                <div className="rounded-2xl border border-admin-border bg-slate-50 p-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-admin-text">
+                      Tenant CSS translation and upload
+                    </p>
+                    <p className="text-sm text-admin-muted">
+                      Upload a tenant stylesheet and the platform will normalize it to the
+                      current theme contract before applying it. Active theme scope:{' '}
+                      <span className="font-mono text-admin-text">{tenantThemeKey}</span>.
+                    </p>
+                  </div>
+                  <form className="mt-4 space-y-3" onSubmit={handleCssUpload}>
+                    <input
+                      type="file"
+                      accept=".css,text/css"
+                      onChange={(event) =>
+                        setSelectedCssFile(event.target.files?.[0] ?? null)
+                      }
+                      className="block w-full text-sm text-admin-text file:mr-4 file:rounded-full file:border-0 file:bg-admin-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+                    />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="submit"
+                        disabled={isUploadingCss}
+                        className="admin-button admin-button--secondary text-sm"
+                      >
+                        {isUploadingCss
+                          ? 'Translating CSS...'
+                          : 'Translate and upload CSS'}
+                      </button>
+                      {selectedCssFile ? (
+                        <p className="text-sm text-admin-muted">
+                          Selected: {selectedCssFile.name}
+                        </p>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-admin-muted">
+                      Starter files using <span className="font-mono">your-tenant-key</span>{' '}
+                      will be remapped to the active tenant scope during editing and upload.
+                    </p>
+                  </form>
+                </div>
+
+                <form id="tenant-branding-form" className="space-y-4" onSubmit={handleBrandingSave}>
                 <input
                   className="w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
                   value={brandingForm.displayName}
@@ -961,19 +1092,32 @@ function TenantAdminSettingsContent() {
                     onChange={(event) =>
                       setBrandingForm((current) => ({
                         ...current,
-                        customCss: event.target.value
+                        customCss: replaceStarterThemeKey(
+                          event.target.value,
+                          tenantThemeKey
+                        )
                       }))
                     }
                     placeholder=":root {\n  --tenant-primary-color: #0ea5a4;\n}\n\n.portal-card {\n  border-radius: 24px;\n}"
                   />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBrandingForm((current) => ({
+                          ...current,
+                          customCss: replaceStarterThemeKey(current.customCss, tenantThemeKey)
+                        }))
+                      }
+                      className="admin-button admin-button--secondary text-sm"
+                    >
+                      Translate CSS to tenant scope
+                    </button>
+                    <p className="text-xs text-admin-muted">
+                      Applies the active tenant scope key to starter-template selectors.
+                    </p>
+                  </div>
                 </div>
-                <button
-                  type="submit"
-                  disabled={isSavingBranding}
-                  className="rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isSavingBranding ? 'Saving branding...' : 'Save branding'}
-                </button>
                 </form>
 
                 <div className="rounded-2xl border border-admin-border bg-slate-50 p-4">
@@ -1535,10 +1679,10 @@ function TenantAdminSettingsContent() {
   );
 }
 
-export function TenantAdminSettings() {
+export function TenantAdminSettings({ tenantId }: { tenantId?: string }) {
   return (
     <Suspense fallback={<div className="min-h-[20rem]" aria-hidden="true" />}>
-      <TenantAdminSettingsContent />
+      <TenantAdminSettingsContent tenantId={tenantId} />
     </Suspense>
   );
 }

@@ -2,6 +2,7 @@ import { listJobs } from '@payer-portal/server';
 import type { FastifyInstance } from 'fastify';
 
 import {
+  uploadBrandingCssForTenant,
   uploadBrandingLogoForTenant,
   uploadEmployerGroupLogoAssetForTenant
 } from '../services/branding-service';
@@ -248,6 +249,33 @@ export async function tenantAdminRoutes(app: FastifyInstance) {
         return handleRouteError(error, reply);
       }
     });
+
+    tenantScopedApp.post<{ Querystring: TenantAdminQuery }>(
+      '/api/tenant-admin/branding/css',
+      async (request, reply) => {
+        try {
+          const { currentUser, tenantId } = getTenantAccessContext(request);
+          assertTenantAdmin(currentUser);
+          const file = await request.file();
+
+          if (!file) {
+            return reply.status(400).send({
+              message: 'CSS file is required'
+            });
+          }
+
+          const branding = await uploadBrandingCssForTenant(tenantId, file, {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          });
+
+          return reply.status(201).send(branding);
+        } catch (error) {
+          return handleRouteError(error, reply);
+        }
+      }
+    );
 
     tenantScopedApp.post<{ Querystring: TenantAdminQuery }>(
       '/api/tenant-admin/branding/logo',
