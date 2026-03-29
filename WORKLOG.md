@@ -99,3 +99,16 @@ Validation:
 - Verified locally that `Apara, Inc.` no longer shows the old Riverside placeholder naming
 - Verified the uploaded clinic logo now renders correctly in the frontend clinic portal
 - Ran `pnpm --filter api exec node --test --import tsx test/platform-admin-routes.test.ts`
+
+## [2026-03-29 05:20]
+Branch: clinic-tenant-cleanup-and-fix
+Commit: require role selection for admin-created users (validated: local create-user lock, focused api tests)
+
+Changes:
+- block create-user submission in the admin drawer until a role is selected
+- require `roleId` in the backend create-user flow so direct requests cannot create roleless users
+- add regression coverage for tenant-admin and platform-admin create requests without a role
+
+Validation:
+- verified the create-user flow now requires role selection before submission
+- ran `pnpm --filter api exec node --test --import tsx test/tenant-admin-routes.test.ts test/platform-admin-routes.test.ts`

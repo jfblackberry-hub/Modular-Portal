@@ -90,6 +90,7 @@ export function UserDetailDrawer({
   const isPlatformScope = scope === 'platform';
   const isPlatformWideAccount = isPlatformScope && formState.tenantId === '';
   const canChooseInitialRole = mode === 'create';
+  const createRoleMissing = mode === 'create' && !selectedRoleId;
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-slate-950/35 backdrop-blur-sm">
@@ -325,8 +326,11 @@ export function UserDetailDrawer({
                   className="mt-2 w-full rounded-2xl border border-admin-border bg-white px-4 py-3 text-sm text-admin-text outline-none focus:border-admin-accent"
                   value={selectedRoleId}
                   onChange={(event) => onSelectedRoleChange(event.target.value)}
+                  required
                 >
-                  <option value="">Create without role</option>
+                  <option value="" disabled>
+                    Select role
+                  </option>
                   {roles.map((role) => (
                     <option key={role.id} value={role.id}>
                       {role.name}
@@ -334,7 +338,7 @@ export function UserDetailDrawer({
                   ))}
                 </select>
                 <p className="mt-2 text-sm text-admin-muted">
-                  Assign a role during creation so the user can sign in immediately.
+                  A role is required so the user is fully functional immediately after creation.
                 </p>
               </label>
             ) : null}
@@ -342,7 +346,7 @@ export function UserDetailDrawer({
             <div className="flex flex-wrap gap-3">
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || createRoleMissing}
                 className="rounded-full bg-admin-accent px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isSubmitting

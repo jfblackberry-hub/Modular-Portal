@@ -748,6 +748,11 @@ export async function createUser(
   const lastName = normalizeRequired(input.lastName, 'Last name');
   const tenantId = normalizeOptional(input.tenantId);
   const roleId = normalizeOptional(input.roleId ?? undefined) ?? null;
+
+  if (!roleId) {
+    throw new Error('Role selection is required when creating a user.');
+  }
+
   const organizationUnitIds = normalizeOrganizationUnitIds(
     input.organizationUnitIds,
     input.organizationUnitId
@@ -765,41 +770,39 @@ export async function createUser(
     let initialRoleCode: string | null = null;
     let initialRoleIsTenantAdmin = false;
 
-    if (roleId) {
-      const role = await tx.role.findUnique({
-        where: { id: roleId }
-      });
+    const role = await tx.role.findUnique({
+      where: { id: roleId }
+    });
 
-      if (!role) {
-        throw new Error('Role not found');
-      }
-
-      if (role.isPlatformRole) {
-        if (tenantId !== null) {
-          throw new Error('Platform roles cannot be assigned to a tenant.');
-        }
-      } else {
-        if (!tenantId || !tenant) {
-          throw new Error('Tenant-scoped roles require a tenant assignment.');
-        }
-
-        const normalizedRoleTenantTypeCode = normalizeTenantTypeCode(role.tenantTypeCode);
-        const roleAllowedForTenant =
-          role.appliesToAllTenantTypes ||
-          role.tenantTypeCode === null ||
-          (normalizedRoleTenantTypeCode !== undefined &&
-            getCompatibleTenantTypeCodes(tenant.tenantTypeCode).includes(
-              normalizedRoleTenantTypeCode
-            ));
-
-        if (!roleAllowedForTenant) {
-          throw new Error('Role is not allowed for this Tenant Type.');
-        }
-      }
-
-      initialRoleCode = role.code;
-      initialRoleIsTenantAdmin = role.code === 'tenant_admin';
+    if (!role) {
+      throw new Error('Role not found');
     }
+
+    if (role.isPlatformRole) {
+      if (tenantId !== null) {
+        throw new Error('Platform roles cannot be assigned to a tenant.');
+      }
+    } else {
+      if (!tenantId || !tenant) {
+        throw new Error('Tenant-scoped roles require a tenant assignment.');
+      }
+
+      const normalizedRoleTenantTypeCode = normalizeTenantTypeCode(role.tenantTypeCode);
+      const roleAllowedForTenant =
+        role.appliesToAllTenantTypes ||
+        role.tenantTypeCode === null ||
+        (normalizedRoleTenantTypeCode !== undefined &&
+          getCompatibleTenantTypeCodes(tenant.tenantTypeCode).includes(
+            normalizedRoleTenantTypeCode
+          ));
+
+      if (!roleAllowedForTenant) {
+        throw new Error('Role is not allowed for this Tenant Type.');
+      }
+    }
+
+    initialRoleCode = role.code;
+    initialRoleIsTenantAdmin = role.code === 'tenant_admin';
 
     const createdUser = await tx.user.create({
       data: {
@@ -849,15 +852,13 @@ export async function createUser(
         });
       }
 
-      if (roleId) {
-        await tx.userRole.create({
-          data: {
-            userId: createdUser.id,
-            roleId,
-            tenantId
-          }
-        });
-      }
+      await tx.userRole.create({
+        data: {
+          userId: createdUser.id,
+          roleId,
+          tenantId
+        }
+      });
 
       await logAdminAction({
         client: tx,
