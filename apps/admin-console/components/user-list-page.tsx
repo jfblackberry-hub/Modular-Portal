@@ -369,11 +369,17 @@ function UserListPageContent({
           'Content-Type': 'application/json',
           ...getAdminAuthHeaders()
         },
-          body: JSON.stringify({
-            roleId: selectedRoleId,
-            tenantId: selectedUser.tenant?.id ?? null
-          })
-        });
+        body: JSON.stringify(
+          scope === 'platform'
+            ? {
+                roleId: selectedRoleId,
+                tenantId: selectedUser.tenant?.id ?? null
+              }
+            : {
+                roleId: selectedRoleId
+              }
+        )
+      });
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as {
@@ -515,6 +521,29 @@ function UserListPageContent({
         <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
         </p>
+      ) : null}
+
+      {isDrawerOpen ? (
+        <UserDetailDrawer
+          mode={drawerMode}
+          scope={scope}
+          isOpen={isDrawerOpen}
+          user={selectedUser}
+          formState={formState}
+          tenants={tenants}
+          roles={roles}
+          selectedRoleId={selectedRoleId}
+          isSubmitting={isSubmitting}
+          isAssigningRole={isAssigningRole}
+          removingRoleCode={removingRoleCode}
+          error={error}
+          onClose={closeDrawer}
+          onFormChange={setFormState}
+          onSelectedRoleChange={setSelectedRoleId}
+          onSubmit={handleSubmit}
+          onAssignRole={() => void handleAssignRole()}
+          onRemoveRole={(roleCode) => void handleRemoveRole(roleCode)}
+        />
       ) : null}
 
       <SectionCard
@@ -680,26 +709,6 @@ function UserListPageContent({
         )}
       </SectionCard>
 
-      <UserDetailDrawer
-        mode={drawerMode}
-        scope={scope}
-        isOpen={isDrawerOpen}
-        user={selectedUser}
-        formState={formState}
-        tenants={tenants}
-        roles={roles}
-        selectedRoleId={selectedRoleId}
-        isSubmitting={isSubmitting}
-        isAssigningRole={isAssigningRole}
-        removingRoleCode={removingRoleCode}
-        error={error}
-        onClose={closeDrawer}
-        onFormChange={setFormState}
-        onSelectedRoleChange={setSelectedRoleId}
-        onSubmit={handleSubmit}
-        onAssignRole={() => void handleAssignRole()}
-        onRemoveRole={(roleCode) => void handleRemoveRole(roleCode)}
-      />
     </AdminPageLayout>
   );
 }

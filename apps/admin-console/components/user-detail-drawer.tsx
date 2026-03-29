@@ -93,9 +93,9 @@ export function UserDetailDrawer({
   const createRoleMissing = mode === 'create' && !selectedRoleId;
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-slate-950/35 backdrop-blur-sm">
-      <div className="flex h-full w-full max-w-2xl flex-col overflow-y-auto border-l border-admin-border bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-b border-admin-border px-6 py-5">
+    <section className="admin-section-card admin-surface">
+      <div className="admin-section-card__header">
+        <div className="admin-section-card__copy">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.24em] text-admin-accent">
               {scope === 'platform' ? 'Platform User' : 'Tenant User'}
@@ -109,7 +109,8 @@ export function UserDetailDrawer({
                 : 'Update profile, lifecycle status, credentials, and role assignment.'}
             </p>
           </div>
-
+        </div>
+        <div className="admin-section-card__action">
           <button
             type="button"
             onClick={onClose}
@@ -118,8 +119,10 @@ export function UserDetailDrawer({
             Close
           </button>
         </div>
+      </div>
 
-        <div className="flex-1 space-y-6 px-6 py-6">
+      <div className="admin-section-card__body">
+        <div className="space-y-6">
           {error ? (
             <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {error}
@@ -419,6 +422,6 @@ export function UserDetailDrawer({
           ) : null}
         </div>
       </div>
-    </div>
+    </section>
   );
 }

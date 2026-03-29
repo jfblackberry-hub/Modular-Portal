@@ -112,3 +112,16 @@ Changes:
 Validation:
 - verified the create-user flow now requires role selection before submission
 - ran `pnpm --filter api exec node --test --import tsx test/tenant-admin-routes.test.ts test/platform-admin-routes.test.ts`
+
+## [2026-03-29 05:42]
+Branch: clinic-tenant-cleanup-and-fix
+Commit: move user administration into the main admin workspace (validated: local inline user editor, focused component import)
+
+Changes:
+- replaced the right-side user detail drawer with an inline administration panel in the main page flow
+- moved create and edit user workflows into the primary content area above the user directory
+- preserved the existing user create, edit, deactivate, and role management behaviors
+
+Validation:
+- verified the user administration components import cleanly after the layout refactor
+- confirmed locally that the user editor now renders inline in the main admin workspace
