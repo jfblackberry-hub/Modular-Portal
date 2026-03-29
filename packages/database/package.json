@@ -20,6 +20,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
+    "db:repair:admin-identities": "node --import tsx prisma/repair-admin-identities.ts",
     "db:seed:employer-groups": "node --import tsx prisma/seed-employer-groups.ts",
     "db:seed:eb-demo": "node --import tsx prisma/seed-eb-demo.ts",
     "db:seed:provider-tenant": "node --import tsx prisma/seed-provider-tenant.ts",

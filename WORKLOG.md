@@ -25,3 +25,18 @@ Changes:
 Validation:
 - Verified the add-user button is visible again on the tenant users page
 - Scoped ESLint passed for the touched admin-console files
+
+## [2026-03-29 01:59]
+Branch: branding-issues-in-admin-tenant-config
+Commit: checkpoint merged admin console, tenant management, and auth fixes (validated: local admin login, focused test suites)
+
+Changes:
+- Refactor the admin sidebar into an explicit two-level control-plane navigation with user emulation access
+- Add platform-admin organization-unit create, edit, delete, and re-parent support for tenant organization structures
+- Repair local bootstrap admin identities and retire the generic tenant bootstrap account
+- Include related branch changes for billing enrollment scope hardening and admin/session routing support
+
+Validation:
+- Verified local admin login works with `admin` / `demo12345`
+- Ran focused auth login tests for `admin-console` and `api`
+- Ran focused lint checks for the updated seed and auth test files

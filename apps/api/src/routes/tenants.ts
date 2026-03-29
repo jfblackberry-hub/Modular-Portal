@@ -1,8 +1,7 @@
-import type { FastifyInstance } from 'fastify';
 import type { TenantType } from '@payer-portal/database';
 import type { CoreTenantType } from '@payer-portal/shared-types';
+import type { FastifyInstance } from 'fastify';
 
-import { uploadBrandingLogoForTenant } from '../services/branding-service';
 import {
   createCapability,
   createTenantTemplate,
@@ -12,10 +11,10 @@ import {
   listTenantTemplates,
   listTenantTypesWithTemplates,
   saveTenantExperienceCapabilities,
-  upsertTenantExperience,
   updateCapability,
-  updateTenantTemplate
-} from '../services/admin-control-plane-service';
+  updateTenantTemplate,
+  upsertTenantExperience} from '../services/admin-control-plane-service';
+import { uploadBrandingLogoForTenant } from '../services/branding-service';
 import {
   assertPlatformAdmin,
   AuthenticationError,
@@ -25,14 +24,16 @@ import {
 import {
   archiveTenant,
   createTenant,
+  createTenantOrganizationUnit,
   deleteTenant,
+  deleteTenantOrganizationUnit,
   getTenantById,
   importTenantOfficeLocations,
   listTenantOrganizationUnits,
   listTenants,
+  updateTenant,
   updateTenantOfficeLocation,
-  updateTenant
-} from '../services/tenant-service';
+  updateTenantOrganizationUnit} from '../services/tenant-service';
 
 type TenantBody = {
   name: string;
@@ -66,6 +67,26 @@ type OfficeLocationUpdateBody = {
   streetAddress?: string | null;
   zip?: string | null;
 };
+
+type OrganizationUnitBody = {
+  activeFlag?: boolean | null;
+  city?: string | null;
+  company?: string | null;
+  locationId?: string | null;
+  metadata?: Record<string, unknown> | null;
+  name: string;
+  notes?: string | null;
+  parentId?: string | null;
+  phone?: string | null;
+  region?: string | null;
+  servicesOffered?: string[];
+  state?: string | null;
+  streetAddress?: string | null;
+  type: 'ENTERPRISE' | 'REGION' | 'LOCATION' | 'DEPARTMENT' | 'TEAM';
+  zip?: string | null;
+};
+
+type OrganizationUnitUpdateBody = Partial<OrganizationUnitBody>;
 
 type TenantTemplateBody = {
   code: string;
@@ -631,6 +652,46 @@ export async function tenantRoutes(app: FastifyInstance) {
   );
 
   app.post<{ Params: { id: string } }>(
+    '/platform-admin/tenants/:id/organization-units',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        const organizationUnit = await createTenantOrganizationUnit(
+          request.params.id,
+          request.body as OrganizationUnitBody,
+          {
+            actorUserId: currentUser.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent']
+          }
+        );
+
+        return reply.status(201).send(organizationUnit);
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          return reply.status(401).send({ message: error.message });
+        }
+
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ message: error.message });
+        }
+
+        if (error instanceof Error) {
+          const status = error.message.includes('not found') ? 404 : 400;
+          return reply.status(status).send({ message: error.message });
+        }
+
+        return reply.status(503).send({
+          message:
+            'Local database unavailable. Start PostgreSQL, run migrations.'
+        });
+      }
+    }
+  );
+
+  app.post<{ Params: { id: string } }>(
     '/platform-admin/tenants/:id/office-locations/import',
     async (request, reply) => {
       try {
@@ -674,17 +735,82 @@ export async function tenantRoutes(app: FastifyInstance) {
     }
   );
 
-  app.patch<{ Params: { id: string; organizationUnitId: string }; Body: OfficeLocationUpdateBody }>(
+  app.patch<{ Params: { id: string; organizationUnitId: string }; Body: OrganizationUnitUpdateBody }>(
     '/platform-admin/tenants/:id/organization-units/:organizationUnitId',
     async (request, reply) => {
       try {
         const currentUser = await getCurrentUserFromHeaders(request.headers);
         assertPlatformAdmin(currentUser);
 
-        const result = await updateTenantOfficeLocation(
+        const body = request.body ?? {};
+        const hasOfficeLocationFields =
+          'locationId' in body ||
+          'streetAddress' in body ||
+          'city' in body ||
+          'state' in body ||
+          'zip' in body ||
+          'company' in body ||
+          'region' in body ||
+          'phone' in body ||
+          'notes' in body ||
+          'servicesOffered' in body ||
+          'activeFlag' in body;
+
+        const result = hasOfficeLocationFields
+          ? await updateTenantOfficeLocation(
+              request.params.id,
+              request.params.organizationUnitId,
+              body as OfficeLocationUpdateBody,
+              {
+                actorUserId: currentUser.id,
+                ipAddress: request.ip,
+                userAgent: request.headers['user-agent']
+              }
+            )
+          : await updateTenantOrganizationUnit(
+              request.params.id,
+              request.params.organizationUnitId,
+              body,
+              {
+                actorUserId: currentUser.id,
+                ipAddress: request.ip,
+                userAgent: request.headers['user-agent']
+              }
+            );
+
+        return reply.send(result);
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          return reply.status(401).send({ message: error.message });
+        }
+
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ message: error.message });
+        }
+
+        if (error instanceof Error) {
+          const status = error.message.includes('not found') ? 404 : 400;
+          return reply.status(status).send({ message: error.message });
+        }
+
+        return reply.status(503).send({
+          message:
+            'Local database unavailable. Start PostgreSQL, run migrations.'
+        });
+      }
+    }
+  );
+
+  app.delete<{ Params: { id: string; organizationUnitId: string } }>(
+    '/platform-admin/tenants/:id/organization-units/:organizationUnitId',
+    async (request, reply) => {
+      try {
+        const currentUser = await getCurrentUserFromHeaders(request.headers);
+        assertPlatformAdmin(currentUser);
+
+        const result = await deleteTenantOrganizationUnit(
           request.params.id,
           request.params.organizationUnitId,
-          request.body,
           {
             actorUserId: currentUser.id,
             ipAddress: request.ip,

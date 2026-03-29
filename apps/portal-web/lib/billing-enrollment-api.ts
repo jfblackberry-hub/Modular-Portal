@@ -120,6 +120,14 @@ async function resolveAccessToken(accessToken?: string) {
   return resolvedAccessToken;
 }
 
+function requireHouseholdId(householdId: string | undefined | null): string {
+  const normalized = householdId?.trim();
+  if (!normalized) {
+    throw new Error('Household context is required.');
+  }
+  return normalized;
+}
+
 async function buildBillingApiHeaders(
   accessToken?: string,
   init: HeadersInit = {}
@@ -265,13 +273,17 @@ export async function updateBillingAutopay(
   return response.json();
 }
 
-export async function getDependentsExperience(userId: string, householdId = 'hh-8843') {
+export async function getDependentsExperience(userId: string, householdId: string) {
+  const scopedHouseholdId = requireHouseholdId(householdId);
   const accessToken = await resolveAccessToken(userId);
 
-  const response = await fetch(`${config.apiBaseUrl}/api/v1/billing-enrollment/dependents?householdId=${encodeURIComponent(householdId)}`, {
-    cache: 'no-store',
-    headers: await buildBillingApiHeaders(accessToken)
-  });
+  const response = await fetch(
+    `${config.apiBaseUrl}/api/v1/billing-enrollment/dependents?householdId=${encodeURIComponent(scopedHouseholdId)}`,
+    {
+      cache: 'no-store',
+      headers: await buildBillingApiHeaders(accessToken)
+    }
+  );
 
   if (!response.ok) {
     throw new Error('Unable to load dependents.');
@@ -337,11 +349,12 @@ export async function updateDependent(
   return response.json();
 }
 
-export async function removeDependent(userId: string, dependentId: string, householdId = 'hh-8843') {
+export async function removeDependent(userId: string, dependentId: string, householdId: string) {
+  const scopedHouseholdId = requireHouseholdId(householdId);
   const accessToken = await resolveAccessToken(userId);
 
   const response = await fetch(
-    `${config.apiBaseUrl}/api/v1/billing-enrollment/dependents/${dependentId}?householdId=${encodeURIComponent(householdId)}`,
+    `${config.apiBaseUrl}/api/v1/billing-enrollment/dependents/${dependentId}?householdId=${encodeURIComponent(scopedHouseholdId)}`,
     {
       method: 'DELETE',
       headers: await buildBillingApiHeaders(accessToken)

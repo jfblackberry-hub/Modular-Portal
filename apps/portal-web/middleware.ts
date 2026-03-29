@@ -263,7 +263,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isTenantModuleEnabled(brandingConfig, route.moduleId)) {
+  const moduleGateTenantId =
+    portalUser.session?.tenantId ?? portalUser.tenant?.id ?? null;
+
+  if (
+    isTenantModuleEnabled(brandingConfig, route.moduleId, {
+      tenantId: moduleGateTenantId
+    })
+  ) {
     return NextResponse.next();
   }
 

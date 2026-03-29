@@ -259,6 +259,122 @@ after(async () => {
   await prisma.$disconnect();
 });
 
+test('platform admin login resolves without tenant membership or portal fallback state', async () => {
+  await syncTenantTypeDefinitions(prisma);
+
+  const role = await prisma.role.upsert({
+    where: {
+      code: 'platform_admin'
+    },
+    update: {
+      isPlatformRole: true,
+      name: 'Platform Admin'
+    },
+    create: {
+      code: 'platform_admin',
+      isPlatformRole: true,
+      name: 'Platform Admin'
+    }
+  });
+
+  const permission = await prisma.permission.upsert({
+    where: {
+      code: 'admin.manage'
+    },
+    update: {
+      name: 'Manage Admin'
+    },
+    create: {
+      code: 'admin.manage',
+      name: 'Manage Admin'
+    }
+  });
+
+  await prisma.rolePermission.upsert({
+    where: {
+      roleId_permissionId: {
+        roleId: role.id,
+        permissionId: permission.id
+      }
+    },
+    update: {},
+    create: {
+      roleId: role.id,
+      permissionId: permission.id
+    }
+  });
+
+  const user = await prisma.user.create({
+    data: {
+      tenantId: null,
+      email: 'platform-admin@auth.test',
+      firstName: 'Platform',
+      lastName: 'Operator',
+      isActive: true,
+      status: 'ACTIVE'
+    }
+  });
+
+  await prisma.userCredential.create({
+    data: {
+      userId: user.id,
+      passwordHash: hashPassword('demo12345'),
+      passwordSetAt: new Date()
+    }
+  });
+
+  await prisma.userRole.create({
+    data: {
+      userId: user.id,
+      roleId: role.id,
+      tenantId: null
+    }
+  });
+
+  const app = Fastify();
+  await authRoutes(app);
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/auth/login',
+    payload: {
+      email: 'platform-admin@auth.test',
+      password: 'demo12345'
+    }
+  });
+
+  assert.equal(response.statusCode, 200, response.body);
+  const payload = response.json() as {
+    user: {
+      email: string;
+      landingContext: string;
+      tenant: {
+        id: string;
+        name: string;
+        tenantTypeCode: string;
+      };
+      session: {
+        type: string;
+        tenantId: string | null;
+        roles: string[];
+        permissions: string[];
+      };
+    };
+  };
+
+  assert.equal(payload.user.email, 'platform-admin@auth.test');
+  assert.equal(payload.user.landingContext, 'platform_admin');
+  assert.equal(payload.user.tenant.id, 'platform');
+  assert.equal(payload.user.tenant.name, 'Platform');
+  assert.equal(payload.user.tenant.tenantTypeCode, 'PLATFORM');
+  assert.equal(payload.user.session.type, 'platform_admin');
+  assert.equal(payload.user.session.tenantId, null);
+  assert.ok(payload.user.session.roles.includes('platform_admin'));
+  assert.ok(payload.user.session.permissions.includes('admin.manage'));
+
+  await app.close();
+});
+
 test('auth login uses persisted credentials for seeded users', async () => {
   await provisionAuthUser({
     tenant: {
