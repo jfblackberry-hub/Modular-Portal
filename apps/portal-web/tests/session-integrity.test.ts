@@ -9,7 +9,7 @@ import {
 import { buildAdminHandoffUrl } from '../lib/admin-redirect';
 import { buildPortalWorkspaceSessionKey } from '../lib/portal-workspace-session';
 
-test('platform-admin portal users are routed into the admin console login shell only', () => {
+test('platform-admin portal users are routed to the platform admin health landing in the admin console', () => {
   const url = buildAdminHandoffUrl({
     roles: ['platform_admin'],
     landingContext: 'platform_admin'
@@ -17,7 +17,7 @@ test('platform-admin portal users are routed into the admin console login shell 
 
   assert.ok(url);
   const parsed = new URL(url);
-  assert.equal(parsed.pathname, '/login');
+  assert.equal(parsed.pathname, '/admin/overview/health');
   assert.equal(parsed.search, '');
 });
 

@@ -11,7 +11,10 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const householdId = searchParams.get('householdId') ?? 'hh-8843';
+  const householdId = searchParams.get('householdId')?.trim();
+  if (!householdId) {
+    return NextResponse.json({ message: 'householdId query parameter is required.' }, { status: 400 });
+  }
 
   try {
     const response = await getDependentsExperience(user.id, householdId);
@@ -37,6 +40,10 @@ export async function POST(request: Request) {
     relationship: 'spouse' | 'child' | 'other';
     relationshipDetail: string;
   };
+
+  if (!body.householdId?.trim()) {
+    return NextResponse.json({ message: 'householdId is required in the request body.' }, { status: 400 });
+  }
 
   try {
     const response = await addDependent(user.id, body);

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EmptyState, StatusBadge } from '../portal-ui';
 
 type LoadState = 'idle' | 'loading' | 'error';
+type ScopeState = 'resolving' | 'ready' | 'error';
 
 type DependentRecord = {
   id: string;
@@ -82,13 +83,15 @@ function BannerMessage({ message, tone }: { message: string; tone: 'success' | '
 }
 
 export function DependentsExperience() {
+  const [scopeState, setScopeState] = useState<ScopeState>('resolving');
+  const [scopeError, setScopeError] = useState('');
+  const [householdId, setHouseholdId] = useState<string | null>(null);
   const [state, setState] = useState<LoadState>('loading');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [messageTone, setMessageTone] = useState<'success' | 'danger' | 'info'>('info');
   const [dependents, setDependents] = useState<DependentRecord[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [householdId] = useState('hh-8843');
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -105,13 +108,16 @@ export function DependentsExperience() {
     };
   }, [dependents]);
 
-  async function loadDependents() {
+  async function loadDependents(resolvedHouseholdId: string) {
     setState('loading');
     setError('');
     try {
-      const response = await fetch(`/api/billing-enrollment/dependents?householdId=${encodeURIComponent(householdId)}`, {
-        cache: 'no-store'
-      });
+      const response = await fetch(
+        `/api/billing-enrollment/dependents?householdId=${encodeURIComponent(resolvedHouseholdId)}`,
+        {
+          cache: 'no-store'
+        }
+      );
       if (!response.ok) {
         throw new Error('Unable to load dependents right now.');
       }
@@ -125,7 +131,42 @@ export function DependentsExperience() {
   }
 
   useEffect(() => {
-    void loadDependents();
+    let cancelled = false;
+
+    async function resolveHouseholdScope() {
+      setScopeState('resolving');
+      setScopeError('');
+      try {
+        const response = await fetch('/api/billing-enrollment/household-scope', { cache: 'no-store' });
+        const payload = (await response.json()) as { householdId?: string; message?: string };
+        if (!response.ok) {
+          throw new Error(payload.message ?? 'Unable to resolve household context.');
+        }
+        if (!payload.householdId?.trim()) {
+          throw new Error('Household context is unavailable for this session.');
+        }
+        if (cancelled) {
+          return;
+        }
+        setHouseholdId(payload.householdId);
+        setScopeState('ready');
+        await loadDependents(payload.householdId);
+      } catch (nextError) {
+        if (cancelled) {
+          return;
+        }
+        setScopeState('error');
+        setScopeError(
+          nextError instanceof Error ? nextError.message : 'Unable to resolve household context.'
+        );
+        setState('error');
+      }
+    }
+
+    void resolveHouseholdScope();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -143,6 +184,12 @@ export function DependentsExperience() {
   async function saveDependent(event: React.FormEvent) {
     event.preventDefault();
     setMessage('');
+
+    if (!householdId) {
+      setMessageTone('danger');
+      setMessage('Household context is not available.');
+      return;
+    }
 
     try {
       const request = {
@@ -185,6 +232,11 @@ export function DependentsExperience() {
 
   async function removeDependentRow(dependentId: string) {
     setMessage('');
+    if (!householdId) {
+      setMessageTone('danger');
+      setMessage('Household context is not available.');
+      return;
+    }
     try {
       const response = await fetch(
         `/api/billing-enrollment/dependents/${dependentId}?householdId=${encodeURIComponent(householdId)}`,
@@ -226,10 +278,17 @@ export function DependentsExperience() {
 
       {message ? <BannerMessage message={message} tone={messageTone} /> : null}
 
-      {state === 'loading' ? <LoadingBlock title="Dependents" /> : null}
-      {state === 'error' ? <EmptyState title="Unable to load dependents" description={error} /> : null}
+      {scopeState === 'resolving' ? <LoadingBlock title="Resolving household context" /> : null}
+      {scopeState === 'error' ? (
+        <EmptyState title="Household context unavailable" description={scopeError} />
+      ) : null}
 
-      {state === 'idle' ? (
+      {scopeState === 'ready' && state === 'loading' ? <LoadingBlock title="Dependents" /> : null}
+      {scopeState === 'ready' && state === 'error' ? (
+        <EmptyState title="Unable to load dependents" description={error} />
+      ) : null}
+
+      {scopeState === 'ready' && state === 'idle' ? (
         <>
           <section className="grid gap-4 sm:grid-cols-3">
             <article className="portal-card p-4">

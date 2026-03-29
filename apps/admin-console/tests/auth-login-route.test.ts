@@ -147,3 +147,74 @@ test('tenant admin login creates a direct admin session from session metadata', 
   assert.equal(payload.session?.isPlatformAdmin, false);
   assert.deepEqual(payload.session?.permissions, ['tenant.view']);
 });
+
+test('platform admin login creates a direct admin session without portal handoff', async () => {
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const url = String(input);
+
+    if (url.endsWith('/auth/login')) {
+      return new Response(
+        JSON.stringify({
+          token: 'platform-admin-token',
+          user: {
+            id: 'platform-user',
+            email: 'admin@example.com',
+            roles: ['platform_admin'],
+            permissions: ['admin.manage', 'tenant.view', 'user.manage'],
+            landingContext: 'platform_admin',
+            session: {
+              type: 'platform_admin',
+              tenantId: null,
+              roles: ['platform_admin'],
+              permissions: ['admin.manage', 'tenant.view', 'user.manage']
+            }
+          }
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/json'
+          }
+        }
+      );
+    }
+
+    throw new Error(`Unexpected fetch: ${url}`);
+  }) as typeof fetch;
+
+  const response = await POST(
+    new Request('http://localhost/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: 'admin@example.com',
+        password: 'demo'
+      })
+    })
+  );
+
+  assert.equal(response.status, 200);
+  const payload = (await response.json()) as {
+    directSession?: boolean;
+    redirectPath?: string;
+    session?: {
+      tenantId?: string;
+      isTenantAdmin?: boolean;
+      isPlatformAdmin?: boolean;
+      permissions?: string[];
+    };
+  };
+
+  assert.equal(payload.directSession, true);
+  assert.equal(payload.redirectPath, '/admin/overview/health');
+  assert.equal(payload.session?.tenantId, '');
+  assert.equal(payload.session?.isTenantAdmin, true);
+  assert.equal(payload.session?.isPlatformAdmin, true);
+  assert.deepEqual(payload.session?.permissions, [
+    'admin.manage',
+    'tenant.view',
+    'user.manage'
+  ]);
+});

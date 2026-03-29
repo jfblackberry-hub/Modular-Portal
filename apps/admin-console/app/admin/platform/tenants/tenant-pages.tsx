@@ -52,11 +52,12 @@ type OrganizationUnit = {
   updatedAt: string;
 };
 
-type OfficeLocationFormState = {
+type OrganizationUnitFormState = {
   activeFlag: boolean;
   city: string;
   company: string;
   locationId: string;
+  parentId: string | null;
   name: string;
   notes: string;
   phone: string;
@@ -64,6 +65,7 @@ type OfficeLocationFormState = {
   servicesOffered: string;
   state: string;
   streetAddress: string;
+  type: OrganizationUnit['type'];
   zip: string;
 };
 
@@ -300,20 +302,25 @@ function sortOrganizationUnits(organizationUnits: OrganizationUnit[]) {
   return ordered;
 }
 
-function createOfficeLocationFormState(unit: OrganizationUnit): OfficeLocationFormState {
+function createOrganizationUnitFormState(
+  unit?: OrganizationUnit,
+  defaults?: Partial<Pick<OrganizationUnitFormState, 'parentId' | 'type'>>
+): OrganizationUnitFormState {
   return {
-    name: unit.name,
-    locationId: unit.metadata?.locationId ?? '',
-    company: unit.metadata?.company ?? '',
-    streetAddress: unit.metadata?.address?.streetAddress ?? '',
-    city: unit.metadata?.address?.city ?? '',
-    state: unit.metadata?.address?.state ?? '',
-    zip: unit.metadata?.address?.zip ?? '',
-    phone: unit.metadata?.phone ?? '',
-    notes: unit.metadata?.notes ?? '',
-    region: unit.metadata?.region ?? '',
-    servicesOffered: unit.metadata?.servicesOffered?.join(', ') ?? '',
-    activeFlag: unit.metadata?.activeFlag ?? true
+    name: unit?.name ?? '',
+    type: defaults?.type ?? unit?.type ?? 'DEPARTMENT',
+    parentId: defaults?.parentId ?? unit?.parentId ?? null,
+    locationId: unit?.metadata?.locationId ?? '',
+    company: unit?.metadata?.company ?? '',
+    streetAddress: unit?.metadata?.address?.streetAddress ?? '',
+    city: unit?.metadata?.address?.city ?? '',
+    state: unit?.metadata?.address?.state ?? '',
+    zip: unit?.metadata?.address?.zip ?? '',
+    phone: unit?.metadata?.phone ?? '',
+    notes: unit?.metadata?.notes ?? '',
+    region: unit?.metadata?.region ?? '',
+    servicesOffered: unit?.metadata?.servicesOffered?.join(', ') ?? '',
+    activeFlag: unit?.metadata?.activeFlag ?? true
   };
 }
 
@@ -482,9 +489,11 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const [isDeletingTenant, setIsDeletingTenant] = useState(false);
   const [officeLocationFile, setOfficeLocationFile] = useState<File | null>(null);
   const [isImportingOfficeLocations, setIsImportingOfficeLocations] = useState(false);
-  const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
-  const [officeLocationForm, setOfficeLocationForm] = useState<OfficeLocationFormState | null>(null);
-  const [isSavingOfficeLocation, setIsSavingOfficeLocation] = useState(false);
+  const [editingOrganizationUnitId, setEditingOrganizationUnitId] = useState<string | null>(null);
+  const [organizationUnitForm, setOrganizationUnitForm] =
+    useState<OrganizationUnitFormState | null>(null);
+  const [isSavingOrganizationUnit, setIsSavingOrganizationUnit] = useState(false);
+  const [deletingOrganizationUnitId, setDeletingOrganizationUnitId] = useState<string | null>(null);
   const [tenantDetailForm, setTenantDetailForm] = useState<TenantDetailFormState | null>(null);
   const [isSavingTenant, setIsSavingTenant] = useState(false);
 
@@ -732,71 +741,168 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
     }
   }
 
-  function handleBeginEditOfficeLocation(unit: OrganizationUnit) {
-    setEditingLocationId(unit.id);
-    setOfficeLocationForm(createOfficeLocationFormState(unit));
+  function handleBeginCreateOrganizationUnit(parentId: string | null = null) {
+    setEditingOrganizationUnitId(null);
+    setOrganizationUnitForm(
+      createOrganizationUnitFormState(undefined, {
+        parentId,
+        type: parentId ? 'TEAM' : 'DEPARTMENT'
+      })
+    );
     setError('');
     setSuccess('');
   }
 
-  function handleCancelEditOfficeLocation() {
-    setEditingLocationId(null);
-    setOfficeLocationForm(null);
+  function handleBeginEditOrganizationUnit(unit: OrganizationUnit) {
+    setEditingOrganizationUnitId(unit.id);
+    setOrganizationUnitForm(createOrganizationUnitFormState(unit));
+    setError('');
+    setSuccess('');
   }
 
-  async function handleSaveOfficeLocation(unitId: string) {
-    if (!tenant || !officeLocationForm) {
-      setError('Office location detail unavailable.');
+  function handleCancelOrganizationUnitEdit() {
+    setEditingOrganizationUnitId(null);
+    setOrganizationUnitForm(null);
+  }
+
+  async function handleSaveOrganizationUnit() {
+    if (!tenant || !organizationUnitForm) {
+      setError('Organization unit detail unavailable.');
       return;
     }
 
     setError('');
     setSuccess('');
-    setIsSavingOfficeLocation(true);
+    setIsSavingOrganizationUnit(true);
 
     try {
+      const isEditing = Boolean(editingOrganizationUnitId);
       const response = await fetch(
-        `${config.apiBaseUrl}/platform-admin/tenants/${tenant.id}/organization-units/${unitId}`,
+        isEditing
+          ? `${config.apiBaseUrl}/platform-admin/tenants/${tenant.id}/organization-units/${editingOrganizationUnitId}`
+          : `${config.apiBaseUrl}/platform-admin/tenants/${tenant.id}/organization-units`,
         {
-          method: 'PATCH',
+          method: isEditing ? 'PATCH' : 'POST',
           headers: {
             ...getAdminAuthHeaders(),
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            name: officeLocationForm.name,
-            locationId: officeLocationForm.locationId || null,
-            company: officeLocationForm.company || null,
-            streetAddress: officeLocationForm.streetAddress || null,
-            city: officeLocationForm.city || null,
-            state: officeLocationForm.state || null,
-            zip: officeLocationForm.zip || null,
-            phone: officeLocationForm.phone || null,
-            notes: officeLocationForm.notes || null,
-            region: officeLocationForm.region || null,
-            servicesOffered: officeLocationForm.servicesOffered
-              .split(',')
-              .map((value) => value.trim())
-              .filter(Boolean),
-            activeFlag: officeLocationForm.activeFlag
+            name: organizationUnitForm.name,
+            parentId: organizationUnitForm.parentId,
+            type: organizationUnitForm.type,
+            metadata: organizationUnitForm.type === 'LOCATION' ? undefined : null,
+            locationId:
+              organizationUnitForm.type === 'LOCATION'
+                ? organizationUnitForm.locationId || null
+                : undefined,
+            company:
+              organizationUnitForm.type === 'LOCATION'
+                ? organizationUnitForm.company || null
+                : undefined,
+            streetAddress:
+              organizationUnitForm.type === 'LOCATION'
+                ? organizationUnitForm.streetAddress || null
+                : undefined,
+            city:
+              organizationUnitForm.type === 'LOCATION'
+                ? organizationUnitForm.city || null
+                : undefined,
+            state:
+              organizationUnitForm.type === 'LOCATION'
+                ? organizationUnitForm.state || null
+                : undefined,
+            zip:
+              organizationUnitForm.type === 'LOCATION'
+                ? organizationUnitForm.zip || null
+                : undefined,
+            phone:
+              organizationUnitForm.type === 'LOCATION'
+                ? organizationUnitForm.phone || null
+                : undefined,
+            notes:
+              organizationUnitForm.type === 'LOCATION'
+                ? organizationUnitForm.notes || null
+                : undefined,
+            region:
+              organizationUnitForm.type === 'LOCATION'
+                ? organizationUnitForm.region || null
+                : undefined,
+            servicesOffered:
+              organizationUnitForm.type === 'LOCATION'
+                ? organizationUnitForm.servicesOffered
+                    .split(',')
+                    .map((value) => value.trim())
+                    .filter(Boolean)
+                : undefined,
+            activeFlag:
+              organizationUnitForm.type === 'LOCATION'
+                ? organizationUnitForm.activeFlag
+                : undefined
           })
         }
       );
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { message?: string } | null;
-        setError(payload?.message ?? 'Unable to save office location.');
+        setError(payload?.message ?? 'Unable to save organization unit.');
         return;
       }
 
       await loadDetailState();
-      setEditingLocationId(null);
-      setOfficeLocationForm(null);
-      setSuccess('Office location updated.');
+      setEditingOrganizationUnitId(null);
+      setOrganizationUnitForm(null);
+      setSuccess(isEditing ? 'Organization unit updated.' : 'Organization unit created.');
     } catch {
-      setError('Unable to save office location.');
+      setError('Unable to save organization unit.');
     } finally {
-      setIsSavingOfficeLocation(false);
+      setIsSavingOrganizationUnit(false);
+    }
+  }
+
+  async function handleDeleteOrganizationUnit(unit: OrganizationUnit) {
+    if (!tenant) {
+      setError('Organization unit detail unavailable.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete organization unit "${unit.name}"? Child units must be moved or deleted first.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError('');
+    setSuccess('');
+    setDeletingOrganizationUnitId(unit.id);
+
+    try {
+      const response = await fetch(
+        `${config.apiBaseUrl}/platform-admin/tenants/${tenant.id}/organization-units/${unit.id}`,
+        {
+          method: 'DELETE',
+          headers: getAdminAuthHeaders()
+        }
+      );
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+        setError(payload?.message ?? 'Unable to delete organization unit.');
+        return;
+      }
+
+      await loadDetailState();
+      if (editingOrganizationUnitId === unit.id) {
+        setEditingOrganizationUnitId(null);
+        setOrganizationUnitForm(null);
+      }
+      setSuccess('Organization unit deleted.');
+    } catch {
+      setError('Unable to delete organization unit.');
+    } finally {
+      setDeletingOrganizationUnitId(null);
     }
   }
 
@@ -843,6 +949,13 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const organizationUnitDepthMap = buildOrganizationUnitDepthMap(
     orderedOrganizationUnits
   );
+  const organizationUnitChildCountMap = organizationUnits.reduce((counts, unit) => {
+    if (unit.parentId) {
+      counts.set(unit.parentId, (counts.get(unit.parentId) ?? 0) + 1);
+    }
+
+    return counts;
+  }, new Map<string, number>());
 
   return (
     <div className="space-y-6">
@@ -1130,6 +1243,178 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                 </div>
               ) : null}
 
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-admin-muted">
+                  Add, edit, delete, and re-parent organization units for this tenant hierarchy.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleBeginCreateOrganizationUnit()}
+                  className="admin-button admin-button--secondary text-sm"
+                >
+                  Add organization unit
+                </button>
+              </div>
+
+              {organizationUnitForm ? (
+                <div className="rounded-3xl border border-admin-border bg-white/70 p-5">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-accent">
+                        {editingOrganizationUnitId ? 'Edit Organization Unit' : 'Create Organization Unit'}
+                      </p>
+                      <h3 className="mt-2 text-lg font-semibold text-admin-text">
+                        {editingOrganizationUnitId
+                          ? 'Update hierarchy placement and unit details'
+                          : 'Add a new unit to the tenant hierarchy'}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleSaveOrganizationUnit()}
+                        disabled={isSavingOrganizationUnit}
+                        className="admin-button text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSavingOrganizationUnit
+                          ? 'Saving...'
+                          : editingOrganizationUnitId
+                            ? 'Save organization unit'
+                            : 'Create organization unit'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelOrganizationUnitEdit}
+                        className="admin-button admin-button--secondary text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <label className="block">
+                      <span className="text-sm font-medium text-admin-text">Unit name</span>
+                      <input
+                        className="admin-input mt-2"
+                        value={organizationUnitForm.name}
+                        onChange={(event) =>
+                          setOrganizationUnitForm((current) =>
+                            current ? { ...current, name: event.target.value } : current
+                          )
+                        }
+                        placeholder="Flint North Clinic"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-sm font-medium text-admin-text">Unit type</span>
+                      <select
+                        className="admin-input mt-2"
+                        value={organizationUnitForm.type}
+                        onChange={(event) =>
+                          setOrganizationUnitForm((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  type: event.target.value as OrganizationUnit['type']
+                                }
+                              : current
+                          )
+                        }
+                      >
+                        <option value="ENTERPRISE">Enterprise</option>
+                        <option value="REGION">Region</option>
+                        <option value="LOCATION">Location</option>
+                        <option value="DEPARTMENT">Department</option>
+                        <option value="TEAM">Team</option>
+                      </select>
+                    </label>
+
+                    <label className="block md:col-span-2">
+                      <span className="text-sm font-medium text-admin-text">Parent unit</span>
+                      <select
+                        className="admin-input mt-2"
+                        value={organizationUnitForm.parentId ?? ''}
+                        onChange={(event) =>
+                          setOrganizationUnitForm((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  parentId: event.target.value || null
+                                }
+                              : current
+                          )
+                        }
+                      >
+                        <option value="">No parent (root)</option>
+                        {orderedOrganizationUnits
+                          .filter((unit) => unit.id !== editingOrganizationUnitId)
+                          .map((unit) => {
+                            const depth = organizationUnitDepthMap.get(unit.id) ?? 0;
+
+                            return (
+                              <option key={unit.id} value={unit.id}>
+                                {'  '.repeat(depth)}
+                                {unit.name}
+                              </option>
+                            );
+                          })}
+                      </select>
+                    </label>
+                  </div>
+
+                  {organizationUnitForm.type === 'LOCATION' ? (
+                    <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <label className="block">
+                        <span className="text-sm font-medium text-admin-text">Location ID</span>
+                        <input className="admin-input mt-2" value={organizationUnitForm.locationId} onChange={(event) => setOrganizationUnitForm((current) => current ? { ...current, locationId: event.target.value } : current)} placeholder="APAR-FLNT-01" />
+                      </label>
+                      <label className="block">
+                        <span className="text-sm font-medium text-admin-text">Company</span>
+                        <input className="admin-input mt-2" value={organizationUnitForm.company} onChange={(event) => setOrganizationUnitForm((current) => current ? { ...current, company: event.target.value } : current)} placeholder="Averra Clinics" />
+                      </label>
+                      <label className="block">
+                        <span className="text-sm font-medium text-admin-text">Region</span>
+                        <input className="admin-input mt-2" value={organizationUnitForm.region} onChange={(event) => setOrganizationUnitForm((current) => current ? { ...current, region: event.target.value } : current)} placeholder="Midwest" />
+                      </label>
+                      <label className="flex items-center gap-2 self-end rounded-2xl border border-admin-border px-4 py-3 text-sm text-admin-text">
+                        <input type="checkbox" checked={organizationUnitForm.activeFlag} onChange={(event) => setOrganizationUnitForm((current) => current ? { ...current, activeFlag: event.target.checked } : current)} />
+                        Active location
+                      </label>
+                      <label className="block md:col-span-2">
+                        <span className="text-sm font-medium text-admin-text">Street address</span>
+                        <input className="admin-input mt-2" value={organizationUnitForm.streetAddress} onChange={(event) => setOrganizationUnitForm((current) => current ? { ...current, streetAddress: event.target.value } : current)} placeholder="123 Maple Ave" />
+                      </label>
+                      <label className="block">
+                        <span className="text-sm font-medium text-admin-text">City</span>
+                        <input className="admin-input mt-2" value={organizationUnitForm.city} onChange={(event) => setOrganizationUnitForm((current) => current ? { ...current, city: event.target.value } : current)} placeholder="Flint" />
+                      </label>
+                      <label className="block">
+                        <span className="text-sm font-medium text-admin-text">State</span>
+                        <input className="admin-input mt-2" value={organizationUnitForm.state} onChange={(event) => setOrganizationUnitForm((current) => current ? { ...current, state: event.target.value } : current)} placeholder="MI" />
+                      </label>
+                      <label className="block">
+                        <span className="text-sm font-medium text-admin-text">ZIP</span>
+                        <input className="admin-input mt-2" value={organizationUnitForm.zip} onChange={(event) => setOrganizationUnitForm((current) => current ? { ...current, zip: event.target.value } : current)} placeholder="48503" />
+                      </label>
+                      <label className="block">
+                        <span className="text-sm font-medium text-admin-text">Phone</span>
+                        <input className="admin-input mt-2" value={organizationUnitForm.phone} onChange={(event) => setOrganizationUnitForm((current) => current ? { ...current, phone: event.target.value } : current)} placeholder="810-555-0100" />
+                      </label>
+                      <label className="block md:col-span-2">
+                        <span className="text-sm font-medium text-admin-text">Services offered</span>
+                        <input className="admin-input mt-2" value={organizationUnitForm.servicesOffered} onChange={(event) => setOrganizationUnitForm((current) => current ? { ...current, servicesOffered: event.target.value } : current)} placeholder="center-based, telehealth" />
+                      </label>
+                      <label className="block md:col-span-2 xl:col-span-4">
+                        <span className="text-sm font-medium text-admin-text">Notes</span>
+                        <textarea className="admin-input mt-2 min-h-24" value={organizationUnitForm.notes} onChange={(event) => setOrganizationUnitForm((current) => current ? { ...current, notes: event.target.value } : current)} placeholder="Optional operational notes" />
+                      </label>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               {orderedOrganizationUnits.length === 0 ? (
                 <p className="text-sm text-admin-muted">
                   No organization units are configured for this tenant yet.
@@ -1173,6 +1458,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                         <th className="px-4 py-3">Type</th>
                         <th className="px-4 py-3">Parent</th>
                         <th className="px-4 py-3">Location Detail</th>
+                        <th className="px-4 py-3">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1208,35 +1494,6 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                             </td>
                             <td className="px-4 py-4 text-admin-text">
                               {unit.type === 'LOCATION' ? (
-                                editingLocationId === unit.id && officeLocationForm ? (
-                                  <div className="space-y-3 rounded-2xl border border-admin-border bg-admin-surface/70 p-3">
-                                    <div className="grid gap-2 md:grid-cols-2">
-                                      <input value={officeLocationForm.name} onChange={(event) => setOfficeLocationForm((current) => current ? { ...current, name: event.target.value } : current)} className="rounded-xl border border-admin-border bg-white px-3 py-2 text-xs text-admin-text" placeholder="Location name" />
-                                      <input value={officeLocationForm.locationId} onChange={(event) => setOfficeLocationForm((current) => current ? { ...current, locationId: event.target.value } : current)} className="rounded-xl border border-admin-border bg-white px-3 py-2 text-xs text-admin-text" placeholder="Location ID" />
-                                      <input value={officeLocationForm.company} onChange={(event) => setOfficeLocationForm((current) => current ? { ...current, company: event.target.value } : current)} className="rounded-xl border border-admin-border bg-white px-3 py-2 text-xs text-admin-text" placeholder="Company" />
-                                      <input value={officeLocationForm.region} onChange={(event) => setOfficeLocationForm((current) => current ? { ...current, region: event.target.value } : current)} className="rounded-xl border border-admin-border bg-white px-3 py-2 text-xs text-admin-text" placeholder="Region" />
-                                      <input value={officeLocationForm.streetAddress} onChange={(event) => setOfficeLocationForm((current) => current ? { ...current, streetAddress: event.target.value } : current)} className="rounded-xl border border-admin-border bg-white px-3 py-2 text-xs text-admin-text md:col-span-2" placeholder="Street address" />
-                                      <input value={officeLocationForm.city} onChange={(event) => setOfficeLocationForm((current) => current ? { ...current, city: event.target.value } : current)} className="rounded-xl border border-admin-border bg-white px-3 py-2 text-xs text-admin-text" placeholder="City" />
-                                      <input value={officeLocationForm.state} onChange={(event) => setOfficeLocationForm((current) => current ? { ...current, state: event.target.value } : current)} className="rounded-xl border border-admin-border bg-white px-3 py-2 text-xs text-admin-text" placeholder="State" />
-                                      <input value={officeLocationForm.zip} onChange={(event) => setOfficeLocationForm((current) => current ? { ...current, zip: event.target.value } : current)} className="rounded-xl border border-admin-border bg-white px-3 py-2 text-xs text-admin-text" placeholder="ZIP" />
-                                      <input value={officeLocationForm.phone} onChange={(event) => setOfficeLocationForm((current) => current ? { ...current, phone: event.target.value } : current)} className="rounded-xl border border-admin-border bg-white px-3 py-2 text-xs text-admin-text" placeholder="Phone" />
-                                      <input value={officeLocationForm.servicesOffered} onChange={(event) => setOfficeLocationForm((current) => current ? { ...current, servicesOffered: event.target.value } : current)} className="rounded-xl border border-admin-border bg-white px-3 py-2 text-xs text-admin-text md:col-span-2" placeholder="Services offered (comma separated)" />
-                                      <textarea value={officeLocationForm.notes} onChange={(event) => setOfficeLocationForm((current) => current ? { ...current, notes: event.target.value } : current)} className="min-h-20 rounded-xl border border-admin-border bg-white px-3 py-2 text-xs text-admin-text md:col-span-2" placeholder="Notes" />
-                                    </div>
-                                    <label className="flex items-center gap-2 text-xs text-admin-text">
-                                      <input type="checkbox" checked={officeLocationForm.activeFlag} onChange={(event) => setOfficeLocationForm((current) => current ? { ...current, activeFlag: event.target.checked } : current)} />
-                                      Active location
-                                    </label>
-                                    <div className="flex items-center gap-2">
-                                      <button type="button" onClick={() => void handleSaveOfficeLocation(unit.id)} disabled={isSavingOfficeLocation} className="admin-button text-xs disabled:cursor-not-allowed disabled:opacity-60">
-                                        {isSavingOfficeLocation ? 'Saving...' : 'Save location'}
-                                      </button>
-                                      <button type="button" onClick={handleCancelEditOfficeLocation} className="admin-button admin-button--secondary text-xs">
-                                        Cancel
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
                                   <div className="space-y-1 text-xs leading-5 text-admin-muted">
                                     {(() => {
                                       const metadata = unit.metadata ?? {};
@@ -1299,15 +1556,6 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                                         {metadata.notes}
                                       </p>
                                     ) : null}
-                                    <div className="pt-1">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleBeginEditOfficeLocation(unit)}
-                                        className="text-xs font-semibold uppercase tracking-[0.14em] text-admin-accent"
-                                      >
-                                        Edit location
-                                      </button>
-                                    </div>
                                     {!metadata.company &&
                                     !address.streetAddress &&
                                     !metadata.phone &&
@@ -1321,10 +1569,48 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                                       );
                                     })()}
                                   </div>
-                                )
                               ) : (
                                 <span className="text-admin-muted">—</span>
                               )}
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleBeginEditOrganizationUnit(unit)}
+                                  className="admin-button admin-button--secondary text-xs"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleBeginCreateOrganizationUnit(unit.id)}
+                                  className="admin-button admin-button--secondary text-xs"
+                                >
+                                  Add Child
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDeleteOrganizationUnit(unit)}
+                                  disabled={
+                                    deletingOrganizationUnitId === unit.id ||
+                                    (organizationUnitChildCountMap.get(unit.id) ?? 0) > 0
+                                  }
+                                  className="admin-button text-xs disabled:cursor-not-allowed disabled:opacity-60"
+                                  style={{
+                                    borderColor: 'rgba(239, 68, 68, 0.22)',
+                                    background: 'rgba(239, 68, 68, 0.08)',
+                                    color: '#b91c1c'
+                                  }}
+                                  title={
+                                    (organizationUnitChildCountMap.get(unit.id) ?? 0) > 0
+                                      ? 'Delete child units or re-parent them first'
+                                      : 'Delete organization unit'
+                                  }
+                                >
+                                  {deletingOrganizationUnitId === unit.id ? 'Deleting...' : 'Delete'}
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );

@@ -1,6 +1,6 @@
+import { randomBytes, scryptSync } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { randomBytes, scryptSync } from 'node:crypto';
 
 import { PrismaClient } from '@prisma/client';
 
@@ -331,21 +331,6 @@ async function main() {
     });
   }
 
-  const adminRole = await prisma.role.upsert({
-    where: { code: 'platform-admin' },
-    update: {
-      isPlatformRole: true,
-      name: 'Platform Admin',
-      description: 'Administrative role with tenant and user access.'
-    },
-    create: {
-      code: 'platform-admin',
-      isPlatformRole: true,
-      name: 'Platform Admin',
-      description: 'Administrative role with tenant and user access.'
-    }
-  });
-
   const platformAdminRole = await prisma.role.upsert({
     where: { code: 'platform_admin' },
     update: {
@@ -400,7 +385,7 @@ async function main() {
   });
 
   for (const permission of permissions) {
-    for (const roleId of [adminRole.id, platformAdminRole.id, tenantAdminRole.id]) {
+    for (const roleId of [platformAdminRole.id, tenantAdminRole.id]) {
       await prisma.rolePermission.upsert({
         where: {
           roleId_permissionId: {
@@ -456,25 +441,6 @@ async function main() {
     }
   });
 
-  const tenantAdminUser = await prisma.user.upsert({
-    where: { email: 'tenant' },
-    update: {
-      tenantId: tenant.id,
-      firstName: 'Tenant',
-      lastName: 'Admin',
-      isActive: true,
-      status: 'ACTIVE'
-    },
-    create: {
-      tenantId: tenant.id,
-      email: 'tenant',
-      firstName: 'Tenant',
-      lastName: 'Admin',
-      isActive: true,
-      status: 'ACTIVE'
-    }
-  });
-
   const platformAdminUser = await prisma.user.upsert({
     where: { email: 'admin' },
     update: {
@@ -494,7 +460,7 @@ async function main() {
     }
   });
 
-  for (const user of [portalUser, tenantAdminUser, platformAdminUser]) {
+  for (const user of [portalUser, platformAdminUser]) {
     await prisma.userCredential.upsert({
       where: { userId: user.id },
       update: {
@@ -514,7 +480,7 @@ async function main() {
   await prisma.userRole.deleteMany({
     where: {
       userId: {
-        in: [portalUser.id, tenantAdminUser.id, platformAdminUser.id]
+        in: [portalUser.id, platformAdminUser.id]
       }
     }
   });
@@ -524,11 +490,6 @@ async function main() {
       {
         userId: portalUser.id,
         roleId: memberRole.id,
-        tenantId: tenant.id
-      },
-      {
-        userId: tenantAdminUser.id,
-        roleId: tenantAdminRole.id,
         tenantId: tenant.id
       },
       {
@@ -560,28 +521,48 @@ async function main() {
     }
   });
 
-  await prisma.userTenantMembership.upsert({
+  const legacyTenantAdminUser = await prisma.user.findUnique({
     where: {
-      userId_tenantId: {
-        userId: tenantAdminUser.id,
-        tenantId: tenant.id
-      }
-    },
-    update: {
-      isDefault: true,
-      isTenantAdmin: true,
-      status: 'ACTIVE',
-      activatedAt: new Date()
-    },
-    create: {
-      userId: tenantAdminUser.id,
-      tenantId: tenant.id,
-      isDefault: true,
-      isTenantAdmin: true,
-      status: 'ACTIVE',
-      activatedAt: new Date()
+      email: 'tenant'
     }
   });
+
+  if (legacyTenantAdminUser) {
+    await prisma.user.update({
+      where: {
+        id: legacyTenantAdminUser.id
+      },
+      data: {
+        tenantId: null,
+        isActive: false,
+        status: 'DISABLED'
+      }
+    });
+
+    await prisma.userCredential.deleteMany({
+      where: {
+        userId: legacyTenantAdminUser.id
+      }
+    });
+
+    await prisma.userRole.deleteMany({
+      where: {
+        userId: legacyTenantAdminUser.id
+      }
+    });
+
+    await prisma.userTenantMembership.deleteMany({
+      where: {
+        userId: legacyTenantAdminUser.id
+      }
+    });
+
+    await prisma.userOrganizationUnitAssignment.deleteMany({
+      where: {
+        userId: legacyTenantAdminUser.id
+      }
+    });
+  }
 
   await prisma.document.deleteMany({
     where: {
