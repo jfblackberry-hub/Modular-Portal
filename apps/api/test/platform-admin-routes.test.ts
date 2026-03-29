@@ -8,6 +8,7 @@ import { prisma } from '@payer-portal/database';
 import { getPublicAssetStorageService } from '@payer-portal/server';
 import Fastify from 'fastify';
 
+import { adminOperationsRoutes } from '../src/routes/admin-operations.js';
 import { registerPlugins } from '../src/plugins/index.js';
 import { platformBrandingRoutes } from '../src/routes/platform-branding.js';
 import { featureFlagRoutes } from '../src/routes/feature-flags.js';
@@ -369,6 +370,79 @@ test('platform admins can archive inactive tenants and then delete them', async 
     };
   }).lifecycle;
   assert.ok(typeof lifecycle?.deletedAt === 'string');
+
+  await app.close();
+});
+
+test('platform-admin active tenant datasets exclude deleted tenants', async () => {
+  const { tenant, platformAdminUser } = await createFixtureData();
+  const app = Fastify();
+  await tenantRoutes(app);
+  await adminOperationsRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+
+  const inactivateResponse = await app.inject({
+    method: 'PATCH',
+    url: `/platform-admin/tenants/${tenant.id}`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      status: 'INACTIVE'
+    }
+  });
+
+  assert.equal(inactivateResponse.statusCode, 200, inactivateResponse.body);
+
+  const archiveResponse = await app.inject({
+    method: 'POST',
+    url: `/platform-admin/tenants/${tenant.id}/archive`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(archiveResponse.statusCode, 200, archiveResponse.body);
+
+  const deleteResponse = await app.inject({
+    method: 'DELETE',
+    url: `/platform-admin/tenants/${tenant.id}`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(deleteResponse.statusCode, 200, deleteResponse.body);
+
+  const summaryResponse = await app.inject({
+    method: 'GET',
+    url: '/platform-admin/tenant-summaries',
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(summaryResponse.statusCode, 200, summaryResponse.body);
+  assert.equal(
+    summaryResponse.json().some((row: { tenant: { id: string } }) => row.tenant.id === tenant.id),
+    false
+  );
+
+  const healthOverviewResponse = await app.inject({
+    method: 'GET',
+    url: '/platform-admin/health/overview',
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(healthOverviewResponse.statusCode, 200, healthOverviewResponse.body);
+  assert.equal(
+    healthOverviewResponse
+      .json()
+      .tenants.some((row: { id: string }) => row.id === tenant.id),
+    false
+  );
 
   await app.close();
 });

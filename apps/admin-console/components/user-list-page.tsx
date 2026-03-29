@@ -287,8 +287,13 @@ function UserListPageContent({ scope }: { scope: Scope }) {
 
       const savedUser = (await response.json().catch(() => null)) as UserRecord | null;
 
-      if (drawerMode === 'create' && scope === 'platform' && savedUser?.id && selectedRoleId) {
-        const roleResponse = await fetch(`${apiBaseUrl}/platform-admin/users/${savedUser.id}/roles`, {
+      if (drawerMode === 'create' && savedUser?.id && selectedRoleId) {
+        const rolePath =
+          scope === 'platform'
+            ? `${apiBaseUrl}/platform-admin/users/${savedUser.id}/roles`
+            : `${apiBaseUrl}/api/tenant-admin/users/${savedUser.id}/roles${tenantQuery}`;
+
+        const roleResponse = await fetch(rolePath, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

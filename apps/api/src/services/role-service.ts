@@ -767,8 +767,9 @@ export async function createUser(
         firstName,
         lastName,
         isActive,
-        }
-      });
+        status,
+      }
+    });
 
     if (input.password?.trim()) {
       await tx.userCredential.create({

@@ -89,7 +89,7 @@ export function UserDetailDrawer({
 
   const isPlatformScope = scope === 'platform';
   const isPlatformWideAccount = isPlatformScope && formState.tenantId === '';
-  const canChooseInitialRole = mode === 'create' && isPlatformScope;
+  const canChooseInitialRole = mode === 'create';
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-slate-950/35 backdrop-blur-sm">
@@ -334,7 +334,7 @@ export function UserDetailDrawer({
                   ))}
                 </select>
                 <p className="mt-2 text-sm text-admin-muted">
-                  Assign a role during creation so platform administrators can be ready immediately.
+                  Assign a role during creation so the user can sign in immediately.
                 </p>
               </label>
             ) : null}
