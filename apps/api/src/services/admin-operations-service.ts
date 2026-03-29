@@ -158,6 +158,13 @@ function getCatalogMetadata(config: Prisma.JsonValue) {
   };
 }
 
+function isTenantDeleted(brandingConfig: Prisma.JsonValue) {
+  const resolvedBrandingConfig = readBrandingConfig(brandingConfig);
+  const lifecycle = resolvedBrandingConfig.lifecycle;
+
+  return isRecord(lifecycle) && typeof lifecycle.deletedAt === 'string';
+}
+
 export async function getPlatformHealthOverview() {
   const [healthResult, tenants, users, auditLogs] = await Promise.all([
     getHealthStatus(),
@@ -181,10 +188,11 @@ export async function getPlatformHealthOverview() {
       take: 12
     })
   ]);
+  const activeTenants = tenants.filter((tenant) => !isTenantDeleted(tenant.brandingConfig));
 
   return {
     health: healthResult.response,
-    tenants: tenants.map((tenant) => ({
+    tenants: activeTenants.map((tenant) => ({
       id: tenant.id,
       name: tenant.name,
       slug: tenant.slug,
@@ -312,12 +320,18 @@ export async function listPlatformTenantSummaries() {
         }
       })
     ]);
+  const activeTenants = tenants.filter((tenant) => !isTenantDeleted(tenant.brandingConfig));
+  const activeTenantIds = new Set(activeTenants.map((tenant) => tenant.id));
 
   const activeUserCountByTenant = new Map(
     activeUserCounts.map((row) => [row.tenantId, row._count._all])
   );
   const connectorsByTenant = new Map<string, Array<{ status: string }>>();
   for (const connector of connectors) {
+    if (!activeTenantIds.has(connector.tenantId)) {
+      continue;
+    }
+
     const existing = connectorsByTenant.get(connector.tenantId);
     if (existing) {
       existing.push({ status: connector.status });
@@ -328,10 +342,12 @@ export async function listPlatformTenantSummaries() {
     }
   }
   const auditAlertCountByTenant = new Map(
-    auditAlertCounts.map((row) => [row.tenantId, row._count._all])
+    auditAlertCounts
+      .filter((row) => activeTenantIds.has(row.tenantId))
+      .map((row) => [row.tenantId, row._count._all])
   );
 
-  return tenants.map((tenant) => {
+  return activeTenants.map((tenant) => {
     const connectorRows = connectorsByTenant.get(tenant.id) ?? [];
     const brandingConfig = readBrandingConfig(tenant.brandingConfig);
     const connectorStatuses = connectorRows.map(
