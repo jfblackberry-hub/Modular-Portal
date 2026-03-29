@@ -28,6 +28,7 @@ type CreateRoleInput = {
 
 type CreateUserInput = {
   tenantId?: string;
+  roleId?: string | null;
   email: string;
   firstName: string;
   lastName: string;
@@ -746,6 +747,7 @@ export async function createUser(
   const firstName = normalizeRequired(input.firstName, 'First name');
   const lastName = normalizeRequired(input.lastName, 'Last name');
   const tenantId = normalizeOptional(input.tenantId);
+  const roleId = normalizeOptional(input.roleId ?? undefined) ?? null;
   const organizationUnitIds = normalizeOrganizationUnitIds(
     input.organizationUnitIds,
     input.organizationUnitId
@@ -760,6 +762,45 @@ export async function createUser(
   );
 
   const user = await prisma.$transaction(async (tx) => {
+    let initialRoleCode: string | null = null;
+    let initialRoleIsTenantAdmin = false;
+
+    if (roleId) {
+      const role = await tx.role.findUnique({
+        where: { id: roleId }
+      });
+
+      if (!role) {
+        throw new Error('Role not found');
+      }
+
+      if (role.isPlatformRole) {
+        if (tenantId !== null) {
+          throw new Error('Platform roles cannot be assigned to a tenant.');
+        }
+      } else {
+        if (!tenantId || !tenant) {
+          throw new Error('Tenant-scoped roles require a tenant assignment.');
+        }
+
+        const normalizedRoleTenantTypeCode = normalizeTenantTypeCode(role.tenantTypeCode);
+        const roleAllowedForTenant =
+          role.appliesToAllTenantTypes ||
+          role.tenantTypeCode === null ||
+          (normalizedRoleTenantTypeCode !== undefined &&
+            getCompatibleTenantTypeCodes(tenant.tenantTypeCode).includes(
+              normalizedRoleTenantTypeCode
+            ));
+
+        if (!roleAllowedForTenant) {
+          throw new Error('Role is not allowed for this Tenant Type.');
+        }
+      }
+
+      initialRoleCode = role.code;
+      initialRoleIsTenantAdmin = role.code === 'tenant_admin';
+    }
+
     const createdUser = await tx.user.create({
       data: {
         tenantId: tenantId ?? null,
@@ -789,6 +830,7 @@ export async function createUser(
           tenantId,
           organizationUnitId: organizationUnitId ?? null,
           isDefault: true,
+          isTenantAdmin: initialRoleIsTenantAdmin,
           status,
           invitedAt: status === 'INVITED' ? new Date() : null,
           activatedAt: status === 'ACTIVE' ? new Date() : null,
@@ -807,6 +849,16 @@ export async function createUser(
         });
       }
 
+      if (roleId) {
+        await tx.userRole.create({
+          data: {
+            userId: createdUser.id,
+            roleId,
+            tenantId
+          }
+        });
+      }
+
       await logAdminAction({
         client: tx,
         tenantId,
@@ -821,6 +873,8 @@ export async function createUser(
           lastName,
           status,
           tenantId,
+          roleId,
+          roleCode: initialRoleCode,
           organizationUnitId: organizationUnitId ?? null,
           organizationUnitIds
         } satisfies Prisma.InputJsonValue,

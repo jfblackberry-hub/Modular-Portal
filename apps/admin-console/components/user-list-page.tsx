@@ -266,14 +266,18 @@ function UserListPageContent({
       const method = drawerMode === 'edit' ? 'PATCH' : 'POST';
       const body =
         scope === 'platform'
-          ? formState
+          ? {
+              ...formState,
+              roleId: selectedRoleId || undefined
+            }
           : {
               email: formState.email,
               firstName: formState.firstName,
               lastName: formState.lastName,
               isActive: formState.isActive,
               status: formState.status,
-              password: formState.password || undefined
+              password: formState.password || undefined,
+              roleId: selectedRoleId || undefined
             };
 
       const response = await fetch(targetPath, {
@@ -292,32 +296,7 @@ function UserListPageContent({
         throw new Error(payload?.message ?? 'Unable to save user.');
       }
 
-      const savedUser = (await response.json().catch(() => null)) as UserRecord | null;
-
-      if (drawerMode === 'create' && savedUser?.id && selectedRoleId) {
-        const rolePath =
-          scope === 'platform'
-            ? `${apiBaseUrl}/platform-admin/users/${savedUser.id}/roles`
-            : `${apiBaseUrl}/api/tenant-admin/users/${savedUser.id}/roles${tenantQuery}`;
-
-        const roleResponse = await fetch(rolePath, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...getAdminAuthHeaders()
-          },
-          body: JSON.stringify({
-            roleId: selectedRoleId
-          })
-        });
-
-        if (!roleResponse.ok) {
-          const payload = (await roleResponse.json().catch(() => null)) as {
-            message?: string;
-          } | null;
-          throw new Error(payload?.message ?? 'User created, but role assignment failed.');
-        }
-      }
+      await response.json().catch(() => null);
 
       await loadData();
       closeDrawer();

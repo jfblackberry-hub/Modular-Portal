@@ -22,6 +22,8 @@ const TEST_PLATFORM_ADMIN_ROLE_CODE = 'platform_admin';
 const TEST_TENANT_ADMIN_ROLE_CODE = 'tenant_admin';
 const TEST_PLATFORM_ADMIN_EMAIL = 'platform-plane-admin@example.com';
 const TEST_TENANT_ADMIN_EMAIL = 'platform-plane-tenant-admin@example.com';
+const TEST_CREATED_PLATFORM_TENANT_USER_EMAIL = 'new.platform-created.tenant.user@test.local';
+const TEST_DELETED_TENANT_USER_EMAIL = 'tenant-delete-target@example.com';
 const TEST_TENANT_SLUG = 'platform-plane-tenant';
 const TEST_PROVIDER_TENANT_SLUG = 'platform-plane-provider-tenant';
 const TEST_ISOLATED_TENANT_SLUG = 'platform-plane-isolated-tenant';
@@ -43,7 +45,12 @@ async function cleanupTestData() {
     where: {
       user: {
         email: {
-          in: [TEST_PLATFORM_ADMIN_EMAIL, TEST_TENANT_ADMIN_EMAIL]
+          in: [
+            TEST_PLATFORM_ADMIN_EMAIL,
+            TEST_TENANT_ADMIN_EMAIL,
+            TEST_CREATED_PLATFORM_TENANT_USER_EMAIL,
+            TEST_DELETED_TENANT_USER_EMAIL
+          ]
         }
       }
     }
@@ -52,7 +59,12 @@ async function cleanupTestData() {
   await prisma.user.deleteMany({
     where: {
       email: {
-        in: [TEST_PLATFORM_ADMIN_EMAIL, TEST_TENANT_ADMIN_EMAIL]
+        in: [
+          TEST_PLATFORM_ADMIN_EMAIL,
+          TEST_TENANT_ADMIN_EMAIL,
+          TEST_CREATED_PLATFORM_TENANT_USER_EMAIL,
+          TEST_DELETED_TENANT_USER_EMAIL
+        ]
       }
     }
   });
@@ -220,7 +232,9 @@ async function createFixtureData() {
   return {
     tenant,
     platformAdminUser,
-    tenantAdminUser
+    tenantAdminUser,
+    platformAdminRole,
+    tenantAdminRole
   };
 }
 
@@ -308,11 +322,94 @@ test('platform-admin routes are restricted to platform admins', async () => {
   await app.close();
 });
 
+test('platform admins can create a tenant-scoped user with an initial tenant role', async () => {
+  const { tenant, platformAdminUser, tenantAdminRole } = await createFixtureData();
+  const app = Fastify();
+  await roleRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+
+  const createResponse = await app.inject({
+    method: 'POST',
+    url: '/platform-admin/users',
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      tenantId: tenant.id,
+      email: TEST_CREATED_PLATFORM_TENANT_USER_EMAIL,
+      firstName: 'Taylor',
+      lastName: 'Scoped',
+      password: 'demo12345',
+      status: 'ACTIVE',
+      roleId: tenantAdminRole.id
+    }
+  });
+
+  assert.equal(createResponse.statusCode, 201, createResponse.body);
+  const createdUser = createResponse.json() as {
+    id: string;
+    roles: string[];
+    tenant: { id: string } | null;
+  };
+
+  assert.ok(createdUser.roles.includes(TEST_TENANT_ADMIN_ROLE_CODE));
+  assert.equal(createdUser.tenant?.id, tenant.id);
+
+  const membership = await prisma.userTenantMembership.findFirstOrThrow({
+    where: {
+      userId: createdUser.id,
+      tenantId: tenant.id
+    }
+  });
+  assert.equal(membership.isTenantAdmin, true);
+
+  const assignment = await prisma.userRole.findFirstOrThrow({
+    where: {
+      userId: createdUser.id,
+      roleId: tenantAdminRole.id,
+      tenantId: tenant.id
+    }
+  });
+  assert.equal(assignment.tenantId, tenant.id);
+
+  await app.close();
+});
+
 test('platform admins can archive inactive tenants and then delete them', async () => {
-  const { tenant, platformAdminUser } = await createFixtureData();
+  const { tenant, platformAdminUser, tenantAdminUser, tenantAdminRole } =
+    await createFixtureData();
   const app = Fastify();
   await tenantRoutes(app);
   const platformToken = createPlatformAdminToken(platformAdminUser);
+
+  const scopedUser = await prisma.user.create({
+    data: {
+      tenantId: tenant.id,
+      email: TEST_DELETED_TENANT_USER_EMAIL,
+      firstName: 'Delete',
+      lastName: 'Target',
+      isActive: true,
+      status: 'ACTIVE'
+    }
+  });
+
+  await prisma.userRole.create({
+    data: {
+      userId: scopedUser.id,
+      roleId: tenantAdminRole.id,
+      tenantId: tenant.id
+    }
+  });
+
+  await prisma.userTenantMembership.create({
+    data: {
+      userId: scopedUser.id,
+      tenantId: tenant.id,
+      isDefault: true,
+      isTenantAdmin: false,
+      status: 'ACTIVE'
+    }
+  });
 
   const activeArchiveResponse = await app.inject({
     method: 'POST',
@@ -377,6 +474,43 @@ test('platform admins can archive inactive tenants and then delete them', async 
     };
   }).lifecycle;
   assert.ok(typeof lifecycle?.deletedAt === 'string');
+
+  const disabledMembership = await prisma.userTenantMembership.findUniqueOrThrow({
+    where: {
+      userId_tenantId: {
+        userId: scopedUser.id,
+        tenantId: tenant.id
+      }
+    }
+  });
+  assert.equal(disabledMembership.status, 'DISABLED');
+  assert.equal(disabledMembership.isDefault, false);
+  assert.equal(disabledMembership.isTenantAdmin, false);
+
+  const removedScopedRoles = await prisma.userRole.findMany({
+    where: {
+      userId: scopedUser.id,
+      tenantId: tenant.id
+    }
+  });
+  assert.equal(removedScopedRoles.length, 0);
+
+  const disabledUser = await prisma.user.findUniqueOrThrow({
+    where: {
+      id: scopedUser.id
+    }
+  });
+  assert.equal(disabledUser.status, 'DISABLED');
+  assert.equal(disabledUser.isActive, false);
+  assert.equal(disabledUser.tenantId, null);
+
+  const survivingTenantAdmin = await prisma.user.findUniqueOrThrow({
+    where: {
+      id: tenantAdminUser.id
+    }
+  });
+  assert.equal(survivingTenantAdmin.status, 'DISABLED');
+  assert.equal(survivingTenantAdmin.isActive, false);
 
   await app.close();
 });

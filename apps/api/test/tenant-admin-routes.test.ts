@@ -21,6 +21,7 @@ const TEST_ADMIN_EMAIL = 'tenant-admin@example.com';
 const TEST_MEMBER_EMAIL = 'tenant-member@example.com';
 const TEST_FOREIGN_EMAIL = 'tenant-foreign@example.com';
 const TEST_PLATFORM_ADMIN_EMAIL = 'platform-admin@example.com';
+const TEST_CREATED_TENANT_USER_EMAIL = 'new.clinic.user@test.local';
 
 async function cleanupTestData() {
   await prisma.job.deleteMany({
@@ -49,7 +50,8 @@ async function cleanupTestData() {
             TEST_ADMIN_EMAIL,
             TEST_MEMBER_EMAIL,
             TEST_FOREIGN_EMAIL,
-            TEST_PLATFORM_ADMIN_EMAIL
+            TEST_PLATFORM_ADMIN_EMAIL,
+            TEST_CREATED_TENANT_USER_EMAIL
           ]
         }
       }
@@ -60,13 +62,14 @@ async function cleanupTestData() {
     where: {
       email: {
         in: [
-          TEST_ADMIN_EMAIL,
-          TEST_MEMBER_EMAIL,
-          TEST_FOREIGN_EMAIL,
-          TEST_PLATFORM_ADMIN_EMAIL
-        ]
+            TEST_ADMIN_EMAIL,
+            TEST_MEMBER_EMAIL,
+            TEST_FOREIGN_EMAIL,
+            TEST_PLATFORM_ADMIN_EMAIL,
+            TEST_CREATED_TENANT_USER_EMAIL
+          ]
+        }
       }
-    }
   });
 
   await prisma.tenant.deleteMany({
@@ -212,11 +215,17 @@ async function createFixtureData() {
       })
     ]);
 
-  await prisma.rolePermission.create({
-    data: {
-      roleId: adminRole.id,
-      permissionId: permission.id
-    }
+  await prisma.rolePermission.createMany({
+    data: [
+      {
+        roleId: adminRole.id,
+        permissionId: permission.id
+      },
+      {
+        roleId: assignableRole.id,
+        permissionId: permission.id
+      }
+    ]
   });
 
   const [platformAdminUser, adminUser, memberUser, foreignUser] =
@@ -480,6 +489,53 @@ test('tenant admin settings endpoint returns scoped configuration and updates ar
     }
   });
   assert.ok(storedAssignment);
+
+  await app.close();
+});
+
+test('tenant admin can create a tenant user with an initial role assignment', async () => {
+  const { tenant, adminUser, assignableRole } = await createFixtureData();
+  const app = Fastify();
+  await tenantAdminRoutes(app);
+  const adminToken = createTenantAdminToken(adminUser, tenant.id);
+
+  const createResponse = await app.inject({
+    method: 'POST',
+    url: '/api/tenant-admin/users',
+    headers: {
+      authorization: `Bearer ${adminToken}`
+    },
+    payload: {
+      email: TEST_CREATED_TENANT_USER_EMAIL,
+      firstName: 'New',
+      lastName: 'Clinic User',
+      password: 'demo12345',
+      status: 'ACTIVE',
+      roleId: assignableRole.id
+    }
+  });
+
+  assert.equal(createResponse.statusCode, 201, createResponse.body);
+  const createdUser = createResponse.json() as {
+    id: string;
+    roles: string[];
+    permissions: string[];
+    tenant: { id: string } | null;
+  };
+
+  assert.ok(createdUser.roles.includes(TEST_ASSIGNABLE_ROLE_CODE));
+  assert.ok(createdUser.permissions.includes(TEST_PERMISSION_CODE));
+  assert.equal(createdUser.tenant?.id, tenant.id);
+
+  const storedAssignment = await prisma.userRole.findFirstOrThrow({
+    where: {
+      userId: createdUser.id,
+      roleId: assignableRole.id,
+      tenantId: tenant.id
+    }
+  });
+
+  assert.equal(storedAssignment.tenantId, tenant.id);
 
   await app.close();
 });

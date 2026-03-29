@@ -68,3 +68,33 @@ Validation:
 - Verified `dr.lee@northstarmedical.local` authenticates through the portal and loads `/provider/dashboard`
 - Ran `pnpm --filter @payer-portal/database db:validate:provider-tenant`
 - Ran `pnpm --filter api exec node --test --import tsx test/platform-admin-routes.test.ts`
+
+## [2026-03-29 03:41]
+Branch: clinic-tenant-cleanup-and-fix
+Commit: audit clinic tenant admin flows and assign roles during user creation (validated: local role-on-create, focused api tests)
+
+Changes:
+- Submit selected role IDs during admin user creation so clinic users receive their role in the initial create request
+- Assign tenant-scoped roles atomically in the API and mark tenant-admin memberships during create when applicable
+- Add regression coverage for platform-admin and tenant-admin role-on-create flows
+- Update safe admin-console clinic-facing labels from provider wording to clinic wording in tenant settings and licensing screens
+
+Validation:
+- Verified locally that admin-created clinic users retain the selected role immediately after creation
+- Ran `pnpm --filter api exec node --test --import tsx test/tenant-admin-routes.test.ts test/platform-admin-routes.test.ts`
+
+## [2026-03-29 04:43]
+Branch: clinic-tenant-cleanup-and-fix
+Commit: reset clinic tenants to a clean Apara baseline and repair clinic login access (validated: Chris and Joe clinic login, focused auth tests)
+
+Changes:
+- Removed the hardcoded provider-tenant seed and deploy path and replaced it with a generic clinic reset flow
+- Retired legacy clinic tenants and created one clean active `Apara Autism Services` clinic tenant
+- Tightened clinic login catalog filtering so inactive clinics and clinic users without tenant-scoped role access do not appear
+- Repaired carried clinic-user reset behavior to provision credentials and baseline clinic access roles
+- Fixed Chris Gallagher local clinic login state and restored base clinic dashboard permissions for clinic roles
+
+Validation:
+- Verified Chris Gallagher can enter the clinic portal from `http://localhost:3000/login`
+- Verified Joe Frank clinic login still works
+- Ran `pnpm --filter api exec node --test --import tsx test/auth-login-routes.test.ts`
