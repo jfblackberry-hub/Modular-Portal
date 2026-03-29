@@ -1782,15 +1782,60 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function getStringValue(
+  config: Record<string, unknown> | undefined,
+  key: string
+) {
+  const value = config?.[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function getStringValueFromKeys(
+  config: Record<string, unknown> | undefined,
+  keys: string[]
+) {
+  for (const key of keys) {
+    const value = getStringValue(config, key);
+    if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 export function resolveProviderPortalConfig(
   variant: ProviderPortalVariant,
   brandingConfig?: Record<string, unknown>
 ): ProviderPortalConfig {
   const baseConfig = getProviderPortalConfig(variant);
   const providerDemoData = asRecord(brandingConfig?.providerDemoData);
+  const brandedPracticeName = getStringValueFromKeys(brandingConfig, [
+    'providerClinicName',
+    'providerPracticeName',
+    'providerOrganizationName',
+    'clinicName',
+    'practiceName',
+    'displayName'
+  ]);
 
   if (!providerDemoData) {
-    return baseConfig;
+    return brandedPracticeName
+      ? {
+          ...baseConfig,
+          providerContext: {
+            ...baseConfig.providerContext,
+            practiceName: brandedPracticeName
+          },
+          adminModule: {
+            ...baseConfig.adminModule,
+            practiceInformation: {
+              ...baseConfig.adminModule.practiceInformation,
+              practiceName: brandedPracticeName
+            }
+          }
+        }
+      : baseConfig;
   }
 
   const messagesModule = asRecord(providerDemoData.messagesModule);
@@ -1798,6 +1843,54 @@ export function resolveProviderPortalConfig(
   const providerContext = asRecord(providerDemoData.providerContext);
   const adminModule = asRecord(providerDemoData.adminModule);
   const demoData = asRecord(providerDemoData.demoData);
+
+  const resolvedProviderContext = providerContext
+    ? {
+        ...baseConfig.providerContext,
+        ...(typeof providerContext.practiceName === 'string'
+          ? { practiceName: providerContext.practiceName }
+          : {}),
+        ...(typeof providerContext.providerName === 'string'
+          ? { providerName: providerContext.providerName }
+          : {}),
+        ...(typeof providerContext.npi === 'string'
+          ? { npi: providerContext.npi }
+          : {}),
+        ...(typeof providerContext.tin === 'string'
+          ? { tin: providerContext.tin }
+          : {}),
+        ...(Array.isArray(providerContext.locations)
+          ? { locations: providerContext.locations as Array<{ id: string; label: string }> }
+          : {}),
+        ...(typeof providerContext.selectedLocationId === 'string'
+          ? { selectedLocationId: providerContext.selectedLocationId }
+          : {})
+      }
+    : baseConfig.providerContext;
+
+  const resolvedAdminModule = adminModule
+    ? {
+        ...baseConfig.adminModule,
+        ...(Array.isArray(adminModule.userAccessRoles)
+          ? { userAccessRoles: adminModule.userAccessRoles as ProviderAdminUserRole[] }
+          : {}),
+        ...(asRecord(adminModule.practiceInformation)
+          ? { practiceInformation: adminModule.practiceInformation as ProviderAdminPracticeInfo }
+          : {}),
+        ...(Array.isArray(adminModule.locations)
+          ? { locations: adminModule.locations as ProviderAdminLocationItem[] }
+          : {}),
+        ...(Array.isArray(adminModule.renderingProviders)
+          ? { renderingProviders: adminModule.renderingProviders as ProviderAdminRenderingProvider[] }
+          : {}),
+        ...(Array.isArray(adminModule.notificationPreferences)
+          ? { notificationPreferences: adminModule.notificationPreferences as ProviderAdminNotificationPreference[] }
+          : {}),
+        ...(Array.isArray(adminModule.linkedIdentifiers)
+          ? { linkedIdentifiers: adminModule.linkedIdentifiers as ProviderAdminLinkedIdentifier[] }
+          : {})
+      }
+    : baseConfig.adminModule;
 
   return {
     ...baseConfig,
@@ -1854,52 +1947,17 @@ export function resolveProviderPortalConfig(
             : {})
         }
       : baseConfig.supportModule,
-    providerContext: providerContext
-      ? {
-          ...baseConfig.providerContext,
-          ...(typeof providerContext.practiceName === 'string'
-            ? { practiceName: providerContext.practiceName }
-            : {}),
-          ...(typeof providerContext.providerName === 'string'
-            ? { providerName: providerContext.providerName }
-            : {}),
-          ...(typeof providerContext.npi === 'string'
-            ? { npi: providerContext.npi }
-            : {}),
-          ...(typeof providerContext.tin === 'string'
-            ? { tin: providerContext.tin }
-            : {}),
-          ...(Array.isArray(providerContext.locations)
-            ? { locations: providerContext.locations as Array<{ id: string; label: string }> }
-            : {}),
-          ...(typeof providerContext.selectedLocationId === 'string'
-            ? { selectedLocationId: providerContext.selectedLocationId }
-            : {})
-        }
-      : baseConfig.providerContext,
-    adminModule: adminModule
-      ? {
-          ...baseConfig.adminModule,
-          ...(Array.isArray(adminModule.userAccessRoles)
-            ? { userAccessRoles: adminModule.userAccessRoles as ProviderAdminUserRole[] }
-            : {}),
-          ...(asRecord(adminModule.practiceInformation)
-            ? { practiceInformation: adminModule.practiceInformation as ProviderAdminPracticeInfo }
-            : {}),
-          ...(Array.isArray(adminModule.locations)
-            ? { locations: adminModule.locations as ProviderAdminLocationItem[] }
-            : {}),
-          ...(Array.isArray(adminModule.renderingProviders)
-            ? { renderingProviders: adminModule.renderingProviders as ProviderAdminRenderingProvider[] }
-            : {}),
-          ...(Array.isArray(adminModule.notificationPreferences)
-            ? { notificationPreferences: adminModule.notificationPreferences as ProviderAdminNotificationPreference[] }
-            : {}),
-          ...(Array.isArray(adminModule.linkedIdentifiers)
-            ? { linkedIdentifiers: adminModule.linkedIdentifiers as ProviderAdminLinkedIdentifier[] }
-            : {})
-        }
-      : baseConfig.adminModule,
+    providerContext: {
+      ...resolvedProviderContext,
+      ...(brandedPracticeName ? { practiceName: brandedPracticeName } : {})
+    },
+    adminModule: {
+      ...resolvedAdminModule,
+      practiceInformation: {
+        ...resolvedAdminModule.practiceInformation,
+        ...(brandedPracticeName ? { practiceName: brandedPracticeName } : {})
+      }
+    },
     demoData: demoData
       ? {
           ...(Array.isArray(demoData.eligibilityResults)

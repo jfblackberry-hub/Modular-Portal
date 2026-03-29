@@ -555,6 +555,20 @@ test('platform-admin active tenant datasets exclude deleted tenants', async () =
 
   assert.equal(deleteResponse.statusCode, 200, deleteResponse.body);
 
+  const tenantListResponse = await app.inject({
+    method: 'GET',
+    url: '/platform-admin/tenants',
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(tenantListResponse.statusCode, 200, tenantListResponse.body);
+  assert.equal(
+    tenantListResponse.json().some((row: { id: string }) => row.id === tenant.id),
+    false
+  );
+
   const summaryResponse = await app.inject({
     method: 'GET',
     url: '/platform-admin/tenant-summaries',

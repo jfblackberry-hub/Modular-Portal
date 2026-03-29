@@ -276,7 +276,8 @@ export default async function PreviewSessionCatchAllPage({
         : true
     );
     const providerClinicLogoSrc = resolveProviderClinicLogoSrc({
-      tenantBrandingConfig: user.tenant.brandingConfig
+      tenantBrandingConfig: user.tenant.brandingConfig,
+      fallbackLogoSrc: branding.logoUrl
     });
 
     return (

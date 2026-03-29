@@ -85,3 +85,17 @@ Validation:
 - Verified Chris Gallagher can enter the clinic portal from `http://localhost:3000/login`
 - Verified Joe Frank clinic login still works
 - Ran `pnpm --filter api exec node --test --import tsx test/auth-login-routes.test.ts`
+
+## [2026-03-29 05:16]
+Branch: clinic-tenant-cleanup-and-fix
+Commit: align active tenant management with live clinic branding and logo resolution (validated: local Apara branding refresh, focused api tests)
+
+Changes:
+- Filter inactive, archived, and deleted tenants out of active admin tenant management views
+- Route provider and preview clinic logo rendering through the live tenant branding logo before legacy fallbacks
+- Update clinic portal branding resolution so the active tenant name and uploaded logo stay aligned
+
+Validation:
+- Verified locally that `Apara, Inc.` no longer shows the old Riverside placeholder naming
+- Verified the uploaded clinic logo now renders correctly in the frontend clinic portal
+- Ran `pnpm --filter api exec node --test --import tsx test/platform-admin-routes.test.ts`
