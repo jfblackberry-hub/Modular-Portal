@@ -37,6 +37,11 @@ import type {
   PlanCatalogItem,
   RenewalWorkflow
 } from './types.js';
+import {
+  deriveBillingEnrollmentHouseholdId,
+  HouseholdScopeError,
+  resolveAuthorizedHouseholdId
+} from './householdScope.js';
 import { runEnrollmentValidations } from './validation.js';
 
 function nowIso() {
@@ -73,11 +78,11 @@ function buildPlanCatalog(): PlanCatalogItem[] {
   ];
 }
 
-function buildEnrollmentCases(): EnrollmentCase[] {
+function buildEnrollmentCases(householdId: string): EnrollmentCase[] {
   return [
     {
       id: 'enr-10021',
-      householdId: 'hh-8843',
+      householdId,
       status: 'IN_PROGRESS',
       selectedPlanId: 'plan-gold-ppo',
       effectiveDate: '2026-04-01',
@@ -127,7 +132,7 @@ function buildNotices(): CorrespondenceNotice[] {
   ];
 }
 
-function buildHouseholdProfile(): HouseholdProfile {
+function buildHouseholdProfile(householdId: string): HouseholdProfile {
   const subscriber = {
     id: 'sub-1001',
     firstName: 'Alex',
@@ -142,7 +147,7 @@ function buildHouseholdProfile(): HouseholdProfile {
     { id: 'app-2', firstName: 'Jamie', lastName: 'Taylor', dob: '2015-06-01', relationship: 'child' }
   ];
   return {
-    id: 'hh-8843',
+    id: householdId,
     subscriber,
     dependents,
     applicants
@@ -163,6 +168,16 @@ function buildEnrollmentStatusTracker(enrollmentId: string, effectiveDate: strin
       { key: 'submit', label: 'Submit Enrollment', status: 'not_started', helpText: 'Submit once all requirements are complete.' }
     ]
   };
+}
+
+function requireActorForHouseholdScope(context: BillingEnrollmentContext): string {
+  const actorId = context.actorUserId?.trim();
+  if (!actorId) {
+    throw new HouseholdScopeError(
+      'Authenticated user context is required for billing enrollment household data.'
+    );
+  }
+  return deriveBillingEnrollmentHouseholdId(context.tenantId, actorId);
 }
 
 async function recordAction(
@@ -187,6 +202,8 @@ async function recordAction(
 export async function getBillingEnrollmentWorkspaceSnapshot(
   context: BillingEnrollmentContext
 ): Promise<BillingEnrollmentWorkspaceSnapshot> {
+  const householdId = requireActorForHouseholdScope(context);
+
   await recordAction(
     context,
     'billing_enrollment.workspace.viewed',
@@ -196,7 +213,7 @@ export async function getBillingEnrollmentWorkspaceSnapshot(
   );
 
   return {
-    enrollmentCases: buildEnrollmentCases(),
+    enrollmentCases: buildEnrollmentCases(householdId),
     planCatalog: buildPlanCatalog(),
     eligibilityRules: [
       { id: 'rule-household-size', name: 'Household size rule', appliesTo: 'All applicants', outcome: 'ALLOW' },
@@ -243,6 +260,7 @@ export async function createEnrollmentDraft(
   context: BillingEnrollmentContext,
   input: { householdId: string; planId: string; effectiveDate: string }
 ) {
+  resolveAuthorizedHouseholdId(context, input.householdId);
   const enrollmentId = randomUUID();
 
   await recordAction(
@@ -288,7 +306,7 @@ export async function saveEnrollmentStep(
     effectiveDate?: string;
   }
 ) {
-  const household = buildHouseholdProfile();
+  const household = buildHouseholdProfile(requireActorForHouseholdScope(context));
   const selectedPlan = buildPlanCatalog().map(toPlanCandidate).find((plan) => plan.planId === input.selectedPlanId);
   const validationIssues = runEnrollmentValidations({
     household,
@@ -423,6 +441,7 @@ export async function renewCoverage(
   context: BillingEnrollmentContext,
   input: { householdId: string; renewalYear: number; selectedPlanId?: string }
 ) {
+  resolveAuthorizedHouseholdId(context, input.householdId);
   const workflowId = randomUUID();
 
   await recordAction(
@@ -477,6 +496,7 @@ export async function manageHouseholdDependents(
   context: BillingEnrollmentContext,
   input: { householdId: string; dependents: DependentProfile[] }
 ) {
+  resolveAuthorizedHouseholdId(context, input.householdId);
   await recordAction(
     context,
     'billing_enrollment.household.updated',
@@ -498,7 +518,8 @@ export async function verifyEligibility(
   context: BillingEnrollmentContext,
   input: { householdId: string; requestedEffectiveDate: string; selectedPlanId?: string }
 ) {
-  const household = buildHouseholdProfile();
+  resolveAuthorizedHouseholdId(context, input.householdId);
+  const household = buildHouseholdProfile(requireActorForHouseholdScope(context));
   const selectedPlan = buildPlanCatalog().map(toPlanCandidate).find((plan) => plan.planId === input.selectedPlanId);
   const validationIssues = runEnrollmentValidations({
     household,
@@ -575,6 +596,7 @@ export async function startEnrollmentOrchestration(
   context: BillingEnrollmentContext,
   input: { householdId: string; planId: string; effectiveDate: string }
 ) {
+  resolveAuthorizedHouseholdId(context, input.householdId);
   const workflowId = randomUUID();
 
   await recordAction(
@@ -642,6 +664,7 @@ export async function submitLifeEventWorkflow(
   context: BillingEnrollmentContext,
   input: { eventType: string; householdId: string; eventDate: string }
 ) {
+  resolveAuthorizedHouseholdId(context, input.householdId);
   const workflowId = randomUUID();
 
   await recordAction(
@@ -1293,17 +1316,18 @@ export async function getDependentsExperience(
   context: BillingEnrollmentContext,
   input: { householdId: string }
 ) {
+  const householdId = resolveAuthorizedHouseholdId(context, input.householdId);
   const baseDependents = buildDependentsForExperience();
 
   await recordAction(
     context,
     'billing_enrollment.dependents.viewed',
     'billing_enrollment.dependents',
-    input.householdId
+    householdId
   );
 
   return {
-    householdId: input.householdId,
+    householdId,
     dependents: baseDependents,
     indicators: {
       verified: baseDependents.filter((item) => item.eligibilityIndicator === 'verified').length,
@@ -1324,6 +1348,7 @@ export async function addDependentExperienceRecord(
     relationshipDetail: string;
   }
 ) {
+  resolveAuthorizedHouseholdId(context, input.householdId);
   const dependentId = randomUUID();
 
   await recordAction(
@@ -1357,6 +1382,7 @@ export async function updateDependentExperienceRecord(
     relationshipDetail: string;
   }
 ) {
+  resolveAuthorizedHouseholdId(context, input.householdId);
   await recordAction(
     context,
     'billing_enrollment.dependent.updated',
@@ -1380,6 +1406,7 @@ export async function removeDependentExperienceRecord(
   context: BillingEnrollmentContext,
   input: { householdId: string; dependentId: string }
 ) {
+  resolveAuthorizedHouseholdId(context, input.householdId);
   await recordAction(
     context,
     'billing_enrollment.dependent.removed',

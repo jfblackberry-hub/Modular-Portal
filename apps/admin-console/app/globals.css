@@ -446,17 +446,30 @@ textarea {
 .admin-left-rail__inner {
   display: flex;
   height: 100%;
+  min-height: 0;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 1.5rem 1rem;
+}
+
+.admin-left-rail--collapsed .admin-left-rail__inner {
+  padding-inline: 0.75rem;
 }
 
 .admin-left-rail__nav-panel {
   margin-top: 1rem;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
   border: 1px solid var(--admin-sidebar-border);
   border-radius: 1rem;
   background: var(--admin-section-bg);
   overflow: hidden;
+}
+
+.admin-left-rail--collapsed .admin-left-rail__nav-panel {
+  margin-top: 0.75rem;
 }
 
 .admin-left-rail__brand,
@@ -466,10 +479,29 @@ textarea {
   background: var(--admin-section-bg);
 }
 
+.admin-left-rail__toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0 0 0.25rem;
+}
+
+.admin-left-rail__toolbar-copy {
+  min-width: 0;
+  flex: 1;
+}
+
 .admin-left-rail__brand {
   display: flex;
+  align-items: flex-start;
   gap: 0.85rem;
   padding: 1rem;
+}
+
+.admin-left-rail__brand-copy {
+  min-width: 0;
+  flex: 1;
 }
 
 .admin-left-rail__brand-mark {
@@ -494,6 +526,29 @@ textarea {
   filter:
     drop-shadow(0 0 24px rgba(216, 79, 163, 0.22))
     drop-shadow(0 0 20px rgba(76, 159, 204, 0.2));
+}
+
+.admin-left-rail__toggle {
+  display: inline-flex;
+  height: 2.3rem;
+  width: 2.3rem;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: auto;
+  border: 1px solid var(--admin-sidebar-border);
+  border-radius: 0.8rem;
+  background: transparent;
+  color: var(--admin-sidebar-text-muted);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.admin-left-rail__toggle:hover {
+  background: var(--admin-hover);
+  color: var(--admin-sidebar-text);
 }
 
 .admin-left-rail__eyebrow,
@@ -536,9 +591,52 @@ textarea {
 
 .admin-nav {
   display: flex;
+  min-height: 0;
+  flex: 1;
   flex-direction: column;
   gap: 0;
+  overflow-y: auto;
   padding: 0;
+}
+
+.admin-nav--collapsed {
+  overflow: hidden;
+}
+
+.admin-nav__collapsed-rail {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  overflow-y: auto;
+  padding: 0.85rem 0.5rem;
+}
+
+.admin-nav__collapsed-button {
+  display: inline-flex;
+  height: 2.9rem;
+  width: 2.9rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0.95rem;
+  background: transparent;
+  color: var(--admin-sidebar-text-muted);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.admin-nav__collapsed-button:hover {
+  background: var(--admin-hover);
+  color: var(--admin-sidebar-text);
+}
+
+.admin-nav__collapsed-button--active {
+  background: var(--admin-active);
+  color: var(--admin-sidebar-text);
 }
 
 .admin-nav__section {
@@ -546,7 +644,7 @@ textarea {
   border: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: transparent;
-  padding: 0.75rem;
+  padding: 0.9rem 0;
 }
 
 .admin-nav__section:last-child {
@@ -554,9 +652,8 @@ textarea {
 }
 
 .averra-admin .admin-nav__section {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  background: transparent;
+  box-shadow: none;
 }
 
 .admin-nav__section-header {
@@ -566,10 +663,20 @@ textarea {
   justify-content: space-between;
   gap: 0.75rem;
   border: 0;
+  border-radius: 0.85rem;
   background: transparent;
   color: var(--admin-sidebar-text-muted);
-  padding: 0.1rem 0.25rem 0.4rem;
+  padding: 0.2rem 0.35rem 0.6rem;
   text-align: left;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.admin-nav__section-header--expanded,
+.admin-nav__section--active .admin-nav__section-header {
+  color: var(--admin-sidebar-text);
+  background: transparent;
 }
 
 .averra-admin .admin-nav__section-header:hover {
@@ -590,41 +697,52 @@ textarea {
   color: var(--admin-sidebar-text-muted);
 }
 
+.admin-nav__section--active .admin-nav__section-icon,
+.admin-nav__section-header--expanded .admin-nav__section-icon {
+  color: var(--admin-active-accent);
+}
+
+.admin-nav__chevron {
+  color: var(--admin-sidebar-text-section);
+  transition: transform 160ms ease, color 160ms ease;
+}
+
+.admin-nav__chevron--open {
+  transform: rotate(180deg);
+}
+
 .admin-nav__section-items {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
 }
 
-.admin-nav__group,
 .admin-nav__item {
-  border-radius: 1rem;
+  border-radius: 0.85rem;
 }
 
-.admin-nav__group-toggle,
 .admin-nav__item {
   display: flex;
   width: 100%;
   align-items: center;
   gap: 0.75rem;
   border: 0;
-  border-radius: 1rem;
+  border-radius: 0.85rem;
   background: transparent;
-  padding: 0.7rem 0.85rem 0.7rem calc(0.85rem + (var(--admin-nav-depth, 0) * 0.95rem));
+  padding: 0.72rem 0.85rem 0.72rem calc(0.85rem + (var(--admin-nav-depth, 0) * 1rem));
   color: inherit;
   text-align: left;
+  text-decoration: none;
   transition:
     background-color 160ms ease,
     box-shadow 160ms ease,
     color 160ms ease;
 }
 
-.admin-nav__group-toggle:hover,
 .admin-nav__item:hover {
   background: var(--admin-hover);
 }
 
-.averra-admin .admin-nav__group-toggle:hover,
 .averra-admin .admin-nav__item:hover {
   background:
     linear-gradient(135deg, rgba(216, 79, 163, 0.16), rgba(76, 159, 204, 0.14)),
@@ -632,12 +750,10 @@ textarea {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.admin-nav__group-toggle--active,
 .admin-nav__item--active {
   background: var(--admin-active);
 }
 
-.averra-admin .admin-nav__group-toggle--active,
 .averra-admin .admin-nav__item--active {
   background:
     linear-gradient(135deg, rgba(116, 68, 201, 0.84), rgba(216, 79, 163, 0.78) 52%, rgba(76, 159, 204, 0.72));
@@ -652,38 +768,12 @@ textarea {
   background: transparent;
 }
 
-.admin-nav__group-toggle--active .admin-nav__item-line,
 .admin-nav__item--active .admin-nav__item-line {
   background: var(--admin-active-accent);
 }
 
-.averra-admin .admin-nav__group-toggle--active .admin-nav__item-line,
 .averra-admin .admin-nav__item--active .admin-nav__item-line {
   background: rgba(255, 255, 255, 0.88);
-}
-
-.admin-nav__item-icon {
-  flex-shrink: 0;
-  color: var(--admin-sidebar-text-muted);
-  transition: transform 160ms ease, color 160ms ease;
-}
-
-.admin-nav__item-spacer {
-  width: 16px;
-  flex-shrink: 0;
-}
-
-.admin-nav__item-icon--open {
-  transform: rotate(90deg);
-}
-
-.averra-admin .admin-nav__item-icon {
-  color: rgba(220, 225, 255, 0.68);
-}
-
-.admin-nav__group-toggle--active .admin-nav__item-icon,
-.admin-nav__item--active .admin-nav__item-icon {
-  color: var(--admin-sidebar-text);
 }
 
 .admin-nav__item-copy {
@@ -714,67 +804,18 @@ textarea {
   color: rgba(220, 225, 255, 0.56);
 }
 
-.admin-nav__section-items > .admin-nav__item .admin-nav__item-label,
-.admin-nav__section-items > .admin-nav__group .admin-nav__item-label {
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.admin-nav__children .admin-nav__item-label,
-.admin-nav__children .admin-nav__group .admin-nav__item-label {
-  font-size: 0.88rem;
-  font-weight: 500;
-}
-
-.admin-nav__children .admin-nav__item-description,
-.admin-nav__children .admin-nav__group .admin-nav__item-description {
-  font-size: 0.75rem;
-}
-
-.admin-nav__children .admin-nav__children .admin-nav__item-label,
-.admin-nav__children .admin-nav__children .admin-nav__group .admin-nav__item-label {
-  font-size: 0.82rem;
-  font-weight: 500;
-}
-
-.admin-nav__children .admin-nav__children .admin-nav__item-description,
-.admin-nav__children .admin-nav__children .admin-nav__group .admin-nav__item-description {
-  font-size: 0.72rem;
-  color: var(--admin-sidebar-text-section);
-}
-
-.admin-nav__children {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin: 0.35rem 0 0 1rem;
-  padding-left: 0.8rem;
-  border-left: 1px solid rgba(148, 163, 184, 0.22);
-}
-
-.admin-nav__chevron {
-  color: var(--admin-sidebar-text-muted);
-  transition: transform 160ms ease;
-}
-
-.admin-nav__chevron--open {
-  transform: rotate(180deg);
-}
-
-.admin-nav__group-toggle--active .admin-nav__item-label,
 .admin-nav__item--active .admin-nav__item-label,
-.admin-nav__group-toggle--active .admin-nav__item-description,
 .admin-nav__item--active .admin-nav__item-description {
   color: var(--admin-sidebar-text);
   font-weight: 600;
 }
 
-.averra-admin .admin-nav__group-toggle--active .admin-nav__item-description,
 .averra-admin .admin-nav__item--active .admin-nav__item-description {
   color: rgba(255, 255, 255, 0.82);
 }
 
-.admin-nav__group-toggle:focus-visible,
+.admin-left-rail__toggle:focus-visible,
+.admin-nav__collapsed-button:focus-visible,
 .admin-nav__item:focus-visible,
 .admin-nav__section-header:focus-visible {
   outline: 2px solid var(--admin-active-accent);
@@ -1584,7 +1625,6 @@ textarea {
 }
 
 .admin-control-plane .admin-top-header__divider,
-.admin-control-plane .admin-nav__item-icon,
 .admin-control-plane .text-admin-accent,
 .admin-control-plane .text-cyan-700,
 .admin-control-plane .text-emerald-700 {
@@ -1594,8 +1634,7 @@ textarea {
 .admin-control-plane .admin-left-rail__context-card,
 .admin-control-plane .admin-top-header__profile-card,
 .admin-control-plane .admin-content-router__context,
-.admin-control-plane .admin-content-router__context-pill,
-.admin-control-plane .admin-nav__section {
+.admin-control-plane .admin-content-router__context-pill {
   background: #ffffff;
   border-color: #e5e7eb;
   box-shadow: none;
@@ -1618,6 +1657,11 @@ textarea {
   border-bottom: 1px solid #e5e7eb;
 }
 
+.admin-control-plane .admin-left-rail__toolbar {
+  padding: 0 0 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
 .admin-control-plane .admin-left-rail__context-card {
   margin-top: 0;
   padding: 0.85rem 0 1rem;
@@ -1628,11 +1672,14 @@ textarea {
   margin-top: 1rem;
   border-color: #e5e7eb;
   background: #ffffff;
+  border-radius: 12px;
+  box-shadow: none;
 }
 
 .admin-control-plane .admin-content-router__context-pill--link:hover,
 .admin-control-plane .admin-nav__section-header:hover,
-.admin-control-plane .admin-nav__group-toggle:hover,
+.admin-control-plane .admin-left-rail__toggle:hover,
+.admin-control-plane .admin-nav__collapsed-button:hover,
 .admin-control-plane .admin-nav__item:hover,
 .admin-control-plane .hover\:bg-slate-50:hover,
 .admin-control-plane .hover\:bg-slate-300:hover {
@@ -1641,14 +1688,13 @@ textarea {
   box-shadow: none;
 }
 
-.admin-control-plane .admin-nav__group-toggle--active,
+.admin-control-plane .admin-nav__collapsed-button--active,
 .admin-control-plane .admin-nav__item--active {
   background: rgba(111, 91, 211, 0.12);
   color: #1f2937;
   box-shadow: none;
 }
 
-.admin-control-plane .admin-nav__group-toggle--active .admin-nav__item-line,
 .admin-control-plane .admin-nav__item--active .admin-nav__item-line {
   background: #6f5bd3;
 }
@@ -1811,7 +1857,6 @@ textarea {
 .admin-control-plane .admin-action-workspace,
 .admin-control-plane .admin-top-header__profile-card,
 .admin-control-plane .admin-content-router__context,
-.admin-control-plane .admin-nav__section,
 .admin-control-plane .bg-white,
 .admin-control-plane .bg-white\/88,
 .admin-control-plane .bg-slate-50,
@@ -1904,9 +1949,14 @@ textarea {
 }
 
 .admin-control-plane .admin-nav__section {
-  padding: 0.8rem 0.8rem 0.9rem;
+  padding: 0.9rem 0.95rem 1rem;
   background: transparent;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
   border-bottom: 1px solid #eef2f7;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .admin-control-plane .admin-nav__section:last-child {
@@ -1914,13 +1964,17 @@ textarea {
 }
 
 .admin-control-plane .admin-nav__section-header {
-  padding: 0 0 0.45rem;
+  padding: 0 0.2rem 0.55rem;
   color: #9ca3af;
 }
 
-.admin-control-plane .admin-nav__group-toggle,
+.admin-control-plane .admin-nav__collapsed-button,
 .admin-control-plane .admin-nav__item {
   border-radius: 8px;
+}
+
+.admin-control-plane .admin-left-rail__toggle {
+  border-color: #e5e7eb;
 }
 
 .admin-control-plane .admin-nav__item-label {
@@ -1931,35 +1985,35 @@ textarea {
   color: #9ca3af;
 }
 
-.admin-control-plane .admin-nav__children {
-  margin-left: 1rem;
-  padding-left: 0.8rem;
-  border-left-color: #e5e7eb;
-}
-
-.admin-control-plane .admin-nav__group-toggle:hover,
+.admin-control-plane .admin-nav__section-header:hover,
+.admin-control-plane .admin-nav__collapsed-button:hover,
 .admin-control-plane .admin-nav__item:hover {
   background: #f1f5f9;
   box-shadow: none;
 }
 
-.admin-control-plane .admin-nav__group-toggle--active,
+.admin-control-plane .admin-nav__section--active .admin-nav__section-header,
+.admin-control-plane .admin-nav__section-header--expanded,
+.admin-control-plane .admin-nav__collapsed-button--active,
 .admin-control-plane .admin-nav__item--active {
-  background: #eef2ff;
   color: #1f2937;
   box-shadow: none;
 }
 
-.admin-control-plane .admin-nav__group-toggle--active .admin-nav__item-label,
+.admin-control-plane .admin-nav__section--active .admin-nav__section-header,
+.admin-control-plane .admin-nav__section-header--expanded {
+  background: transparent;
+}
+
 .admin-control-plane .admin-nav__item--active .admin-nav__item-label,
-.admin-control-plane .admin-nav__group-toggle--active .admin-nav__item-description,
 .admin-control-plane .admin-nav__item--active .admin-nav__item-description,
-.admin-control-plane .admin-nav__group-toggle--active .admin-nav__item-icon,
-.admin-control-plane .admin-nav__item--active .admin-nav__item-icon {
+.admin-control-plane .admin-nav__section--active .admin-nav__section-heading,
+.admin-control-plane .admin-nav__section-header--expanded .admin-nav__section-heading,
+.admin-control-plane .admin-nav__section--active .admin-nav__chevron,
+.admin-control-plane .admin-nav__section-header--expanded .admin-nav__chevron {
   color: #1f2937;
 }
 
-.admin-control-plane .admin-nav__item-icon,
 .admin-control-plane .admin-top-header__divider,
 .admin-control-plane .text-admin-accent,
 .admin-control-plane .text-cyan-700,
@@ -1967,7 +2021,6 @@ textarea {
   color: #6f5bd3;
 }
 
-.admin-control-plane .admin-nav__group-toggle--active .admin-nav__item-line,
 .admin-control-plane .admin-nav__item--active .admin-nav__item-line {
   width: 3px;
   background: #6f5bd3;

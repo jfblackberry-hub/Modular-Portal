@@ -2,23 +2,25 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import type { MultipartFile } from '@fastify/multipart';
-import type { CoreTenantType } from '@payer-portal/shared-types';
+import type { Tenant, TenantType } from '@payer-portal/database';
 import {
   createOrganizationUnit,
   isProviderClassTenantTypeCode,
   normalizeTenantTypeCode,
+  OrganizationUnitValidationError,
   Prisma,
   prisma,
   syncTenantTypeDefinitions,
   updateOrganizationUnit
 } from '@payer-portal/database';
-import type { Tenant, TenantType } from '@payer-portal/database';
 import {
   buildTenantLogoStorageKey,
   getPublicAssetStorageService,
   logAdminAction,
   publishInBackground
 } from '@payer-portal/server';
+import type { CoreTenantType } from '@payer-portal/shared-types';
+
 import { applyTenantTemplateDefaults, syncAdminControlPlaneDefaults } from './admin-control-plane-service';
 
 type TenantInput = {
@@ -111,6 +113,42 @@ type OfficeLocationUpdateInput = {
   streetAddress?: string | null;
   city?: string | null;
   state?: string | null;
+  zip?: string | null;
+};
+
+type TenantOrganizationUnitInput = {
+  name: string;
+  parentId?: string | null;
+  type: 'ENTERPRISE' | 'REGION' | 'LOCATION' | 'DEPARTMENT' | 'TEAM';
+  activeFlag?: boolean | null;
+  city?: string | null;
+  company?: string | null;
+  locationId?: string | null;
+  metadata?: Record<string, unknown> | null;
+  notes?: string | null;
+  phone?: string | null;
+  region?: string | null;
+  servicesOffered?: string[];
+  state?: string | null;
+  streetAddress?: string | null;
+  zip?: string | null;
+};
+
+type TenantOrganizationUnitUpdateInput = {
+  name?: string;
+  parentId?: string | null;
+  type?: 'ENTERPRISE' | 'REGION' | 'LOCATION' | 'DEPARTMENT' | 'TEAM';
+  activeFlag?: boolean | null;
+  city?: string | null;
+  company?: string | null;
+  locationId?: string | null;
+  metadata?: Record<string, unknown> | null;
+  notes?: string | null;
+  phone?: string | null;
+  region?: string | null;
+  servicesOffered?: string[];
+  state?: string | null;
+  streetAddress?: string | null;
   zip?: string | null;
 };
 
@@ -549,7 +587,20 @@ export async function listTenantOrganizationUnits(tenantId: string) {
     orderBy: [{ parentId: 'asc' }, { name: 'asc' }]
   });
 
-  return organizationUnits.map((unit) => ({
+  return organizationUnits.map(mapOrganizationUnit);
+}
+
+function mapOrganizationUnit(unit: {
+  id: string;
+  tenantId: string;
+  parentId: string | null;
+  type: string;
+  name: string;
+  metadata: Prisma.JsonValue | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
     id: unit.id,
     tenantId: unit.tenantId,
     parentId: unit.parentId,
@@ -558,7 +609,7 @@ export async function listTenantOrganizationUnits(tenantId: string) {
     metadata: unit.metadata,
     createdAt: unit.createdAt,
     updatedAt: unit.updatedAt
-  }));
+  };
 }
 
 export async function importTenantOfficeLocations(
@@ -599,7 +650,7 @@ export async function importTenantOfficeLocations(
     const createdLocations: OfficeLocationImportResult['createdLocations'] = [];
     let createdCount = 0;
     let updatedCount = 0;
-    let skippedCount = 0;
+    const skippedCount = 0;
 
     for (const location of importedLocations) {
       const existing = existingByName.get(normalizeLocationName(location.locationName));
@@ -736,16 +787,224 @@ export async function updateTenantOfficeLocation(
     return nextUnit;
   });
 
-  return {
-    id: updated.id,
-    tenantId: updated.tenantId,
-    parentId: updated.parentId,
-    type: updated.type,
-    name: updated.name,
-    metadata: updated.metadata,
-    createdAt: updated.createdAt,
-    updatedAt: updated.updatedAt
-  };
+  return mapOrganizationUnit(updated);
+}
+
+function buildOrganizationUnitMetadata(
+  type: string,
+  input:
+    | TenantOrganizationUnitInput
+    | TenantOrganizationUnitUpdateInput,
+  existingMetadata?: Prisma.JsonValue | null
+) {
+  if (type === 'LOCATION') {
+    return buildOfficeLocationMetadata(
+      input,
+      readOfficeLocationMetadata(existingMetadata)
+    );
+  }
+
+  if (input.metadata !== undefined) {
+    return input.metadata;
+  }
+
+  return existingMetadata ?? null;
+}
+
+export async function createTenantOrganizationUnit(
+  tenantId: string,
+  input: TenantOrganizationUnitInput,
+  context: AuditContext = {}
+) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId }
+  });
+
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+
+  try {
+    const created = await prisma.$transaction(async (tx) => {
+      const organizationUnit = await createOrganizationUnit(
+        {
+          metadata: buildOrganizationUnitMetadata(input.type, input),
+          name: input.name,
+          parentId: input.parentId,
+          tenantId,
+          type: input.type
+        },
+        tx
+      );
+
+      await logAdminAction({
+        action: 'tenant.organization_unit.created',
+        actorUserId: context.actorUserId ?? null,
+        client: tx,
+        ipAddress: context.ipAddress,
+        metadata: {
+          name: organizationUnit.name,
+          parentId: organizationUnit.parentId,
+          type: organizationUnit.type
+        },
+        resourceId: organizationUnit.id,
+        resourceType: 'organization_unit',
+        tenantId,
+        userAgent: context.userAgent
+      });
+
+      return organizationUnit;
+    });
+
+    return mapOrganizationUnit(created);
+  } catch (error) {
+    if (error instanceof OrganizationUnitValidationError) {
+      throw new Error(error.message);
+    }
+
+    throw error;
+  }
+}
+
+export async function updateTenantOrganizationUnit(
+  tenantId: string,
+  organizationUnitId: string,
+  input: TenantOrganizationUnitUpdateInput,
+  context: AuditContext = {}
+) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId }
+  });
+
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+
+  const existing = await prisma.organizationUnit.findFirst({
+    where: {
+      id: organizationUnitId,
+      tenantId
+    }
+  });
+
+  if (!existing) {
+    throw new Error('Organization unit not found for tenant.');
+  }
+
+  const nextType = input.type ?? existing.type;
+
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      const organizationUnit = await updateOrganizationUnit(
+        {
+          id: organizationUnitId,
+          metadata: buildOrganizationUnitMetadata(nextType, input, existing.metadata),
+          name: input.name,
+          parentId: input.parentId,
+          tenantId,
+          type: nextType
+        },
+        tx
+      );
+
+      await logAdminAction({
+        action: 'tenant.organization_unit.updated',
+        actorUserId: context.actorUserId ?? null,
+        client: tx,
+        ipAddress: context.ipAddress,
+        metadata: {
+          name: organizationUnit.name,
+          parentId: organizationUnit.parentId,
+          type: organizationUnit.type
+        },
+        resourceId: organizationUnit.id,
+        resourceType: 'organization_unit',
+        tenantId,
+        userAgent: context.userAgent
+      });
+
+      return organizationUnit;
+    });
+
+    return mapOrganizationUnit(updated);
+  } catch (error) {
+    if (error instanceof OrganizationUnitValidationError) {
+      throw new Error(error.message);
+    }
+
+    throw error;
+  }
+}
+
+export async function deleteTenantOrganizationUnit(
+  tenantId: string,
+  organizationUnitId: string,
+  context: AuditContext = {}
+) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId }
+  });
+
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+
+  const existing = await prisma.organizationUnit.findFirst({
+    where: {
+      id: organizationUnitId,
+      tenantId
+    }
+  });
+
+  if (!existing) {
+    throw new Error('Organization unit not found for tenant.');
+  }
+
+  const childCount = await prisma.organizationUnit.count({
+    where: {
+      parentId: organizationUnitId,
+      tenantId
+    }
+  });
+
+  if (childCount > 0) {
+    throw new Error(
+      'Cannot delete an organization unit that still has child units. Re-parent or delete the children first.'
+    );
+  }
+
+  const deleted = await prisma.$transaction(async (tx) => {
+    const result = await tx.organizationUnit.deleteMany({
+      where: {
+        id: organizationUnitId,
+        tenantId
+      }
+    });
+
+    if (result.count !== 1) {
+      throw new Error('Organization unit delete failed.');
+    }
+
+    await logAdminAction({
+      action: 'tenant.organization_unit.deleted',
+      actorUserId: context.actorUserId ?? null,
+      client: tx,
+      ipAddress: context.ipAddress,
+      metadata: {
+        name: existing.name,
+        parentId: existing.parentId,
+        type: existing.type
+      },
+      resourceId: existing.id,
+      resourceType: 'organization_unit',
+      tenantId,
+      userAgent: context.userAgent
+    });
+
+    return existing;
+  });
+
+  return mapOrganizationUnit(deleted);
 }
 
 export async function createTenant(

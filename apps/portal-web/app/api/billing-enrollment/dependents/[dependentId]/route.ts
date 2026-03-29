@@ -20,6 +20,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ depen
     relationshipDetail: string;
   };
 
+  if (!body.householdId?.trim()) {
+    return NextResponse.json({ message: 'householdId is required in the request body.' }, { status: 400 });
+  }
+
   try {
     const response = await updateDependent(user.id, dependentId, body);
     return NextResponse.json(response);
@@ -38,7 +42,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ depe
 
   const { dependentId } = await context.params;
   const { searchParams } = new URL(request.url);
-  const householdId = searchParams.get('householdId') ?? 'hh-8843';
+  const householdId = searchParams.get('householdId')?.trim();
+  if (!householdId) {
+    return NextResponse.json({ message: 'householdId query parameter is required.' }, { status: 400 });
+  }
 
   try {
     const response = await removeDependent(user.id, dependentId, householdId);

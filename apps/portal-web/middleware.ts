@@ -29,6 +29,7 @@ type PortalUserCookie = {
   };
   tenant?: {
     id?: string;
+    tenantTypeCode?: string;
     brandingConfig?: Record<string, unknown>;
   };
   previewSession?: {
@@ -89,13 +90,22 @@ function toLoginRedirect(request: NextRequest) {
 
 async function readPortalSessionFromRequest(request: NextRequest) {
   for (const cookieName of getPortalSessionCookieNames()) {
-    const portalSession = await readPortalSessionEnvelopeFromCookie(
-      request.cookies.get(cookieName)?.value
-    );
-
-    if (portalSession) {
-      return portalSession;
+    const allCookies = request.cookies.getAll(cookieName);
+    for (const cookie of allCookies) {
+      if (!cookie.value) {
+        continue;
+      }
+      const portalSession = await readPortalSessionEnvelopeFromCookie(cookie.value);
+      if (portalSession) {
+        return portalSession;
+      }
     }
+  }
+
+  const cookieNames = getPortalSessionCookieNames();
+  const totalFound = cookieNames.reduce((sum, name) => sum + request.cookies.getAll(name).length, 0);
+  if (totalFound === 0) {
+    console.warn('[middleware] no session cookie present in request', { pathname: request.nextUrl.pathname });
   }
 
   return null;
@@ -114,28 +124,8 @@ export async function middleware(request: NextRequest) {
   const demoAccessCookie = request.cookies.get(DEMO_ACCESS_COOKIE)?.value ?? '';
   const hasDemoAccess = Boolean(findDemoUser(demoAccessCookie));
   const isDemoAccessApi = pathname === '/api/demo-access';
-  const isProtectedDemoPage =
-    pathname === '/login' ||
-    pathname.startsWith('/login') ||
-    pathname === '/provider-login' ||
-    pathname.startsWith('/provider-login') ||
-    pathname === '/employer-login' ||
-    pathname.startsWith('/employer-login');
-  const isProtectedDemoAuthApi = isPublicAuthRoute(pathname, { prefix: '/api' });
-
   if (isDemoAccessApi) {
     return NextResponse.next();
-  }
-
-  if (isProtectedDemoPage && !hasDemoAccess) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/';
-    redirectUrl.search = '';
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  if (isProtectedDemoAuthApi && !hasDemoAccess) {
-    return NextResponse.json({ message: 'Demo access required.' }, { status: 403 });
   }
 
   if (
@@ -263,7 +253,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isTenantModuleEnabled(brandingConfig, route.moduleId)) {
+  const moduleGateTenantId =
+    portalUser.session?.tenantId ?? portalUser.tenant?.id ?? null;
+
+  const providerLandingModuleBypass =
+    portalUser.landingContext === 'provider' && route.moduleId === 'provider_operations';
+
+  if (
+    providerLandingModuleBypass ||
+    isTenantModuleEnabled(brandingConfig, route.moduleId, {
+      tenantId: moduleGateTenantId,
+      tenantTypeCode: portalUser.tenant?.tenantTypeCode ?? null
+    })
+  ) {
     return NextResponse.next();
   }
 

@@ -5,6 +5,7 @@ import {
   completeEnrollment,
   createEnrollmentDraft,
   generateCorrespondenceNotice,
+  HouseholdScopeError,
   getBillingCurrentBalance,
   getBillingEnrollmentModuleConfigForTenant,
   getBillingEnrollmentWorkspaceSnapshot,
@@ -385,6 +386,10 @@ function handleRouteError(
 
   if (error instanceof AuthorizationError) {
     return reply.status(403).send({ message: error.message });
+  }
+
+  if (error instanceof HouseholdScopeError) {
+    return reply.status(error.statusCode).send({ message: error.message });
   }
 
   if (error instanceof Error) {
@@ -1768,6 +1773,11 @@ export async function billingEnrollmentRoutes(app: FastifyInstance) {
         const currentUser = await getCurrentUserFromHeaders(request.headers);
         assertBillingEnrollmentAccess(currentUser);
 
+        const householdId = request.query.householdId?.trim();
+        if (!householdId) {
+          throw new Error('householdId query parameter is required.');
+        }
+
         return await getDependentsExperience(
           {
             tenantId: currentUser.tenantId,
@@ -1776,7 +1786,7 @@ export async function billingEnrollmentRoutes(app: FastifyInstance) {
             userAgent: request.headers['user-agent']
           },
           {
-            householdId: request.query.householdId ?? 'hh-8843'
+            householdId
           }
         );
       } catch (error) {
@@ -1844,6 +1854,11 @@ export async function billingEnrollmentRoutes(app: FastifyInstance) {
         const currentUser = await getCurrentUserFromHeaders(request.headers);
         assertBillingEnrollmentAccess(currentUser);
 
+        const householdId = request.query.householdId?.trim();
+        if (!householdId) {
+          throw new Error('householdId query parameter is required.');
+        }
+
         return await removeDependentExperienceRecord(
           {
             tenantId: currentUser.tenantId,
@@ -1853,7 +1868,7 @@ export async function billingEnrollmentRoutes(app: FastifyInstance) {
           },
           {
             dependentId: request.params.dependentId,
-            householdId: request.query.householdId ?? 'hh-8843'
+            householdId
           }
         );
       } catch (error) {

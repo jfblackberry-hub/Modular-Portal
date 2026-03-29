@@ -20,6 +20,7 @@
     "create-plugin": "node scripts/create-plugin.mjs",
     "db:migrate": "pnpm --filter @payer-portal/database db:migrate",
     "db:seed": "pnpm --filter @payer-portal/database db:seed",
+    "db:repair:admin-identities": "pnpm --filter @payer-portal/database db:repair:admin-identities",
     "db:seed:eb-demo": "pnpm --filter @payer-portal/database db:seed:eb-demo",
     "db:setup:eb-demo": "bash ./scripts/setup-eb-demo-db.sh",
     "services:start:eb-demo": "bash ./scripts/start-services-eb-demo.sh",

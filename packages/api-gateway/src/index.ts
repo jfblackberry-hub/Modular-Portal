@@ -27,12 +27,12 @@ import * as searchService from '../../../apps/api/dist/services/search-service.j
 import * as tenantService from '../../../apps/api/dist/services/tenant-service.js';
 import { createGatewayToken, verifyGatewayToken } from './jwt.js';
 import { getOpenApiDocument } from './openapi.js';
+import {
+  buildApiGatewayRateLimitKey,
+  getApiGatewayRateLimitEnvConfig,
+  getGatewayRateLimiter
+} from './rate-limit-store.js';
 import { apiGatewayRuntimeConfig } from './runtime-config.js';
-
-type RateLimitEntry = {
-  count: number;
-  resetAt: number;
-};
 
 type SearchQuery = {
   q?: string;
@@ -83,17 +83,8 @@ type AssignRoleBody = {
   roleId: string;
 };
 
-const requestBuckets = new Map<string, RateLimitEntry>();
-
 function isNamedError(error: unknown, name: string): error is Error {
   return error instanceof Error && error.name === name;
-}
-
-function getRateLimitConfig() {
-  return {
-    max: Number(process.env.API_GATEWAY_RATE_LIMIT_MAX ?? 100),
-    windowMs: Number(process.env.API_GATEWAY_RATE_LIMIT_WINDOW_MS ?? 60_000)
-  };
 }
 
 function getOpenApiResponse() {
@@ -140,36 +131,25 @@ async function getGatewayReadiness() {
 }
 
 async function enforceRateLimit(request: FastifyRequest, reply: FastifyReply) {
-  const { max, windowMs } = getRateLimitConfig();
+  const { max, windowMs, maxTrackedKeys } = getApiGatewayRateLimitEnvConfig();
 
   if (max <= 0 || windowMs <= 0) {
     return;
   }
 
-  const userKey = request.gatewayAuth?.currentUser.id ?? request.ip;
-  const bucketKey = `${request.method}:${request.routeOptions.url ?? request.url}:${userKey}`;
+  const bucketKey = buildApiGatewayRateLimitKey(request);
   const now = Date.now();
-  const bucket = requestBuckets.get(bucketKey);
+  const decision = getGatewayRateLimiter().check(bucketKey, max, windowMs, maxTrackedKeys, now);
 
-  if (!bucket || bucket.resetAt <= now) {
-    requestBuckets.set(bucketKey, {
-      count: 1,
-      resetAt: now + windowMs
-    });
-    return;
-  }
-
-  if (bucket.count >= max) {
+  if (!decision.allowed) {
     reply
       .status(429)
-      .header('Retry-After', Math.ceil((bucket.resetAt - now) / 1000))
+      .header('Retry-After', decision.retryAfterSec)
       .send({
         message: 'Rate limit exceeded'
       });
     return reply;
   }
-
-  bucket.count += 1;
 }
 
 async function authenticateRequest(request: FastifyRequest, reply: FastifyReply) {

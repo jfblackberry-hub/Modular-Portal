@@ -8,10 +8,11 @@ import { prisma } from '@payer-portal/database';
 import { getPublicAssetStorageService } from '@payer-portal/server';
 import Fastify from 'fastify';
 
-import { adminOperationsRoutes } from '../src/routes/admin-operations.js';
 import { registerPlugins } from '../src/plugins/index.js';
-import { platformBrandingRoutes } from '../src/routes/platform-branding.js';
+import { adminOperationsRoutes } from '../src/routes/admin-operations.js';
 import { featureFlagRoutes } from '../src/routes/feature-flags.js';
+import { platformBrandingRoutes } from '../src/routes/platform-branding.js';
+import { publicAssetRoutes } from '../src/routes/public-assets.js';
 import { roleRoutes } from '../src/routes/roles.js';
 import { tenantRoutes } from '../src/routes/tenants.js';
 import { createAccessToken } from '../src/services/access-token-service.js';
@@ -24,6 +25,7 @@ const TEST_TENANT_ADMIN_EMAIL = 'platform-plane-tenant-admin@example.com';
 const TEST_TENANT_SLUG = 'platform-plane-tenant';
 const TEST_PROVIDER_TENANT_SLUG = 'platform-plane-provider-tenant';
 const TEST_ISOLATED_TENANT_SLUG = 'platform-plane-isolated-tenant';
+const TEST_CLINIC_OU_TENANT_SLUG = 'clinic-ou-admin-tenant';
 
 async function cleanupTestData() {
   await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
@@ -71,6 +73,11 @@ async function cleanupTestData() {
         {
           slug: {
             startsWith: TEST_ISOLATED_TENANT_SLUG
+          }
+        },
+        {
+          slug: {
+            startsWith: TEST_CLINIC_OU_TENANT_SLUG
           }
         }
       ]
@@ -747,6 +754,173 @@ test('platform admins can import provider office locations from a delimited file
   await app.close();
 });
 
+test('platform admins can create, re-parent, edit, and delete tenant organization units', async () => {
+  const { platformAdminUser } = await createFixtureData();
+  const app = Fastify();
+  registerPlugins(app);
+  await tenantRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+
+  const createTenantResponse = await app.inject({
+    method: 'POST',
+    url: '/platform-admin/tenants',
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      name: 'Clinic OU Admin Tenant',
+      slug: TEST_CLINIC_OU_TENANT_SLUG,
+      status: 'ACTIVE',
+      type: 'CLINIC',
+      brandingConfig: {
+        displayName: 'Clinic OU Admin Tenant'
+      }
+    }
+  });
+
+  assert.equal(createTenantResponse.statusCode, 201, createTenantResponse.body);
+
+  const tenant = await prisma.tenant.findUniqueOrThrow({
+    where: {
+      slug: TEST_CLINIC_OU_TENANT_SLUG
+    }
+  });
+
+  const enterpriseResponse = await app.inject({
+    method: 'POST',
+    url: `/platform-admin/tenants/${tenant.id}/organization-units`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      name: 'Clinic Enterprise',
+      type: 'ENTERPRISE'
+    }
+  });
+
+  assert.equal(enterpriseResponse.statusCode, 201, enterpriseResponse.body);
+  const enterpriseUnit = enterpriseResponse.json() as { id: string };
+
+  const locationResponse = await app.inject({
+    method: 'POST',
+    url: `/platform-admin/tenants/${tenant.id}/organization-units`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      name: 'Flint North',
+      parentId: enterpriseUnit.id,
+      type: 'LOCATION',
+      city: 'Flint',
+      state: 'MI',
+      streetAddress: '123 Maple Ave'
+    }
+  });
+
+  assert.equal(locationResponse.statusCode, 201, locationResponse.body);
+  const locationUnit = locationResponse.json() as { id: string };
+
+  const teamResponse = await app.inject({
+    method: 'POST',
+    url: `/platform-admin/tenants/${tenant.id}/organization-units`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      name: 'Clinical Team',
+      parentId: enterpriseUnit.id,
+      type: 'TEAM'
+    }
+  });
+
+  assert.equal(teamResponse.statusCode, 201, teamResponse.body);
+  const teamUnit = teamResponse.json() as { id: string };
+
+  const reparentResponse = await app.inject({
+    method: 'PATCH',
+    url: `/platform-admin/tenants/${tenant.id}/organization-units/${teamUnit.id}`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      name: 'Clinical Team Alpha',
+      parentId: locationUnit.id,
+      type: 'TEAM'
+    }
+  });
+
+  assert.equal(reparentResponse.statusCode, 200, reparentResponse.body);
+
+  const blockedDeleteResponse = await app.inject({
+    method: 'DELETE',
+    url: `/platform-admin/tenants/${tenant.id}/organization-units/${locationUnit.id}`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(blockedDeleteResponse.statusCode, 400, blockedDeleteResponse.body);
+  assert.match(
+    blockedDeleteResponse.body,
+    /child units/i
+  );
+
+  const deleteTeamResponse = await app.inject({
+    method: 'DELETE',
+    url: `/platform-admin/tenants/${tenant.id}/organization-units/${teamUnit.id}`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(deleteTeamResponse.statusCode, 200, deleteTeamResponse.body);
+
+  const deleteLocationResponse = await app.inject({
+    method: 'DELETE',
+    url: `/platform-admin/tenants/${tenant.id}/organization-units/${locationUnit.id}`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(deleteLocationResponse.statusCode, 200, deleteLocationResponse.body);
+
+  const organizationUnitsResponse = await app.inject({
+    method: 'GET',
+    url: `/platform-admin/tenants/${tenant.id}/organization-units`,
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(organizationUnitsResponse.statusCode, 200, organizationUnitsResponse.body);
+  const organizationUnits = organizationUnitsResponse.json() as Array<{
+    id: string;
+    name: string;
+    parentId: string | null;
+    type: string;
+  }>;
+
+  assert.deepEqual(
+    organizationUnits.map((unit) => ({
+      id: unit.id,
+      name: unit.name,
+      parentId: unit.parentId,
+      type: unit.type
+    })),
+    [
+      {
+        id: enterpriseUnit.id,
+        name: 'Clinic Enterprise',
+        parentId: null,
+        type: 'ENTERPRISE'
+      }
+    ]
+  );
+
+  await app.close();
+});
+
 test('platform admins can upload platform branding css and public route serves it', async () => {
   const { platformAdminUser } = await createFixtureData();
   const app = Fastify();
@@ -795,6 +969,57 @@ test('platform admins can upload platform branding css and public route serves i
 
   assert.equal(publicCssResponse.statusCode, 200, publicCssResponse.body);
   assert.match(publicCssResponse.body, /body\.averra-admin/);
+
+  await app.close();
+});
+
+test('platform admins can upload tenant logos and the public tenant asset route serves them', async () => {
+  const { tenant, platformAdminUser } = await createFixtureData();
+  const app = Fastify();
+  await registerPlugins(app);
+  await tenantRoutes(app);
+  await publicAssetRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+  const boundary = '----codex-tenant-logo-boundary';
+  const svgContent =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#0f6cbd"/></svg>';
+
+  const uploadResponse = await app.inject({
+    method: 'POST',
+    url: `/platform-admin/tenants/${tenant.id}/logo`,
+    headers: {
+      authorization: `Bearer ${platformToken}`,
+      'content-type': `multipart/form-data; boundary=${boundary}`
+    },
+    payload: buildMultipartBody({
+      boundary,
+      fieldName: 'file',
+      fileName: 'logo.svg',
+      contentType: 'image/svg+xml',
+      content: svgContent
+    })
+  });
+
+  assert.equal(uploadResponse.statusCode, 201, uploadResponse.body);
+  const branding = uploadResponse.json() as {
+    tenantId: string;
+    logoUrl: string | null;
+  };
+
+  assert.equal(branding.tenantId, tenant.id);
+  assert.match(
+    branding.logoUrl ?? '',
+    new RegExp(`^/tenant-assets/tenant/${tenant.id}/logos/tenant-logo\\.svg$`)
+  );
+
+  const publicAssetResponse = await app.inject({
+    method: 'GET',
+    url: branding.logoUrl ?? '/tenant-assets/missing'
+  });
+
+  assert.equal(publicAssetResponse.statusCode, 200, publicAssetResponse.body);
+  assert.equal(publicAssetResponse.headers['content-type'], 'image/svg+xml');
+  assert.match(publicAssetResponse.body, /svg/);
 
   await app.close();
 });

@@ -296,13 +296,17 @@ export async function readPortalSessionEnvelopeFromCookie(
     return null;
   }
 
-  const [payloadBase64Url, signatureBase64Url] = cookieValue.split('.');
+  const parts = cookieValue.split('.');
+  const payloadBase64Url = parts[0];
+  const signatureBase64Url = parts.slice(1).join('.');
   if (!payloadBase64Url || !signatureBase64Url) {
+    console.warn('[portal-session] cookie parse failed: missing payload or signature parts');
     return null;
   }
 
   const valid = await verifySignature(payloadBase64Url, signatureBase64Url);
   if (!valid) {
+    console.warn('[portal-session] cookie signature verification failed');
     return null;
   }
 
@@ -310,23 +314,48 @@ export async function readPortalSessionEnvelopeFromCookie(
     const decodedPayload = new TextDecoder().decode(fromBase64Url(payloadBase64Url));
     const parsed = JSON.parse(decodedPayload) as SessionEnvelope;
 
-    if (
-      parsed.v !== SESSION_COOKIE_VERSION ||
-      typeof parsed.exp !== 'number' ||
-      typeof parsed.iat !== 'number' ||
-      typeof parsed.accessToken !== 'string' ||
-      !parsed.accessToken.trim() ||
-      parsed.exp <= Math.floor(Date.now() / 1000) ||
-      !parsed.user ||
-      typeof parsed.user !== 'object' ||
-      Array.isArray(parsed.user) ||
-      !hasValidPortalSessionUser(parsed.user)
-    ) {
+    if (parsed.v !== SESSION_COOKIE_VERSION) {
+      console.warn('[portal-session] cookie rejected: version mismatch', { v: parsed.v, expected: SESSION_COOKIE_VERSION });
+      return null;
+    }
+    if (typeof parsed.exp !== 'number' || typeof parsed.iat !== 'number') {
+      console.warn('[portal-session] cookie rejected: invalid exp/iat');
+      return null;
+    }
+    if (typeof parsed.accessToken !== 'string' || !parsed.accessToken.trim()) {
+      console.warn('[portal-session] cookie rejected: invalid accessToken');
+      return null;
+    }
+    if (parsed.exp <= Math.floor(Date.now() / 1000)) {
+      console.warn('[portal-session] cookie rejected: expired', { exp: parsed.exp, now: Math.floor(Date.now() / 1000) });
+      return null;
+    }
+    if (!parsed.user || typeof parsed.user !== 'object' || Array.isArray(parsed.user)) {
+      console.warn('[portal-session] cookie rejected: invalid user object');
+      return null;
+    }
+    if (!hasValidPortalSessionUser(parsed.user)) {
+      console.warn('[portal-session] cookie rejected: hasValidPortalSessionUser failed', {
+        hasId: typeof parsed.user.id === 'string',
+        hasEmail: typeof parsed.user.email === 'string',
+        hasFirstName: typeof parsed.user.firstName === 'string',
+        hasLastName: typeof parsed.user.lastName === 'string',
+        hasRoles: Array.isArray(parsed.user.roles),
+        hasPermissions: Array.isArray(parsed.user.permissions),
+        hasTenant: !!parsed.user.tenant,
+        hasSession: !!parsed.user.session,
+        sessionType: (parsed.user.session as Record<string, unknown> | undefined)?.type,
+        landingContext: parsed.user.landingContext,
+        sessionPersonaType: (parsed.user.session as Record<string, unknown> | undefined)?.personaType,
+        hasActiveOrgUnit: typeof (parsed.user.session as Record<string, unknown> | undefined)?.activeOrganizationUnit !== 'undefined',
+        hasAvailableOrgUnits: Array.isArray((parsed.user.session as Record<string, unknown> | undefined)?.availableOrganizationUnits),
+      });
       return null;
     }
 
     return parsed;
-  } catch {
+  } catch (err) {
+    console.warn('[portal-session] cookie rejected: parse/decode error', err);
     return null;
   }
 }
