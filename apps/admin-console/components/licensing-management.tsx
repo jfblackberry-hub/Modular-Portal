@@ -47,7 +47,7 @@ type SettingsPayload = {
 const moduleCatalog: Array<{
   id: TenantPurchasedModule;
   label: string;
-  audience: 'Member portal' | 'Provider portal' | 'Billing & Enrollment';
+  audience: 'Member portal' | 'Clinic portal' | 'Billing & Enrollment';
 }> = [
   { id: 'member_home', label: 'Home', audience: 'Member portal' },
   { id: 'member_benefits', label: 'Benefits', audience: 'Member portal' },
@@ -61,16 +61,16 @@ const moduleCatalog: Array<{
   { id: 'member_care_cost_estimator', label: 'Care Cost Estimator', audience: 'Member portal' },
   { id: 'member_support', label: 'Support', audience: 'Member portal' },
   { id: 'billing_enrollment', label: 'Billing & Enrollment', audience: 'Billing & Enrollment' },
-  { id: 'provider_dashboard', label: 'Dashboard', audience: 'Provider portal' },
-  { id: 'provider_eligibility', label: 'Eligibility', audience: 'Provider portal' },
-  { id: 'provider_authorizations', label: 'Authorizations', audience: 'Provider portal' },
-  { id: 'provider_claims', label: 'Claims', audience: 'Provider portal' },
-  { id: 'provider_payments', label: 'Payments', audience: 'Provider portal' },
-  { id: 'provider_patients', label: 'Patients', audience: 'Provider portal' },
-  { id: 'provider_documents', label: 'Documents', audience: 'Provider portal' },
-  { id: 'provider_messages', label: 'Messages', audience: 'Provider portal' },
-  { id: 'provider_support', label: 'Support', audience: 'Provider portal' },
-  { id: 'provider_admin', label: 'Admin', audience: 'Provider portal' }
+  { id: 'provider_dashboard', label: 'Dashboard', audience: 'Clinic portal' },
+  { id: 'provider_eligibility', label: 'Eligibility', audience: 'Clinic portal' },
+  { id: 'provider_authorizations', label: 'Authorizations', audience: 'Clinic portal' },
+  { id: 'provider_claims', label: 'Claims', audience: 'Clinic portal' },
+  { id: 'provider_payments', label: 'Payments', audience: 'Clinic portal' },
+  { id: 'provider_patients', label: 'Patients', audience: 'Clinic portal' },
+  { id: 'provider_documents', label: 'Documents', audience: 'Clinic portal' },
+  { id: 'provider_messages', label: 'Messages', audience: 'Clinic portal' },
+  { id: 'provider_support', label: 'Support', audience: 'Clinic portal' },
+  { id: 'provider_admin', label: 'Admin', audience: 'Clinic portal' }
 ];
 
 export function LicensingManagement({

@@ -57,7 +57,7 @@ type TenantPurchasedModule =
 const moduleCatalog: Array<{
   id: TenantPurchasedModule;
   label: string;
-  audience: 'Member portal' | 'Provider portal' | 'Billing & Enrollment';
+  audience: 'Member portal' | 'Clinic portal' | 'Billing & Enrollment';
 }> = [
   { id: 'member_home', label: 'Home', audience: 'Member portal' },
   { id: 'member_benefits', label: 'Benefits', audience: 'Member portal' },
@@ -71,16 +71,16 @@ const moduleCatalog: Array<{
   { id: 'member_care_cost_estimator', label: 'Care Cost Estimator', audience: 'Member portal' },
   { id: 'member_support', label: 'Support', audience: 'Member portal' },
   { id: 'billing_enrollment', label: 'Billing & Enrollment Module', audience: 'Billing & Enrollment' },
-  { id: 'provider_dashboard', label: 'Dashboard', audience: 'Provider portal' },
-  { id: 'provider_eligibility', label: 'Eligibility', audience: 'Provider portal' },
-  { id: 'provider_authorizations', label: 'Authorizations', audience: 'Provider portal' },
-  { id: 'provider_claims', label: 'Claims', audience: 'Provider portal' },
-  { id: 'provider_payments', label: 'Payments', audience: 'Provider portal' },
-  { id: 'provider_patients', label: 'Patients', audience: 'Provider portal' },
-  { id: 'provider_documents', label: 'Resources', audience: 'Provider portal' },
-  { id: 'provider_messages', label: 'Messages', audience: 'Provider portal' },
-  { id: 'provider_support', label: 'Support', audience: 'Provider portal' },
-  { id: 'provider_admin', label: 'Admin', audience: 'Provider portal' }
+  { id: 'provider_dashboard', label: 'Dashboard', audience: 'Clinic portal' },
+  { id: 'provider_eligibility', label: 'Eligibility', audience: 'Clinic portal' },
+  { id: 'provider_authorizations', label: 'Authorizations', audience: 'Clinic portal' },
+  { id: 'provider_claims', label: 'Claims', audience: 'Clinic portal' },
+  { id: 'provider_payments', label: 'Payments', audience: 'Clinic portal' },
+  { id: 'provider_patients', label: 'Patients', audience: 'Clinic portal' },
+  { id: 'provider_documents', label: 'Resources', audience: 'Clinic portal' },
+  { id: 'provider_messages', label: 'Messages', audience: 'Clinic portal' },
+  { id: 'provider_support', label: 'Support', audience: 'Clinic portal' },
+  { id: 'provider_admin', label: 'Admin', audience: 'Clinic portal' }
 ];
 
 type Connector = {
@@ -886,7 +886,7 @@ function TenantAdminSettingsContent({ tenantId }: { tenantId?: string }) {
               title={`${settings.purchasedModules.length}/${moduleCatalog.length}`}
               description="Purchased modules"
             >
-              <p className="text-sm text-admin-muted">Enabled for member/provider access</p>
+              <p className="text-sm text-admin-muted">Enabled for member/clinic access</p>
             </SectionCard>
             <SectionCard title={String(settings.integrations.length)} description="Integrations">
               <p className="text-sm text-admin-muted">Configured adapters</p>
@@ -1296,11 +1296,11 @@ function TenantAdminSettingsContent({ tenantId }: { tenantId?: string }) {
 
           <SectionCard
             title="Purchased Modules"
-            description="Choose which member and provider modules are available for this tenant. Turning a module off removes menu access and blocks direct route access."
+            description="Choose which member and clinic modules are available for this tenant. Turning a module off removes menu access and blocks direct route access."
           >
             <form className="space-y-4" onSubmit={handlePurchasedModulesSave}>
               <div className="grid gap-4 md:grid-cols-2">
-                {(['Member portal', 'Provider portal', 'Billing & Enrollment'] as const).map((audience) => (
+                {(['Member portal', 'Clinic portal', 'Billing & Enrollment'] as const).map((audience) => (
                   <div key={audience} className="rounded-2xl border border-admin-border bg-slate-50 p-4">
                     <p className="text-sm font-semibold text-admin-text">{audience}</p>
                     <div className="mt-3 space-y-2">

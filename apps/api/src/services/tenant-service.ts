@@ -233,6 +233,32 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function normalizeJsonInputValue(
+  value: unknown
+): Prisma.InputJsonValue | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeJsonInputValue(entry) ?? null) as Prisma.InputJsonArray;
+  }
+
+  if (isRecord(value)) {
+    return Object.fromEntries(
+      Object.entries(value)
+        .map(([key, entryValue]) => [key, normalizeJsonInputValue(entryValue)])
+        .filter(([, entryValue]) => entryValue !== undefined)
+    ) as Prisma.InputJsonObject;
+  }
+
+  return null;
+}
+
 function getExtension(fileName: string, mimeType: string) {
   const parsedExtension = path.extname(fileName).toLowerCase();
 
@@ -796,7 +822,7 @@ function buildOrganizationUnitMetadata(
     | TenantOrganizationUnitInput
     | TenantOrganizationUnitUpdateInput,
   existingMetadata?: Prisma.JsonValue | null
-) {
+): Prisma.InputJsonValue | null | undefined {
   if (type === 'LOCATION') {
     return buildOfficeLocationMetadata(
       input,
@@ -805,10 +831,10 @@ function buildOrganizationUnitMetadata(
   }
 
   if (input.metadata !== undefined) {
-    return input.metadata;
+    return normalizeJsonInputValue(input.metadata);
   }
 
-  return existingMetadata ?? null;
+  return normalizeJsonInputValue(existingMetadata ?? null);
 }
 
 export async function createTenantOrganizationUnit(
@@ -1408,10 +1434,136 @@ export async function deleteTenant(
   }
 
   const deletedAt = new Date().toISOString();
+  const disabledAt = new Date();
   const deletedSlug = `${tenant.slug}-deleted-${tenant.id.slice(0, 8)}`;
   const deletedName = `${tenant.name} (Deleted)`;
 
   await prisma.$transaction(async (tx) => {
+    const affectedMemberships = await tx.userTenantMembership.findMany({
+      where: {
+        tenantId: tenant.id
+      },
+      select: {
+        userId: true
+      }
+    });
+
+    const affectedUserIds = Array.from(
+      new Set(affectedMemberships.map((membership) => membership.userId))
+    );
+
+    await tx.userOrganizationUnitAssignment.deleteMany({
+      where: {
+        tenantId: tenant.id
+      }
+    });
+
+    await tx.userRole.deleteMany({
+      where: {
+        tenantId: tenant.id
+      }
+    });
+
+    await tx.userTenantMembership.updateMany({
+      where: {
+        tenantId: tenant.id
+      },
+      data: {
+        status: 'DISABLED',
+        isDefault: false,
+        isTenantAdmin: false,
+        disabledAt
+      }
+    });
+
+    for (const userId of affectedUserIds) {
+      const [remainingMemberships, hasPlatformRole] = await Promise.all([
+        tx.userTenantMembership.findMany({
+          where: {
+            userId,
+            status: 'ACTIVE',
+            tenantId: {
+              not: tenant.id
+            },
+            tenant: {
+              status: 'ACTIVE',
+              isActive: true
+            }
+          },
+          orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
+        }),
+        tx.userRole.findFirst({
+          where: {
+            userId,
+            tenantId: null,
+            role: {
+              isPlatformRole: true
+            }
+          },
+          select: {
+            id: true
+          }
+        })
+      ]);
+
+      if (remainingMemberships.length > 0) {
+        const defaultMembership =
+          remainingMemberships.find((membership) => membership.isDefault) ??
+          remainingMemberships[0]!;
+
+        await tx.userTenantMembership.updateMany({
+          where: {
+            userId,
+            tenantId: {
+              in: remainingMemberships.map((membership) => membership.tenantId)
+            }
+          },
+          data: {
+            isDefault: false
+          }
+        });
+
+        await tx.userTenantMembership.update({
+          where: {
+            userId_tenantId: {
+              userId,
+              tenantId: defaultMembership.tenantId
+            }
+          },
+          data: {
+            isDefault: true
+          }
+        });
+
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            tenantId: defaultMembership.tenantId,
+            isActive: true,
+            status: 'ACTIVE'
+          }
+        });
+      } else if (hasPlatformRole) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            tenantId: null,
+            isActive: true,
+            status: 'ACTIVE'
+          }
+        });
+      } else {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            tenantId: null,
+            isActive: false,
+            status: 'DISABLED'
+          }
+        });
+      }
+    }
+
     await logAdminAction({
       client: tx,
       tenantId: tenant.id,

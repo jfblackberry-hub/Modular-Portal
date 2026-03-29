@@ -754,7 +754,7 @@ test('login requires explicit tenant selection for users with multiple active te
   await app.close();
 });
 
-test('login catalog shows clinic-safe fallback persona labels when clinic users have no explicit roles', async () => {
+test('login catalog excludes clinic users when their explicit roles have been removed', async () => {
   const { user } = await provisionAuthUser({
     tenant: {
       slug: 'auth-provider-tenant',
@@ -801,15 +801,135 @@ test('login catalog shows clinic-safe fallback persona labels when clinic users 
   };
 
   const providerAudience = payload.audiences.find((audience) => audience.key === 'provider');
-  const clinicCompany = providerAudience?.companies.find(
-    (company) => company.name === 'Auth Clinic Tenant'
-  );
-  const fallbackPersona = clinicCompany?.personas.find((persona) => persona.key === 'provider');
+  const clinicUsers =
+    providerAudience?.companies.flatMap((company) =>
+      company.personas.flatMap((persona) => persona.users)
+    ) ?? [];
 
-  assert.ok(fallbackPersona);
-  assert.equal(fallbackPersona?.label, 'Clinic Team');
+  assert.equal(
+    clinicUsers.some((catalogUser) => catalogUser.email === 'clinic.user@auth.test'),
+    false
+  );
+
+  await app.close();
+});
+
+test('login catalog excludes users whose only clinic membership belongs to an inactive tenant', async () => {
+  const { tenant, user } = await provisionAuthUser({
+    tenant: {
+      slug: 'auth-provider-tenant',
+      name: 'Inactive Clinic Tenant',
+      type: 'CLINIC'
+    },
+    user: {
+      email: 'inactive.clinic.user@auth.test',
+      firstName: 'Inactive',
+      lastName: 'Clinic',
+      roleCode: 'clinic_manager',
+      roleName: 'Clinic Manager',
+      permissions: ['provider.view', 'tenant.view']
+    }
+  });
+
+  await prisma.tenant.update({
+    where: { id: tenant.id },
+    data: {
+      status: 'INACTIVE',
+      isActive: false
+    }
+  });
+
+  const app = Fastify();
+  await authRoutes(app);
+
+  const response = await app.inject({
+    method: 'GET',
+    url: '/auth/login/catalog'
+  });
+
+  assert.equal(response.statusCode, 200, response.body);
+  const payload = response.json() as {
+    audiences: Array<{
+      key: string;
+      companies: Array<{
+        name: string;
+        personas: Array<{
+          key: string;
+          users: Array<{ email: string }>;
+        }>;
+      }>;
+    }>;
+  };
+
+  const clinicAudience = payload.audiences.find((audience) => audience.key === 'provider');
+  const inactiveCompany = clinicAudience?.companies.find(
+    (company) => company.name === 'Inactive Clinic Tenant'
+  );
+
+  assert.equal(inactiveCompany, undefined);
   assert.ok(
-    fallbackPersona?.users.some((catalogUser) => catalogUser.email === 'clinic.user@auth.test')
+    clinicAudience?.companies.every((company) =>
+      company.personas.every((persona) =>
+        persona.users.every((catalogUser) => catalogUser.email !== user.email)
+      )
+    )
+  );
+
+  await app.close();
+});
+
+test('login catalog excludes clinic users with no tenant-scoped role access', async () => {
+  const { user } = await provisionAuthUser({
+    tenant: {
+      slug: 'auth-provider-tenant',
+      name: 'Auth Clinic Without Roles',
+      type: 'CLINIC'
+    },
+    user: {
+      email: 'norole@auth.test',
+      firstName: 'No',
+      lastName: 'Role',
+      roleCode: 'clinic_manager',
+      roleName: 'Clinic Manager',
+      permissions: ['provider.view', 'tenant.view']
+    }
+  });
+
+  await prisma.userRole.deleteMany({
+    where: {
+      userId: user.id
+    }
+  });
+
+  const app = Fastify();
+  await authRoutes(app);
+
+  const response = await app.inject({
+    method: 'GET',
+    url: '/auth/login/catalog'
+  });
+
+  assert.equal(response.statusCode, 200, response.body);
+  const payload = response.json() as {
+    audiences: Array<{
+      key: string;
+      companies: Array<{
+        personas: Array<{
+          users: Array<{ email: string }>;
+        }>;
+      }>;
+    }>;
+  };
+
+  const clinicAudience = payload.audiences.find((audience) => audience.key === 'provider');
+  const clinicUsers =
+    clinicAudience?.companies.flatMap((company) =>
+      company.personas.flatMap((persona) => persona.users)
+    ) ?? [];
+
+  assert.equal(
+    clinicUsers.some((catalogUser) => catalogUser.email === 'norole@auth.test'),
+    false
   );
 
   await app.close();

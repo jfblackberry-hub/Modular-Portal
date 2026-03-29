@@ -780,7 +780,7 @@ const medicalConfig: ProviderPortalConfig = {
     ]
   },
   supportModule: {
-    title: 'Provider Support and Training Center',
+    title: 'Clinic Support and Training Center',
     description:
       'Access support channels, operational guidance, and training resources for office workflows.',
     categories: [
@@ -795,7 +795,7 @@ const medicalConfig: ProviderPortalConfig = {
       {
         id: 'contact-support',
         title: 'Contact Support',
-        description: 'Connect with provider support for operational assistance.',
+        description: 'Connect with clinic support for operational assistance.',
         href: '/provider/support/contact'
       },
       {
@@ -807,7 +807,7 @@ const medicalConfig: ProviderPortalConfig = {
       {
         id: 'training-resources',
         title: 'Training Resources',
-        description: 'Browse role-based training for provider workflows.',
+        description: 'Browse role-based training for clinic workflows.',
         href: '/provider/documents'
       },
       {

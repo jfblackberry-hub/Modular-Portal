@@ -113,11 +113,11 @@ export const manifest: PluginManifest = {
   capabilities: [
     {
       id: PROVIDER_OPERATIONS_CAPABILITY_ID,
-      label: 'Provider Operations',
+      label: 'Clinic Operations',
       description:
-        'Single deterministic Provider Operations capability for the initial Provider Experience POC. Widget-level persona gates control behavior and visibility while tenant-scoped capability enablement stays centralized. No AI Copilot capability, no AI Copilot experience, and no agentic workflow dependency is part of this POC path.',
+        'Single deterministic Clinic Operations capability for the initial clinic experience POC. Widget-level persona gates control behavior and visibility while tenant-scoped capability enablement stays centralized. No AI Copilot capability, no AI Copilot experience, and no agentic workflow dependency is part of this POC path.',
       moduleKeys: ['provider_operations'],
-      sectionTitle: 'Provider Operations',
+      sectionTitle: 'Clinic Operations',
       currentScopeExclusions: [...PROVIDER_POC_SCOPE_EXCLUSIONS],
       futureExtensionPoints: [...PROVIDER_POC_FUTURE_EXTENSION_POINTS],
       routes: [
@@ -147,13 +147,13 @@ export const manifest: PluginManifest = {
       id: PROVIDER_REPORTING_CAPABILITY_ID,
       label: 'Reporting',
       description:
-        'Centralized clinic administration reporting workspace for historical operational and business performance across the ABA provider organization.',
+        'Centralized clinic administration reporting workspace for historical operational and business performance across the ABA clinic organization.',
       moduleKeys: ['provider_operations'],
-      sectionTitle: 'Provider Operations',
+      sectionTitle: 'Clinic Operations',
       currentScopeExclusions: [...PROVIDER_POC_SCOPE_EXCLUSIONS],
       futureExtensionPoints: [
-        'scheduled exports can be added later without changing the provider tenant model',
-        'saved report views and provider analytics automations can be added later as optional reporting enhancements'
+        'scheduled exports can be added later without changing the clinic tenant model',
+        'saved report views and clinic analytics automations can be added later as optional reporting enhancements'
       ],
       routes: [{ path: '/provider/reporting', label: 'Reporting' }],
       navigation: []

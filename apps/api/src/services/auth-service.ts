@@ -293,9 +293,7 @@ function getTenantDisplayName(
 type UserWithRelations = NonNullable<Awaited<ReturnType<typeof getUserWithRelationsByEmail>>>;
 
 function getDefaultMembership(user: UserWithRelations) {
-  const activeMemberships = user.memberships.filter(
-    (membership) => membership.status === 'ACTIVE'
-  );
+  const activeMemberships = getActiveMemberships(user);
 
   return (
     activeMemberships.find((membership) => membership.isDefault) ??
@@ -305,7 +303,12 @@ function getDefaultMembership(user: UserWithRelations) {
 }
 
 function getActiveMemberships(user: UserWithRelations) {
-  return user.memberships.filter((membership) => membership.status === 'ACTIVE');
+  return user.memberships.filter(
+    (membership) =>
+      membership.status === 'ACTIVE' &&
+      membership.tenant.status === 'ACTIVE' &&
+      membership.tenant.isActive
+  );
 }
 
 function getAvailableTenantSelections(user: UserWithRelations): SessionTenantSelection[] {
@@ -345,7 +348,11 @@ function getEffectiveTenant(
       return matchingMembership.tenant;
     }
 
-    if (user.tenant?.id === normalizedRequestedTenantId) {
+    if (
+      user.tenant?.id === normalizedRequestedTenantId &&
+      user.tenant.status === 'ACTIVE' &&
+      user.tenant.isActive
+    ) {
       return user.tenant;
     }
 
@@ -355,7 +362,7 @@ function getEffectiveTenant(
   return (
     activeMemberships.find((membership) => membership.isDefault)?.tenant ??
     activeMemberships[0]?.tenant ??
-    user.tenant ??
+    (user.tenant?.status === 'ACTIVE' && user.tenant.isActive ? user.tenant : null) ??
     null
   );
 }
@@ -565,7 +572,7 @@ function getProviderPersonaLabel(user: UserWithRelations) {
   }
 
   if (scopedRoleCodes.includes('provider_support')) {
-    return { key: 'provider_support', label: 'Provider Support' };
+    return { key: 'provider_support', label: 'Clinic Support' };
   }
 
   if (scopedRoleCodes.includes('provider')) {
@@ -596,11 +603,12 @@ function buildAutoLoginCandidatesForUser(user: UserWithRelations): AutoLoginCand
   };
 
   const candidates: AutoLoginCandidate[] = [];
-  const isPlatformAdminUser = getScopedRoleAssignments(user).some(
+  const scopedAssignments = getScopedRoleAssignments(user);
+  const isPlatformAdminUser = scopedAssignments.some(
     ({ role }) => role.isPlatformRole || role.code === 'platform_admin'
   );
   const isTenantAdminUser =
-    getScopedRoleAssignments(user).some(({ role }) => role.code === 'tenant_admin') ||
+    scopedAssignments.some(({ role }) => role.code === 'tenant_admin') ||
     getDefaultMembership(user)?.isTenantAdmin === true;
 
   if (isPlatformAdminUser) {
@@ -640,6 +648,13 @@ function buildAutoLoginCandidatesForUser(user: UserWithRelations): AutoLoginCand
   }
 
   if (tenantTypeCode === 'PAYER' && activeTenant) {
+    const hasTenantScopedAccess =
+      scopedAssignments.some(({ tenantId }) => tenantId === activeTenant.id) || isTenantAdminUser;
+
+    if (!hasTenantScopedAccess) {
+      return candidates;
+    }
+
     const persona = getPayerPersonaLabel(user);
     candidates.push({
       audience: 'payer',
@@ -658,6 +673,13 @@ function buildAutoLoginCandidatesForUser(user: UserWithRelations): AutoLoginCand
   }
 
   if (isProviderClassTenantTypeCode(tenantTypeCode) && activeTenant) {
+    const hasTenantScopedAccess =
+      scopedAssignments.some(({ tenantId }) => tenantId === activeTenant.id) || isTenantAdminUser;
+
+    if (!hasTenantScopedAccess) {
+      return candidates;
+    }
+
     const persona = getProviderPersonaLabel(user);
     candidates.push({
       audience: 'provider',

@@ -97,7 +97,7 @@ const permissionSeeds = [
   { code: 'admin.manage', name: 'Manage Admin', description: 'Administrative configuration access.' },
   { code: 'tenant.view', name: 'View Tenants', description: 'Tenant-scoped read access.' },
   { code: 'member.view', name: 'View Member Portal', description: 'Member portal access.' },
-  { code: 'provider.view', name: 'View Provider Portal', description: 'Provider portal access.' },
+  { code: 'provider.view', name: 'View Clinic Portal', description: 'Clinic portal access.' },
   { code: 'user.manage', name: 'Manage Users', description: 'Manage user identities and roles.' },
   { code: 'billing_enrollment.view', name: 'View Billing and Enrollment', description: 'View E&B data.' },
   { code: 'billing_enrollment.manage', name: 'Manage Billing and Enrollment', description: 'Manage E&B operations.' }
