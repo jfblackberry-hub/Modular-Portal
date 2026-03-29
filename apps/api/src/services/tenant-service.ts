@@ -576,6 +576,10 @@ export async function listTenants() {
 
   return tenants
     .filter((tenant) => {
+      if (tenant.status === 'INACTIVE' || tenant.isActive === false) {
+        return false;
+      }
+
       const brandingConfig = isRecord(tenant.brandingConfig)
         ? tenant.brandingConfig
         : {};
@@ -583,7 +587,10 @@ export async function listTenants() {
         ? (brandingConfig.lifecycle as TenantLifecycleConfig)
         : {};
 
-      return typeof lifecycle.deletedAt !== 'string';
+      return (
+        typeof lifecycle.deletedAt !== 'string' &&
+        typeof lifecycle.archivedAt !== 'string'
+      );
     })
     .map(mapTenant);
 }

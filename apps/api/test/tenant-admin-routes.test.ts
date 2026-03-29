@@ -540,6 +540,44 @@ test('tenant admin can create a tenant user with an initial role assignment', as
   await app.close();
 });
 
+test('tenant admin cannot create a tenant user without selecting an initial role', async () => {
+  const { tenant, adminUser } = await createFixtureData();
+  const app = Fastify();
+  await tenantAdminRoutes(app);
+  const adminToken = createTenantAdminToken(adminUser, tenant.id);
+
+  const createResponse = await app.inject({
+    method: 'POST',
+    url: '/api/tenant-admin/users',
+    headers: {
+      authorization: `Bearer ${adminToken}`
+    },
+    payload: {
+      email: TEST_CREATED_TENANT_USER_EMAIL,
+      firstName: 'New',
+      lastName: 'Clinic User',
+      password: 'demo12345',
+      status: 'ACTIVE'
+    }
+  });
+
+  assert.equal(createResponse.statusCode, 400, createResponse.body);
+  assert.match(
+    createResponse.body,
+    /Role selection is required when creating a user\./
+  );
+
+  const createdUser = await prisma.user.findUnique({
+    where: {
+      email: TEST_CREATED_TENANT_USER_EMAIL
+    }
+  });
+
+  assert.equal(createdUser, null);
+
+  await app.close();
+});
+
 test('tenant admin routes enforce admin permission and tenant scoping', async () => {
   const {
     tenant,

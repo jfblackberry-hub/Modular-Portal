@@ -253,6 +253,10 @@ function UserListPageContent({
     setError('');
 
     try {
+      if (drawerMode === 'create' && !selectedRoleId) {
+        throw new Error('Select a role before creating a user.');
+      }
+
       const basePath =
         scope === 'platform'
           ? `${apiBaseUrl}/platform-admin/users`

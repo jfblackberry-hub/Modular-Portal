@@ -375,6 +375,45 @@ test('platform admins can create a tenant-scoped user with an initial tenant rol
   await app.close();
 });
 
+test('platform admins cannot create a user without selecting an initial role', async () => {
+  const { tenant, platformAdminUser } = await createFixtureData();
+  const app = Fastify();
+  await roleRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+
+  const createResponse = await app.inject({
+    method: 'POST',
+    url: '/platform-admin/users',
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      tenantId: tenant.id,
+      email: TEST_CREATED_PLATFORM_TENANT_USER_EMAIL,
+      firstName: 'Taylor',
+      lastName: 'Scoped',
+      password: 'demo12345',
+      status: 'ACTIVE'
+    }
+  });
+
+  assert.equal(createResponse.statusCode, 400, createResponse.body);
+  assert.match(
+    createResponse.body,
+    /Role selection is required when creating a user\./
+  );
+
+  const createdUser = await prisma.user.findUnique({
+    where: {
+      email: TEST_CREATED_PLATFORM_TENANT_USER_EMAIL
+    }
+  });
+
+  assert.equal(createdUser, null);
+
+  await app.close();
+});
+
 test('platform admins can archive inactive tenants and then delete them', async () => {
   const { tenant, platformAdminUser, tenantAdminUser, tenantAdminRole } =
     await createFixtureData();
@@ -554,6 +593,20 @@ test('platform-admin active tenant datasets exclude deleted tenants', async () =
   });
 
   assert.equal(deleteResponse.statusCode, 200, deleteResponse.body);
+
+  const tenantListResponse = await app.inject({
+    method: 'GET',
+    url: '/platform-admin/tenants',
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    }
+  });
+
+  assert.equal(tenantListResponse.statusCode, 200, tenantListResponse.body);
+  assert.equal(
+    tenantListResponse.json().some((row: { id: string }) => row.id === tenant.id),
+    false
+  );
 
   const summaryResponse = await app.inject({
     method: 'GET',

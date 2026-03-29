@@ -1,4 +1,4 @@
-const DEFAULT_CLINIC_NAME = 'Riverside Health Group';
+const DEFAULT_CLINIC_NAME = 'Clinic Portal';
 const DEFAULT_CLINIC_LOGO_SRC = '/assets/logos/riverside-health-group.svg';
 const DEFAULT_PROVIDER_NAME = 'Dr. Lee';
 
@@ -45,7 +45,9 @@ export function resolveProviderClinicLogoSrc(options?: {
       'providerPracticeLogoUrl',
       'providerOrganizationLogoUrl',
       'clinicLogoUrl',
-      'practiceLogoUrl'
+      'practiceLogoUrl',
+      'logoUrl',
+      'logo'
     ]) ??
     options?.fallbackLogoSrc ??
     DEFAULT_CLINIC_LOGO_SRC
