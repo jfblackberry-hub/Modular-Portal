@@ -45,3 +45,35 @@ test('admin session handoff route consumes a self-contained signed artifact', as
   assert.equal(payload.session?.isTenantAdmin, true);
   assert.match(response.headers.get('set-cookie') ?? '', /admin_session=/);
 });
+
+test('admin session handoff route replaces unsafe redirectPath with /admin', async () => {
+  const artifact = createAdminSessionHandoffArtifact({
+    accessToken: 'admin-token',
+    session: {
+      id: 'tenant-user',
+      email: 'tenant@example.com',
+      tenantId: 'tenant-1',
+      roles: [],
+      permissions: ['tenant.view'],
+      isPlatformAdmin: false,
+      isTenantAdmin: true
+    }
+  });
+
+  const response = await POST(
+    new Request('http://localhost/api/auth/session/handoff', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        artifact,
+        redirectPath: 'https://evil.com/phish'
+      })
+    })
+  );
+
+  assert.equal(response.status, 200);
+  const payload = (await response.json()) as { redirectPath?: string };
+  assert.equal(payload.redirectPath, '/admin');
+});

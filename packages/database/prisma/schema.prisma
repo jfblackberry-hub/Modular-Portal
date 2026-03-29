@@ -198,6 +198,7 @@ model PreviewSession {
 
   @@index([adminUserId, endedAt, createdAt])
   @@index([tenantId, endedAt])
+  @@index([tenantId, targetUserId])
   @@index([targetUserId, endedAt])
   @@index([expiresAt])
   @@index([currentRouteUpdatedAt])

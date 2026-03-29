@@ -254,6 +254,7 @@ export function ConnectivityStatusPage({ scope }: { scope: Scope }) {
           }>(
             `${apiBaseUrl}/platform-admin/connectivity/status`,
             {
+              cacheContext: { scope: 'platform' },
               headers: getAdminAuthHeaders(),
               ttlMs: 20_000
             }
@@ -266,16 +267,22 @@ export function ConnectivityStatusPage({ scope }: { scope: Scope }) {
           setRows(payload.rows);
         } else {
           const health = await fetchAdminJsonCached<HealthPayload>(`${apiBaseUrl}/health`, {
-            ttlMs: 20_000
+            cacheContext: { scope: 'sessionTenant' },
+            ttlMs: 20_000,
+            resourceDiscriminator: 'tenant-connectivity-health'
           });
           const [settingsPayload, auditPayload] = await Promise.all([
             fetchAdminJsonCached<TenantSettingsPayload>(`${apiBaseUrl}/api/tenant-admin/settings`, {
+              cacheContext: { scope: 'sessionTenant' },
               headers: getAdminAuthHeaders(),
-              ttlMs: 20_000
+              ttlMs: 20_000,
+              resourceDiscriminator: 'tenant-connectivity-settings'
             }),
             fetchAdminJsonCached<AuditResponse>(`${apiBaseUrl}/audit/events?page_size=25`, {
+              cacheContext: { scope: 'sessionTenant' },
               headers: getAdminAuthHeaders(),
-              ttlMs: 20_000
+              ttlMs: 20_000,
+              resourceDiscriminator: 'tenant-connectivity-audit'
             })
           ]);
 

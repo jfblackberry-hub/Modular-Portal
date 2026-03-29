@@ -72,9 +72,10 @@ export function ApiMarketplaceDetailPage({
         const payload = await fetchAdminJsonCached<ApiCatalogEntry[]>(
           `${apiBaseUrl}/api-catalog`,
           {
+            cacheContext: { scope: 'platform' },
             headers: getAdminAuthHeaders(),
             ttlMs: 20_000,
-            cacheKey: 'api-catalog::detail'
+            resourceDiscriminator: 'api-catalog::detail'
           }
         );
 

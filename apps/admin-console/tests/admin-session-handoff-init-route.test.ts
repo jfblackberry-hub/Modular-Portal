@@ -95,3 +95,39 @@ test('handoff init accepts tenant admin session metadata when role arrays are em
   assert.equal(typeof payload.artifact, 'string');
   assert.ok(payload.artifact);
 });
+
+test('handoff init ignores unsafe redirectPath and uses session default', async () => {
+  globalThis.fetch = (async () =>
+    new Response(
+      JSON.stringify({
+        id: 'tenant-user',
+        email: 'tenant@example.com',
+        tenantId: 'tenant-1',
+        roles: ['tenant_admin'],
+        permissions: ['tenant.view']
+      }),
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json'
+        }
+      }
+    )) as typeof fetch;
+
+  const response = await POST(
+    new Request('http://localhost/api/auth/session/handoff/init', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer admin-token',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        redirectPath: '//evil.com/steal'
+      })
+    })
+  );
+
+  assert.equal(response.status, 200);
+  const payload = (await response.json()) as { redirectPath?: string };
+  assert.equal(payload.redirectPath, '/admin/tenants/tenant-1/organization');
+});

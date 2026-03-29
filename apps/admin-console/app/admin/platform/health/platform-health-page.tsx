@@ -233,6 +233,7 @@ export function PlatformHealthPage() {
         const overview = await fetchAdminJsonCached<PlatformHealthOverviewPayload>(
           `${config.apiBaseUrl}/platform-admin/health/overview`,
           {
+            cacheContext: { scope: 'platform' },
             headers: getAdminAuthHeaders(),
             ttlMs: 20_000
           }

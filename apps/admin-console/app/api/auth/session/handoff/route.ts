@@ -7,6 +7,7 @@ import {
   getAdminSessionCookieOptions
 } from '../../../../../lib/admin-session-cookie';
 import { consumePendingAdminSession } from '../../../../../lib/admin-session-handoff';
+import { sanitizeAdminPostLoginRedirect } from '../../../../../lib/safe-admin-redirect';
 
 export async function POST(request: Request) {
   const payload = (await request.json().catch(() => null)) as
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     const response = NextResponse.json(
       {
         session: pendingSession.session,
-        redirectPath: payload?.redirectPath || '/admin'
+        redirectPath: sanitizeAdminPostLoginRedirect(payload?.redirectPath)
       },
       { status: 200 }
     );

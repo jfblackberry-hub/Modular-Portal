@@ -249,12 +249,16 @@ export function TenantHealthPage() {
       try {
         const [settingsPayload, auditPayload] = await Promise.all([
           fetchAdminJsonCached<SettingsPayload>(`${config.apiBaseUrl}/api/tenant-admin/settings`, {
+            cacheContext: { scope: 'sessionTenant' },
             headers: getAdminAuthHeaders(),
-            ttlMs: 20_000
+            ttlMs: 20_000,
+            resourceDiscriminator: 'tenant-health-settings'
           }),
           fetchAdminJsonCached<AuditResponse>(`${config.apiBaseUrl}/audit/events?page_size=8`, {
+            cacheContext: { scope: 'sessionTenant' },
             headers: getAdminAuthHeaders(),
-            ttlMs: 20_000
+            ttlMs: 20_000,
+            resourceDiscriminator: 'tenant-health-audit'
           })
         ]);
 

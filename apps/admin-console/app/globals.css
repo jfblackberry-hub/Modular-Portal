@@ -451,6 +451,14 @@ textarea {
   padding: 1.5rem 1rem;
 }
 
+.admin-left-rail__nav-panel {
+  margin-top: 1rem;
+  border: 1px solid var(--admin-sidebar-border);
+  border-radius: 1rem;
+  background: var(--admin-section-bg);
+  overflow: hidden;
+}
+
 .admin-left-rail__brand,
 .admin-left-rail__context-card {
   border-radius: 1.25rem;
@@ -527,14 +535,10 @@ textarea {
 }
 
 .admin-nav {
-  margin-top: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0;
-  border-radius: 1.25rem;
-  border: 1px solid var(--admin-sidebar-border);
-  background: var(--admin-section-bg);
-  padding: 0.5rem;
+  padding: 0;
 }
 
 .admin-nav__section {
@@ -664,6 +668,11 @@ textarea {
   transition: transform 160ms ease, color 160ms ease;
 }
 
+.admin-nav__item-spacer {
+  width: 16px;
+  flex-shrink: 0;
+}
+
 .admin-nav__item-icon--open {
   transform: rotate(90deg);
 }
@@ -738,7 +747,9 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  margin-top: 0.35rem;
+  margin: 0.35rem 0 0 1rem;
+  padding-left: 0.8rem;
+  border-left: 1px solid rgba(148, 163, 184, 0.22);
 }
 
 .admin-nav__chevron {
@@ -1590,6 +1601,35 @@ textarea {
   box-shadow: none;
 }
 
+.admin-control-plane .admin-left-rail__inner {
+  padding: 1.25rem 1rem 1rem;
+}
+
+.admin-control-plane .admin-left-rail__brand,
+.admin-control-plane .admin-left-rail__context-card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.admin-control-plane .admin-left-rail__brand {
+  padding: 0 0 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-control-plane .admin-left-rail__context-card {
+  margin-top: 0;
+  padding: 0.85rem 0 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-control-plane .admin-left-rail__nav-panel {
+  margin-top: 1rem;
+  border-color: #e5e7eb;
+  background: #ffffff;
+}
+
 .admin-control-plane .admin-content-router__context-pill--link:hover,
 .admin-control-plane .admin-nav__section-header:hover,
 .admin-control-plane .admin-nav__group-toggle:hover,
@@ -1769,8 +1809,6 @@ textarea {
 .admin-control-plane .admin-info-state,
 .admin-control-plane .admin-error-state,
 .admin-control-plane .admin-action-workspace,
-.admin-control-plane .admin-left-rail__brand,
-.admin-control-plane .admin-left-rail__context-card,
 .admin-control-plane .admin-top-header__profile-card,
 .admin-control-plane .admin-content-router__context,
 .admin-control-plane .admin-nav__section,
@@ -1866,10 +1904,17 @@ textarea {
 }
 
 .admin-control-plane .admin-nav__section {
-  padding: 0.5rem;
+  padding: 0.8rem 0.8rem 0.9rem;
+  background: transparent;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.admin-control-plane .admin-nav__section:last-child {
+  border-bottom: 0;
 }
 
 .admin-control-plane .admin-nav__section-header {
+  padding: 0 0 0.45rem;
   color: #9ca3af;
 }
 
@@ -1884,6 +1929,12 @@ textarea {
 
 .admin-control-plane .admin-nav__item-description {
   color: #9ca3af;
+}
+
+.admin-control-plane .admin-nav__children {
+  margin-left: 1rem;
+  padding-left: 0.8rem;
+  border-left-color: #e5e7eb;
 }
 
 .admin-control-plane .admin-nav__group-toggle:hover,

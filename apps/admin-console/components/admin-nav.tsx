@@ -62,10 +62,7 @@ function AdminNavItemNode({
         style={{ '--admin-nav-depth': depth } as CSSProperties}
       >
         <span className="admin-nav__item-line" />
-        <ChevronRight
-          size={16}
-          className={`admin-nav__item-icon ${active ? 'admin-nav__item-icon--active' : ''}`}
-        />
+        <span className="admin-nav__item-spacer" aria-hidden="true" />
         <span className="admin-nav__item-copy">
           <span className="admin-nav__item-label">{item.label}</span>
           {item.description ? (
@@ -130,12 +127,12 @@ export function AdminNav({ menu }: { menu: AdminMenuConfig }) {
             <button
               type="button"
               onClick={() =>
-                setExpanded((current) => ({
+            setExpanded((current) => ({
                   ...current,
                   [section.key]: !(current[section.key] ?? true)
                 }))
               }
-                className="admin-nav__section-header"
+              className="admin-nav__section-header"
               aria-expanded={expanded[section.key] ?? true}
             >
               <span className="admin-nav__section-heading">

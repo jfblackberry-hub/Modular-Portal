@@ -102,9 +102,10 @@ export function AdminTenantContextProvider({
         const payload = await fetchAdminJsonCached<SelectedTenant>(
           `${config.apiBaseUrl}/platform-admin/tenants/${selectedTenantId}`,
           {
+            cacheContext: { scope: 'tenant', tenantId: selectedTenantId },
             headers: getAdminAuthHeaders(),
             ttlMs: 10_000,
-            cacheKey: `admin-selected-tenant::${selectedTenantId}`
+            resourceDiscriminator: 'admin-selected-tenant'
           }
         );
 

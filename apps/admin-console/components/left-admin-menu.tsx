@@ -60,7 +60,9 @@ export function LeftAdminMenu({ session }: LeftAdminMenuProps) {
           </div>
         ) : null}
 
-        <AdminNav menu={menu} />
+        <div className="admin-left-rail__nav-panel">
+          <AdminNav menu={menu} />
+        </div>
       </div>
     </aside>
   );

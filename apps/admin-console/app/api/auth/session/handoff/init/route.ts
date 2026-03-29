@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { createAdminSessionFromAuthUser } from '../../../../../../lib/admin-session';
 import { storePendingAdminSession } from '../../../../../../lib/admin-session-handoff';
+import { sanitizeAdminPostLoginRedirect } from '../../../../../../lib/safe-admin-redirect';
 import { config } from '../../../../../../lib/server-runtime';
 
 type AuthMePayload = {
@@ -80,16 +81,18 @@ export async function POST(request: Request) {
       session: adminSession
     });
 
+    const sessionDefault = adminSession.isPlatformAdmin
+      ? '/admin/overview/health'
+      : adminSession.tenantId
+        ? `/admin/tenants/${adminSession.tenantId}/organization`
+        : '/admin';
+
     return NextResponse.json(
       {
         artifact,
-        redirectPath:
-          body?.redirectPath ||
-          (adminSession.isPlatformAdmin
-            ? '/admin/overview/health'
-            : adminSession.tenantId
-              ? `/admin/tenants/${adminSession.tenantId}/organization`
-              : '/admin')
+        redirectPath: sanitizeAdminPostLoginRedirect(body?.redirectPath, {
+          fallback: sessionDefault
+        })
       },
       { status: 200 }
     );

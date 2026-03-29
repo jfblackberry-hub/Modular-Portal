@@ -113,9 +113,10 @@ export function ApiCatalogPage() {
       const payload = await fetchAdminJsonCached<ApiCatalogEntry[]>(
         `${apiBaseUrl}/api-catalog${buildCategoryQuery(filters.category)}`,
         {
+          cacheContext: { scope: 'platform' },
           headers: getAdminAuthHeaders(),
           ttlMs: 20_000,
-          cacheKey: `api-catalog::${filters.category}`
+          resourceDiscriminator: `api-catalog::${filters.category}`
         }
       );
 

@@ -143,10 +143,12 @@ function buildSessionRecord(session: {
 function getPersonaCandidatesForTenant(
   users: Array<{
     id: string;
+    tenantId: string | null;
     firstName: string;
     lastName: string;
     email: string;
     roles: Array<{
+      tenantId: string | null;
       role: {
         code: string;
       };
@@ -160,7 +162,14 @@ function getPersonaCandidatesForTenant(
   const candidates: PersonaCandidate[] = [];
 
   for (const user of users) {
-    const roleCodes = user.roles.map(({ role }) => role.code);
+    if (user.tenantId !== tenantId) {
+      continue;
+    }
+
+    const tenantScopedRoles = user.roles.filter(
+      (assignment) => assignment.tenantId === tenantId || assignment.tenantId === null
+    );
+    const roleCodes = tenantScopedRoles.map(({ role }) => role.code);
     if (!user.memberships.some((membership) => membership.tenantId === tenantId)) {
       continue;
     }
@@ -320,14 +329,20 @@ export async function listPreviewSessionCatalog() {
       where: {
         isActive: true
       },
-      include: {
+      select: {
+        id: true,
+        tenantId: true,
+        firstName: true,
+        lastName: true,
+        email: true,
         memberships: {
           select: {
             tenantId: true
           }
         },
         roles: {
-          include: {
+          select: {
+            tenantId: true,
             role: {
               select: {
                 code: true
@@ -406,6 +421,7 @@ export async function createPreviewSession(
   const candidateUsers = await prisma.user.findMany({
     where: {
       isActive: true,
+      tenantId: input.tenantId,
       memberships: {
         some: {
           tenantId: input.tenantId
@@ -417,7 +433,8 @@ export async function createPreviewSession(
             code: {
               in: portalRoleCodes[input.portalType]
             }
-          }
+          },
+          OR: [{ tenantId: input.tenantId }, { tenantId: null }]
         }
       }
     },
@@ -449,10 +466,18 @@ export async function createPreviewSession(
   });
 
   const matchingUser = candidateUsers.find((user) =>
-    user.roles.some(({ role }) => role.code === input.persona)
+    user.roles.some(
+      ({ role, tenantId: roleTenantId }) =>
+        role.code === input.persona &&
+        (roleTenantId === input.tenantId || roleTenantId === null)
+    )
   );
 
-  if (!matchingUser || !matchingUser.tenant) {
+  if (
+    !matchingUser ||
+    !matchingUser.tenant ||
+    matchingUser.tenantId !== input.tenantId
+  ) {
     throw new Error('No active user is available for that tenant persona.');
   }
 
@@ -527,13 +552,19 @@ export async function duplicatePreviewSession(
   sessionId: string,
   context: AuditContext
 ) {
+  const now = new Date();
   const session = await prisma.previewSession.findFirst({
     where: {
-      id: sessionId
+      id: sessionId,
+      adminUserId: context.actorUserId,
+      endedAt: null,
+      expiresAt: {
+        gt: now
+      }
     }
   });
 
-  if (!session || session.endedAt) {
+  if (!session) {
     throw new Error('Preview session not found');
   }
 
@@ -555,7 +586,8 @@ export async function endPreviewSession(
 ) {
   const session = await prisma.previewSession.findFirst({
     where: {
-      id: sessionId
+      id: sessionId,
+      adminUserId: context.actorUserId
     }
   });
 
@@ -566,7 +598,8 @@ export async function endPreviewSession(
   const result = await prisma.previewSession.updateMany({
     where: {
       id: sessionId,
-      tenantId: session.tenantId
+      tenantId: session.tenantId,
+      adminUserId: context.actorUserId
     },
     data: {
       endedAt: new Date()
@@ -641,10 +674,21 @@ export async function resolvePreviewLaunch(launchToken: string) {
     throw new Error('Preview session target user is missing an active tenant.');
   }
 
+  if (
+    session.targetUser.tenantId !== session.tenantId ||
+    session.targetUser.tenant.id !== session.tenantId
+  ) {
+    throw new Error('Preview session tenant alignment is invalid.');
+  }
+
   await prisma.previewSession.updateMany({
     where: {
       id: session.id,
-      tenantId: session.tenantId
+      tenantId: session.tenantId,
+      endedAt: null,
+      expiresAt: {
+        gt: new Date()
+      }
     },
     data: {
       lastAccessedAt: new Date()
@@ -667,7 +711,7 @@ export async function resolvePreviewLaunch(launchToken: string) {
   const accessToken = createAccessToken({
     userId: session.targetUser.id,
     email: session.targetUser.email,
-    tenantId: session.targetUser.tenant.id,
+    tenantId: session.tenantId,
     sessionType: 'end_user',
     previewSessionId: session.id,
     previewMode: session.mode
@@ -744,12 +788,18 @@ export async function getPreviewSessionStateForAdmin(
 export async function getPreviewSessionStateForCurrentUser(input: {
   previewSessionId: string;
   userId: string;
+  tenantId: string;
 }) {
+  const now = new Date();
   const session = await prisma.previewSession.findFirst({
     where: {
       id: input.previewSessionId,
       targetUserId: input.userId,
-      endedAt: null
+      tenantId: input.tenantId,
+      endedAt: null,
+      expiresAt: {
+        gt: now
+      }
     },
     select: {
       id: true,
@@ -800,9 +850,16 @@ export async function recordPreviewSessionEvent(input: {
   ipAddress?: string;
   userAgent?: string;
 }) {
+  const now = new Date();
   const session = await prisma.previewSession.findFirst({
     where: {
-      id: input.previewSessionId
+      id: input.previewSessionId,
+      tenantId: input.tenantId,
+      targetUserId: input.actorUserId,
+      endedAt: null,
+      expiresAt: {
+        gt: now
+      }
     },
     select: {
       id: true,
@@ -832,7 +889,12 @@ export async function recordPreviewSessionEvent(input: {
   const updated = await prisma.previewSession.updateMany({
     where: {
       id: input.previewSessionId,
-      tenantId: input.tenantId
+      tenantId: input.tenantId,
+      targetUserId: input.actorUserId,
+      endedAt: null,
+      expiresAt: {
+        gt: now
+      }
     },
     data: {
       currentRoute: normalizedRoute,

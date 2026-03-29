@@ -52,15 +52,7 @@ export function getAdminAuthHeaders() {
   return {} as Record<string, string>;
 }
 
-export function getTenantScopedAdminAuthHeaders(tenantId?: string | null) {
-  const headers = getAdminAuthHeaders();
-  const normalizedTenantId = tenantId?.trim();
-
-  if (normalizedTenantId) {
-    headers['x-tenant-id'] = normalizedTenantId;
-    return headers;
-  }
-
+export function resolveTenantIdFromAdminSession(): string | null {
   const session = getStoredAdminSessionSnapshot() as
     | {
         tenantId?: string;
@@ -70,9 +62,21 @@ export function getTenantScopedAdminAuthHeaders(tenantId?: string | null) {
       }
     | null;
   const sessionTenantId =
-    session?.tenantId?.trim() ||
-    session?.user?.tenantId?.trim() ||
-    '';
+    session?.tenantId?.trim() || session?.user?.tenantId?.trim() || '';
+
+  return sessionTenantId || null;
+}
+
+export function getTenantScopedAdminAuthHeaders(tenantId?: string | null) {
+  const headers = getAdminAuthHeaders();
+  const normalizedTenantId = tenantId?.trim();
+
+  if (normalizedTenantId) {
+    headers['x-tenant-id'] = normalizedTenantId;
+    return headers;
+  }
+
+  const sessionTenantId = resolveTenantIdFromAdminSession();
 
   if (sessionTenantId) {
     headers['x-tenant-id'] = sessionTenantId;

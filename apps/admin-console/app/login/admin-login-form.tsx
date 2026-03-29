@@ -7,6 +7,11 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { useAdminSession } from '../../components/admin-session-provider';
 import type { AdminSession } from '../../lib/admin-session';
 import { clearAdminSession } from '../../lib/api-auth';
+import {
+  parseSafeAdminPostLoginRedirect,
+  sanitizeAdminPostLoginRedirect,
+  sanitizeSameOriginRelativeRedirect
+} from '../../lib/safe-admin-redirect';
 
 async function establishPortalHandoffSession(input: {
   artifact: string;
@@ -30,11 +35,15 @@ async function establishPortalHandoffSession(input: {
       }
     | null;
 
-  if (!response.ok || !payload?.redirectPath) {
+  if (!response.ok || !payload) {
     throw new Error(payload?.message ?? 'Portal handoff failed.');
   }
 
-  return payload.redirectPath;
+  return sanitizeSameOriginRelativeRedirect(
+    payload.redirectPath,
+    input.handoffUrl,
+    '/dashboard'
+  );
 }
 
 async function establishAdminHandoffSession(input: {
@@ -87,7 +96,9 @@ function AdminLoginFormContent() {
 
   useEffect(() => {
     const artifact = searchParams.get('artifact')?.trim();
-    const redirectPath = searchParams.get('redirectPath')?.trim() || undefined;
+    const redirectPathFromQuery = parseSafeAdminPostLoginRedirect(
+      searchParams.get('redirectPath')
+    );
 
     if (!artifact || handoffHandledRef.current) {
       return;
@@ -100,11 +111,15 @@ function AdminLoginFormContent() {
     void establishAdminHandoffSession({
       artifact,
       handoffPath: '/api/auth/session/handoff',
-      redirectPath
+      redirectPath: redirectPathFromQuery
     })
       .then((handoffPayload) => {
         applySession(handoffPayload.session);
-        window.location.assign(handoffPayload.redirectPath ?? redirectPath ?? '/admin');
+        window.location.assign(
+          sanitizeAdminPostLoginRedirect(
+            handoffPayload.redirectPath ?? redirectPathFromQuery
+          )
+        );
       })
       .catch((nextError) => {
         setError(
@@ -172,13 +187,17 @@ function AdminLoginFormContent() {
           artifact: payload.artifact,
           handoffUrl: payload.handoffUrl
         });
-        window.location.assign(new URL(redirectPath, payload.handoffUrl).toString());
+        window.location.assign(
+          new URL(redirectPath, payload.handoffUrl).toString()
+        );
         return;
       }
 
       if (payload.directSession && payload.session) {
         applySession(payload.session);
-        window.location.assign(payload.redirectPath ?? '/admin');
+        window.location.assign(
+          sanitizeAdminPostLoginRedirect(payload.redirectPath)
+        );
         return;
       }
 
@@ -190,11 +209,15 @@ function AdminLoginFormContent() {
       const handoffPayload = await establishAdminHandoffSession({
         artifact: payload.artifact,
         handoffPath: payload.handoffPath,
-        redirectPath: payload.redirectPath
+        redirectPath: parseSafeAdminPostLoginRedirect(payload.redirectPath)
       });
       applySession(handoffPayload.session);
 
-      window.location.assign(handoffPayload.redirectPath ?? payload.redirectPath ?? '/admin');
+      window.location.assign(
+        sanitizeAdminPostLoginRedirect(
+          handoffPayload.redirectPath ?? payload.redirectPath
+        )
+      );
     } catch (nextError) {
       setError(
         nextError instanceof Error

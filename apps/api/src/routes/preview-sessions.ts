@@ -288,7 +288,8 @@ export async function previewSessionRoutes(app: FastifyInstance) {
 
       return await getPreviewSessionStateForCurrentUser({
         previewSessionId: currentUser.previewSessionId,
-        userId: currentUser.id
+        userId: currentUser.id,
+        tenantId: currentUser.tenantId
       });
     } catch (error) {
       return handleRouteError(error, reply);
@@ -301,6 +302,10 @@ export async function previewSessionRoutes(app: FastifyInstance) {
       try {
         const currentUser = await getCurrentUserFromHeaders(request.headers);
         const tokenPayload = getPreviewTokenPayload(request.headers.authorization);
+
+        if (tokenPayload.sub !== currentUser.id) {
+          throw new AuthenticationError('Access token subject mismatch.');
+        }
 
         await recordPreviewSessionEvent({
           previewSessionId: tokenPayload.previewSessionId!,

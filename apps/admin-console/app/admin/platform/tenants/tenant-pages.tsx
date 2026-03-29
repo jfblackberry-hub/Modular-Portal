@@ -202,6 +202,7 @@ async function fetchTenantSettings(tenantId: string) {
   return fetchAdminJsonCached<SettingsPayload>(
     `${config.apiBaseUrl}/api/tenant-admin/settings?tenant_id=${tenantId}`,
     {
+      cacheContext: { scope: 'tenant', tenantId },
       headers: getAdminAuthHeaders(),
       ttlMs: 20_000
     }
@@ -212,6 +213,7 @@ async function fetchTenantAuditEvents(tenantId: string, pageSize = 8) {
   const payload = await fetchAdminJsonCached<AuditResponse>(
     `${config.apiBaseUrl}/platform-admin/audit/events?tenant_id=${tenantId}&page_size=${pageSize}`,
     {
+      cacheContext: { scope: 'tenant', tenantId },
       headers: getAdminAuthHeaders(),
       ttlMs: 20_000
     }
@@ -227,6 +229,7 @@ async function fetchTenantEnrichment(tenantId: string) {
     fetchAdminJsonCached<OrganizationUnit[]>(
       `${config.apiBaseUrl}/platform-admin/tenants/${tenantId}/organization-units`,
       {
+        cacheContext: { scope: 'tenant', tenantId },
         headers: getAdminAuthHeaders(),
         ttlMs: 20_000
       }
@@ -338,6 +341,7 @@ export function TenantListPage() {
         const summaries = await fetchAdminJsonCached<TenantListRow[]>(
           `${config.apiBaseUrl}/platform-admin/tenant-summaries`,
           {
+            cacheContext: { scope: 'platform' },
             headers: getAdminAuthHeaders(),
             ttlMs: 20_000
           }
@@ -487,6 +491,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   async function loadDetailState() {
     const [tenantPayload, enrichment] = await Promise.all([
       fetchAdminJsonCached<Tenant>(`${config.apiBaseUrl}/platform-admin/tenants/${tenantId}`, {
+        cacheContext: { scope: 'tenant', tenantId },
         headers: getAdminAuthHeaders(),
         ttlMs: 20_000
       }),
@@ -507,6 +512,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
       try {
         const [tenantPayload, enrichment] = await Promise.all([
           fetchAdminJsonCached<Tenant>(`${config.apiBaseUrl}/platform-admin/tenants/${tenantId}`, {
+            cacheContext: { scope: 'tenant', tenantId },
             headers: getAdminAuthHeaders(),
             ttlMs: 20_000
           }),

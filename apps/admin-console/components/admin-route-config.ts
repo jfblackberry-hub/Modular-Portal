@@ -47,7 +47,72 @@ type AdminMenuOptions = {
   } | null;
 };
 
-function buildPlatformSections(): AdminMenuSection[] {
+function buildSelectedTenantWorkspaceItem(selectedTenant: { id: string; name: string }): AdminMenuItem {
+  const base = `/admin/tenants/${selectedTenant.id}`;
+
+  return {
+    key: 'selected-tenant-workspace',
+    label: selectedTenant.name,
+    href: `${base}/organization`,
+    description: 'Current tenant workspace and administration tools.',
+    children: [
+      {
+        key: 'organization-structure',
+        label: 'Organization Structure',
+        href: `${base}/organization`,
+        description: 'Tenant hierarchy and organization units.'
+      },
+      {
+        key: 'tenant-configuration',
+        label: 'Configuration & Branding',
+        href: `${base}/configuration`,
+        description: 'Logos, CSS, notifications, and tenant settings.'
+      },
+      {
+        key: 'limits-usage',
+        label: 'Limits & Usage',
+        href: `${base}/limits`,
+        description: 'Limits, quotas, licensing, and usage.'
+      },
+      {
+        key: 'experiences',
+        label: 'Experiences',
+        href: `${base}/experiences`,
+        description: 'Experience builder and composition.'
+      },
+      {
+        key: 'capabilities',
+        label: 'Capabilities',
+        href: `${base}/capabilities`,
+        description: 'Tenant capability configuration.'
+      },
+      {
+        key: 'users-personas',
+        label: 'Users & Personas',
+        href: `${base}/users`,
+        description: 'Tenant users, admins, and personas.'
+      },
+      {
+        key: 'data-integrations',
+        label: 'Data & Integrations',
+        href: `${base}/data`,
+        description: 'Tenant data sources and integrations.'
+      }
+    ]
+  };
+}
+
+function buildPlatformSections(selectedTenant?: { id: string; name: string } | null): AdminMenuSection[] {
+  const tenantItems: AdminMenuItem[] = [
+    { key: 'tenant-directory', label: 'Tenant Directory', href: '/admin/tenants', description: 'Browse and select tenants.' },
+    { key: 'create-tenant', label: 'Create Tenant', href: '/admin/tenants/create', description: 'Create a tenant from a template.' },
+    { key: 'tenant-types', label: 'Tenant Types', href: '/admin/tenants/types', description: 'Manage tenant templates and type defaults.' }
+  ];
+
+  if (selectedTenant?.id) {
+    tenantItems.push(buildSelectedTenantWorkspaceItem(selectedTenant));
+  }
+
   return [
     {
       key: 'overview',
@@ -63,11 +128,7 @@ function buildPlatformSections(): AdminMenuSection[] {
       key: 'tenants',
       label: 'Tenants',
       icon: 'tenants',
-      items: [
-        { key: 'tenant-directory', label: 'Tenant Directory', href: '/admin/tenants', description: 'Browse and select tenants.' },
-        { key: 'create-tenant', label: 'Create Tenant', href: '/admin/tenants/create', description: 'Create a tenant from a template.' },
-        { key: 'tenant-types', label: 'Tenant Types', href: '/admin/tenants/types', description: 'Manage tenant templates and type defaults.' }
-      ]
+      items: tenantItems
     },
     {
       key: 'shared-services',
@@ -112,70 +173,46 @@ function buildTenantSection(selectedTenant: { id: string; name: string }): Admin
     icon: 'tenant',
     items: [
       {
-        key: 'tenant-foundation',
-        label: 'Foundation',
+        key: 'organization-structure',
+        label: 'Organization Structure',
         href: `${base}/organization`,
-        description: 'Core tenant structure, branding, and operational setup.',
-        children: [
-          {
-            key: 'organization-structure',
-            label: 'Organization Structure',
-            href: `${base}/organization`,
-            description: 'Tenant hierarchy and organization units.'
-          },
-          {
-            key: 'tenant-configuration',
-            label: 'Configuration & Branding',
-            href: `${base}/configuration`,
-            description: 'Logos, CSS, notifications, and tenant settings.'
-          },
-          {
-            key: 'limits-usage',
-            label: 'Limits & Usage',
-            href: `${base}/limits`,
-            description: 'Limits, quotas, licensing, and usage.'
-          }
-        ]
+        description: 'Tenant hierarchy and organization units.'
       },
       {
-        key: 'tenant-experience-group',
-        label: 'Experience',
+        key: 'tenant-configuration',
+        label: 'Configuration & Branding',
+        href: `${base}/configuration`,
+        description: 'Logos, CSS, notifications, and tenant settings.'
+      },
+      {
+        key: 'limits-usage',
+        label: 'Limits & Usage',
+        href: `${base}/limits`,
+        description: 'Limits, quotas, licensing, and usage.'
+      },
+      {
+        key: 'experiences',
+        label: 'Experiences',
         href: `${base}/experiences`,
-        description: 'Experience composition and capability rollout.',
-        children: [
-          {
-            key: 'experiences',
-            label: 'Experiences',
-            href: `${base}/experiences`,
-            description: 'Experience builder and composition.'
-          },
-          {
-            key: 'capabilities',
-            label: 'Capabilities',
-            href: `${base}/capabilities`,
-            description: 'Tenant capability configuration.'
-          }
-        ]
+        description: 'Experience builder and composition.'
       },
       {
-        key: 'tenant-operations-group',
-        label: 'Operations',
+        key: 'capabilities',
+        label: 'Capabilities',
+        href: `${base}/capabilities`,
+        description: 'Tenant capability configuration.'
+      },
+      {
+        key: 'users-personas',
+        label: 'Users & Personas',
         href: `${base}/users`,
-        description: 'People, integrations, and operational data.',
-        children: [
-          {
-            key: 'users-personas',
-            label: 'Users & Personas',
-            href: `${base}/users`,
-            description: 'Tenant users, admins, and personas.'
-          },
-          {
-            key: 'data-integrations',
-            label: 'Data & Integrations',
-            href: `${base}/data`,
-            description: 'Tenant data sources and integrations.'
-          }
-        ]
+        description: 'Tenant users, admins, and personas.'
+      },
+      {
+        key: 'data-integrations',
+        label: 'Data & Integrations',
+        href: `${base}/data`,
+        description: 'Tenant data sources and integrations.'
       }
     ]
   };
@@ -239,11 +276,9 @@ export function getAdminMenu(
   const sections: AdminMenuSection[] = [];
 
   if (session.isPlatformAdmin) {
-    sections.push(...buildPlatformSections());
-  }
-
-  if (selectedTenant?.id) {
-    sections.splice(session.isPlatformAdmin ? 2 : 0, 0, buildTenantSection(selectedTenant));
+    sections.push(...buildPlatformSections(selectedTenant));
+  } else if (selectedTenant?.id) {
+    sections.push(buildTenantSection(selectedTenant));
   }
 
   if (session.isPlatformAdmin && options.developerMode) {
