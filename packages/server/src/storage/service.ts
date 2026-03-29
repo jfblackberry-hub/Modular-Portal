@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { loadStorageConfig } from '@payer-portal/config';
 
@@ -7,7 +8,7 @@ import { S3StorageAdapter } from './s3StorageAdapter.js';
 import type { StorageService } from './types.js';
 
 type StorageProfile = 'backup' | 'default' | 'public-assets';
-const workspaceRootDir = path.resolve(import.meta.dirname, '../../../../');
+const workspaceRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../');
 
 function resolveRootDir(profile: StorageProfile, storageConfig: ReturnType<typeof loadStorageConfig>) {
   switch (profile) {
