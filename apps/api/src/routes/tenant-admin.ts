@@ -57,6 +57,7 @@ type AssignRoleBody = {
 };
 
 type TenantUserBody = {
+  roleId?: string | null;
   email: string;
   firstName: string;
   lastName: string;

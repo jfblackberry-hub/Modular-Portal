@@ -55,3 +55,17 @@ Validation:
 - Verified `dr.lee@northstarmedical.local` authenticates through the portal and loads `/provider/dashboard`
 - Ran `pnpm --filter @payer-portal/database db:validate:provider-tenant`
 - Ran `pnpm --filter api exec node --test --import tsx test/platform-admin-routes.test.ts`
+
+## [2026-03-29 03:41]
+Branch: clinic-tenant-cleanup-and-fix
+Commit: audit clinic tenant admin flows and assign roles during user creation (validated: local role-on-create, focused api tests)
+
+Changes:
+- Submit selected role IDs during admin user creation so clinic users receive their role in the initial create request
+- Assign tenant-scoped roles atomically in the API and mark tenant-admin memberships during create when applicable
+- Add regression coverage for platform-admin and tenant-admin role-on-create flows
+- Update safe admin-console clinic-facing labels from provider wording to clinic wording in tenant settings and licensing screens
+
+Validation:
+- Verified locally that admin-created clinic users retain the selected role immediately after creation
+- Ran `pnpm --filter api exec node --test --import tsx test/tenant-admin-routes.test.ts test/platform-admin-routes.test.ts`

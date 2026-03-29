@@ -672,6 +672,7 @@ export async function removeRoleFromTenantUser(
 }
 
 type TenantUserInput = {
+  roleId?: string | null;
   email: string;
   firstName: string;
   lastName: string;

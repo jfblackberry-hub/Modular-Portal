@@ -1197,7 +1197,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
 
           <SectionCard
             title="Organization Structure"
-            description="Canonical tenant organization hierarchy used for provider and operating-structure testing."
+            description="Canonical tenant organization hierarchy used for clinic operations and tenant structure management."
           >
             <div className="space-y-4">
               {PROVIDER_CLASS_TENANT_TYPES.has(tenant.type) ? (
@@ -1208,10 +1208,10 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                         Office Location Import
                       </p>
                       <h3 className="mt-2 text-lg font-semibold text-admin-text">
-                        Load provider-class office locations from a delimited file
+                        Load clinic office locations from a delimited file
                       </h3>
                       <p className="mt-2 text-sm leading-6 text-admin-muted">
-                        Accepts CSV, pipe-delimited, tab-delimited, and semicolon-delimited files. Expected columns include company, location name, street address, city, state, zip, phone, and notes. Imported offices are added as LOCATION units beneath the tenant&apos;s established Provider hierarchy.
+                        Accepts CSV, pipe-delimited, tab-delimited, and semicolon-delimited files. Expected columns include company, location name, street address, city, state, zip, phone, and notes. Imported offices are added as LOCATION units beneath the tenant&apos;s established clinic hierarchy.
                       </p>
                     </div>
                     <div className="flex w-full flex-col gap-3 xl:max-w-xl">
@@ -1682,7 +1682,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
 
           <SectionCard
             title="Licensing and Modules"
-            description="Purchased capabilities and current module access across member and provider experiences."
+            description="Purchased capabilities and current module access across member and clinic experiences."
           >
             <div className="grid gap-4 md:grid-cols-3">
               <Link
@@ -1696,7 +1696,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                 href={`/admin/tenants/${tenant.id}/capabilities`}
                 className="admin-link-tile"
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">Provider Modules</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-admin-muted">Clinic Modules</p>
                 <p className="mt-2 text-2xl font-semibold text-admin-text">{providerModuleCount}</p>
               </Link>
               <Link

@@ -22,6 +22,7 @@ const TEST_PLATFORM_ADMIN_ROLE_CODE = 'platform_admin';
 const TEST_TENANT_ADMIN_ROLE_CODE = 'tenant_admin';
 const TEST_PLATFORM_ADMIN_EMAIL = 'platform-plane-admin@example.com';
 const TEST_TENANT_ADMIN_EMAIL = 'platform-plane-tenant-admin@example.com';
+const TEST_CREATED_PLATFORM_TENANT_USER_EMAIL = 'new.platform-created.tenant.user@test.local';
 const TEST_TENANT_SLUG = 'platform-plane-tenant';
 const TEST_PROVIDER_TENANT_SLUG = 'platform-plane-provider-tenant';
 const TEST_ISOLATED_TENANT_SLUG = 'platform-plane-isolated-tenant';
@@ -43,7 +44,11 @@ async function cleanupTestData() {
     where: {
       user: {
         email: {
-          in: [TEST_PLATFORM_ADMIN_EMAIL, TEST_TENANT_ADMIN_EMAIL]
+          in: [
+            TEST_PLATFORM_ADMIN_EMAIL,
+            TEST_TENANT_ADMIN_EMAIL,
+            TEST_CREATED_PLATFORM_TENANT_USER_EMAIL
+          ]
         }
       }
     }
@@ -52,7 +57,11 @@ async function cleanupTestData() {
   await prisma.user.deleteMany({
     where: {
       email: {
-        in: [TEST_PLATFORM_ADMIN_EMAIL, TEST_TENANT_ADMIN_EMAIL]
+        in: [
+          TEST_PLATFORM_ADMIN_EMAIL,
+          TEST_TENANT_ADMIN_EMAIL,
+          TEST_CREATED_PLATFORM_TENANT_USER_EMAIL
+        ]
       }
     }
   });
@@ -220,7 +229,9 @@ async function createFixtureData() {
   return {
     tenant,
     platformAdminUser,
-    tenantAdminUser
+    tenantAdminUser,
+    platformAdminRole,
+    tenantAdminRole
   };
 }
 
@@ -304,6 +315,59 @@ test('platform-admin routes are restricted to platform admins', async () => {
   });
 
   assert.equal(forbiddenRolesResponse.statusCode, 403);
+
+  await app.close();
+});
+
+test('platform admins can create a tenant-scoped user with an initial tenant role', async () => {
+  const { tenant, platformAdminUser, tenantAdminRole } = await createFixtureData();
+  const app = Fastify();
+  await roleRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+
+  const createResponse = await app.inject({
+    method: 'POST',
+    url: '/platform-admin/users',
+    headers: {
+      authorization: `Bearer ${platformToken}`
+    },
+    payload: {
+      tenantId: tenant.id,
+      email: TEST_CREATED_PLATFORM_TENANT_USER_EMAIL,
+      firstName: 'Taylor',
+      lastName: 'Scoped',
+      password: 'demo12345',
+      status: 'ACTIVE',
+      roleId: tenantAdminRole.id
+    }
+  });
+
+  assert.equal(createResponse.statusCode, 201, createResponse.body);
+  const createdUser = createResponse.json() as {
+    id: string;
+    roles: string[];
+    tenant: { id: string } | null;
+  };
+
+  assert.ok(createdUser.roles.includes(TEST_TENANT_ADMIN_ROLE_CODE));
+  assert.equal(createdUser.tenant?.id, tenant.id);
+
+  const membership = await prisma.userTenantMembership.findFirstOrThrow({
+    where: {
+      userId: createdUser.id,
+      tenantId: tenant.id
+    }
+  });
+  assert.equal(membership.isTenantAdmin, true);
+
+  const assignment = await prisma.userRole.findFirstOrThrow({
+    where: {
+      userId: createdUser.id,
+      roleId: tenantAdminRole.id,
+      tenantId: tenant.id
+    }
+  });
+  assert.equal(assignment.tenantId, tenant.id);
 
   await app.close();
 });
