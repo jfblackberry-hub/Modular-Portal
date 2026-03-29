@@ -16,6 +16,7 @@ import { listJobs } from '../src/jobs/jobQueue.js';
 import { clearJobHandlers } from '../src/jobs/jobRegistry.js';
 import { JOB_STATUS } from '../src/jobs/jobTypes.js';
 import { runNextJob } from '../src/jobs/jobWorker.js';
+import { createStorageService } from '../src/storage/service.js';
 import { saveFile } from '../src/storage/localStorage.js';
 
 const backupRootDirectory = path.resolve(
@@ -189,4 +190,28 @@ test('scheduled backup jobs create encrypted artifacts and verification logs', a
     pendingFollowUpJobs.every((job) => job.runAt.getTime() > Date.now()),
     true
   );
+});
+
+test('storage services resolve local directories from the workspace root instead of the current package cwd', async () => {
+  const originalCwd = process.cwd();
+
+  process.env.LOCAL_PUBLIC_ASSET_DIR = 'apps/portal-web/public/tenant-assets';
+
+  try {
+    process.chdir(path.resolve(originalCwd, 'apps/api'));
+
+    const publicAssetStorage = createStorageService('public-assets');
+    const defaultStorage = createStorageService('default');
+
+    assert.equal(
+      publicAssetStorage.getRootDescriptor(),
+      path.resolve(originalCwd, 'apps/portal-web/public/tenant-assets')
+    );
+    assert.equal(
+      defaultStorage.getRootDescriptor(),
+      path.resolve(originalCwd, process.env.LOCAL_STORAGE_DIR ?? '.tmp-backup-storage')
+    );
+  } finally {
+    process.chdir(originalCwd);
+  }
 });
