@@ -1,19 +1,7 @@
-import { cookies } from 'next/headers';
-
-import { DemoGate } from '../../components/demo-gate';
 import { PlatformBrandingStylesheet } from '../../components/platform-branding-stylesheet';
-import { DEMO_ACCESS_COOKIE, findDemoUser } from '../../lib/demo-access';
 import { AutoLoginPicker } from './auto-login-picker';
 
 export default async function LoginPage() {
-  const cookieStore = await cookies();
-  const demoAccessCookie = cookieStore.get(DEMO_ACCESS_COOKIE)?.value ?? '';
-  const hasDemoAccess = Boolean(findDemoUser(demoAccessCookie));
-
-  if (!hasDemoAccess) {
-    return <DemoGate />;
-  }
-
   return (
     <>
       <PlatformBrandingStylesheet />

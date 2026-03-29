@@ -12,6 +12,7 @@ import { registerPlugins } from '../src/plugins/index.js';
 import { adminOperationsRoutes } from '../src/routes/admin-operations.js';
 import { featureFlagRoutes } from '../src/routes/feature-flags.js';
 import { platformBrandingRoutes } from '../src/routes/platform-branding.js';
+import { publicAssetRoutes } from '../src/routes/public-assets.js';
 import { roleRoutes } from '../src/routes/roles.js';
 import { tenantRoutes } from '../src/routes/tenants.js';
 import { createAccessToken } from '../src/services/access-token-service.js';
@@ -24,6 +25,7 @@ const TEST_TENANT_ADMIN_EMAIL = 'platform-plane-tenant-admin@example.com';
 const TEST_TENANT_SLUG = 'platform-plane-tenant';
 const TEST_PROVIDER_TENANT_SLUG = 'platform-plane-provider-tenant';
 const TEST_ISOLATED_TENANT_SLUG = 'platform-plane-isolated-tenant';
+const TEST_CLINIC_OU_TENANT_SLUG = 'clinic-ou-admin-tenant';
 
 async function cleanupTestData() {
   await prisma.$executeRawUnsafe('TRUNCATE TABLE audit_logs');
@@ -71,6 +73,11 @@ async function cleanupTestData() {
         {
           slug: {
             startsWith: TEST_ISOLATED_TENANT_SLUG
+          }
+        },
+        {
+          slug: {
+            startsWith: TEST_CLINIC_OU_TENANT_SLUG
           }
         }
       ]
@@ -762,7 +769,7 @@ test('platform admins can create, re-parent, edit, and delete tenant organizatio
     },
     payload: {
       name: 'Clinic OU Admin Tenant',
-      slug: 'clinic-ou-admin-tenant',
+      slug: TEST_CLINIC_OU_TENANT_SLUG,
       status: 'ACTIVE',
       type: 'CLINIC',
       brandingConfig: {
@@ -775,7 +782,7 @@ test('platform admins can create, re-parent, edit, and delete tenant organizatio
 
   const tenant = await prisma.tenant.findUniqueOrThrow({
     where: {
-      slug: 'clinic-ou-admin-tenant'
+      slug: TEST_CLINIC_OU_TENANT_SLUG
     }
   });
 
@@ -962,6 +969,57 @@ test('platform admins can upload platform branding css and public route serves i
 
   assert.equal(publicCssResponse.statusCode, 200, publicCssResponse.body);
   assert.match(publicCssResponse.body, /body\.averra-admin/);
+
+  await app.close();
+});
+
+test('platform admins can upload tenant logos and the public tenant asset route serves them', async () => {
+  const { tenant, platformAdminUser } = await createFixtureData();
+  const app = Fastify();
+  await registerPlugins(app);
+  await tenantRoutes(app);
+  await publicAssetRoutes(app);
+  const platformToken = createPlatformAdminToken(platformAdminUser);
+  const boundary = '----codex-tenant-logo-boundary';
+  const svgContent =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#0f6cbd"/></svg>';
+
+  const uploadResponse = await app.inject({
+    method: 'POST',
+    url: `/platform-admin/tenants/${tenant.id}/logo`,
+    headers: {
+      authorization: `Bearer ${platformToken}`,
+      'content-type': `multipart/form-data; boundary=${boundary}`
+    },
+    payload: buildMultipartBody({
+      boundary,
+      fieldName: 'file',
+      fileName: 'logo.svg',
+      contentType: 'image/svg+xml',
+      content: svgContent
+    })
+  });
+
+  assert.equal(uploadResponse.statusCode, 201, uploadResponse.body);
+  const branding = uploadResponse.json() as {
+    tenantId: string;
+    logoUrl: string | null;
+  };
+
+  assert.equal(branding.tenantId, tenant.id);
+  assert.match(
+    branding.logoUrl ?? '',
+    new RegExp(`^/tenant-assets/tenant/${tenant.id}/logos/tenant-logo\\.svg$`)
+  );
+
+  const publicAssetResponse = await app.inject({
+    method: 'GET',
+    url: branding.logoUrl ?? '/tenant-assets/missing'
+  });
+
+  assert.equal(publicAssetResponse.statusCode, 200, publicAssetResponse.body);
+  assert.equal(publicAssetResponse.headers['content-type'], 'image/svg+xml');
+  assert.match(publicAssetResponse.body, /svg/);
 
   await app.close();
 });

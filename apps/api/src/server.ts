@@ -72,6 +72,7 @@ function isTenantContextExemptRoute(url: string) {
     url.startsWith('/health/') ||
     url.startsWith('/api/health/') ||
     url === '/public/platform-branding/custom.css' ||
+    url.startsWith('/tenant-assets/') ||
     url === '/metrics' ||
     isPublicAuthRoute(url) ||
     url === '/auth/portal-handoffs/consume' ||

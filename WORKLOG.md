@@ -53,3 +53,18 @@ Validation:
 - Reviewed the failing `Build api` GitHub Actions log for run `23702834544`
 - Confirmed the failure was `TS2322` in `apps/api/src/services/tenant-service.ts`
 - Ran focused ESLint on the updated tenant service file in the hotfix worktree
+
+## [2026-03-29 03:28]
+Branch: branding-issues-in-admin-tenant-config
+Commit: restore clinic login flow and tenant logo asset serving (validated: provider tenant repair, portal login, platform admin asset tests)
+
+Changes:
+- Remove the demo gate from the real portal login and public auth routes so clinic users can reach sign-in
+- Keep provider session routing and tenant module handling aligned to provider-class tenant access
+- Add API and portal asset routing support so tenant logo uploads render through a public tenant asset path
+- Revalidate and repair the seeded provider tenant user access model used for clinic logins
+
+Validation:
+- Verified `dr.lee@northstarmedical.local` authenticates through the portal and loads `/provider/dashboard`
+- Ran `pnpm --filter @payer-portal/database db:validate:provider-tenant`
+- Ran `pnpm --filter api exec node --test --import tsx test/platform-admin-routes.test.ts`

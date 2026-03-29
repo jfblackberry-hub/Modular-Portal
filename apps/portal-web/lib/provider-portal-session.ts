@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
-import { isProviderClassTenantType } from '@payer-portal/shared-types';
 
 import { resolveProviderPortalVariant } from '../config/providerPortalConfig';
+import { resolvePortalExperience } from './portal-experience';
 import { getPortalSessionUser } from './portal-session';
 import { assertProviderPocScopeGuardrails } from './provider-poc-scope';
 
@@ -12,14 +12,11 @@ export async function getProviderPortalSessionContext() {
     redirect('/login');
   }
 
-  const isProviderUser =
-    user.session.type === 'end_user' &&
-    (user.landingContext === 'provider' ||
-      user.roles.includes('provider') ||
-      user.permissions.includes('provider.view') ||
-      isProviderClassTenantType(user.tenant.tenantTypeCode));
+  if (user.session.type !== 'end_user') {
+    redirect('/login');
+  }
 
-  if (!isProviderUser) {
+  if (resolvePortalExperience(user) !== 'provider') {
     redirect('/login');
   }
 
