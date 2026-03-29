@@ -40,3 +40,16 @@ Validation:
 - Verified local admin login works with `admin` / `demo12345`
 - Ran focused auth login tests for `admin-console` and `api`
 - Ran focused lint checks for the updated seed and auth test files
+
+## [2026-03-29 02:21]
+Branch: fix/api-tenant-service-json-types
+Commit: fix api deploy build for tenant organization unit metadata (validated: GitHub Actions failure reproduced from logs, focused lint)
+
+Changes:
+- Normalize custom organization-unit metadata into Prisma input JSON types before create and update writes
+- Keep location-specific metadata handling unchanged while fixing non-location metadata typing for API builds
+
+Validation:
+- Reviewed the failing `Build api` GitHub Actions log for run `23702834544`
+- Confirmed the failure was `TS2322` in `apps/api/src/services/tenant-service.ts`
+- Ran focused ESLint on the updated tenant service file in the hotfix worktree

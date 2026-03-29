@@ -233,6 +233,32 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function normalizeJsonInputValue(
+  value: unknown
+): Prisma.InputJsonValue | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeJsonInputValue(entry) ?? null) as Prisma.InputJsonArray;
+  }
+
+  if (isRecord(value)) {
+    return Object.fromEntries(
+      Object.entries(value)
+        .map(([key, entryValue]) => [key, normalizeJsonInputValue(entryValue)])
+        .filter(([, entryValue]) => entryValue !== undefined)
+    ) as Prisma.InputJsonObject;
+  }
+
+  return null;
+}
+
 function getExtension(fileName: string, mimeType: string) {
   const parsedExtension = path.extname(fileName).toLowerCase();
 
@@ -796,7 +822,7 @@ function buildOrganizationUnitMetadata(
     | TenantOrganizationUnitInput
     | TenantOrganizationUnitUpdateInput,
   existingMetadata?: Prisma.JsonValue | null
-) {
+): Prisma.InputJsonValue | null | undefined {
   if (type === 'LOCATION') {
     return buildOfficeLocationMetadata(
       input,
@@ -805,10 +831,10 @@ function buildOrganizationUnitMetadata(
   }
 
   if (input.metadata !== undefined) {
-    return input.metadata;
+    return normalizeJsonInputValue(input.metadata);
   }
 
-  return existingMetadata ?? null;
+  return normalizeJsonInputValue(existingMetadata ?? null);
 }
 
 export async function createTenantOrganizationUnit(
