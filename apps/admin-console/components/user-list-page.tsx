@@ -96,9 +96,16 @@ function hydrateUsers(users: ApiUserRecord[]): UserRecord[] {
   }));
 }
 
-function UserListPageContent({ scope }: { scope: Scope }) {
+function UserListPageContent({
+  scope,
+  tenantId
+}: {
+  scope: Scope;
+  tenantId?: string;
+}) {
   const searchParams = useSearchParams();
-  const queryTenantId = searchParams.get('tenantId') ?? searchParams.get('tenant_id');
+  const queryTenantId =
+    tenantId ?? searchParams.get('tenantId') ?? searchParams.get('tenant_id');
   const tenantQuery = queryTenantId
     ? `?tenant_id=${encodeURIComponent(queryTenantId)}`
     : '';
@@ -714,10 +721,16 @@ function UserListPageContent({ scope }: { scope: Scope }) {
   );
 }
 
-export function UserListPage({ scope }: { scope: Scope }) {
+export function UserListPage({
+  scope,
+  tenantId
+}: {
+  scope: Scope;
+  tenantId?: string;
+}) {
   return (
     <Suspense fallback={<div className="min-h-[12rem]" aria-hidden="true" />}>
-      <UserListPageContent scope={scope} />
+      <UserListPageContent scope={scope} tenantId={tenantId} />
     </Suspense>
   );
 }

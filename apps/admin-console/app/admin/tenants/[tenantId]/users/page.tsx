@@ -1,5 +1,5 @@
-import { TenantUsersPersonasWorkspace } from '../../../../../components/admin-control-plane-workspaces';
 import { TenantAdminGate } from '../../../../../components/tenant-admin-gate';
+import { UserListPage } from '../../../../../components/user-list-page';
 
 export default async function AdminTenantUsersPage({
   params
@@ -10,7 +10,7 @@ export default async function AdminTenantUsersPage({
 
   return (
     <TenantAdminGate>
-      <TenantUsersPersonasWorkspace tenantId={tenantId} />
+      <UserListPage scope="tenant" tenantId={tenantId} />
     </TenantAdminGate>
   );
 }
