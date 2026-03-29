@@ -153,3 +153,59 @@ test('isKnownTenantPortalModuleId rejects unknown strings', () => {
   assert.equal(isKnownTenantPortalModuleId('member_home'), true);
   assert.equal(isKnownTenantPortalModuleId('totally_fake'), false);
 });
+
+test('provider-class tenant without purchasedModules defaults provider_operations on', () => {
+  console.warn = () => {
+    assert.fail('unexpected console.warn');
+  };
+
+  assert.equal(
+    isTenantModuleEnabled(
+      {},
+      'provider_operations',
+      { tenantId: 'clinic-1', tenantTypeCode: 'CLINIC' }
+    ),
+    true
+  );
+
+  assert.equal(
+    isTenantModuleEnabled(
+      { purchasedModules: [] },
+      'provider_dashboard',
+      { tenantId: 'clinic-1', tenantTypeCode: 'HOSPITAL' }
+    ),
+    true
+  );
+});
+
+test('provider-class tenant with explicit non-provider purchasedModules does not default provider_operations', () => {
+  console.warn = () => {
+    assert.fail('unexpected console.warn');
+  };
+
+  assert.equal(
+    isTenantModuleEnabled(
+      { purchasedModules: ['member_home'] },
+      'provider_operations',
+      { tenantId: 'clinic-1', tenantTypeCode: 'CLINIC' }
+    ),
+    false
+  );
+});
+
+test('payer tenant still requires purchasedModules for provider_operations', () => {
+  const warnings: string[] = [];
+  console.warn = (message?: unknown) => {
+    warnings.push(String(message));
+  };
+
+  assert.equal(
+    isTenantModuleEnabled(
+      {},
+      'provider_operations',
+      { tenantId: 'payer-1', tenantTypeCode: 'PAYER' }
+    ),
+    false
+  );
+  assert.equal(warnings.length, 1);
+});

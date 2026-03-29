@@ -1,5 +1,8 @@
 import type { PortalSessionUser } from './portal-session';
-import { isProviderClassTenantType } from '@payer-portal/shared-types';
+import {
+  isProviderClassTenantType,
+  normalizeTenantTypeForArchitecture
+} from '@payer-portal/shared-types';
 
 export type PortalExperience = 'member' | 'employer' | 'provider' | 'broker';
 
@@ -18,25 +21,44 @@ const EMPLOYER_ROLE_SET = new Set([
   'internal_admin'
 ]);
 
+function roleList(user: PortalSessionUser) {
+  return user.roles ?? user.session.roles ?? [];
+}
+
+function permissionList(user: PortalSessionUser) {
+  return user.permissions ?? user.session.permissions ?? [];
+}
+
 export function resolvePortalExperience(user: PortalSessionUser): PortalExperience {
-  if (
+  const roles = roleList(user);
+  const permissions = permissionList(user);
+  const normalizedTenantType = normalizeTenantTypeForArchitecture(user.tenant.tenantTypeCode);
+
+  const isExplicitProviderContext =
     user.landingContext === 'provider' ||
-    user.roles.includes('provider') ||
-    isProviderClassTenantType(user.tenant.tenantTypeCode)
-  ) {
+    roles.includes('provider') ||
+    permissions.includes('provider.view');
+
+  const tenantSuggestsProvider =
+    normalizedTenantType !== null &&
+    isProviderClassTenantType(normalizedTenantType) &&
+    user.landingContext !== 'tenant_admin' &&
+    user.landingContext !== 'platform_admin';
+
+  if (isExplicitProviderContext || tenantSuggestsProvider) {
     return 'provider';
   }
 
   if (
     user.landingContext === 'broker' ||
-    user.roles.some((role) => BROKER_ROLE_SET.has(role))
+    roles.some((role) => BROKER_ROLE_SET.has(role))
   ) {
     return 'broker';
   }
 
   if (
     user.landingContext === 'employer' ||
-    user.roles.some((role) => EMPLOYER_ROLE_SET.has(role))
+    roles.some((role) => EMPLOYER_ROLE_SET.has(role))
   ) {
     return 'employer';
   }

@@ -82,6 +82,10 @@ function buildTenantDetailForm(tenant: Tenant): TenantDetailForm {
   };
 }
 
+function resolveTenantLogoPreviewUrl(logoUrl: string) {
+  return logoUrl.startsWith('/') ? `${config.serviceEndpoints.portal}${logoUrl}` : logoUrl;
+}
+
 export function TenantManagement() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState('');
@@ -775,7 +779,7 @@ export function TenantManagement() {
                         <div className="admin-panel-muted mt-4 flex items-center gap-4 p-4">
                           {/* eslint-disable-next-line @next/next/no-img-element -- dynamic tenant branding URLs are runtime-configured and not suitable for next/image without broad remote allowlists */}
                           <img
-                            src={`${config.serviceEndpoints.portal}${selectedTenant.brandingConfig.logoUrl}`}
+                            src={resolveTenantLogoPreviewUrl(selectedTenant.brandingConfig.logoUrl)}
                             alt={`${selectedTenant.name} logo`}
                             className="h-16 w-16 rounded-xl border border-admin-border bg-[rgba(255,255,255,0.08)] object-contain p-2"
                           />
